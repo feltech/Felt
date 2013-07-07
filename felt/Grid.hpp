@@ -1,0 +1,842 @@
+#ifndef Lattice_hpp
+#define Lattice_hpp
+
+#include <inttypes.h>
+#include <math.h>
+#include <vector>
+#include <boost/numeric/ublas/assignment.hpp>
+#include <boost/numeric/ublas/vector.hpp>
+
+
+#define _TESTING
+
+
+
+namespace felt {
+
+	typedef float FLOAT;
+	typedef int INT;
+	typedef size_t UINT;
+
+	namespace ublas = boost::numeric::ublas;
+
+	typedef ublas::vector<FLOAT, ublas::bounded_array<FLOAT,2> > Vec2f;
+	typedef ublas::vector<UINT, ublas::bounded_array<UINT,2> > Vec2u;
+	typedef ublas::vector<INT, ublas::bounded_array<INT,2> > Vec2i;
+	typedef ublas::vector<FLOAT, ublas::bounded_array<FLOAT,3> > Vec3f;
+	typedef ublas::vector<UINT, ublas::bounded_array<UINT,3> > Vec3u;
+	typedef ublas::vector<INT, ublas::bounded_array<INT,3> > Vec3i;
+
+	// Following signnum from http://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
+	template <typename T> int sgn(T val) {
+		return (T(0) < val) - (val < T(0));
+	}
+
+
+	static inline Vec2f vecf(const FLOAT& x, const FLOAT& y) {
+		Vec2f vec(2);
+		vec <<= x, y;
+		return vec;
+	}
+	static inline Vec2u vecu(const size_t& x, const size_t& y) {
+		Vec2u vec(2);
+		vec <<= x, y;
+		return vec;
+	}
+	static inline Vec2i veci(const INT& x, const INT& y) {
+		Vec2i vec(2);
+		vec <<= x, y;
+		return vec;
+	}
+	static inline Vec3f vecf(const FLOAT& x, const FLOAT& y, const FLOAT& z) {
+		Vec3f vec(3);
+		vec <<= x, y, z;
+		return vec;
+	}
+	static inline Vec3u vecu(const UINT& x, const UINT& y, const UINT& z) {
+		Vec3f vec(3);
+		vec <<= x, y, z;
+		return vec;
+	}
+	static inline Vec3i veci(const INT& x, const INT& y, const INT& z) {
+		Vec3i vec(3);
+		vec <<= x, y, z;
+		return vec;
+	}
+
+	static inline Vec2f vec(const FLOAT& x, const FLOAT& y) {
+		Vec2f vec(2);
+		vec <<= x, y;
+		return vec;
+	}
+	static inline Vec2u vec(const size_t& x, const size_t& y) {
+		Vec2u vec(2);
+		vec <<= x, y;
+		return vec;
+	}
+	static inline Vec2i vec(const INT& x, const INT& y) {
+		Vec2i vec(2);
+		vec <<= x, y;
+		return vec;
+	}
+	static inline Vec3f vec(const FLOAT& x, const FLOAT& y, const FLOAT& z) {
+		Vec3f vec(3);
+		vec <<= x, y, z;
+		return vec;
+	}
+	static inline Vec3u vec(const UINT& x, const UINT& y, const UINT& z) {
+		Vec3f vec(3);
+		vec <<= x, y, z;
+		return vec;
+	}
+	static inline Vec3i vec(const INT& x, const INT& y, const INT& z) {
+		Vec3i vec(3);
+		vec <<= x, y, z;
+		return vec;
+	}
+	static inline uint32_t log2(const uint32_t x) {
+	  uint32_t y;
+	  asm ( "\tbsr %1, %0\n"
+		  : "=r"(y)
+		  : "r" (x)
+	  );
+	  return y;
+	}
+
+
+
+	template <class T, UINT D>
+	class Grid {
+
+		typedef ublas::vector<UINT,ublas::bounded_array<UINT,D> > VecDu;
+		typedef ublas::vector<INT,ublas::bounded_array<INT,D> > VecDi;
+		typedef ublas::vector<FLOAT,ublas::bounded_array<FLOAT,D> > VecDf;
+		typedef ublas::vector<T,ublas::bounded_array<T,D> > VecDT;
+		typedef ublas::scalar_vector<INT,ublas::bounded_array<INT,D> > ScalarDi;
+
+	protected:
+		VecDu m_vec_Dims;
+		VecDi m_vec_Offset;
+		T m_dx;
+		ublas::vector<T> m_vec_Data;
+
+	public:
+//		std::ostream& operator<< (std::ostream& stream)
+//		{
+//			// Reference to grid dimensions.
+//			const VecDu& dims = this->dims();
+//			for (UINT y = 0; y < dims[0].size(); y++)
+//			{
+//				for (UINT x = 0; x < dims[0].size(); x++)
+//				{
+//					stream << (*this)(x,y) << ",\t";
+//				}
+//				stream << "\n";
+//			}
+//			return stream;
+//		}
+
+		/**
+		 * Initialise a zero-dimensional grid.
+		 */
+		Grid ()
+		: m_vec_Dims(D),
+		  m_vec_Offset(D),
+		  m_dx(T(1))
+		{
+			m_vec_Offset.clear();
+			m_vec_Dims.clear();
+			m_vec_Data.clear();
+		}
+
+		Grid (UINT x, UINT y)
+		: m_vec_Dims(D),
+		  m_vec_Offset(D),
+		  m_dx(T(1))
+		{
+			this->init(vecu(x,y));
+		}
+
+		Grid (UINT x, UINT y, UINT z)
+		: m_vec_Dims(D),
+		  m_vec_Offset(D),
+		  m_dx(T(1))
+		{
+			this->init(vecu(x,y,z));
+		}
+
+		/**
+		 * Initialise a grid with given dimensions.
+		 * @param vec_dims
+		 */
+		Grid (const VecDu& vec_dims)
+		: m_vec_Dims(D),
+		  m_vec_Offset(D),
+		  m_dx(T(1))
+		{
+			this->init(vec_dims);
+		}
+
+		void init (const VecDu& vec_dims) {
+			m_vec_Offset.clear();
+			this->dims(vec_dims);
+		}
+
+
+		/**
+		 * Initialise a grid with given dimension, offset and delta x.
+		 *
+		 * @param vec_dims
+		 * @param vec_offset
+		 * @param delta
+		 */
+		Grid (const VecDu& vec_dims, const VecDi& vec_offset, const T& delta = T(1))
+		: m_vec_Dims(D),
+		  m_vec_Offset(D),
+		  m_dx(delta)
+		{
+			this->dims(vec_dims);
+			this->offset(vec_offset);
+		}
+
+		/**
+		 * Set grid offset.
+		 *
+		 * @return
+		 */
+		void offset (const VecDi& vec_offset) {
+			m_vec_Offset = vec_offset;
+		}
+
+		/**
+		 * Get grid offset.
+		 *
+		 * @return
+		 */
+		const VecDi& offset () const {
+			return m_vec_Offset;
+		}
+
+
+		/**
+		 * Get grid delta x.
+		 * @return
+		 */
+		inline const T& dx () const {
+			return m_dx;
+		}
+
+		/**
+		 * Set grid delta x.
+		 * @param delta
+		 */
+		void dx (const T& delta) {
+			m_dx = delta;
+		}
+
+		/*
+		 * Helpers for cases where D is 2 or 3.
+		 */
+		T& operator() (const INT& x, const INT& y) {
+			return (*this)(veci(x,y));
+		}
+		const T& operator() (const INT& x, const INT& y) const {
+			return (*this)(veci(x,y));
+		}
+		T operator() (const FLOAT& x, const FLOAT& y) {
+			return (*this)(vecf(x,y));
+		}
+		const T operator() (const FLOAT& x, const FLOAT& y) const {
+			return (*this)(vecf(x,y));
+		}
+		T& operator() (const INT& x, const INT& y, const INT& z) {
+			return (*this)(veci(x,y,z));
+		}
+		const T& operator() (const INT& x, const INT& y, const INT& z) const {
+			return (*this)(veci(x,y,z));
+		}
+		T operator() (const FLOAT& x, const FLOAT& y, const FLOAT& z) {
+			return (*this)(vecf(x,y,z));
+		}
+		const T operator() (const FLOAT& x, const FLOAT& y, const FLOAT& z) const {
+			return (*this)(vecf(x,y,z));
+		}
+
+		/**
+		 * Get/set grid values.
+		 * @param pos
+		 * @return
+		 */
+		T& operator() (const VecDi& pos) {
+			return this->data()(this->index(pos));
+		}
+
+
+		/**
+		 * Get grid values.
+		 * @param pos
+		 * @return
+		 */
+		const T& operator() (const VecDi& pos) const
+		{
+			return this->data()(this->index(pos));
+		}
+
+
+
+		/**
+		 * Get index of position.
+		 * @param pos
+		 * @return
+		 */
+		UINT index (const VecDi& pos) const
+		{
+			return Grid<T,D>::index(pos, this->dims(), this->offset());
+		}
+
+
+		/**
+		 * Get index of position.
+		 * @param pos
+		 * @param dims
+		 * @param offset
+		 * @return
+		 */
+		static UINT index (const VecDi& pos, const VecDu& dims, const VecDi& offset = ScalarDi(D,0))
+		{
+			UINT idx = 0;
+			for (UINT i = 0; i < dims.size(); i++)
+			{
+				UINT u_pos = pos(i) - offset(i);
+				for (UINT j = i+1; j < dims.size(); j++)
+				{
+					u_pos *= dims(j);
+				}
+				idx += u_pos;
+			}
+			return idx;
+		}
+
+		/**
+		 * Get position of index.
+		 * @param idx
+		 * @return
+		 */
+		VecDi index (UINT idx) const
+		{
+			return Grid<T,D>::index(idx, this->dims(), this->offset());
+		}
+
+		/**
+		 * Get position of index.
+		 * @param idx
+		 * @param dims
+		 * @param offset
+		 * @return
+		 */
+		static VecDi index (UINT idx, const VecDu& dims, const VecDi& offset = ScalarDi(D,0))
+		{
+/*
+	Eg. 2D: row major order (3x4=12): (x,y)[idx] =>
+		(0,0)[0], (0,1)[1], (0,2)[2],  (0,3)[3]
+		(1,0)[4], (1,1)[5], (1,2)[6],  (1,3)[7]
+		(2,0)[8], (2,1)[9], (2,2)[10], (2,3)[11]
+
+	E.g. 3D:
+	z = idx % Dz
+	y = (idx/Dz) % Dy
+	x = (idx/Dz)/Dy % Dx
+*/
+			VecDi pos(D);
+
+			for (INT axis = dims.size()-1; axis >= 0 ; axis--)
+			{
+				pos(axis) = idx % dims(axis) + offset(axis);
+				idx /= dims(axis);
+			}
+
+			return pos;
+		}
+
+
+		/**
+		 * Get interpolated grid value.
+		 * @param pos
+		 * @return
+		 */
+		const T operator() (const VecDf& pos) const {
+			return this->interp(pos);
+		}
+
+		/**
+		 * Get interpolated grid value.
+		 * @param pos
+		 * @return
+		 */
+		T operator() (const VecDf& pos) {
+			return this->interp(pos);
+		}
+
+		/**
+		 * Retrieve a reference to the data stored in grid.
+		 * @return
+		 */
+		boost::numeric::ublas::vector<T>& data () {
+			return m_vec_Data;
+		}
+		/**
+		 * Retrieve a reference to the data stored in grid.
+		 * @return
+		 */
+		const boost::numeric::ublas::vector<T>& data () const {
+			return m_vec_Data;
+		}
+
+
+		/**
+		 * Reshape grid.
+		 *
+		 * @param vec_NewDims
+		 * @return
+		 */
+		const VecDu dims (const VecDu& vec_NewDims) {
+			VecDu vec_OldDims(m_vec_Dims);
+			m_vec_Dims = VecDu(vec_NewDims);
+
+			UINT uGridSize = m_vec_Dims(0);
+			for (UINT i = 1; i < m_vec_Dims.size(); i++) {
+				uGridSize *= m_vec_Dims(i);
+			}
+			m_vec_Data.resize(uGridSize);
+
+			// Return old dimensions.
+			return vec_OldDims;
+		}
+
+
+
+		/**
+		 * Get grid dimensions.
+		 *
+		 * @return
+		 */
+		const VecDu& dims () const {
+			return m_vec_Dims;
+		}
+
+
+		/**
+		 * Fill with a single value.
+		 *
+		 * @param val
+		 */
+		void fill (const T& val) {
+			for (size_t i = 0; i < this->data().size(); i++) {
+				this->data()(i) = val;
+			}
+		}
+
+
+		/**
+		 * Inside/outside test.
+		 *
+		 * @param pos
+		 * @return
+		 */
+		bool inside (const VecDi& pos) const {
+			const VecDu& dims = this->dims();
+			const VecDi& offset = this->offset();
+
+			for (size_t i = 0; i < pos.size(); i++) {
+				if (pos(i) >= (INT)dims(i) + offset(i))
+					return false;
+				if (pos(i) < offset(i))
+					return false;
+			}
+			return true;
+		}
+
+		void neighs (const VecDi& pos, std::vector<VecDi>& vout) const
+		{
+			// Reference to grid dimensions.
+			const VecDu& dims = this->dims();
+			// Most likely all 6 neighbours are valid.
+			vout.reserve(6);
+			// Position for look-around.
+			VecDi vec_dir(pos);
+			for (UINT axis = 0; axis < dims.size(); axis++) {
+				// Check if backward value is within grid.
+				vec_dir(axis) -= 1;
+				if (this->inside(vec_dir)) {
+					vout.push_back(vec_dir);
+				}
+				// Check if forward value is within grid.
+				vec_dir(axis) += 2;
+				if (this->inside(vec_dir)) {
+					vout.push_back(vec_dir);
+				}
+				vec_dir(axis) -= 1;
+			}
+		}
+
+		/**
+		 * Forward difference gradient.
+		 *
+		 * @param pos
+		 * @return
+		 */
+		template <typename PosType>
+		VecDT gradF (const ublas::vector<PosType, ublas::bounded_array<PosType,D> >& pos) const
+		{
+			// Value at this point.
+			const T val_centre = (*this)(pos);
+			// Reference to grid dimensions.
+			const VecDu& dims = this->dims();
+			// Vector to store gradient calculation.
+			VecDT vec_grad(dims.size());
+			// Position for look-ahead.
+			ublas::vector<PosType, ublas::bounded_array<PosType,D> > vec_dir(pos);
+
+			for (UINT axis = 0; axis < dims.size(); axis++)
+			{
+				vec_dir(axis) += 1;
+				vec_grad(axis) = (*this)(vec_dir) - val_centre;
+				vec_dir(axis) -= 1;
+			}
+
+			return vec_grad / this->dx();
+		}
+
+		/**
+		 * Backward difference gradient
+		 *
+		 * @param pos
+		 * @return
+		 */
+		template <typename PosType>
+		VecDT gradB (const ublas::vector<PosType, ublas::bounded_array<PosType,D> >& pos) const
+		{
+			// Value at this point.
+			const T val_centre = (*this)(pos);
+			// Reference to grid dimensions.
+			const VecDu& dims = this->dims();
+			// Vector to store gradient calculation.
+			VecDT vec_grad(dims.size());
+			// Position for look-behind.
+			ublas::vector<PosType, ublas::bounded_array<PosType,D> > vec_dir(pos);
+
+			for (UINT axis = 0; axis < dims.size(); axis++) {
+				vec_dir(axis) -= 1;
+				vec_grad(axis) = val_centre - (*this)(vec_dir);
+				vec_dir(axis) += 1;
+			}
+
+			return vec_grad / this->dx();
+		}
+
+
+
+		/**
+		 * Central difference gradient.
+		 *
+		 * @param pos
+		 * @return
+		 */
+		template <typename PosType>
+		VecDT gradC (const ublas::vector<PosType, ublas::bounded_array<PosType,D> >& pos) const
+		{
+			// Reference to grid dimensions.
+			const VecDu& dims = this->dims();
+			// Vector to store gradient calculation.
+			VecDT vec_grad(dims.size());
+			// Position for look-around.
+			ublas::vector<PosType, ublas::bounded_array<PosType,D> > vec_dir(pos);
+
+			for (UINT axis = 0; axis < dims.size(); axis++) {
+				vec_dir(axis) -= 1;
+				const T back = (*this)(vec_dir);
+				vec_dir(axis) += 2;
+				const T forward = (*this)(vec_dir);
+				vec_dir(axis) -= 1;
+
+				vec_grad(axis) = (forward - back) /  2;
+			}
+
+			return vec_grad / this->dx();
+		}
+
+
+		/**
+		 * Safe gradient.
+		 * Will calculate central, forward or backward difference along each axis,
+		 * depending what grid values are available.
+		 * That is, for grid points at the edge of the grid it will return forward/backward
+		 * differences.
+		 * @param pos
+		 * @return
+		 */
+		VecDT grad (const VecDi& pos) const
+		{
+			// Reference to grid dimensions.
+			const VecDu& dims = this->dims();
+			// Vector to store gradient calculation.
+			VecDT vec_grad(dims.size());
+			// Position for look-around.
+			VecDi vec_dir(pos);
+
+			// Central value.
+			const T centre = (*this)(pos);
+
+			for (UINT axis = 0; axis < dims.size(); axis++) {
+				T back = centre;
+				T forward = centre;
+				UINT order = 0;
+				// Check if backward value is within grid.
+				vec_dir(axis) -= 1;
+				if (this->inside(vec_dir)) {
+					back = (*this)(vec_dir);
+					order++;
+				}
+				// Check if forward value is within grid.
+				vec_dir(axis) += 2;
+				if (this->inside(vec_dir)) {
+					forward = (*this)(vec_dir);
+					order++;
+				}
+				vec_dir(axis) -= 1;
+				// Calculate central/forward/backward difference along this axis.
+				if (order != 0)
+					vec_grad(axis) = (forward - back) / order;
+				else
+					vec_grad(axis) = 0;
+			}
+
+			return vec_grad / this->dx();
+		}
+
+
+		/**
+		 * Entropy satisfying differencing.
+		 *
+		 * @param pos
+		 * @return
+		 */
+		template <typename PosType>
+		VecDT gradE (const ublas::vector<PosType, ublas::bounded_array<PosType,D> >& pos) const
+		{
+			// Value at this point.
+			const T centre = (*this)(pos);
+			// Reference to grid dimensions.
+			const VecDu& dims = this->dims();
+			// Vector to store gradient calculation.
+			VecDT vec_grad(dims.size());
+			// Position for look-around.
+			ublas::vector<PosType, ublas::bounded_array<PosType,D> > vec_dir(pos);
+
+			for (UINT axis = 0; axis < dims.size(); axis++) {
+				vec_dir(axis) -= 1;
+				T back = (*this)(vec_dir);
+				vec_dir(axis) += 2;
+				T forward = (*this)(vec_dir);
+				vec_dir(axis) -= 1;
+
+				back = std::min((centre - back), 0.0f);
+				forward = std::max((forward - centre), 0.0f);
+
+				vec_grad(axis) = (forward + back);
+			}
+
+			return vec_grad / this->dx();
+		}
+
+
+
+		/**
+		 * Linear interpolation.
+		 *
+		 * @param vec_fpos
+		 * @return
+		 */
+		T interp (const VecDf& vec_fpos) const {
+			const VecDu& dims = this->dims();
+
+			// Store all 2^d corners.
+			std::vector< T > val_corners(1 << dims.size());
+
+			// Get all corners of containing cell.
+			for (UINT i = 0; i < val_corners.size(); i++) {
+				// 0 = 00 => (x,y)
+				// 1 = 01 => (x+1,y)
+				// 2 = 10 => (x,y+1)
+				// 3 = 11 => (x+1,y+1)
+
+				VecDi pos_corner(dims.size());
+				for (UINT dim = 0; dim < pos_corner.size(); dim++) {
+					INT pos = (INT)floor(vec_fpos(dim));
+					const INT dir = (i >> dim) & 1;
+					pos += dir;
+					pos_corner(dim) = pos;
+				}
+
+				val_corners[i] = (*this)(pos_corner);
+			}
+
+			// Translate position vector into 'hypercube space', so 0 <= v(x) <= 1.
+			VecDf vec_dir(vec_fpos);
+			for (UINT dim = 0; dim < vec_dir.size(); dim++) {
+				vec_dir(dim) = vec_dir(dim) - floor(vec_dir(dim));
+			}
+
+			// Repeatedly reduce along axes, i.e. hypercube -> cube -> square -> line -> point
+			while (val_corners.size() > 1) {
+				val_corners = this->_interp(val_corners, vec_dir);
+			}
+
+			return val_corners[0];
+		}
+
+		/**
+		 * Curvature calculation based on difference of normals method.
+		 * @param pos
+		 * @return
+		 */
+		template <typename PosType>
+		T curv (const ublas::vector<PosType, ublas::bounded_array<PosType,D> >& pos) const {
+			typedef ublas::vector<PosType, ublas::bounded_array<PosType,D> > VecDp;
+
+			const T val_centre = (*this)(pos);
+			const VecDu& dims = this->dims();
+			VecDp vec_dir(pos);
+
+			// Forward directed principal normal.
+			VecDT n_forward(D);
+
+			for (UINT axis = 0; axis < dims.size(); axis++) {
+				vec_dir(axis) += 1;
+
+				const T val_axis = (*this)(vec_dir) - val_centre;
+				T val_neighs_sq = 0;
+
+				// Loop other dimensions to get central difference across them.
+				for (UINT axis_neigh = 0; axis_neigh < dims.size(); axis_neigh++) {
+					// Only getting differences across other axes.
+					if (axis_neigh != axis) {
+						// Central difference across this forward point.
+						VecDp vec_dir_neigh(vec_dir);
+						vec_dir_neigh(axis_neigh) -= 1;
+						const T val_low = (*this)(vec_dir_neigh);
+						vec_dir_neigh(axis_neigh) += 2;
+						const T val_high = (*this)(vec_dir_neigh);
+
+						const T val_neigh = (val_high - val_low) / 2;
+						val_neighs_sq += val_neigh*val_neigh;
+					}
+				}
+
+				n_forward(axis) =		val_axis /
+								sqrt(val_axis*val_axis + val_neighs_sq);
+
+				vec_dir(axis) -= 1;
+			}
+
+
+			// Backward directed principal normal.
+			VecDT n_backward(D);
+
+			for (UINT axis = 0; axis < dims.size(); axis++) {
+				vec_dir(axis) -= 1;
+				VecDT vec_vals(D);
+
+				const T val_axis = val_centre - (*this)(vec_dir);
+				T val_neighs_sq = 0;
+
+				// Loop other dimensions to get central difference across them.
+				for (UINT axis_neigh = 0; axis_neigh < dims.size(); axis_neigh++) {
+					// Only getting differences across other axes.
+					if (axis_neigh != axis) {
+						// Central difference across this backward point.
+						VecDp vec_dir_neigh(vec_dir);
+						vec_dir_neigh(axis_neigh) -= 1;
+						const T val_low = (*this)(vec_dir_neigh);
+						vec_dir_neigh(axis_neigh) += 2;
+						const T val_high = (*this)(vec_dir_neigh);
+
+						const T val_neigh = (val_high - val_low) / 2;
+						val_neighs_sq += val_neigh*val_neigh;
+					}
+				}
+
+				n_backward(axis) =		val_axis /
+								sqrt(val_axis*val_axis + val_neighs_sq);
+
+				vec_dir(axis) += 1;
+			}
+
+			const VecDT dn_by_dx = (n_forward - n_backward);
+
+			T curvature = 0;
+			for (UINT axis = 0; axis < dims.size(); axis++) {
+				curvature += dn_by_dx(axis);
+			}
+			curvature /= 2;
+
+			return curvature;
+		}
+
+
+		/**
+		 * Calculate divergence, i.e. d2f(x)/dx2
+		 * @param pos
+		 * @return
+		 */
+		template <typename PosType>
+		T divergence (const ublas::vector<PosType, ublas::bounded_array<PosType,D> >& pos) const {
+			typedef ublas::vector<PosType, ublas::bounded_array<PosType,D> > VecDp;
+			const VecDT vec_grad_f = this->gradF(pos);
+			const VecDT vec_grad_b = this->gradB(pos);
+			const VecDT vec_grad_diff = vec_grad_b - vec_grad_f;
+
+			// Component-wise sum.
+			const T val = ublas::sum(vec_grad_diff);
+
+			return val / (this->dx()*this->dx());
+		}
+
+
+	#ifndef _TESTING
+	protected:
+	#endif
+
+		std::vector<T> _interp (const std::vector<T>& val_corners_in, const VecDf& vec_fpos) const {
+			const size_t num_corners = val_corners_in.size();
+
+			// Number of values returned.
+			// This is a power of 2 less than input dimensions (cube becomes square,
+			// square becomes line, line becomes point).
+			const size_t num_out = num_corners >> 1;
+
+			// The axis along which to interpolate.
+			// This is computed from the dimensions of the original input and the dimensions
+			// of the intended output.
+			const size_t axis_idx = vec_fpos.size() - log2(num_corners);
+
+			// The weighting to be used in interpolating each pair of points.
+			// This is the position along the axis of interpolation.
+			const FLOAT axis_pos = vec_fpos(axis_idx);
+
+			std::vector<T> val_corners_out(num_out);
+
+			for (size_t i = 0; i < num_out; i++) {
+				const T low = val_corners_in[(i << 1)];
+				const T high = val_corners_in[(i << 1) + 1];
+				const T val = axis_pos*high + (1.0f-axis_pos)*low;
+				val_corners_out[i] = val;
+			}
+
+			return val_corners_out;
+		}
+
+	};
+
+}// End namespace felt.
+#endif
