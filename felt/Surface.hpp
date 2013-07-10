@@ -190,6 +190,16 @@ namespace felt {
 			return m_grid_phi;
 		}
 
+		/**
+		 * @brief Test whether a given value lies within the narrow band or not.
+		 * @param val
+		 * @return
+		 */
+		template <typename ValType>
+		bool inside_band (const ValType& val)
+		{
+			return (UINT)std::abs(val) <= L;
+		}
 
 
 		void phi (const VecDi& pos, const FLOAT& val, const INT& layerID = 0)
@@ -205,26 +215,37 @@ namespace felt {
 				// If outside point moving inward, must create new outside points.
 				if (std::abs(layerID) == L && std::abs(newLayerID) == L-1)
 				{
-					const INT dir = -sgn(newLayerID);
+					// Get neighbouring points.
 					std::vector<VecDi> neighs;
 					phi.neighs(pos, neighs);
+					// Get which side of the zero-layer this point lies on.
+					const INT side = sgn(newLayerID);
 
 					for (UINT neighIdx = 0; neighIdx < neighs.size(); neighIdx++)
 					{
 						const VecDi& pos_neigh = neighs[neighIdx];
 						const INT fromLayerID = this->layerID(pos_neigh);
-						if ((UINT)std::abs(fromLayerID) > L)
+						// If neighbouring point is not already within the narrow band.
+						if (!this->inside_band(fromLayerID))
 						{
-							const FLOAT dist_neigh = this->distance(pos_neigh, dir);
+							// Get distance of this new point to the zero layer.
+							const FLOAT dist_neigh = this->distance(pos_neigh, side);
+							// Set distance in phi grid.
 							phi(pos_neigh) = dist_neigh;
-							this->status_change(pos_neigh, fromLayerID, -dir*L);
+							// Add to status change list to be added to the outer layer.
+							this->status_change(pos_neigh, fromLayerID, side*L);
 						}
 					}
 				}
 			}
 		}
 
-
+		/**
+		 * @brief Add a point to the status change list to eventually be moved from one layer to another.
+		 * @param pos
+		 * @param fromLayerID
+		 * @param toLayerID
+		 */
 		void status_change (const VecDi& pos, const INT& fromLayerID, const INT& toLayerID)
 		{
 			m_omp_aStatusChangePos[omp_get_thread_num()].push_back(pos);
@@ -361,34 +382,30 @@ namespace felt {
 
 
 		/**
-		 * @brief Append position to a layer of the narrow band.
-		 * @param id
-		 * @param pos
+		 * @brief Get size, in voxels, of the surface. That is, the size of the zero-layer.
+		 * @return size of zero-layer.
 		 */
-		void layer_add (const INT& id, const VecDi& pos)
+		UINT size()
 		{
-			if (!this->phi().inside(pos))
-				throw "Adding point that is outside of grid!";
-			// Do nothing if position is outside narrow band.
-			if (std::fabs(id) > L)
-				return;
-			std::vector<VecDi>& layer = this->layer(id);
-			Grid<UINT,D>& idx = this->idx();
-
-			layer.push_back(pos);
-			idx(pos) = layer.size()-1;
+			return layer().size();
 		}
 
 
 		/**
 		 * @brief Append position to a layer of the narrow band.
-		 * Calculates layer ID from phi value at given position.
+		 * @param id
 		 * @param pos
 		 */
-		void layer_add (const VecDi& pos)
+		void layer_add (const INT& layerID, const VecDi& pos)
 		{
-			const INT id = this->layerID(pos);
-			this->layer_add(id, pos);
+			// Do nothing if position is outside narrow band.
+			if (!this->inside_band(layerID))
+				return;
+			std::vector<VecDi>& layer = this->layer(layerID);
+			Grid<UINT,D>& idx = this->idx();
+
+			layer.push_back(pos);
+			idx(pos) = layer.size()-1;
 		}
 
 
@@ -406,6 +423,10 @@ namespace felt {
 
 		void layer_remove(const VecDi& pos, const INT& layerID)
 		{
+			// Do nothing if position is outside narrow band.
+			if (!this->inside_band(layerID))
+				return;
+
 			std::vector<VecDi>& layer = this->layer(layerID);
 			Grid<UINT,D>& grid_idx = this->idx();
 			// Get index of point in layer.
@@ -426,10 +447,8 @@ namespace felt {
 
 		void layer_move(const VecDi& pos, const INT& fromLayerID, const INT& toLayerID)
 		{
-			if ((UINT)std::abs(fromLayerID) <= L)
-				this->layer_remove(pos, fromLayerID);
-			if ((UINT)std::abs(toLayerID) <= L)
-				this->layer_add(pos, toLayerID);
+			this->layer_remove(pos, fromLayerID);
+			this->layer_add(pos, toLayerID);
 		}
 
 		/**
@@ -464,6 +483,7 @@ namespace felt {
 
 		/**
 		 * @brief Create a single singularity seed point in the phi grid.
+		 * NOTE: does not handle overwriting of points currently already on the surface/in the volume.
 		 * @param pos_centre
 		 */
 		void seed (const VecDi& pos_centre)
@@ -497,6 +517,7 @@ namespace felt {
 				const VecDi vec_dist = pos - pos_centre;
 				// Sum of absolute distance along each axis == city-block distance.
 				FLOAT f_dist = (FLOAT)ublas::norm_1(vec_dist);
+				// Check distance indicates that this point is within the narrow band.
 				if ((UINT)std::abs(this->layerID(f_dist)) <= L)
 				{
 					// Set distance as value in phi grid.
@@ -510,29 +531,41 @@ namespace felt {
 		/**
 		 * @brief Get neighbouring position in phi grid that is closest to zero-curve.
 		 * @param pos
-		 * @param dir
+		 * @param side
 		 * @return
 		 */
-		VecDi next_closest (const VecDi& pos, const FLOAT& dir) const
+		VecDi next_closest (const VecDi& pos, const FLOAT& side) const
 		{
-			const Grid<FLOAT,D>& phi = this->phi();
+			// Trivially return if this is already a zero-layer point.
 			if (this->layerID(pos) == 0)
 				return pos;
 
+			const Grid<FLOAT,D>& phi = this->phi();
+
+			// Get all neighbours of this point.
 			std::vector<VecDi> neighs;
 			phi.neighs(pos, neighs);
+
 			VecDi pos_nearest = VecDi(pos);
-			FLOAT val_nearest = 1000;
+			FLOAT val_nearest = phi(pos)*side;
+			// Cycle neighbours finding one that is closest to zero-layer.
 			for (UINT neighIdx = 0; neighIdx < neighs.size(); neighIdx++)
 			{
 				const VecDi pos_neigh = neighs[neighIdx];
 				const FLOAT val_neigh = phi(pos_neigh);
-				if (val_neigh*-dir < val_nearest) {
+				// Check absolute value of this neighbour is less than nearest point.
+				// NOTE: cannot simply use abs() because during an update, points close to the zero-curve
+				// may end up detecting points on the other side.  By multiplying by the side (+/-1) value,
+				// we ensure points on the opposite side of the band will always be considered further
+				// away from the zero-layer than points on the same side.
+				if (val_neigh*side < val_nearest) {
 					pos_nearest = pos_neigh;
-					val_nearest = val_neigh*-dir;
+					val_nearest = val_neigh*side;
 				}
 			}
 
+			// TODO: lovely elegant solution using gradient vector doesn't work in all cases because pos may not yet
+			// be initialised (this next_closest() function is used to initialise it), so gradient can be erroneous.
 //			const VecDf vec_dir = phi.grad(pos) * dir;
 //			const UINT axis_best = ublas::index_norm_inf(vec_dir);
 //			VecDi pos_nearest = VecDi(pos);
@@ -552,9 +585,10 @@ namespace felt {
 		{
 			const Grid<FLOAT,D>& phi = this->phi();
 			const FLOAT val_centre = phi(pos);
-			const FLOAT dir = val_centre > 0 ? -1 : 1;
+			// Direction multiplier for gradient toward zero-curve.
+			const FLOAT side = sgn(val_centre);
 
-			return this->next_closest(pos, dir);
+			return this->next_closest(pos, side);
 		}
 
 		/**
@@ -603,16 +637,16 @@ namespace felt {
 			}
 			// Update distance transform for inner layers of the narrow band.
 			for (INT layerID = -1; layerID >= -(INT)L; layerID--)
-				this->update_distance(layerID, 1);
+				this->update_distance(layerID, -1);
 			// Update distance transform for outer layers of the narrow band.
 			for (INT layerID = 1; layerID <= (INT)L; layerID++)
-				this->update_distance(layerID, -1);
+				this->update_distance(layerID, 1);
 
 			this->status_change();
 		}
 
 
-		void update_distance(const INT& layerID, const INT& dir)
+		void update_distance(const INT& layerID, const INT& side)
 		{
 //			Grid<FLOAT,D>& phi = this->phi();
 			Grid<FLOAT,D>& dphi = this->dphi();
@@ -628,7 +662,7 @@ namespace felt {
 				// Current position along this layer.
 				const VecDi& pos = alayer[pos_idx];
 				// Distance from this position to zero layer.
-				const FLOAT dist = this->distance(pos, dir);
+				const FLOAT dist = this->distance(pos, side);
 				// Update delta phi grid.
 				this->dphi(pos, dist, layerID);
 			}
@@ -636,7 +670,8 @@ namespace felt {
 			// Update distance in phi from delta phi and append any points that move
 			// out of their layer to a status change list.
 
-// NOTE: cannot parallelise, since phi() can create new layer items for outer layers.
+// TODO: cannot parallelise, since phi() can create new layer items for outer layers.
+// Should split outer layer expansion to separate process.
 //#pragma omp parallel for
 			for (UINT pos_idx = 0; pos_idx < alayer.size(); pos_idx++)
 			{
@@ -653,14 +688,18 @@ namespace felt {
 		/**
 		 * @brief Calculate city-block distance from position to zero curve.
 		 * @param pos
-		 * @param dir
+		 * @param side
 		 * @return
 		 */
-		FLOAT distance (const VecDi& pos, const FLOAT& dir) const
+		FLOAT distance (const VecDi& pos, const FLOAT& side) const
 		{
 			const Grid<FLOAT,D>& phi = this->phi();
-			const VecDi pos_closest = this->next_closest(pos, dir);
-			const FLOAT dist = phi(pos_closest) - dir;
+			// Get neighbouring point that is next closest to the zero-layer.
+			const VecDi pos_closest = this->next_closest(pos, side);
+			const FLOAT val_closest = phi(pos_closest);
+			// This point's distance is then the distance of the closest neighbour +/-1,
+			// depending which side of the band we are looking at.
+			const FLOAT dist = val_closest + side;
 			return dist;
 		}
 
