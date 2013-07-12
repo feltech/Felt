@@ -1,21 +1,20 @@
 #include <vector>
 #include <functional>
 #include <limits>
-#include "Grid.hpp"
 #include <boost/math/special_functions/round.hpp>
-#include <boost/numeric/ublas/assignment.hpp>
-#include <boost/numeric/ublas/vector.hpp>
+#include <eigen3/Eigen/Dense>
 #include <omp.h>
+
+#include "Grid.hpp"
+
 
 namespace felt {
 
 	template <UINT D, UINT L=2>
 	class Surface {
-		typedef ublas::vector<UINT,ublas::bounded_array<UINT,D> > VecDu;
-		typedef ublas::vector<INT,ublas::bounded_array<INT,D> > VecDi;
-		typedef ublas::vector<FLOAT,ublas::bounded_array<FLOAT,D> > VecDf;
-
-		typedef ublas::scalar_vector<INT,ublas::bounded_array<INT,D> > ScalarDi;
+		typedef Eigen::Matrix<UINT, D, 1> VecDu;
+		typedef Eigen::Matrix<INT, D, 1> VecDi;
+		typedef Eigen::Matrix<FLOAT, D, 1> VecDf;
 
 #ifndef _TESTING
 	protected:
@@ -108,18 +107,20 @@ namespace felt {
 			Grid<FLOAT,D>& dphi = this->dphi();
 			Grid<UINT,D>& idx = this->idx();
 
+			const VecDi veci_dims = vec_dims.template cast<INT>();
+
 			// Configure phi embedding.
 			phi.dims(vec_dims);
-			phi.offset(-VecDi(vec_dims)/2);
+			phi.offset(-VecDi(veci_dims)/2);
 			// Configure delta phi embedding.
 			dphi.dims(vec_dims);
-			dphi.offset(-VecDi(vec_dims)/2);
+			dphi.offset(-VecDi(veci_dims)/2);
 			// Configure layer index spatial lookup.
 			idx.dims(vec_dims);
-			idx.offset(-VecDi(vec_dims)/2);
+			idx.offset(-VecDi(veci_dims)/2);
 			// Store min and max usable positions in phi embedding.
-			this->pos_min(ScalarDi(D,L) + phi.offset());
-			this->pos_max((phi.dims() - ScalarDi(D,L)) + phi.offset() - ScalarDi(D,1));
+			this->pos_min(VecDi::Constant(L) + phi.offset());
+			this->pos_max((veci_dims - VecDi::Constant(L)) + phi.offset() - VecDi::Constant(1));
 			// Fill phi grid with 'outside' value.
 			phi.fill(L+1);
 			idx.fill(this->null_idx());
@@ -526,17 +527,17 @@ namespace felt {
 			const VecDu dims = phi.dims();
 
 			// Width of seed.
-			const ScalarDi vec_width(D, L);
+			const VecDi vec_width = VecDi::Constant(L);
 
 			// Min and max positions affected by placing seed point.
 			const VecDi pos_min = pos_centre - vec_width;
 			const VecDi pos_max = pos_centre + vec_width;
 
 			// Get vector size of window formed by pos_min and pos_max.
-			const VecDi pos_size = pos_max - pos_min + ScalarDi(D,1); //+1 for zero coord.
+			const VecDu pos_size = (pos_max - pos_min + VecDi::Constant(1)).template cast<UINT>(); //+1 for zero coord.
 			// Calculate number of grid points to be cycled through within window.
 			UINT size = 1;
-			for (UINT axis = 0; axis < dims.size(); axis++)
+			for (INT axis = 0; axis < dims.size(); axis++)
 				size *= pos_size(axis);
 
 			// Cycle through each point in window.
@@ -550,7 +551,7 @@ namespace felt {
 				// Calculate vector distance from this position to seed centre.
 				const VecDi vec_dist = pos - pos_centre;
 				// Sum of absolute distance along each axis == city-block distance.
-				FLOAT f_dist = (FLOAT)ublas::norm_1(vec_dist);
+				FLOAT f_dist = (FLOAT)vec_dist.template lpNorm<1>();
 				// Check distance indicates that this point is within the narrow band.
 				if ((UINT)std::abs(this->layerID(f_dist)) <= L)
 				{

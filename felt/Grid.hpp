@@ -4,8 +4,6 @@
 #include <inttypes.h>
 #include <math.h>
 #include <vector>
-#include <boost/numeric/ublas/assignment.hpp>
-#include <boost/numeric/ublas/vector.hpp>
 #include <eigen3/Eigen/Dense>
 
 #define _TESTING
@@ -32,68 +30,6 @@ namespace felt {
 		return (T(0) < val) - (val < T(0));
 	}
 
-
-//	static inline Vec2f vecf(const FLOAT& x, const FLOAT& y) {
-//		Vec2f vec(2);
-//		vec <<= x, y;
-//		return vec;
-//	}
-//	static inline Vec2u vecu(const size_t& x, const size_t& y) {
-//		Vec2u vec(2);
-//		vec <<= x, y;
-//		return vec;
-//	}
-//	static inline Vec2i veci(const INT& x, const INT& y) {
-//		Vec2i vec(2);
-//		vec <<= x, y;
-//		return vec;
-//	}
-//	static inline Vec3f vecf(const FLOAT& x, const FLOAT& y, const FLOAT& z) {
-//		Vec3f vec(3);
-//		vec <<= x, y, z;
-//		return vec;
-//	}
-//	static inline Vec3u vecu(const UINT& x, const UINT& y, const UINT& z) {
-//		Vec3f vec(3);
-//		vec <<= x, y, z;
-//		return vec;
-//	}
-//	static inline Vec3i veci(const INT& x, const INT& y, const INT& z) {
-//		Vec3i vec(3);
-//		vec <<= x, y, z;
-//		return vec;
-//	}
-
-//	static inline Vec2f vec(const FLOAT& x, const FLOAT& y) {
-//		Vec2f vec(2);
-//		vec <<= x, y;
-//		return vec;
-//	}
-//	static inline Vec2u vec(const size_t& x, const size_t& y) {
-//		Vec2u vec(2);
-//		vec <<= x, y;
-//		return vec;
-//	}
-//	static inline Vec2i vec(const INT& x, const INT& y) {
-//		Vec2i vec(2);
-//		vec <<= x, y;
-//		return vec;
-//	}
-//	static inline Vec3f vec(const FLOAT& x, const FLOAT& y, const FLOAT& z) {
-//		Vec3f vec(3);
-//		vec <<= x, y, z;
-//		return vec;
-//	}
-//	static inline Vec3u vec(const UINT& x, const UINT& y, const UINT& z) {
-//		Vec3f vec(3);
-//		vec <<= x, y, z;
-//		return vec;
-//	}
-//	static inline Vec3i vec(const INT& x, const INT& y, const INT& z) {
-//		Vec3i vec(3);
-//		vec <<= x, y, z;
-//		return vec;
-//	}
 	static inline uint32_t log2(const uint32_t x) {
 	  uint32_t y;
 	  asm ( "\tbsr %1, %0\n"
@@ -108,17 +44,11 @@ namespace felt {
 	template <class T, UINT D>
 	class Grid {
 
-//		typedef ublas::vector<UINT,ublas::bounded_array<UINT,D> > VecDu;
-//		typedef ublas::vector<INT,ublas::bounded_array<INT,D> > VecDi;
-//		typedef ublas::vector<FLOAT,ublas::bounded_array<FLOAT,D> > VecDf;
-//		typedef ublas::vector<T,ublas::bounded_array<T,D> > VecDT;
-//		typedef ublas::scalar_vector<INT,ublas::bounded_array<INT,D> > ScalarDi;
-
 		typedef Eigen::Matrix<UINT, D, 1> VecDu;
 		typedef Eigen::Matrix<INT, D, 1> VecDi;
 		typedef Eigen::Matrix<FLOAT, D, 1> VecDf;
 		typedef Eigen::Matrix<T, D, 1> VecDT;
-		typedef Eigen::Array<T, Eigen::Dynamic, 1> ArrayData;
+		typedef Eigen::Array<T, 1, Eigen::Dynamic> ArrayData;
 
 	protected:
 		VecDu m_vec_Dims;
@@ -127,20 +57,6 @@ namespace felt {
 		ArrayData m_vec_Data;
 
 	public:
-//		std::ostream& operator<< (std::ostream& stream)
-//		{
-//			// Reference to grid dimensions.
-//			const VecDu& dims = this->dims();
-//			for (UINT y = 0; y < dims[0].size(); y++)
-//			{
-//				for (UINT x = 0; x < dims[0].size(); x++)
-//				{
-//					stream << (*this)(x,y) << ",\t";
-//				}
-//				stream << "\n";
-//			}
-//			return stream;
-//		}
 
 		/**
 		 * Initialise a zero-dimensional grid.
@@ -455,7 +371,7 @@ namespace felt {
 			vout.reserve(6);
 			// Position for look-around.
 			VecDi vec_dir(pos);
-			for (UINT axis = 0; axis < dims.size(); axis++) {
+			for (INT axis = 0; axis < dims.size(); axis++) {
 				// Check if backward value is within grid.
 				vec_dir(axis) -= 1;
 				if (this->inside(vec_dir)) {
