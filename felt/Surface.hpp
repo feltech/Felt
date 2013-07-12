@@ -1,4 +1,5 @@
 #include <vector>
+#include <functional>
 #include <limits>
 #include "Grid.hpp"
 #include <boost/math/special_functions/round.hpp>
@@ -375,11 +376,38 @@ namespace felt {
 		 * @param id
 		 * @return
 		 */
-		std::vector<VecDi>& layer ()
+		std::vector<VecDi>& layer()
 		{
 			return m_layers[L];
 		}
 
+		/**
+		 * @brief Get reference to the zero-layer of the narrow band.
+		 * @param id
+		 * @return
+		 */
+		const std::vector<VecDi>& layer() const
+		{
+			return m_layers[L];
+		}
+
+		/**
+		 * @brief Shortcut to zero-layer vector begin() iterator.
+		 * @return
+		 */
+		typename std::vector<VecDi>::iterator begin()
+		{
+			return layer().begin();
+		}
+
+		/**
+		 * @brief Shortcut to zero-layer vector end() iterator.
+		 * @return
+		 */
+		typename std::vector<VecDi>::iterator end()
+		{
+			return layer().end();
+		}
 
 		/**
 		 * @brief Get size, in voxels, of the surface. That is, the size of the zero-layer.
@@ -388,6 +416,12 @@ namespace felt {
 		UINT size()
 		{
 			return layer().size();
+		}
+
+
+		void each(std::function<void (const VecDi)> func)
+		{
+			std::for_each(this->begin(), this->end(), func);
 		}
 
 
