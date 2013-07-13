@@ -63,6 +63,18 @@ namespace felt {
 			this->num_threads(uThreads);
 		}
 
+
+		FLOAT operator() (const VecDi& pos)
+		{
+			return this->phi()(pos);
+		}
+
+		VecDi operator[] (const UINT& index)
+		{
+			return this->layer(0)[index];
+		}
+
+
 		/**
 		 * @brief Set number of threads to use for OpenMP parallelisation.
 		 *
@@ -190,6 +202,15 @@ namespace felt {
 		const Grid<FLOAT,D>& phi () const
 		{
 			return m_grid_phi;
+		}
+
+		/**
+		 * @brief Get reference to phi grid.
+		 * @return
+		 */
+		FLOAT phi (const VecDi& pos) const
+		{
+			return this->phi()(pos);
 		}
 
 		/**
@@ -326,10 +347,31 @@ namespace felt {
 		 * @param pos
 		 * @param val
 		 */
-		void dphi (const VecDi& pos, const FLOAT& val, const INT& threadIdx, const INT& layerID)
+		void dphi (const VecDi& pos, FLOAT val, const INT& threadIdx, const INT& layerID)
 		{
 			Grid<FLOAT,D>& dphi = this->dphi();
 			std::vector<VecDi>& adphi = this->dphi(threadIdx, layerID);
+
+			// If this is the zero-layer, then ensure we cannot leave the grid boundary.
+			if (layerID == 0)
+			{
+				const VecDi& pos_min = this->pos_min();
+				const VecDi& pos_max = this->pos_max();
+				// Cycle each axis.
+				for (UINT d = 0; d < D; d++)
+					// Check if pos lies at the max bound of this axis.
+					if (pos_min(d) == pos(d) || pos_max(d) == pos(d))
+					{
+						// Get phi at this point.
+						const FLOAT fphi = this->phi(pos);
+						// Max value that will not be rounded and thus trigger a layer_move.
+						const FLOAT val_max = 0.5 - (std::numeric_limits<FLOAT>::epsilon());
+						// Clamp the value of delta phi.
+						val = std::max(-val_max - fphi, val);
+						break;
+					}
+			}
+
 			dphi(pos) = val;
 			adphi.push_back(pos);
 		}
@@ -424,6 +466,7 @@ namespace felt {
 		{
 			std::for_each(this->begin(), this->end(), func);
 		}
+
 
 
 		/**
