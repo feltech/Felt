@@ -1,4 +1,6 @@
 #include <vector>
+#include <set>
+#include <unordered_set>
 #include <functional>
 #include <limits>
 #include <boost/math/special_functions/round.hpp>
@@ -392,6 +394,11 @@ namespace felt {
 			return m_grid_idx;
 		}
 
+
+		UINT idx (const VecDi& pos) const
+		{
+			return m_grid_idx(pos);
+		}
 		/**
 		 * @brief Get default (null) narrow band index lookup.
 		 * Used to indicate that a grid point is outside the narrow band.
@@ -779,6 +786,49 @@ namespace felt {
 			// depending which side of the band we are looking at.
 			const FLOAT dist = val_closest + side;
 			return dist;
+		}
+
+
+		void affected_idxs(std::vector<UINT>* apos)
+		{
+			const Grid<FLOAT, D>& phi = this->phi();
+			const UINT num_threads = this->num_threads();
+
+			std::vector<VecDi> aneighs;
+
+			for (UINT threadIdx = 0; threadIdx < num_threads; threadIdx++)
+			{
+				const std::vector<VecDi>& aposdphi = this->dphi(threadIdx);
+				for (UINT upos = 0; upos < aposdphi.size(); upos++)
+				{
+					const VecDi& pos = aposdphi[upos];
+					aneighs.push_back(pos);
+				}
+			}
+
+			UINT idx_first_neigh = 0;
+			UINT idx_last_neigh = 0;
+
+			for (UINT udist = 1; udist <= L; udist++)
+			{
+				idx_last_neigh = aneighs.size();
+				for (UINT idx_neigh = idx_first_neigh; idx_neigh < idx_last_neigh; idx_neigh++)
+				{
+					const VecDi& pos_neigh = aneighs[idx_neigh];
+					phi.neighs(pos_neigh, aneighs, true);
+				}
+				idx_first_neigh = idx_last_neigh;
+			}
+
+			for (auto pos_neigh : aneighs)
+			{
+				const INT layer_neigh = this->layerID(pos_neigh);
+				if (-(INT)L <= layer_neigh && layer_neigh != 0 && layer_neigh <= (INT)L)
+				{
+					UINT idx_neigh = this->idx(pos_neigh);
+					apos[L + layer_neigh].push_back(idx_neigh);
+				}
+			}
 		}
 
 #ifndef _TESTING

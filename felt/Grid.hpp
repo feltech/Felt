@@ -363,7 +363,7 @@ namespace felt {
 			return true;
 		}
 
-		void neighs (const VecDi& pos, std::vector<VecDi>& vout) const
+		void neighs (const VecDi& pos, std::vector<VecDi>& vout, bool bcheck = false) const
 		{
 			// Reference to grid dimensions.
 			const VecDu& dims = this->dims();
@@ -374,12 +374,14 @@ namespace felt {
 			for (INT axis = 0; axis < dims.size(); axis++) {
 				// Check if backward value is within grid.
 				vec_dir(axis) -= 1;
-				if (this->inside(vec_dir)) {
+				if (this->inside(vec_dir) && (!bcheck || std::find(vout.begin(), vout.end(), vec_dir) == vout.end()))
+				{
 					vout.push_back(vec_dir);
 				}
 				// Check if forward value is within grid.
 				vec_dir(axis) += 2;
-				if (this->inside(vec_dir)) {
+				if (this->inside(vec_dir) && (!bcheck || std::find(vout.begin(), vout.end(), vec_dir) == vout.end()))
+				{
 					vout.push_back(vec_dir);
 				}
 				vec_dir(axis) -= 1;
