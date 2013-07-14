@@ -388,6 +388,58 @@ namespace felt {
 			}
 		}
 
+		void neighs (const VecDi& pos, std::unordered_set<VecDi, UINT (*) (const VecDi& a)>& vout) const
+		{
+			// Reference to grid dimensions.
+			const VecDu& dims = this->dims();
+			// Position for look-around.
+			VecDi vec_dir(pos);
+			for (INT axis = 0; axis < dims.size(); axis++) {
+				// Check if backward value is within grid.
+				vec_dir(axis) -= 1;
+				if (this->inside(vec_dir))
+				{
+					vout.insert(vec_dir);
+				}
+				// Check if forward value is within grid.
+				vec_dir(axis) += 2;
+				if (this->inside(vec_dir))
+				{
+					vout.insert(vec_dir);
+				}
+				vec_dir(axis) -= 1;
+			}
+		}
+
+
+		void neighs (const VecDi& pos, std::vector<VecDi>& vout, Grid<bool,D>& grid_check) const
+		{
+			// Reference to grid dimensions.
+			const VecDu& dims = this->dims();
+			// Most likely all 6 neighbours are valid.
+			vout.reserve(6);
+			// Position for look-around.
+			VecDi vec_dir(pos);
+			for (INT axis = 0; axis < dims.size(); axis++) {
+				// Check if backward value is within grid.
+				vec_dir(axis) -= 1;
+				if (this->inside(vec_dir) && !grid_check(vec_dir))
+				{
+					vout.push_back(vec_dir);
+					grid_check(vec_dir) = true;
+				}
+				// Check if forward value is within grid.
+				vec_dir(axis) += 2;
+				if (this->inside(vec_dir) && !grid_check(vec_dir))
+				{
+					vout.push_back(vec_dir);
+					grid_check(vec_dir) = true;
+				}
+				vec_dir(axis) -= 1;
+			}
+		}
+
+
 		/**
 		 * Forward difference gradient.
 		 *

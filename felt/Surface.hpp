@@ -32,6 +32,7 @@ namespace felt {
 		Grid<FLOAT,D> m_grid_phi;
 		Grid<FLOAT,D> m_grid_dphi;
 		Grid<UINT,D> m_grid_idx;
+		Grid<bool,D> m_grid_flag;
 
 		std::vector<VecDi> m_layers[2*L+1];
 
@@ -115,30 +116,39 @@ namespace felt {
 		 * @brief Set dimensions and store limits adjusted for narrow band space.
 		 * @param vec_dims
 		 */
-		void dims (const VecDu& vec_dims)
+		void dims (const VecDu& udims)
 		{
 			Grid<FLOAT,D>& phi = this->phi();
 			Grid<FLOAT,D>& dphi = this->dphi();
 			Grid<UINT,D>& idx = this->idx();
 
-			const VecDi veci_dims = vec_dims.template cast<INT>();
+			const VecDi idims = udims.template cast<INT>();
+			const VecDi offset = -idims/2;
 
 			// Configure phi embedding.
-			phi.dims(vec_dims);
-			phi.offset(-VecDi(veci_dims)/2);
+			phi.dims(udims);
+			phi.offset(offset);
 			// Configure delta phi embedding.
-			dphi.dims(vec_dims);
-			dphi.offset(-VecDi(veci_dims)/2);
+			dphi.dims(udims);
+			dphi.offset(offset);
 			// Configure layer index spatial lookup.
-			idx.dims(vec_dims);
-			idx.offset(-VecDi(veci_dims)/2);
+			idx.dims(udims);
+			idx.offset(offset);
+			// Configure boolean flag grid.
+			m_grid_flag.dims(udims);
+			m_grid_flag.offset(offset);
+
 			// Store min and max usable positions in phi embedding.
 			this->pos_min(VecDi::Constant(L) + phi.offset());
-			this->pos_max((veci_dims - VecDi::Constant(L)) + phi.offset() - VecDi::Constant(1));
+			this->pos_max((idims - VecDi::Constant(L)) + phi.offset() - VecDi::Constant(1));
 			// Fill phi grid with 'outside' value.
 			phi.fill(L+1);
+			// Fill index lookup with null index value.
 			idx.fill(this->null_idx());
+			// Initialise delta phi to zero.
 			dphi.fill(0);
+			// Initialise flag grid to false.
+			m_grid_flag.fill(false);
 		}
 
 		/**
@@ -227,6 +237,16 @@ namespace felt {
 		}
 
 
+		/**
+		 * @brief Update phi grid point at pos by val.
+		 * Checks if the layer should change and adds to the appropriate status change list.
+		 * Also expands the outer layers as the surface expands/contracts.
+		 * TODO: because of the outer layer expansion code, this function is not, in general,
+		 * thread safe.  Must move outer layer expansion to a separate routine.
+		 * @param pos
+		 * @param val
+		 * @param layerID
+		 */
 		void phi (const VecDi& pos, const FLOAT& val, const INT& layerID = 0)
 		{
 			Grid<FLOAT,D>& phi = this->phi();
@@ -697,15 +717,16 @@ namespace felt {
 			}
 		}
 
+
 		/**
-		 * @brief Apply delta phi to phi, update distance transforms, and update narrow band.
+		 * @brief Apply delta phi to phi along the zero layer.
 		 */
-		void update_end ()
+		void update_zero_layer ()
 		{
 			Grid<FLOAT,D>& phi = this->phi();
 			Grid<FLOAT,D>& dphi = this->dphi();
 			// Loop through thread-localised update points along zero layer.
-#pragma omp parallel for
+//#pragma omp parallel for
 			for (UINT threadIdx = 0; threadIdx < this->num_threads(); threadIdx++)
 			{
 				// Get zero-layer update points for this thread.
@@ -720,6 +741,15 @@ namespace felt {
 					this->phi(pos, fval);
 				}
 			}
+		}
+
+		/**
+		 * @brief Update zero layer then update distance transform for all points in all layers.
+		 */
+		void update_end ()
+		{
+			this->update_zero_layer();
+
 			// Update distance transform for inner layers of the narrow band.
 			for (INT layerID = -1; layerID >= -(INT)L; layerID--)
 				this->update_distance(layerID, -1);
@@ -730,18 +760,58 @@ namespace felt {
 			this->status_change();
 		}
 
+		/**
+		 * @brief Update zero layer then update distance transform for affected points in each layer.
+		 */
+		void update_end_local ()
+		{
+			// Get points in outer layers that are affected by changes in zero-layer.
+			std::vector<VecDi> aAffected[2*L+1];
+			this->affected(aAffected);
 
+			// Update the zero layer, applying delta to phi.
+			this->update_zero_layer();
+
+			// Update distance transform for inner layers of the narrow band.
+			for (INT layerID = -1; layerID >= -(INT)L; layerID--)
+			{
+				std::vector<VecDi>& apos = aAffected[this->layerIdx(layerID)];
+				this->update_distance(layerID, -1, apos);
+			}
+			// Update distance transform for outer layers of the narrow band.
+			for (INT layerID = 1; layerID <= (INT)L; layerID++)
+			{
+				std::vector<VecDi>& apos = aAffected[this->layerIdx(layerID)];
+				this->update_distance(layerID, 1, apos);
+			}
+			this->status_change();
+		}
+
+		/**
+		 * @brief Update distance transform for all points in given layer
+		 * @param layerID
+		 * @param side
+		 */
 		void update_distance(const INT& layerID, const INT& side)
 		{
-//			Grid<FLOAT,D>& phi = this->phi();
+			this->update_distance(layerID, side, this->layer(layerID));
+		}
+
+		/**
+		 * @brief Update distance transform for points in layer layerID given in alayer.
+		 * @param layerID
+		 * @param side
+		 * @param alayer
+		 */
+		void update_distance(const INT& layerID, const INT& side, std::vector<VecDi>& alayer)
+		{
 			Grid<FLOAT,D>& dphi = this->dphi();
-			std::vector<VecDi>& alayer = this->layer(layerID);
 
 			// Calculate distance of every point in this layer to the zero layer,
 			// and store in delta phi grid.
 			// Delta phi grid is used to allow for asynchronous updates, that is,
 			// to prevent neighbouring points affecting the distance transform.
-#pragma omp parallel for
+//#pragma omp parallel for
 			for (UINT pos_idx = 0; pos_idx < alayer.size(); pos_idx++)
 			{
 				// Current position along this layer.
@@ -770,6 +840,7 @@ namespace felt {
 
 		}
 
+
 		/**
 		 * @brief Calculate city-block distance from position to zero curve.
 		 * @param pos
@@ -789,45 +860,112 @@ namespace felt {
 		}
 
 
-		void affected_idxs(std::vector<UINT>* apos)
+		/**
+		 * @brief Find all outer layer points who's distance transform is affected by
+		 * modified zero-layer points.
+		 * TODO: several options for opmisation of removing duplicates:
+		 * - Use a boolean flag grid to construct a de-duped vector.
+		 * - Check std::vector in Grid::neighs() using std::find to prevent adding a duplicate in the first place.
+		 * - Use std::vector sort, unique, erase.
+		 * - Use a std::unordered_set with a suitable hashing function.
+		 * @param apos
+		 */
+		void affected(std::vector<VecDi>* apos)
 		{
+			// Reference to phi grid.
 			const Grid<FLOAT, D>& phi = this->phi();
+			// Number of thread-localised lists to iterate over.
 			const UINT num_threads = this->num_threads();
 
+			// Vector of all neighbours of all modified phi points, which may include duplicates.
 			std::vector<VecDi> aneighs;
+			// Hash function, mapping points to their norm distance.
+//			auto hasher = [&] (const VecDi& a) {
+//				return std::hash<UINT>()(a.squaredNorm() >> 2);
+//			};
+			// Unordered set for storing neighbours without duplication.
+//			std::unordered_set<VecDi, UINT (*) (const VecDi& a)> sneighs(phi.dims().squaredNorm() >> 2, hasher);
 
+			// Loop through thread-localised dphi arrays.
 			for (UINT threadIdx = 0; threadIdx < num_threads; threadIdx++)
 			{
 				const std::vector<VecDi>& aposdphi = this->dphi(threadIdx);
+				// Loop each modified position in dphi grid.
 				for (UINT upos = 0; upos < aposdphi.size(); upos++)
 				{
+					// Initialse neighbour vector and unordered_set with the dphi points.
 					const VecDi& pos = aposdphi[upos];
 					aneighs.push_back(pos);
+					m_grid_flag(pos) = true;
+//					sneighs.insert(pos);
 				}
 			}
 
+			// Cycle through neighbours out to a distance of L.
 			UINT idx_first_neigh = 0;
 			UINT idx_last_neigh = 0;
-
 			for (UINT udist = 1; udist <= L; udist++)
 			{
 				idx_last_neigh = aneighs.size();
+				// Cycle current subset of neighbours.
 				for (UINT idx_neigh = idx_first_neigh; idx_neigh < idx_last_neigh; idx_neigh++)
 				{
-					const VecDi& pos_neigh = aneighs[idx_neigh];
-					phi.neighs(pos_neigh, aneighs, true);
+					// NOTE: cannot get pos by reference, must make a copy, because neighs() can cause
+					// a reallocation, making the reference invalid.
+					const VecDi pos_neigh = aneighs[idx_neigh];
+					// Append new neighbours to neighbour vector.
+					phi.neighs(pos_neigh, aneighs, m_grid_flag);
+					// Insert new neighbours, without duplication, in unordered_set.
+					// TODO: this is doubling up on neighs() call above, should combine the two if
+					// this method is to be used.
+//					phi.neighs(pos_neigh, sneighs);
+
 				}
 				idx_first_neigh = idx_last_neigh;
 			}
 
+			// Insert neighbours into unordered_set to remove duplicates.
+//			std::unordered_set<VecDi, UINT (*) (const VecDi& a)>
+//			sneighs(aneighs.begin(), aneighs.end(), phi.dims().squaredNorm() >> 2, hasher);
+//			std::copy(aneighs.begin(), aneighs.end(), std::inserter(sneighs, sneighs.end()));
+
+			// De-dupe neighbours list.
+			// TODO: is this method faster or slower than unordered_set?
+//			std::sort(aneighs.begin(), aneighs.end(), [&] (const VecDi& a, const VecDi&b) {
+//				const UINT aidx = Grid<VecDi, D>::index(a, phi.dims(), phi.offset());
+//				const UINT bidx = Grid<VecDi, D>::index(b, phi.dims(), phi.offset());
+//				return aidx < bidx;
+//			});
+//			aneighs.erase(std::unique(aneighs.begin(), aneighs.end()), aneighs.end());
+
+			// Create de-duped list of neighbours by using flag grid.
+//			std::vector <VecDi> aneighs_dedupe;
+//			aneighs_dedupe.reserve(aneighs.size()/2);
+//			for (auto pos_neigh : aneighs)
+//			{
+//				if (m_grid_flag(pos_neigh) == false)
+//				{
+//					aneighs_dedupe.push_back(pos_neigh);
+//					m_grid_flag(pos_neigh) = true;
+//				}
+//			}
+
+			// Cycle de-duped set of neighbours.
 			for (auto pos_neigh : aneighs)
 			{
 				const INT layer_neigh = this->layerID(pos_neigh);
+				// Ensure this point lies in an outer layer.
 				if (-(INT)L <= layer_neigh && layer_neigh != 0 && layer_neigh <= (INT)L)
 				{
-					UINT idx_neigh = this->idx(pos_neigh);
-					apos[L + layer_neigh].push_back(idx_neigh);
+					// Append the point index to the output list at the appropriate layer index.
+					apos[L + layer_neigh].push_back(pos_neigh);
 				}
+			}
+
+			// Reset flag grid to all false.
+			for (auto pos_neigh : aneighs)
+			{
+				m_grid_flag(pos_neigh) = false;
 			}
 		}
 
