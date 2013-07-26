@@ -6,10 +6,6 @@
 #include <vector>
 #include <eigen3/Eigen/Dense>
 
-#define _TESTING
-
-
-
 namespace felt {
 
 	typedef float FLOAT;
@@ -62,6 +58,7 @@ namespace felt {
 		 * Initialise a zero-dimensional grid.
 		 */
 		Grid ()
+		:	m_dx(1)
 		{
 			m_vec_Offset = VecDi::Zero();
 			m_vec_Dims = VecDu::Zero();
@@ -388,28 +385,28 @@ namespace felt {
 			}
 		}
 
-		void neighs (const VecDi& pos, std::unordered_set<VecDi, UINT (*) (const VecDi& a)>& vout) const
-		{
-			// Reference to grid dimensions.
-			const VecDu& dims = this->dims();
-			// Position for look-around.
-			VecDi vec_dir(pos);
-			for (INT axis = 0; axis < dims.size(); axis++) {
-				// Check if backward value is within grid.
-				vec_dir(axis) -= 1;
-				if (this->inside(vec_dir))
-				{
-					vout.insert(vec_dir);
-				}
-				// Check if forward value is within grid.
-				vec_dir(axis) += 2;
-				if (this->inside(vec_dir))
-				{
-					vout.insert(vec_dir);
-				}
-				vec_dir(axis) -= 1;
-			}
-		}
+//		void neighs (const VecDi& pos, std::unordered_set<VecDi, UINT (*) (const VecDi& a)>& vout) const
+//		{
+//			// Reference to grid dimensions.
+//			const VecDu& dims = this->dims();
+//			// Position for look-around.
+//			VecDi vec_dir(pos);
+//			for (INT axis = 0; axis < dims.size(); axis++) {
+//				// Check if backward value is within grid.
+//				vec_dir(axis) -= 1;
+//				if (this->inside(vec_dir))
+//				{
+//					vout.insert(vec_dir);
+//				}
+//				// Check if forward value is within grid.
+//				vec_dir(axis) += 2;
+//				if (this->inside(vec_dir))
+//				{
+//					vout.insert(vec_dir);
+//				}
+//				vec_dir(axis) -= 1;
+//			}
+//		}
 
 
 		void neighs (const VecDi& pos, std::vector<VecDi>& vout, Grid<bool,D>& grid_check) const

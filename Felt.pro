@@ -16,7 +16,8 @@ SOURCES += felt.cpp
 HEADERS += felt.h\
 		felt_global.h \
 	felt/Surface.hpp \
-	felt/Grid.hpp
+	felt/Grid.hpp \
+    felt/Poly.hpp
 
 unix:!symbian {
 	maemo5 {

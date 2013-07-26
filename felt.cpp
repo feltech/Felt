@@ -1,6 +1,6 @@
 #include "felt.h"
 
 
-Felt::Felt()
+felt::Felt::Felt()
 {
 }

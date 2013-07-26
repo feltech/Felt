@@ -3,11 +3,13 @@
 
 #include "felt_global.h"
 
-class FELTSHARED_EXPORT Felt
+namespace felt
 {
-    
-public:
-    Felt();
-};
+	class FELTSHARED_EXPORT Felt
+	{
 
+	public:
+		Felt();
+	};
+}
 #endif // FELT_H

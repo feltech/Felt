@@ -1,6 +1,6 @@
 #include <vector>
-#include <set>
-#include <unordered_set>
+//#include <set>
+//#include <unordered_set>
 #include <functional>
 #include <limits>
 #include <boost/math/special_functions/round.hpp>
@@ -50,12 +50,12 @@ namespace felt {
 			this->init();
 		}
 
-		Surface (const VecDu& vec_dims)
+		Surface (const VecDu& vec_dims, const UINT& uborder = 0)
 		:	m_grid_phi(),
 			m_grid_idx()
 		{
 			this->init();
-			this->dims(vec_dims);
+			this->dims(vec_dims, uborder);
 		}
 
 		void init (const UINT uThreads = 0)
@@ -116,7 +116,7 @@ namespace felt {
 		 * @brief Set dimensions and store limits adjusted for narrow band space.
 		 * @param vec_dims
 		 */
-		void dims (const VecDu& udims)
+		void dims (const VecDu& udims, const UINT& uborder = 0)
 		{
 			Grid<FLOAT,D>& phi = this->phi();
 			Grid<FLOAT,D>& dphi = this->dphi();
@@ -139,8 +139,8 @@ namespace felt {
 			m_grid_flag.offset(offset);
 
 			// Store min and max usable positions in phi embedding.
-			this->pos_min(VecDi::Constant(L) + phi.offset());
-			this->pos_max((idims - VecDi::Constant(L)) + phi.offset() - VecDi::Constant(1));
+			this->pos_min(VecDi::Constant(L + uborder + 1) + phi.offset());
+			this->pos_max((idims - VecDi::Constant(L + uborder + 1)) + phi.offset() - VecDi::Constant(1));
 			// Fill phi grid with 'outside' value.
 			phi.fill(L+1);
 			// Fill index lookup with null index value.
@@ -864,7 +864,7 @@ namespace felt {
 		 * @brief Find all outer layer points who's distance transform is affected by
 		 * modified zero-layer points.
 		 * TODO: several options for opmisation of removing duplicates:
-		 * - Use a boolean flag grid to construct a de-duped vector.
+		 * - Use a boolean flag grid to construct a de-duped vector (used here).
 		 * - Check std::vector in Grid::neighs() using std::find to prevent adding a duplicate in the first place.
 		 * - Use std::vector sort, unique, erase.
 		 * - Use a std::unordered_set with a suitable hashing function.
@@ -877,28 +877,20 @@ namespace felt {
 			// Number of thread-localised lists to iterate over.
 			const UINT num_threads = this->num_threads();
 
-			// Vector of all neighbours of all modified phi points, which may include duplicates.
+			// Vector of all neighbours of all modified phi points.
 			std::vector<VecDi> aneighs;
-			// Hash function, mapping points to their norm distance.
-//			auto hasher = [&] (const VecDi& a) {
-//				return std::hash<UINT>()(a.squaredNorm() >> 2);
-//			};
-			// Unordered set for storing neighbours without duplication.
-//			std::unordered_set<VecDi, UINT (*) (const VecDi& a)> sneighs(phi.dims().squaredNorm() >> 2, hasher);
 
-			// Loop through thread-localised dphi arrays.
+			// Loop through thread-localised dphi lists, copying to neighbour list.
 			for (UINT threadIdx = 0; threadIdx < num_threads; threadIdx++)
 			{
 				const std::vector<VecDi>& aposdphi = this->dphi(threadIdx);
-				// Loop each modified position in dphi grid.
-				for (UINT upos = 0; upos < aposdphi.size(); upos++)
-				{
-					// Initialse neighbour vector and unordered_set with the dphi points.
-					const VecDi& pos = aposdphi[upos];
-					aneighs.push_back(pos);
-					m_grid_flag(pos) = true;
-//					sneighs.insert(pos);
-				}
+				aneighs.insert(aneighs.end(), aposdphi.begin(), aposdphi.end());
+			}
+			// Loop again through dphi/neighbours, setting flag to true to avoid re-visiting.
+			for (UINT upos = 0; upos < aneighs.size(); upos++)
+			{
+				const VecDi& pos = aneighs[upos];
+				m_grid_flag(pos) = true;
 			}
 
 			// Cycle through neighbours out to a distance of L.
@@ -910,52 +902,21 @@ namespace felt {
 				// Cycle current subset of neighbours.
 				for (UINT idx_neigh = idx_first_neigh; idx_neigh < idx_last_neigh; idx_neigh++)
 				{
-					// NOTE: cannot get pos by reference, must make a copy, because neighs() can cause
+					// NOTE: cannot get pos by reference, must make a copy, because phi.neighs() can cause
 					// a reallocation, making the reference invalid.
 					const VecDi pos_neigh = aneighs[idx_neigh];
 					// Append new neighbours to neighbour vector.
 					phi.neighs(pos_neigh, aneighs, m_grid_flag);
-					// Insert new neighbours, without duplication, in unordered_set.
-					// TODO: this is doubling up on neighs() call above, should combine the two if
-					// this method is to be used.
-//					phi.neighs(pos_neigh, sneighs);
-
 				}
 				idx_first_neigh = idx_last_neigh;
 			}
-
-			// Insert neighbours into unordered_set to remove duplicates.
-//			std::unordered_set<VecDi, UINT (*) (const VecDi& a)>
-//			sneighs(aneighs.begin(), aneighs.end(), phi.dims().squaredNorm() >> 2, hasher);
-//			std::copy(aneighs.begin(), aneighs.end(), std::inserter(sneighs, sneighs.end()));
-
-			// De-dupe neighbours list.
-			// TODO: is this method faster or slower than unordered_set?
-//			std::sort(aneighs.begin(), aneighs.end(), [&] (const VecDi& a, const VecDi&b) {
-//				const UINT aidx = Grid<VecDi, D>::index(a, phi.dims(), phi.offset());
-//				const UINT bidx = Grid<VecDi, D>::index(b, phi.dims(), phi.offset());
-//				return aidx < bidx;
-//			});
-//			aneighs.erase(std::unique(aneighs.begin(), aneighs.end()), aneighs.end());
-
-			// Create de-duped list of neighbours by using flag grid.
-//			std::vector <VecDi> aneighs_dedupe;
-//			aneighs_dedupe.reserve(aneighs.size()/2);
-//			for (auto pos_neigh : aneighs)
-//			{
-//				if (m_grid_flag(pos_neigh) == false)
-//				{
-//					aneighs_dedupe.push_back(pos_neigh);
-//					m_grid_flag(pos_neigh) = true;
-//				}
-//			}
 
 			// Cycle de-duped set of neighbours.
 			for (auto pos_neigh : aneighs)
 			{
 				const INT layer_neigh = this->layerID(pos_neigh);
 				// Ensure this point lies in an outer layer.
-				if (-(INT)L <= layer_neigh && layer_neigh != 0 && layer_neigh <= (INT)L)
+				if (this->inside_band(layer_neigh))
 				{
 					// Append the point index to the output list at the appropriate layer index.
 					apos[L + layer_neigh].push_back(pos_neigh);
