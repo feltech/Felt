@@ -24,8 +24,6 @@ namespace felt {
 	public:
 #endif
 
-		VecDu m_dims;
-		VecDi m_offset;
 		VecDi m_pos_min;
 		VecDi m_pos_max;
 
@@ -159,7 +157,14 @@ namespace felt {
 		{
 			return m_grid_phi.dims();
 		}
-
+		/**
+		 * @brief Get offset.
+		 * @return
+		 */
+		const VecDi& offset () const
+		{
+			return m_grid_phi.offset();
+		}
 		/**
 		 * @brief Get minimum usable position in phi grid.
 		 * @return
@@ -387,9 +392,9 @@ namespace felt {
 						// Get phi at this point.
 						const FLOAT fphi = this->phi(pos);
 						// Max value that will not be rounded and thus trigger a layer_move.
-						const FLOAT val_max = 0.5 - (std::numeric_limits<FLOAT>::epsilon());
+						const FLOAT val_max = -0.5 + (std::numeric_limits<FLOAT>::epsilon() * 2);
 						// Clamp the value of delta phi.
-						val = std::max(-val_max - fphi, val);
+						val = std::max(val_max - fphi, val);
 						break;
 					}
 			}
@@ -424,7 +429,7 @@ namespace felt {
 		 * Used to indicate that a grid point is outside the narrow band.
 		 * @return
 		 */
-		UINT null_idx ()
+		static inline UINT null_idx ()
 		{
 			return std::numeric_limits<UINT>::max();
 		}
@@ -573,7 +578,8 @@ namespace felt {
 		 */
 		INT layerID(const FLOAT& val) const
 		{
-			return boost::math::round(val);
+			// Round to value+epsilon, to catch cases of precisely +/-0.5.
+			return boost::math::round(val + std::numeric_limits<FLOAT>::epsilon());
 		}
 
 		/**

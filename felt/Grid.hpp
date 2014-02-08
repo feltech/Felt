@@ -47,9 +47,9 @@ namespace felt {
 		typedef Eigen::Array<T, 1, Eigen::Dynamic> ArrayData;
 
 	protected:
-		VecDu m_vec_Dims;
-		VecDi m_vec_Offset;
-		T m_dx;
+		VecDi m_vec_offset;
+		VecDu m_vec_dims;
+		FLOAT m_dx;
 		ArrayData m_vec_Data;
 
 	public:
@@ -57,11 +57,11 @@ namespace felt {
 		/**
 		 * Initialise a zero-dimensional grid.
 		 */
-		Grid ()
-		:	m_dx(1)
+		Grid () :
+		m_vec_offset(VecDi::Zero()),
+		m_vec_dims(VecDu::Zero()),
+		m_dx(1)
 		{
-			m_vec_Offset = VecDi::Zero();
-			m_vec_Dims = VecDu::Zero();
 		}
 
 		Grid (UINT x, UINT y)
@@ -75,32 +75,21 @@ namespace felt {
 		}
 
 		/**
-		 * Initialise a grid with given dimensions.
-		 * @param vec_dims
-		 */
-		Grid (const VecDu& vec_dims)
-		{
-			this->init(vec_dims);
-		}
-
-		void init (const VecDu& vec_dims) {
-			m_vec_Offset = VecDi::Zero();
-			this->dims(vec_dims);
-		}
-
-
-		/**
 		 * Initialise a grid with given dimension, offset and delta x.
 		 *
-		 * @param vec_dims
-		 * @param vec_offset
+		 * @param dims
+		 * @param offset
 		 * @param delta
 		 */
-		Grid (const VecDu& vec_dims, const VecDi& vec_offset, const T& delta = T(1))
-		: m_dx(delta)
+		Grid (const VecDu& dims, const VecDi& offset = VecDi::Zero(), const FLOAT& delta = 1)
 		{
-			this->dims(vec_dims);
-			this->offset(vec_offset);
+			this->init(dims, offset, delta);
+		}
+
+		void init (const VecDu& dims, const VecDi& offset = VecDi::Zero(), const FLOAT& delta = 1) {
+			this->dx(delta);
+			this->offset(offset);
+			this->dims(dims);
 		}
 
 		/**
@@ -109,7 +98,7 @@ namespace felt {
 		 * @return
 		 */
 		void offset (const VecDi& vec_offset) {
-			m_vec_Offset = vec_offset;
+			m_vec_offset = vec_offset;
 		}
 
 		/**
@@ -118,7 +107,7 @@ namespace felt {
 		 * @return
 		 */
 		const VecDi& offset () const {
-			return m_vec_Offset;
+			return m_vec_offset;
 		}
 
 
@@ -126,7 +115,7 @@ namespace felt {
 		 * Get grid delta x.
 		 * @return
 		 */
-		inline const T& dx () const {
+		inline const FLOAT& dx () const {
 			return m_dx;
 		}
 
@@ -134,7 +123,7 @@ namespace felt {
 		 * Set grid delta x.
 		 * @param delta
 		 */
-		void dx (const T& delta) {
+		void dx (const FLOAT& delta) {
 			m_dx = delta;
 		}
 
@@ -303,18 +292,18 @@ namespace felt {
 		 * @param vec_NewDims
 		 * @return
 		 */
-		const VecDu dims (const VecDu& vec_NewDims) {
-			VecDu vec_OldDims(m_vec_Dims);
-			m_vec_Dims = VecDu(vec_NewDims);
+		const VecDu dims (const VecDu& dims_new) {
+			VecDu dims_old = m_vec_dims;
+			m_vec_dims = dims_new;
 
-			INT uGridSize = m_vec_Dims(0);
-			for (INT i = 1; i < m_vec_Dims.size(); i++) {
-				uGridSize *= m_vec_Dims(i);
+			INT uGridSize = m_vec_dims(0);
+			for (INT i = 1; i < m_vec_dims.size(); i++) {
+				uGridSize *= m_vec_dims(i);
 			}
 			m_vec_Data.resize(uGridSize);
 
 			// Return old dimensions.
-			return vec_OldDims;
+			return dims_old;
 		}
 
 
@@ -325,7 +314,7 @@ namespace felt {
 		 * @return
 		 */
 		const VecDu& dims () const {
-			return m_vec_Dims;
+			return m_vec_dims;
 		}
 
 
@@ -750,7 +739,6 @@ namespace felt {
 		 */
 		template <typename PosType>
 		T divergence (const Eigen::Matrix<PosType, D, 1>& pos) const {
-			typedef Eigen::Matrix<PosType, D, 1> VecDp;
 			const VecDT vec_grad_f = this->gradF(pos);
 			const VecDT vec_grad_b = this->gradB(pos);
 			const VecDT vec_grad_diff = vec_grad_b - vec_grad_f;
