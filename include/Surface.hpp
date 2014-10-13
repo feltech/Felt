@@ -43,14 +43,16 @@ namespace felt {
 	public:
 		Surface ()
 		:	m_grid_phi(),
-			m_grid_idx()
+			m_grid_idx(),
+			m_uThreads(1)
 		{
 			this->init();
 		}
 
 		Surface (const VecDu& vec_dims, const UINT& uborder = 0)
 		:	m_grid_phi(),
-			m_grid_idx()
+			m_grid_idx(),
+			m_uThreads(1)
 		{
 			this->init();
 			this->dims(vec_dims, uborder);
@@ -493,12 +495,10 @@ namespace felt {
 			return layer().size();
 		}
 
-
 		void each(std::function<void (const VecDi)> func)
 		{
 			std::for_each(this->begin(), this->end(), func);
 		}
-
 
 
 		/**

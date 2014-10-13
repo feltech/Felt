@@ -1,6 +1,0 @@
-/usr/bin/g++ -c -g3 -gdwarf-2 -std=c++11 -O2 -Wall -W -D_REENTRANT -fPIC -DFELT_LIBRARY -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB -I/usr/share/qt5/mkspecs/linux-g++ -I. -I/usr/include/qt5 -I/usr/include/qt5/QtGui -I/usr/include/qt5/QtCore -I. -o felt.o felt.cpp
-rm -f libFelt.so.1.0.0 libFelt.so libFelt.so.1 libFelt.so.1.0
-g++ -Wl,-O1 -shared -Wl,-soname,libFelt.so.1 -o libFelt.so.1.0.0 felt.o  -lgomp -lQt5Gui -L/usr/lib/i386-linux-gnu -lQt5Core -lGL -lpthread  
-ln -s libFelt.so.1.0.0 libFelt.so
-ln -s libFelt.so.1.0.0 libFelt.so.1
-ln -s libFelt.so.1.0.0 libFelt.so.1.0

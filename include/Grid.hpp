@@ -12,8 +12,6 @@ namespace felt {
 	typedef int INT;
 	typedef size_t UINT;
 
-	namespace ublas = boost::numeric::ublas;
-
 	typedef Eigen::Matrix<FLOAT, 2, 1> Vec2f;
 	typedef Eigen::Matrix<UINT, 2, 1> Vec2u;
 	typedef Eigen::Matrix<INT, 2, 1> Vec2i;
@@ -64,12 +62,14 @@ namespace felt {
 		{
 		}
 
-		Grid (UINT x, UINT y)
+		Grid (UINT x, UINT y) :
+		m_dx(1)
 		{
 			this->init(Vec2u(x,y));
 		}
 
-		Grid (UINT x, UINT y, UINT z)
+		Grid (UINT x, UINT y, UINT z) :
+		m_dx(1)
 		{
 			this->init(Vec3u(x,y,z));
 		}
@@ -81,7 +81,8 @@ namespace felt {
 		 * @param offset
 		 * @param delta
 		 */
-		Grid (const VecDu& dims, const VecDi& offset = VecDi::Zero(), const FLOAT& delta = 1)
+		Grid (const VecDu& dims, const VecDi& offset = VecDi::Zero(), const FLOAT& delta = 1) :
+		m_dx(1)
 		{
 			this->init(dims, offset, delta);
 		}
@@ -324,9 +325,10 @@ namespace felt {
 		 * @param val
 		 */
 		void fill (const T& val) {
-			for (INT i = 0; i < this->data().size(); i++) {
-				this->data()(i) = val;
-			}
+			this->data() = ArrayData::Constant(1, this->data().size(), val);
+//			for (INT i = 0; i < this->data().size(); i++) {
+//				this->data()(i) = val;
+//			}
 		}
 
 
