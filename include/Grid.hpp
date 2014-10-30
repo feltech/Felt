@@ -325,10 +325,7 @@ namespace felt {
 		 * @param val
 		 */
 		void fill (const T& val) {
-			this->data() = ArrayData::Constant(1, this->data().size(), val);
-//			for (INT i = 0; i < this->data().size(); i++) {
-//				this->data()(i) = val;
-//			}
+			this->data().fill(val);
 		}
 
 

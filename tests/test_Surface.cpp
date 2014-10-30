@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(init)
 		// Check OpenMP thread support.
 
 		const UINT num_threads = omp_get_max_threads();
-		BOOST_CHECK_GT(omp_get_max_threads(), 1);
+		BOOST_WARN_GT(omp_get_max_threads(), 1);
 		BOOST_TEST_MESSAGE("Num OpenMP threads: " << num_threads);
 
 		BOOST_CHECK_EQUAL(omp_get_max_threads(), omp_get_num_procs());
@@ -231,7 +231,6 @@ BOOST_AUTO_TEST_CASE(next_closest_grid_point)
  */
 BOOST_AUTO_TEST_CASE(delta_phi)
 {
-	BOOST_CHECK_GT(omp_get_max_threads(), 1);
 	// Basic non-threaded check.
 	{
 		Surface<3, 2> surface(Vec3u(5, 5, 5));
@@ -249,7 +248,6 @@ BOOST_AUTO_TEST_CASE(delta_phi)
 			sum += surface.dphi(threadIdx).size();
 		BOOST_CHECK_EQUAL(sum, 1);
 	}
-	BOOST_CHECK_GT(omp_get_max_threads(), 1);
 
 	// Multi-threaded check.
 	{

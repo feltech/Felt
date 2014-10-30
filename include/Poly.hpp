@@ -72,6 +72,9 @@ namespace felt {
 			INT axis;
 		};
 
+#ifndef _TESTING
+	protected:
+#endif
 		/**
 		 * Number of edges on a square.
 		 */
@@ -97,6 +100,7 @@ namespace felt {
 		 * create representative simplices (lines).
 		 */
 		static const short vtx_order [][4];
+
 
 	protected:
 
@@ -206,7 +210,7 @@ namespace felt {
 	template <UINT D>
 	class Poly : public PolyBase<D> {
 	private:
-		// Create typedefs of Eigen types for this D-dimensinal polygonisation.
+		// Create typedefs of Eigen types for this D-dimensional polygonisation.
 		typedef Eigen::Matrix<UINT, D, 1> VecDu;
 		typedef Eigen::Matrix<INT, D, 1> VecDi;
 		typedef Eigen::Matrix<FLOAT, D, 1> VecDf;
@@ -275,19 +279,6 @@ namespace felt {
 		m_grid_idx(dims, offset)
 		{
 			this->reset();
-		}
-
-		/**
-		 * Destroy vertices and fill the lookup grid with nulls.
-		 *
-         * @return
-         */
-		void reset()
-		{
-			// Fill grid with null value.
-			this->idx().fill(null_idxs());
-			this->vtx().resize(0);
-			this->spx().resize(0);
 		}
 
 		/**
@@ -474,6 +465,29 @@ namespace felt {
 				spxs.push_back(simplex);
 			}
 		} // End spx()
+
+
+		/**
+		 * Destroy vertices and fill the lookup grid with nulls.
+		 *
+         * @return
+         */
+		void reset()
+		{
+			// Fill grid with null value.
+			this->idx().fill(null_idxs());
+			this->vtx().resize(0);
+			this->spx().resize(0);
+		}
+
+
+		void reset(const VecDi& pos)
+		{
+			this->idx().fill(null_idxs());
+			this->vtx().resize(0);
+			this->spx().resize(0);
+		}
+
 
 	};
 

@@ -1,6 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <boost/test/unit_test.hpp>
+
+#define _TESTING
+
 #include "Surface.hpp"
 #include "Poly.hpp"
 
@@ -344,68 +347,6 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 			poly.reset();
 			poly.spx(surface.phi(), Vec2i(2,0));
 			BOOST_CHECK_EQUAL(spxs.size(), 0);
-
-// Schmatic of 2D simplex (line) generation.
-/*
-	v = vertex
-	e = edge
-	s = simplex
-
-	// Vertex position and corresponding bitmask flag.
-	(0,0) = v0001
-	(1,0) = v0010
-	(1,1) = v0100
-	(0,1) = v1000
-
-		   e0100
-	  v1000-----v0100
-		|        |
-  e1000 |	     | e0010
-		|	     |
-	  v0001-----v0010
-		   e0001
-
-
-	// Ordering of vertices to make 2D simplex.
-
-	0 = inside
-	1 = outside
-	____________________
-	 v	 |	e	| s (CCW)
-	--------------------
-	0000 | 0000	|
-	0001 | 1001	| 3,0
-	0010 | 0011	| 0,1
-	0011 | 1010	| 3,1
-	0100 | 0110	| 1,2
-	0101 | 1111	| 3,0 1,2
-	0110 | 0101	| 0,2
-	0111 | 1100	| 3,2
-	1000 | 1100	| 2,3
-	1001 | 0101 | 2,0
-	1010 | 1111	| 2,1 0,3
-	1011 | 0110	| 2,1
-	1100 | 1010	| 3,1
-	1101 | 0011	| 1,0
-	1110 | 1001	| 0,3
-	1111 | 0000	|
-*/
-
-/*
-	(0,0) => (0,0, 0)
- 	(0,1) => (0,0, 1)
- 	(1,0) => (1,0, 1)
- 	(1,1) => (0,1, 0)
-
- 	(0,0,0)
-	(1,0,0)
-	(1,0,-1)
-	(0,0,-1)
-	(0,1,0)
-	(1,1,0)
-	(1,1,-1)
-	(0,1,-1)
-*/
 		}
 
 		// 3D.
@@ -521,15 +462,16 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 				if (vtx_order[idx] >= 0)
 					BOOST_CHECK_MESSAGE((vtx_mask >> vtx_order[idx]) & 1, stringifyBitmask(vtx_mask, 12) + " >> " + std::to_string(vtx_order[idx]));
 
-
-			// Simplex (triangle) at given position.
+			// Simplices (triangles).
 			std::vector<Poly<3>::Simplex>& spxs = poly.spx();
-
+			std::vector<Poly<3>::Vertex>& vtxs = poly.vtx();
+			// Attempt to generate triangle mesh for cube at (0,0,0).
 			poly.spx(surface.phi(), Vec3i(0,0,0));
 
 			// Currently, we have a degenerate case -- corners that are at precisely zero
-			// (i.e. points rather than triangles), so no simplices are created.
-			// Check 0 triangles are created.
+			// (i.e. points or lines rather than triangles), so no simplices are created.
+			// Check 0 triangles are created, but still 6 vertices.
+			BOOST_CHECK_EQUAL(vtxs.size(), 6);
 			BOOST_CHECK_EQUAL(spxs.size(), 0);
 
 			// Expand the surface a bit, but not enough to change the edges that cross the zero curve.
@@ -546,15 +488,70 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 			// Reset the polygonisation.
 			poly.reset();
 
-			// Recalculate the polygonisation for the updated phi grid.
+			// Recalculate the polygonisation (triangle mesh) for the updated phi grid.
 			poly.spx(surface.phi(), Vec3i(0,0,0));
 
-			// Check 4 triangles are now created.
-			BOOST_REQUIRE_EQUAL(spxs.size(), 4);
+			// Check 4 triangles are now created from 6 vertices.
+			BOOST_CHECK_EQUAL(vtxs.size(), 6);
+			BOOST_CHECK_EQUAL(spxs.size(), 4);
 
 		}
 	}
 
+
+	BOOST_AUTO_TEST_CASE(local_reset)
+	{
+		// Initialise a surface.
+		Surface<3> surface(Vec3u(13,13,13));
+		Poly<3> poly(surface.dims(), surface.offset());
+		Poly<3> poly_null(surface.dims(), surface.offset());
+
+		// Initialise a seed and expand it.
+		surface.seed(Vec3i(0,0,0));
+		surface.update_start();
+		surface.dphi(Vec3i(0,0,0), -1);
+		surface.update_end();
+		surface.update_start();;
+		for (auto pos : surface)
+			surface.dphi(pos, -0.3);
+		surface.update_end();
+
+		const Grid<FLOAT, 3>& phi = surface.phi();
+		const Vec3u& dims = phi.dims();
+		const Vec3i& offset = phi.offset();
+		std::stringstream strGrid;
+		
+		INT z = 0;
+		for (INT x = offset(0); x < (INT)dims(0) + offset(0); x++)
+		{
+			strGrid << std::endl << "|";
+			for (INT y = offset(1); y < (INT)dims(1) + offset(1); y++)
+				strGrid << std::setw(5) << (FLOAT)phi(x,y,z) << " |";
+		}
+		strGrid << std::endl;
+		std::cerr << strGrid.str();
+
+		// Simplices (triangles).
+		std::vector<Poly<3>::Simplex>& spxs = poly.spx();
+		std::vector<Poly<3>::Vertex>& vtxs = poly.vtx();
+		// Attempt to generate triangle mesh for cube at (0,0,0).
+		poly.spx(surface.phi(), Vec3i(0,0,0));
+
+		BOOST_CHECK_EQUAL(spxs.size(), 4);
+		BOOST_CHECK_EQUAL(vtxs.size(), 6);
+
+		// Reset single point.
+		poly.reset(Vec3i(0,0,0));
+
+		// Check there's no vertices or triangles and that the index grid is clear.
+		BOOST_CHECK_EQUAL(spxs.size(), 0);
+		BOOST_CHECK_EQUAL(vtxs.size(), 0);
+		for (unsigned i = 0; i < poly.idx().data().size(); i++)
+			BOOST_CHECK((bool)(poly.idx().data()(i) == Poly<3>::null_idxs()));
+
+
+
+	}
 
 //	BOOST_AUTO_TEST_CASE(export_svg)
 //	{
