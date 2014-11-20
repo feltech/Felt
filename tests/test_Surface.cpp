@@ -56,11 +56,9 @@ BOOST_AUTO_TEST_CASE(init)
 
 		BOOST_CHECK_EQUAL(omp_get_max_threads(), omp_get_num_procs());
 
-		std::vector<Vec2i>* pary_omp_dPhi;
-
 		for (UINT threadIdx = 0; threadIdx < num_threads; threadIdx++)
 		{
-			pary_omp_dPhi = &surface.dphi(threadIdx);
+			std::vector<Vec2i>* pary_omp_dPhi = &surface.dphi(threadIdx);
 			BOOST_CHECK_EQUAL(pary_omp_dPhi->size(), 0u);
 		}
 

@@ -37,11 +37,12 @@ namespace felt {
 
 	template <class T, UINT D>
 	class Grid {
-
+	protected:
 		typedef Eigen::Matrix<UINT, D, 1> VecDu;
 		typedef Eigen::Matrix<INT, D, 1> VecDi;
 		typedef Eigen::Matrix<FLOAT, D, 1> VecDf;
 		typedef Eigen::Matrix<T, D, 1> VecDT;
+	public:
 		typedef Eigen::Array<T, 1, Eigen::Dynamic> ArrayData;
 
 	protected:
@@ -81,13 +82,20 @@ namespace felt {
 		 * @param offset
 		 * @param delta
 		 */
-		Grid (const VecDu& dims, const VecDi& offset = VecDi::Zero(), const FLOAT& delta = 1) :
+		Grid (
+			const VecDu& dims, const VecDi& offset = VecDi::Zero(),
+			const FLOAT& delta = 1
+		) :
 		m_dx(1)
 		{
 			this->init(dims, offset, delta);
 		}
 
-		void init (const VecDu& dims, const VecDi& offset = VecDi::Zero(), const FLOAT& delta = 1) {
+		void init (
+			const VecDu& dims, const VecDi& offset = VecDi::Zero(),
+			const FLOAT& delta = 1
+		)
+		{
 			this->dx(delta);
 			this->offset(offset);
 			this->dims(dims);
@@ -98,7 +106,8 @@ namespace felt {
 		 *
 		 * @return
 		 */
-		void offset (const VecDi& vec_offset) {
+		void offset (const VecDi& vec_offset)
+		{
 			m_vec_offset = vec_offset;
 		}
 
@@ -107,7 +116,8 @@ namespace felt {
 		 *
 		 * @return
 		 */
-		const VecDi& offset () const {
+		const VecDi& offset () const
+		{
 			return m_vec_offset;
 		}
 
@@ -116,7 +126,8 @@ namespace felt {
 		 * Get grid delta x.
 		 * @return
 		 */
-		inline const FLOAT& dx () const {
+		inline const FLOAT& dx () const
+		{
 			return m_dx;
 		}
 
@@ -124,35 +135,45 @@ namespace felt {
 		 * Set grid delta x.
 		 * @param delta
 		 */
-		void dx (const FLOAT& delta) {
+		void dx (const FLOAT& delta)
+		{
 			m_dx = delta;
 		}
 
 		/*
 		 * Helpers for cases where D is 2 or 3.
 		 */
-		T& operator() (const INT& x, const INT& y) {
+		T& operator() (const INT& x, const INT& y)
+		{
 			return (*this)(VecDi(x,y));
 		}
-		const T& operator() (const INT& x, const INT& y) const {
+		const T& operator() (const INT& x, const INT& y) const
+		{
 			return (*this)(VecDi(x,y));
 		}
-		T operator() (const FLOAT& x, const FLOAT& y) {
+		T operator() (const FLOAT& x, const FLOAT& y)
+		{
 			return (*this)(VecDi(x,y));
 		}
-		const T operator() (const FLOAT& x, const FLOAT& y) const {
+		const T operator() (const FLOAT& x, const FLOAT& y) const
+		{
 			return (*this)(VecDi(x,y));
 		}
-		T& operator() (const INT& x, const INT& y, const INT& z) {
+		T& operator() (const INT& x, const INT& y, const INT& z)
+		{
 			return (*this)(VecDi(x,y,z));
 		}
-		const T& operator() (const INT& x, const INT& y, const INT& z) const {
+		const T& operator() (const INT& x, const INT& y, const INT& z) const
+		{
 			return (*this)(VecDi(x,y,z));
 		}
 		T operator() (const FLOAT& x, const FLOAT& y, const FLOAT& z) {
 			return (*this)(VecDi(x,y,z));
 		}
-		const T operator() (const FLOAT& x, const FLOAT& y, const FLOAT& z) const {
+		const T operator() (
+			const FLOAT& x, const FLOAT& y, const FLOAT& z
+		) const
+		{
 			return (*this)(VecDi(x,y,z));
 		}
 
@@ -161,8 +182,10 @@ namespace felt {
 		 * @param pos
 		 * @return
 		 */
-		T& operator() (const VecDi& pos) {
-			return this->data()(this->index(pos));
+		T& operator() (const VecDi& pos)
+		{
+			UINT idx = this->index(pos);
+			return this->data()(idx);
 		}
 
 
@@ -196,7 +219,10 @@ namespace felt {
 		 * @param offset
 		 * @return
 		 */
-		static UINT index (const VecDi& pos, const VecDu& dims, const VecDi& offset = VecDi::Constant(0))
+		static UINT index (
+			const VecDi& pos, const VecDu& dims,
+			const VecDi& offset = VecDi::Constant(0)
+		)
 		{
 			UINT idx = 0;
 			for (INT i = 0; i < dims.size(); i++)
@@ -228,7 +254,9 @@ namespace felt {
 		 * @param offset
 		 * @return
 		 */
-		static VecDi index (UINT idx, const VecDu& dims, const VecDi& offset = VecDi::Zero())
+		static VecDi index (
+			UINT idx, const VecDu& dims, const VecDi& offset = VecDi::Zero()
+		)
 		{
 /*
 	Eg. 2D: row major order (3x4=12): (x,y)[idx] =>
@@ -258,7 +286,8 @@ namespace felt {
 		 * @param pos
 		 * @return
 		 */
-		const T operator() (const VecDf& pos) const {
+		const T operator() (const VecDf& pos) const
+		{
 			return this->interp(pos);
 		}
 
@@ -267,7 +296,8 @@ namespace felt {
 		 * @param pos
 		 * @return
 		 */
-		T operator() (const VecDf& pos) {
+		T operator() (const VecDf& pos)
+		{
 			return this->interp(pos);
 		}
 
@@ -275,14 +305,16 @@ namespace felt {
 		 * Retrieve a reference to the data stored in grid.
 		 * @return
 		 */
-		ArrayData& data () {
+		ArrayData& data ()
+		{
 			return m_vec_Data;
 		}
 		/**
 		 * Retrieve a reference to the data stored in grid.
 		 * @return
 		 */
-		const ArrayData& data () const {
+		const ArrayData& data () const
+		{
 			return m_vec_Data;
 		}
 
@@ -293,12 +325,14 @@ namespace felt {
 		 * @param vec_NewDims
 		 * @return
 		 */
-		const VecDu dims (const VecDu& dims_new) {
+		const VecDu dims (const VecDu& dims_new)
+		{
 			VecDu dims_old = m_vec_dims;
 			m_vec_dims = dims_new;
 
 			INT uGridSize = m_vec_dims(0);
-			for (INT i = 1; i < m_vec_dims.size(); i++) {
+			for (INT i = 1; i < m_vec_dims.size(); i++)
+			{
 				uGridSize *= m_vec_dims(i);
 			}
 			m_vec_Data.resize(uGridSize);
@@ -314,7 +348,8 @@ namespace felt {
 		 *
 		 * @return
 		 */
-		const VecDu& dims () const {
+		const VecDu& dims () const
+		{
 			return m_vec_dims;
 		}
 
@@ -324,7 +359,8 @@ namespace felt {
 		 *
 		 * @param val
 		 */
-		void fill (const T& val) {
+		void fill (const T& val)
+		{
 			this->data().fill(val);
 		}
 
@@ -335,11 +371,13 @@ namespace felt {
 		 * @param pos
 		 * @return
 		 */
-		bool inside (const VecDi& pos) const {
+		bool inside (const VecDi& pos) const
+		{
 			const VecDu& dims = this->dims();
 			const VecDi& offset = this->offset();
 
-			for (INT i = 0; i < pos.size(); i++) {
+			for (INT i = 0; i < pos.size(); i++)
+			{
 				if (pos(i) >= (INT)dims(i) + offset(i))
 					return false;
 				if (pos(i) < offset(i))
@@ -348,7 +386,9 @@ namespace felt {
 			return true;
 		}
 
-		void neighs (const VecDi& pos, std::vector<VecDi>& vout, bool bcheck = false) const
+		void neighs (
+			const VecDi& pos, std::vector<VecDi>& vout, bool bcheck = false
+		) const
 		{
 			// Reference to grid dimensions.
 			const VecDu& dims = this->dims();
@@ -359,13 +399,17 @@ namespace felt {
 			for (INT axis = 0; axis < dims.size(); axis++) {
 				// Check if backward value is within grid.
 				vec_dir(axis) -= 1;
-				if (this->inside(vec_dir) && (!bcheck || std::find(vout.begin(), vout.end(), vec_dir) == vout.end()))
+				if (this->inside(vec_dir) && (!bcheck ||
+					std::find(vout.begin(), vout.end(), vec_dir) == vout.end())
+				)
 				{
 					vout.push_back(vec_dir);
 				}
 				// Check if forward value is within grid.
 				vec_dir(axis) += 2;
-				if (this->inside(vec_dir) && (!bcheck || std::find(vout.begin(), vout.end(), vec_dir) == vout.end()))
+				if (this->inside(vec_dir) && (!bcheck ||
+					std::find(vout.begin(), vout.end(), vec_dir) == vout.end())
+				)
 				{
 					vout.push_back(vec_dir);
 				}
@@ -397,7 +441,10 @@ namespace felt {
 //		}
 
 
-		void neighs (const VecDi& pos, std::vector<VecDi>& vout, Grid<bool,D>& grid_check) const
+		void neighs (
+			const VecDi& pos, std::vector<VecDi>& vout,
+			Grid<bool,D>& grid_check
+		) const
 		{
 			// Reference to grid dimensions.
 			const VecDu& dims = this->dims();
@@ -405,7 +452,8 @@ namespace felt {
 			vout.reserve(6);
 			// Position for look-around.
 			VecDi vec_dir(pos);
-			for (INT axis = 0; axis < dims.size(); axis++) {
+			for (INT axis = 0; axis < dims.size(); axis++)
+			{
 				// Check if backward value is within grid.
 				vec_dir(axis) -= 1;
 				if (this->inside(vec_dir) && !grid_check(vec_dir))
@@ -514,10 +562,10 @@ namespace felt {
 
 		/**
 		 * Safe gradient.
-		 * Will calculate central, forward or backward difference along each axis,
-		 * depending what grid values are available.
-		 * That is, for grid points at the edge of the grid it will return forward/backward
-		 * differences.
+		 * Will calculate central, forward or backward difference along each
+		 * axis, depending what grid values are available.
+		 * That is, for grid points at the edge of the grid it will return
+		 * forward/backward differences.
 		 * @param pos
 		 * @return
 		 */
@@ -550,7 +598,8 @@ namespace felt {
 					order++;
 				}
 				vec_dir(axis) -= 1;
-				// Calculate central/forward/backward difference along this axis.
+				// Calculate central/forward/backward difference along this
+				// axis.
 				if (order != 0)
 					vec_grad(axis) = (forward - back) / order;
 				else
@@ -604,21 +653,24 @@ namespace felt {
 		 * @param vec_fpos
 		 * @return
 		 */
-		T interp (const VecDf& vec_fpos) const {
+		T interp (const VecDf& vec_fpos) const
+		{
 			const VecDu& dims = this->dims();
 
 			// Store all 2^d corners.
 			std::vector< T > val_corners(1 << dims.size());
 
 			// Get all corners of containing cell.
-			for (UINT i = 0; i < val_corners.size(); i++) {
+			for (UINT i = 0; i < val_corners.size(); i++)
+			{
 				// 0 = 00 => (x,y)
 				// 1 = 01 => (x+1,y)
 				// 2 = 10 => (x,y+1)
 				// 3 = 11 => (x+1,y+1)
 
 				VecDi pos_corner(dims.size());
-				for (INT dim = 0; dim < pos_corner.size(); dim++) {
+				for (INT dim = 0; dim < pos_corner.size(); dim++)
+				{
 					INT pos = (INT)floor(vec_fpos(dim));
 					const INT dir = (i >> dim) & 1;
 					pos += dir;
@@ -628,14 +680,18 @@ namespace felt {
 				val_corners[i] = (*this)(pos_corner);
 			}
 
-			// Translate position vector into 'hypercube space', so 0 <= v(x) <= 1.
+			// Translate position vector into 'hypercube space',
+			// so 0 <= v(x) <= 1.
 			VecDf vec_dir(vec_fpos);
-			for (INT dim = 0; dim < vec_dir.size(); dim++) {
+			for (INT dim = 0; dim < vec_dir.size(); dim++)
+			{
 				vec_dir(dim) = vec_dir(dim) - floor(vec_dir(dim));
 			}
 
-			// Repeatedly reduce along axes, i.e. hypercube -> cube -> square -> line -> point
-			while (val_corners.size() > 1) {
+			// Repeatedly reduce along axes,
+			// i.e. hypercube -> cube -> square -> line -> point
+			while (val_corners.size() > 1)
+			{
 				val_corners = this->_interp(val_corners, vec_dir);
 			}
 
@@ -648,7 +704,8 @@ namespace felt {
 		 * @return
 		 */
 		template <typename PosType>
-		T curv (const Eigen::Matrix<PosType, D, 1>& pos) const {
+		T curv (const Eigen::Matrix<PosType, D, 1>& pos) const
+		{
 			typedef Eigen::Matrix<PosType, D, 1> VecDp;
 
 			const T val_centre = (*this)(pos);
@@ -658,14 +715,17 @@ namespace felt {
 			// Forward directed principal normal.
 			VecDT n_forward(D);
 
-			for (INT axis = 0; axis < dims.size(); axis++) {
+			for (INT axis = 0; axis < dims.size(); axis++)
+			{
 				vec_dir(axis) += 1;
 
 				const T val_axis = (*this)(vec_dir) - val_centre;
 				T val_neighs_sq = 0;
 
 				// Loop other dimensions to get central difference across them.
-				for (INT axis_neigh = 0; axis_neigh < dims.size(); axis_neigh++) {
+				for (
+					INT axis_neigh = 0; axis_neigh < dims.size(); axis_neigh++
+				) {
 					// Only getting differences across other axes.
 					if (axis_neigh != axis) {
 						// Central difference across this forward point.
@@ -690,7 +750,8 @@ namespace felt {
 			// Backward directed principal normal.
 			VecDT n_backward(D);
 
-			for (INT axis = 0; axis < dims.size(); axis++) {
+			for (INT axis = 0; axis < dims.size(); axis++)
+			{
 				vec_dir(axis) -= 1;
 				VecDT vec_vals(D);
 
@@ -698,7 +759,9 @@ namespace felt {
 				T val_neighs_sq = 0;
 
 				// Loop other dimensions to get central difference across them.
-				for (INT axis_neigh = 0; axis_neigh < dims.size(); axis_neigh++) {
+				for (
+					INT axis_neigh = 0; axis_neigh < dims.size(); axis_neigh++
+				) {
 					// Only getting differences across other axes.
 					if (axis_neigh != axis) {
 						// Central difference across this backward point.
@@ -722,7 +785,8 @@ namespace felt {
 			const VecDT dn_by_dx = (n_forward - n_backward);
 
 			T curvature = 0;
-			for (INT axis = 0; axis < dims.size(); axis++) {
+			for (INT axis = 0; axis < dims.size(); axis++)
+			{
 				curvature += dn_by_dx(axis);
 			}
 			curvature /= 2;
@@ -737,7 +801,8 @@ namespace felt {
 		 * @return
 		 */
 		template <typename PosType>
-		T divergence (const Eigen::Matrix<PosType, D, 1>& pos) const {
+		T divergence (const Eigen::Matrix<PosType, D, 1>& pos) const
+		{
 			const VecDT vec_grad_f = this->gradF(pos);
 			const VecDT vec_grad_b = this->gradB(pos);
 			const VecDT vec_grad_diff = vec_grad_b - vec_grad_f;
@@ -753,17 +818,20 @@ namespace felt {
 	protected:
 	#endif
 
-		std::vector<T> _interp (const std::vector<T>& val_corners_in, const VecDf& vec_fpos) const {
+		std::vector<T> _interp (
+			const std::vector<T>& val_corners_in, const VecDf& vec_fpos
+		) const
+		{
 			const size_t num_corners = val_corners_in.size();
 
 			// Number of values returned.
-			// This is a power of 2 less than input dimensions (cube becomes square,
-			// square becomes line, line becomes point).
+			// This is a power of 2 less than input dimensions
+			// (cube becomes square, square becomes line, line becomes point).
 			const size_t num_out = num_corners >> 1;
 
 			// The axis along which to interpolate.
-			// This is computed from the dimensions of the original input and the dimensions
-			// of the intended output.
+			// This is computed from the dimensions of the original input and
+			// the dimensions of the intended output.
 			const size_t axis_idx = vec_fpos.size() - log2(num_corners);
 
 			// The weighting to be used in interpolating each pair of points.
@@ -772,7 +840,8 @@ namespace felt {
 
 			std::vector<T> val_corners_out(num_out);
 
-			for (size_t i = 0; i < num_out; i++) {
+			for (size_t i = 0; i < num_out; i++)
+			{
 				const T low = val_corners_in[(i << 1)];
 				const T high = val_corners_in[(i << 1) + 1];
 				const T val = axis_pos*high + (1.0f-axis_pos)*low;

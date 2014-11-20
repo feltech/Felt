@@ -415,7 +415,7 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 		0----1
 */
 		{
-			std::vector< FLOAT > input(2);
+			std::vector<FLOAT> input = std::vector<FLOAT>(2);
 			input[0] = 1.0f;
 			input[1] = 0;
 
@@ -437,7 +437,7 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 		00----01
 */
 		{
-			std::vector< FLOAT > input(4);
+			std::vector<FLOAT> input = std::vector<FLOAT>(4);
 			input[0 /*00*/] = 2.0f;
 			input[1 /*01*/] = 0;
 			input[2 /*10*/] = 0.0f;
@@ -470,7 +470,7 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 		Grid <FLOAT,3> grid = Grid <FLOAT,3>();
 
 		{
-			std::vector< FLOAT > input(8);
+			std::vector<FLOAT> input = std::vector<FLOAT>(8);
 			input[0 /*000*/] = 0.0f;
 			input[1 /*001*/] = 0.8f;
 			input[2 /*010*/] = 1.0f;

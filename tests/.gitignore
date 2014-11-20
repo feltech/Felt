@@ -1,0 +1,7 @@
+/Makefile
+/Makefile.in
+/test
+/test-test_Grid.o
+/test-test_Poly.o
+/test-test_Surface.o
+/test-test_all.o
