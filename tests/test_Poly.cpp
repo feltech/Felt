@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <boost/test/unit_test.hpp>
+#include <set>
 
 #define _TESTING
 
@@ -662,7 +663,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 				surface.dphi(pos, -expandBy);
 			surface.update_end();
 
-			std::cerr << stringifyGridSlice(surface.phi());
+//			std::cerr << stringifyGridSlice(surface.phi());
 		}
 	};
 
@@ -736,32 +737,213 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		for (INT x = -(width+1); x <= width; x++)
 			for (INT y = -(width+1); y <= width; y++)
 				for (INT z = -(width+1); z <= width; z++)
-					poly.spx(surface.phi(), Vec3i(z,y,z));
+					poly.spx(surface.phi(), Vec3i(x,y,z));
 
+		/*
+		 	Simplex spatial lookup grid now populated at grid points:
+			(-2, -1, -1), (-2, -1,  0), (-2,  0, -1), (-2,  0,  0),
+			(-1, -2, -1), (-1, -2,  0), (-1, -1, -2), (-1, -1, -1),
+			(-1, -1,  0), (-1, -1,  1), (-1,  0, -2), (-1,  0, -1),
+			(-1,  0,  0), (-1,  0,  1), (-1,  1, -1), (-1,  1,  0),
+			( 0, -2, -1), ( 0, -2,  0), ( 0, -1, -2), ( 0, -1, -1),
+			( 0, -1,  0), ( 0, -1,  1), ( 0,  0, -2), ( 0,  0, -1),
+			( 0,  0,  0), ( 0,  0,  1), ( 0,  1, -1), ( 0,  1,  0),
+			( 1, -1, -1), ( 1, -1,  0), ( 1,  0, -1), ( 1,  0,  0)
+
+			We will reset simplices around phi grid point ( 0,  1,  0).
+
+			This will:
+
+			*  Invalidate 8 grid points in the simplex spatial lookup:
+			( 0,  1,  0), (-1,  1,  0), (-1,  1, -1), ( 0,  1, -1),
+			( 0,  0, -1), ( 0,  0,  0), (-1,  0,  0), (-1,  0, -1)
+
+			* Invalidate 6 vertices along edges:
+			TODO: efficiently deleting vertex means moving final vertex into the location
+			of removed one. This means that any simplex referencing the final vertex will
+			have to be updated.  However, we know that a vertex lies on an edge, and
+			we have a grid of simplices...
+			[( 0,  1,  0), 0], [( 0,  1,  0), 1], [( 0,  1,  0), 2],
+			[(-1,  1,  0), 0], [( 0, -1,  0), 1], [( 0,  1, -1), 2],
+
+
+		// Print simplex lookup grid points that are non-null.
 		for (unsigned i = 0; i < poly.grid_spx().data().size(); i++)
 			if (poly.grid_spx().data()(i) != Poly<3>::NullSpxTuple)
 				std::cerr << "(" <<
 					poly.grid_spx().index(i).format(
 						Eigen::IOFormat(2, 0, " ", ", ")
 					) << "), ";
+		*/
+
+/*
+		// Print vertex indices referenced by simplices in surrounding grid.
+		const Poly<3>::SpxArray& aspxs = poly.spx();
+		std::set<UINT> vtx_idxs;
+		for(INT x = -1; x <= 0; x++)
+			for(INT y = -1; y <= 0; y++)
+				for(INT z = -1; z <= 0; z++)
+				{
+					UINT spx_idx = 0;
+					const Poly<3>::SpxTuple& spx_idxs =
+						poly.grid_spx()(Vec3i(x, y, z));
+					while (
+						spx_idx < spx_idxs.size()
+						&& spx_idxs(spx_idx) != Poly<3>::NullIdx
+					)
+					{
+						Poly<3>::Simplex spx = aspxs[spx_idxs(spx_idx)];
+
+						for (
+							UINT spx_vtx_idx = 0; spx_vtx_idx < spx.idxs.size();
+							spx_vtx_idx++
+						)
+						{
+							vtx_idxs.insert((UINT)spx.idxs(spx_vtx_idx));
+						}
+
+						spx_idx++;
+					}
+				}
+		std::cerr << vtx_idxs.size() << ":  ";
+		for (UINT idx : vtx_idxs)
+			std::cerr << idx << ", ";
+*/
 
 		// Reset single point.
-//		poly.reset(Vec3i(2,0,0));
+		poly.reset(Vec3i(0,1,0));
 
+		// Right-top-front:		( 0,  1,  0)
 		BOOST_CHECK_EQUAL(
-			poly.grid_spx()(Vec3i(-2,0,0)), Poly<3>::NullSpxTuple
+			poly.grid_spx()(Vec3i( 0, 1, 0)), Poly<3>::NullSpxTuple
+		);
+		// Left-top-front: 		(-1,  1,  0)
+		BOOST_CHECK_EQUAL(
+			poly.grid_spx()(Vec3i(-1,  1,  0)), Poly<3>::NullSpxTuple
+		);
+		// Left-top-back: 		(-1,  1, -1)
+		BOOST_CHECK_EQUAL(
+			poly.grid_spx()(Vec3i(-1,  1, -1)), Poly<3>::NullSpxTuple
+		);
+		// Right-top-back: 		( 0,  1, -1)
+		BOOST_CHECK_EQUAL(
+			poly.grid_spx()(Vec3i( 0,  1, -1)), Poly<3>::NullSpxTuple
+		);
+		// Right-bottom-back: 	( 0,  0, -1)
+		BOOST_CHECK_EQUAL(
+			poly.grid_spx()(Vec3i( 0,  0, -1)), Poly<3>::NullSpxTuple
+		);
+		// ight-bottom-front: 	( 0,  0,  0)
+		BOOST_CHECK_EQUAL(
+			poly.grid_spx()(Vec3i( 0,  0, 0)), Poly<3>::NullSpxTuple
+		);
+		// Left-bottom-front: 	(-1,  0,  0)
+		BOOST_CHECK_EQUAL(
+			poly.grid_spx()(Vec3i(-1,  0,  0)), Poly<3>::NullSpxTuple
+		);
+		// Left-bottom-back: 	(-1,  0, -1)
+		BOOST_CHECK_EQUAL(
+			poly.grid_spx()(Vec3i(-1,  0, -1)), Poly<3>::NullSpxTuple
 		);
 
 		// Check other corners left alone
-		BOOST_CHECK_NE(
-			poly.grid_spx()(Vec3i(-2,0,0)), Poly<3>::NullSpxTuple
-		);
-		BOOST_CHECK_NE(
-			poly.grid_spx()(Vec3i(0,0,0)), Poly<3>::NullSpxTuple
-		);
 
-//		BOOST_CHECK_EQUAL(spxs.size(), 2);
-//		BOOST_CHECK_EQUAL(vtxs.size(), 4);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i(-2, -1, -1)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i(-2, -1,  0)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i(-2,  0, -1)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i(-2,  0,  0)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i(-1, -2, -1)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i(-1, -2,  0)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i(-1, -1, -2)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i(-1, -1, -1)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i(-1, -1,  0)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i(-1, -1,  1)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i(-1,  0, -2)), Poly<3>::NullSpxTuple
+		);
+//		BOOST_CHECK_NE(
+//			poly.grid_spx()(Vec3i(-1,  0, -1)), Poly<3>::NullSpxTuple
+//		);
+//		BOOST_CHECK_NE(
+//			poly.grid_spx()(Vec3i(-1,  0,  0)), Poly<3>::NullSpxTuple
+//		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i(-1,  0,  1)), Poly<3>::NullSpxTuple
+		);
+//		BOOST_CHECK_NE(
+//			poly.grid_spx()(Vec3i(-1,  1, -1)), Poly<3>::NullSpxTuple
+//		);
+//		BOOST_CHECK_NE(
+//			poly.grid_spx()(Vec3i(-1,  1,  0)), Poly<3>::NullSpxTuple
+//		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i( 0, -2, -1)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i( 0, -2,  0)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i( 0, -1, -2)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i( 0, -1, -1)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i( 0, -1,  0)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i( 0, -1,  1)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i( 0,  0, -2)), Poly<3>::NullSpxTuple
+		);
+//		BOOST_CHECK_NE(
+//			poly.grid_spx()(Vec3i( 0,  0, -1)), Poly<3>::NullSpxTuple
+//		);
+//		BOOST_CHECK_NE(
+//			poly.grid_spx()(Vec3i( 0,  0,  0)), Poly<3>::NullSpxTuple
+//		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i( 0,  0,  1)), Poly<3>::NullSpxTuple
+		);
+//		BOOST_CHECK_NE(
+//			poly.grid_spx()(Vec3i( 0,  1, -1)), Poly<3>::NullSpxTuple
+//		);
+//		BOOST_CHECK_NE(
+//			poly.grid_spx()(Vec3i( 0,  1,  0)), Poly<3>::NullSpxTuple
+//		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i( 1, -1, -1)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i( 1, -1,  0)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i( 1,  0, -1)), Poly<3>::NullSpxTuple
+		);
+		BOOST_CHECK_NE(
+			poly.grid_spx()(Vec3i( 1,  0,  0) ), Poly<3>::NullSpxTuple
+		);
 	}
 
 //	BOOST_AUTO_TEST_CASE(export_svg)

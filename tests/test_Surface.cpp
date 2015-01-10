@@ -24,9 +24,10 @@ BOOST_AUTO_TEST_CASE(init)
 		BOOST_CHECK_EQUAL((UINT)vec_dims(0), 7);
 		BOOST_CHECK_EQUAL((UINT)vec_dims(1), 7);
 
-		// Usable isogrid should have size=dims-layers and be offset by half grid width.
-		// In this test case, only the centre point is actually usable, all other points
-		// are reserved for outer layers.
+		// Usable isogrid should have size=dims-layers and be offset by half
+		// grid width.
+		// In this test case, only the centre point is actually usable, all
+		// other points are reserved for outer layers.
 
 		const Vec2i pos_min = surface.pos_min();
 		const Vec2i pos_max = surface.pos_max();
@@ -41,7 +42,8 @@ BOOST_AUTO_TEST_CASE(init)
 		const Vec2u phi_dims = phi.dims();
 		BOOST_CHECK_EQUAL(phi_dims, Vec2u(7, 7));
 
-		// Grid is initialised to all points 'outside' the surface (since there is no surface yet).
+		// Grid is initialised to all points 'outside' the surface (since there
+		// is no surface yet).
 
 		const FLOAT val_centre = phi(Vec2i(0, 0));
 		BOOST_CHECK_EQUAL(val_centre, 3);
@@ -143,7 +145,8 @@ BOOST_AUTO_TEST_CASE(seed)
 
 	surface.seed(Vec2i(0, 0));
 
-	// Trivially check centre of seed is indeed a zero-level point (i.e. point on the surface).
+	// Trivially check centre of seed is indeed a zero-level point (i.e. point
+	// on the surface).
 
 	const FLOAT val_centre = phi(Vec2i(0, 0));
 	BOOST_CHECK_EQUAL(val_centre, 0);
@@ -206,7 +209,10 @@ BOOST_AUTO_TEST_CASE(next_closest_grid_point)
 
 	// Ensure it also works with negative distances.
 	// NOTE: row-major (y,x) element ordering...
-	surface.phi().data() << 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -2, -2, -2, -2, -2;
+	surface.phi().data() << (
+		2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -2,
+		-2, -2, -2, -2
+	);
 	// NOTE: ...but accessed as (x,y)
 	pos_next = Vec2i(2, 0);
 
@@ -239,8 +245,8 @@ BOOST_AUTO_TEST_CASE(delta_phi)
 		surface.dphi(pos, -2);
 		// Check delta was stored in underlying grid.
 		BOOST_CHECK_EQUAL(dphi(pos), -2);
-		// Check position vector of point in surface grid that delta was applied to is
-		// stored in a corresponding list to be iterated over.
+		// Check position vector of point in surface grid that delta was
+		// applied to is stored in a corresponding list to be iterated over.
 		UINT sum = 0;
 		for (UINT threadIdx = 0; threadIdx < surface.num_threads(); threadIdx++)
 			sum += surface.dphi(threadIdx).size();
@@ -250,7 +256,13 @@ BOOST_AUTO_TEST_CASE(delta_phi)
 	// Multi-threaded check.
 	{
 		Surface<3, 2> surface(Vec3u(5, 5, 5));
-		BOOST_WARN_MESSAGE(omp_get_max_threads() >= 1, "only " << omp_get_max_threads() << " OpenMP thread available, not a good test of OpenMP.");
+		BOOST_WARN_MESSAGE(
+			omp_get_max_threads() >= 1,
+			(
+				"only " << omp_get_max_threads() <<
+				" OpenMP thread available, not a good test of OpenMP."
+			)
+		);
 		surface.num_threads(omp_get_max_threads());
 		Grid<FLOAT, 3>& dphi = surface.dphi();
 
@@ -322,7 +334,8 @@ BOOST_AUTO_TEST_CASE(delta_phi_update)
 	// Apply delta phi.
 	surface.update_end();
 
-	// Ensure nothing was changed.  Every point in 5x5x5 grid == 3, except centre which == 0.
+	// Ensure nothing was changed.  Every point in 5x5x5 grid == 3, except
+	// centre which == 0.
 	BOOST_CHECK_EQUAL(phi.data().sum(), 3 * 5 * 5 * 5 - 3);
 	// Delta phi position vector list should still contain one point.
 	sum = 0;
@@ -341,7 +354,8 @@ BOOST_AUTO_TEST_CASE(delta_phi_update)
 	// Apply delta phi.
 	surface.update_end();
 
-	// Ensure change applied.  Every point in grid == 3, except centre which == 0.4.
+	// Ensure change applied.  Every point in grid == 3, except centre which
+	// == 0.4.
 	BOOST_CHECK_EQUAL(phi.data().sum(), 3 * 5 * 5 * 5 - 3 + 0.4f);
 
 	omp_set_dynamic(1);
@@ -373,7 +387,10 @@ BOOST_AUTO_TEST_CASE(distance_transform)
 		surface.seed(Vec2i(0, 0));
 
 		Grid<FLOAT, 2> phi_check(Vec2u(5, 5));
-		phi_check.data() << 3, 3, 1.6, 3, 3, 3, 1.6, 0.6, 1.6, 3, 1.6, 0.6, -0.4, 0.6, 1.6, 3, 1.6, 0.6, 1.6, 3, 3, 3, 1.6, 3, 3;
+		phi_check.data() << (
+			3, 3, 1.6, 3, 3, 3, 1.6, 0.6, 1.6, 3, 1.6, 0.6, -0.4, 0.6, 1.6, 3,
+			1.6, 0.6, 1.6, 3, 3, 3, 1.6, 3, 3
+		);
 
 		surface.update_start();
 		{
@@ -408,7 +425,13 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.phi().data() << std::endl;
-		phi_check.data() << 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3, 2.4, 1.4, 0.4, -0.6, 0.4, 1.4, 2.4, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+		phi_check.data() << (
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3,
+			2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3,
+			2.4, 1.4, 0.4, -0.6, 0.4, 1.4, 2.4, 3, 3, 3, 2.4, 1.4, 0.4, 1.4,
+			2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3,
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+		);
 
 		phi_check.data() = phi_check.data() - phi.data();
 		const FLOAT diff = phi_check.data().sum();
@@ -431,7 +454,12 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.phi().data() << std::endl;
-		phi_check.data() << 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 2, 1, 0, 1, 2, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+		phi_check.data() << (
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+			2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 2, 1, 0, 1, 2, 3,
+			3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3,
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+		);
 
 		phi_check.data() = phi_check.data() - phi.data();
 		const FLOAT diff = phi_check.data().sum();
@@ -448,7 +476,12 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.phi().data() << std::endl;
-		phi_check.data() << 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+		phi_check.data() << (
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3,
+			3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+		);
 
 		BOOST_CHECK_EQUAL(surface.layer(0).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(-1).size(), 0);
@@ -472,7 +505,12 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.phi().data() << std::endl;
-		phi_check.data() << 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+		phi_check.data() << (
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3,
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+		);
 
 		BOOST_CHECK_EQUAL(surface.layer(0).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(-1).size(), 0);
@@ -496,7 +534,12 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.phi().data() << std::endl;
-		phi_check.data() << 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+		phi_check.data() << (
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+		);
 
 		BOOST_CHECK_EQUAL(surface.layer(0).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(-1).size(), 0);
@@ -520,7 +563,12 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.phi().data() << std::endl << std::endl;
-		phi_check.data() << 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+		phi_check.data() << (
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+		);
 
 		BOOST_CHECK_EQUAL(surface.layer(0).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(-1).size(), 0);
@@ -661,7 +709,13 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 	// Test it.
 	{
 //		std::cerr << surface.phi().data() << std::endl;
-		phi_check.data() << 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1.5, 3, 3, 3, 3, 3, 3, 3, 1.5, 0.5, 1.5, 3, 3, 3, 3, 3, 1.5, 0.5, -0.5, 0.5, 1.5, 3, 3, 3, 1.5, 0.5, -0.5, -1.5, -0.5, 0.5, 1.5, 3, 3, 3, 1.5, 0.5, -0.5, 0.5, 1.5, 3, 3, 3, 3, 3, 1.5, 0.5, 1.5, 3, 3, 3, 3, 3, 3, 3, 1.5, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+		phi_check.data() << (
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1.5, 3, 3, 3, 3, 3, 3, 3,
+			1.5, 0.5, 1.5, 3, 3, 3, 3, 3, 1.5, 0.5, -0.5, 0.5, 1.5, 3, 3, 3,
+			1.5, 0.5, -0.5, -1.5, -0.5, 0.5, 1.5, 3, 3, 3, 1.5, 0.5, -0.5, 0.5,
+			1.5, 3, 3, 3, 3, 3, 1.5, 0.5, 1.5, 3, 3, 3, 3, 3, 3, 3, 1.5, 3, 3,
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+		);
 
 		phi_check.data() = phi_check.data() - phi.data();
 		const FLOAT diff = phi_check.data().sum();
@@ -788,14 +842,20 @@ BOOST_AUTO_TEST_CASE(local_update)
 	{
 		surface.dphi(Vec2i(0, 0), -0.6f);
 	}
-	// Using localised update, which will only update outer layers that are affected by
-	// changes to the modified zero layer points.  In this test case, all outer layer
-	// points are affected, same as a global update.
+	// Using localised update, which will only update outer layers that are
+	// affected by changes to the modified zero layer points.  In this test
+	// case, all outer layer points are affected, same as a global update.
 	surface.update_end_local();
 
 	{
 //		std::cerr << surface.phi().data() << std::endl;
-		phi_check.data() << 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3, 2.4, 1.4, 0.4, -0.6, 0.4, 1.4, 2.4, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+		phi_check.data() << (
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3,
+			2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3,
+			2.4, 1.4, 0.4, -0.6, 0.4, 1.4, 2.4, 3, 3, 3, 2.4, 1.4, 0.4, 1.4,
+			2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3,
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+		);
 
 		phi_check.data() = phi_check.data() - phi.data();
 		const FLOAT diff = phi_check.data().sum();
@@ -818,7 +878,12 @@ BOOST_AUTO_TEST_CASE(local_update)
 
 	{
 //		std::cerr << surface.phi().data() << std::endl;
-		phi_check.data() << 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 2, 1, 0, 1, 2, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+		phi_check.data() << (
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+			2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 2, 1, 0, 1, 2, 3,
+			3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3,
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+		);
 
 		phi_check.data() = phi_check.data() - phi.data();
 		const FLOAT diff = phi_check.data().sum();

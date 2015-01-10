@@ -313,7 +313,8 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 				BOOST_CHECK_EQUAL((FLOAT)vec_grad(2), 1);
 			}
 
-			// Safe differencing - checks boundaries and uses central/forward/back as appropriate.
+			// Safe differencing - checks boundaries and uses
+			// central/forward/back as appropriate.
 			{
 				Vec3f vec_grad = grid.grad(Vec3i(0,0,0));
 
