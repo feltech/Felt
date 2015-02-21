@@ -209,10 +209,9 @@ BOOST_AUTO_TEST_CASE(next_closest_grid_point)
 
 	// Ensure it also works with negative distances.
 	// NOTE: row-major (y,x) element ordering...
-	surface.phi().data() << (
+	surface.phi().data() <<
 		2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -2,
-		-2, -2, -2, -2
-	);
+		-2, -2, -2, -2;
 	// NOTE: ...but accessed as (x,y)
 	pos_next = Vec2i(2, 0);
 
@@ -258,10 +257,8 @@ BOOST_AUTO_TEST_CASE(delta_phi)
 		Surface<3, 2> surface(Vec3u(5, 5, 5));
 		BOOST_WARN_MESSAGE(
 			omp_get_max_threads() >= 1,
-			(
-				"only " << omp_get_max_threads() <<
+			"only " << omp_get_max_threads() <<
 				" OpenMP thread available, not a good test of OpenMP."
-			)
 		);
 		surface.num_threads(omp_get_max_threads());
 		Grid<FLOAT, 3>& dphi = surface.dphi();
@@ -387,10 +384,9 @@ BOOST_AUTO_TEST_CASE(distance_transform)
 		surface.seed(Vec2i(0, 0));
 
 		Grid<FLOAT, 2> phi_check(Vec2u(5, 5));
-		phi_check.data() << (
+		phi_check.data() <<
 			3, 3, 1.6, 3, 3, 3, 1.6, 0.6, 1.6, 3, 1.6, 0.6, -0.4, 0.6, 1.6, 3,
-			1.6, 0.6, 1.6, 3, 3, 3, 1.6, 3, 3
-		);
+			1.6, 0.6, 1.6, 3, 3, 3, 1.6, 3, 3;
 
 		surface.update_start();
 		{
@@ -425,13 +421,12 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.phi().data() << std::endl;
-		phi_check.data() << (
+		phi_check.data() <<
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3,
 			2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3,
 			2.4, 1.4, 0.4, -0.6, 0.4, 1.4, 2.4, 3, 3, 3, 2.4, 1.4, 0.4, 1.4,
 			2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
-		);
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
 
 		phi_check.data() = phi_check.data() - phi.data();
 		const FLOAT diff = phi_check.data().sum();
@@ -454,12 +449,11 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.phi().data() << std::endl;
-		phi_check.data() << (
+		phi_check.data() <<
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 2, 1, 0, 1, 2, 3,
 			3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
-		);
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
 
 		phi_check.data() = phi_check.data() - phi.data();
 		const FLOAT diff = phi_check.data().sum();
@@ -476,12 +470,11 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.phi().data() << std::endl;
-		phi_check.data() << (
+		phi_check.data() <<
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3,
 			3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
-		);
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
 
 		BOOST_CHECK_EQUAL(surface.layer(0).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(-1).size(), 0);
@@ -505,12 +498,11 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.phi().data() << std::endl;
-		phi_check.data() << (
+		phi_check.data() <<
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
-		);
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
 
 		BOOST_CHECK_EQUAL(surface.layer(0).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(-1).size(), 0);
@@ -534,12 +526,11 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.phi().data() << std::endl;
-		phi_check.data() << (
+		phi_check.data() <<
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
-		);
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
 
 		BOOST_CHECK_EQUAL(surface.layer(0).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(-1).size(), 0);
@@ -563,12 +554,11 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.phi().data() << std::endl << std::endl;
-		phi_check.data() << (
+		phi_check.data() <<
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
-		);
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
 
 		BOOST_CHECK_EQUAL(surface.layer(0).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(-1).size(), 0);
@@ -709,13 +699,12 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 	// Test it.
 	{
 //		std::cerr << surface.phi().data() << std::endl;
-		phi_check.data() << (
+		phi_check.data() <<
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1.5, 3, 3, 3, 3, 3, 3, 3,
 			1.5, 0.5, 1.5, 3, 3, 3, 3, 3, 1.5, 0.5, -0.5, 0.5, 1.5, 3, 3, 3,
 			1.5, 0.5, -0.5, -1.5, -0.5, 0.5, 1.5, 3, 3, 3, 1.5, 0.5, -0.5, 0.5,
 			1.5, 3, 3, 3, 3, 3, 1.5, 0.5, 1.5, 3, 3, 3, 3, 3, 3, 3, 1.5, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
-		);
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
 
 		phi_check.data() = phi_check.data() - phi.data();
 		const FLOAT diff = phi_check.data().sum();
@@ -849,13 +838,12 @@ BOOST_AUTO_TEST_CASE(local_update)
 
 	{
 //		std::cerr << surface.phi().data() << std::endl;
-		phi_check.data() << (
+		phi_check.data() <<
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3,
 			2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3,
 			2.4, 1.4, 0.4, -0.6, 0.4, 1.4, 2.4, 3, 3, 3, 2.4, 1.4, 0.4, 1.4,
 			2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
-		);
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
 
 		phi_check.data() = phi_check.data() - phi.data();
 		const FLOAT diff = phi_check.data().sum();
@@ -878,12 +866,11 @@ BOOST_AUTO_TEST_CASE(local_update)
 
 	{
 //		std::cerr << surface.phi().data() << std::endl;
-		phi_check.data() << (
+		phi_check.data() <<
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 2, 1, 0, 1, 2, 3,
 			3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
-		);
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
 
 		phi_check.data() = phi_check.data() - phi.data();
 		const FLOAT diff = phi_check.data().sum();

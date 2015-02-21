@@ -212,8 +212,6 @@ namespace felt {
 		typedef typename PolyBase<D>::Simplex Simplex;
 		/// Simplex tuple type (for spatial lookup grid).
 		typedef typename PolyBase<D>::SpxTuple SpxTuple;
-		/// Simplex spatial lookup grid type.
-		typedef Grid<SpxTuple, D> SpxGrid;
 		/// Simplex array type for primary simplex (line or triangle) storage.
 		typedef std::vector<Simplex, Eigen::aligned_allocator<Simplex> >
 			SpxArray;
@@ -238,9 +236,6 @@ namespace felt {
 		static const UINT NullIdx;
 		/// Null vertex tuple value for flagging no vertices at a grid position.
 		static const VtxTuple NullVtxTuple;
-		/// Null simplex tuple value for flagging no simplices at a grid
-		/// position.
-		static const SpxTuple NullSpxTuple;
 
 		static const VecDi SpxGridPosOffset;
 	protected:
@@ -256,11 +251,6 @@ namespace felt {
 		 * Indices along each axis of phi grid of interpolated vertex.
 		 */
 		VtxGrid m_grid_vtx;
-		/**
-		 * Spatial lookup of grid pos to simplex (line) indices making up the
-		 * polygonisation of this square.
-		 */
-		SpxGrid m_grid_spx;
 
 	public:
 		/**
@@ -303,8 +293,7 @@ namespace felt {
           */
 		Poly(const VecDu& dims, const VecDi& offset) :
 		PolyBase<D>(dims, offset),
-		m_grid_vtx(dims, offset),
-		m_grid_spx(dims, offset)
+		m_grid_vtx(dims, offset)
 		{
 			this->reset();
 		}
@@ -353,11 +342,6 @@ namespace felt {
 		VtxGrid& grid_vtx()
 		{
 			return m_grid_vtx;
-		}
-
-		SpxGrid& grid_spx()
-		{
-			return m_grid_spx;
 		}
 
 
@@ -460,22 +444,18 @@ namespace felt {
 		{
 			typedef typename PolyBase<D>::Edge Edge;
 
-			// TODO: this is required for 3D polygonisation, since the marching
+			// TODO: this is here for consistency only, since the marching
 			// cubes implementation marches in the negative z-axis, but
-			// positive x and y axes.  Each node of the simplex lookup grid
-			// expects to be the bottom-back-left -most corner, so that
-			// neighbourhood queries are more natural.  Hence an offset is
-			// required so that the negative z-axis marching is compensated by
-			// shifting the calculation in the +z direction by one grid node.
+			// positive x and y axes. Hence an offset is required so that the
+			// negative z-axis marching is compensated by shifting the
+			// calculation in the +z direction by one grid node.
+			// (NOTE: has no effect for 2D).
 			const VecDi pos_calc = pos - SpxGridPosOffset;
 
 			// Get corner inside-outside bitmask at this position.
 			const unsigned short mask = Poly<D>::mask(phi, pos_calc);
 			// Get a reference to the simplex array.
 			SpxArray& spxs = this->spx();
-			// Get a reference to the spatial simplex lookup grid.
-			typename Poly<D>::SpxGrid& grid_spxs = this->grid_spx();
-
 			// Array of indices of zero-crossing vertices along each axis from
 			// this corner.
 			UINT vtx_idxs[PolyBase<D>::num_edges];
@@ -509,25 +489,21 @@ namespace felt {
 					edge_idx2 < PolyBase<D>::num_edges; edge_idx2++)
 				{
 					// Check both edges are bisected by the zero-curve.
-					if (((vtx_mask >> edge_idx1) & 1)
-						&& ((vtx_mask >> edge_idx2) & 1))
-					{
-						// Get the position vector component of the vertex
-						// information for both edges.
-						const VecDf& pos1 = this->vtx(vtx_idxs[edge_idx1]).pos;
-						const VecDf& pos2 = this->vtx(vtx_idxs[edge_idx2]).pos;
-						const FLOAT dist = (pos1 - pos2).squaredNorm();
-						// If they are essentially the same vertex,
-						// then there is no simplex for this cube.
-						if (dist <= Poly<D>::epsilon())
-							return;
-					}
+					if (!(((vtx_mask >> edge_idx1) & 1)
+						&& ((vtx_mask >> edge_idx2) & 1)))
+						continue;
+
+					// Get the position vector component of the vertex
+					// information for both edges.
+					const VecDf& pos1 = this->vtx(vtx_idxs[edge_idx1]).pos;
+					const VecDf& pos2 = this->vtx(vtx_idxs[edge_idx2]).pos;
+					const FLOAT dist = (pos1 - pos2).squaredNorm();
+					// If they are essentially the same vertex,
+					// then there is no simplex for this cube.
+					if (dist <= Poly<D>::epsilon())
+						return;
 				}
 			}
-
-			// Store a count of current index in the array at this position
-			// in the spatial lookup simplex grid.
-			UINT grid_idx = 0;
 
 			// Join the vertices along each edge that the surface crosses to
 			// make a simplex (or simplices).
@@ -553,8 +529,6 @@ namespace felt {
 				// Append the simplex to the list of simplices that make up the
 				// polygonisation of this grid location.
 				spxs.push_back(simplex);
-				grid_spxs(pos)[grid_idx] = spxs.size() - 1;
-				grid_idx++;
 			}
 		} // End spx()
 
@@ -566,70 +540,11 @@ namespace felt {
          */
 		void reset()
 		{
-			// Fill simplex grid with null values.
-			this->grid_spx().fill(NullSpxTuple);
 			// Fill vertex grid with null values.
 			this->grid_vtx().fill(NullVtxTuple);
 			// Clear vertex and simplex arrays.
 			this->vtx().resize(0);
 			this->spx().resize(0);
-		}
-
-
-		void reset(const VecDi& pos)
-		{
-			VtxGrid& grid_vtx = this->grid_vtx();
-			SpxGrid& grid_spx = this->grid_spx();
-
-			const VecDu& dims = grid_spx.dims();
-
-			// Store all 2^d bottom-left cube corners of cubes surrounding node
-			// at pos in an array.
-			std::vector<VecDi, Eigen::aligned_allocator<VecDi> >
-			apos_corners(1 << dims.size());
-
-			// Loop and create all cube corner positions.
-			for (
-				UINT corner_idx = 0; corner_idx < apos_corners.size();
-				corner_idx++
-			)
-			{
-				// 0 = 00 => (x,y)
-				// 1 = 01 => (x-1,y)
-				// 2 = 10 => (x,y-1)
-				// 3 = 11 => (x-1,y-1)
-
-				// Store position of current corner.
-				VecDi pos_corner(dims.size());
-				// Calculate position of current corner:
-				// Loop each dimension, 2D (x,y) or 3D (x,y,z).
-				for (INT dim = 0; dim < pos_corner.size(); dim++)
-				{
-					// Get the element of pos along this axis.
-					INT pos_axis = pos(dim);
-					// Use the current index in the corner array as a bitmask
-					// hash to calculate this axis's offset in {0,1}.
-					const INT dir = (corner_idx >> dim) & 1;
-					// Offset by 0 or -1.
-					pos_axis -= dir;
-					// Update the element of the corner's position along this
-					// axis to the (potentially) offset value of pos.
-					pos_corner(dim) = pos_axis;
-				}
-				// Set the corner position in the array to the calculated
-				// offset position.
-				apos_corners[corner_idx] = pos_corner;
-			}
-
-			// Loop the cubes containing positions to invalidate.
-			for (
-				UINT corner_idx = 0; corner_idx < apos_corners.size();
-				corner_idx++
-			)
-			{
-				const VecDi& pos_corner = apos_corners[corner_idx];
-				grid_spx(pos_corner) = NullSpxTuple;
-			}
 		}
 	};
 
@@ -642,10 +557,6 @@ namespace felt {
 	template <UINT D>
 	const typename Poly<D>::VtxTuple Poly<D>::NullVtxTuple =
 		Poly<D>::VtxTuple::Constant(Poly<D>::NullIdx);
-	template <UINT D>
-	const typename Poly<D>::SpxTuple Poly<D>::NullSpxTuple =
-		Poly<D>::SpxTuple::Constant(Poly<D>::NullIdx);
-
 
 	////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
@@ -1114,10 +1025,5 @@ namespace felt {
 		};
 
 } // End namepsace felt.
-
-
-
-
-
 
 #endif // POLYBASE_H
