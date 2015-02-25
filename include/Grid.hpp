@@ -6,7 +6,8 @@
 #include <vector>
 #include <eigen3/Eigen/Dense>
 
-namespace felt {
+namespace felt
+{
 
 	typedef float FLOAT;
 	typedef int INT;
@@ -20,11 +21,13 @@ namespace felt {
 	typedef Eigen::Matrix<INT, 3, 1> Vec3i;
 
 	// Following signnum from http://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
-	template <typename T> int sgn(T val) {
+	template <typename T> int sgn(T val)
+	{
 		return (T(0) < val) - (val < T(0));
 	}
 
-	static inline uint32_t log2(const uint32_t x) {
+	static inline uint32_t log2(const uint32_t x)
+	{
 	  uint32_t y;
 	  asm ( "\tbsr %1, %0\n"
 		  : "=r"(y)
@@ -36,13 +39,13 @@ namespace felt {
 
 
 	template <class T, UINT D>
-	class Grid {
-	protected:
+	class Grid
+	{
+	public:
 		typedef Eigen::Matrix<UINT, D, 1> VecDu;
 		typedef Eigen::Matrix<INT, D, 1> VecDi;
 		typedef Eigen::Matrix<FLOAT, D, 1> VecDf;
 		typedef Eigen::Matrix<T, D, 1> VecDT;
-	public:
 		typedef Eigen::Array<T, 1, Eigen::Dynamic> ArrayData;
 
 	protected:

@@ -6,3 +6,7 @@
 /config.status
 /configure
 /libtool
+/.autotools
+/.cproject
+/.project
+/Felt.project
