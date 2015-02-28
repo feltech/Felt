@@ -16,7 +16,8 @@ noinst_PROGRAMS=test
 # '_SOURCES' for example.
 
 # Sources for the a.out 
-test_SOURCES = test_Grid.cpp test_ArrayMappedGrid.cpp test_Surface.cpp test_Poly.cpp test_all.cpp 
+test_SOURCES = test_Grid.cpp test_MappedGrid.cpp test_Surface.cpp \
+	test_Poly.cpp test_all.cpp 
 
 # Linker options for a.out
 test_LDFLAGS = $(top_srcdir)/libFelt/libFelt.la
