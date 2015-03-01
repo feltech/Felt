@@ -53,6 +53,19 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL(grid(pos1), -1.0f);
 		BOOST_CHECK_EQUAL(grid(pos2), 4.0f);
 		BOOST_CHECK_EQUAL(grid(pos3), -1.0f);
+
+		grid.add(pos1, 3.0f);
+		grid.add(pos2, 5.0f);
+		grid.reset();
+
+		BOOST_CHECK_EQUAL(grid.list().size(), 0);
+		BOOST_CHECK_EQUAL(grid(pos1), 3.0f);
+		BOOST_CHECK_EQUAL(grid(pos2), 5.0f);
+
+		grid.add(pos3);
+		BOOST_CHECK_EQUAL(grid.list().size(), 1);
+		BOOST_CHECK_EQUAL(grid(pos3), -1.0f);
+
 	}
 
 

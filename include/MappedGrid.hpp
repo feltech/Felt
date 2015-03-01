@@ -42,6 +42,11 @@ namespace felt
 		void add(const VecDi& pos, const T& val)
 		{
 			(*this)(pos) = val;
+			add(pos);
+		}
+
+		void add(const VecDi& pos)
+		{
 			m_aPos.push_back(pos);
 		}
 
@@ -49,6 +54,11 @@ namespace felt
 		{
 			for (VecDi pos : m_aPos)
 				(*this)(pos) = val;
+			reset();
+		}
+
+		void reset()
+		{
 			m_aPos.clear();
 		}
 
