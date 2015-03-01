@@ -39,16 +39,19 @@ namespace felt
 		}
 
 
-		void add(const VecDi& pos, const T& val)
+		UINT add(const VecDi& pos, const T& val)
 		{
 			(*this)(pos) = val;
-			add(pos);
+			return add(pos);
 		}
 
-		void add(const VecDi& pos)
+
+		UINT add(const VecDi& pos)
 		{
 			m_aPos.push_back(pos);
+			return m_aPos.size() - 1;
 		}
+
 
 		void reset(const T& val)
 		{
@@ -57,10 +60,12 @@ namespace felt
 			reset();
 		}
 
+
 		void reset()
 		{
 			m_aPos.clear();
 		}
+
 
 		void remove(const UINT& idx)
 		{
@@ -93,12 +98,13 @@ namespace felt
 			this->fill(NULL_IDX);
 		}
 
-		void add(const VecDi& pos)
+		UINT add(const VecDi& pos)
 		{
+			const UINT idx = (*this)(pos);
 			// Do not allow duplicates.
-			if ((*this)(pos) != NULL_IDX)
-				return;
-			this->add(pos, this->m_aPos.size());
+			if (idx != NULL_IDX)
+				return idx;
+			return this->add(pos, this->m_aPos.size());
 		}
 
 		void reset()
@@ -119,9 +125,9 @@ namespace felt
 		}
 
 	private:
-		void add(const VecDi& pos, const UINT& val)
+		UINT add(const VecDi& pos, const UINT& val)
 		{
-			Grid_t::add(pos, val);
+			return Grid_t::add(pos, val);
 		}
 
 		void reset(const UINT& val)
@@ -164,9 +170,52 @@ namespace felt
 	template <UINT D>
 	const UINT
 	PosArrayMappedGrid<D>::NULL_IDX = std::numeric_limits<UINT>::max();
+
+
+
+	template <typename T, UINT D>
+	class SpatiallyPartitionedArray
+	{
+	protected:
+		typedef PosArrayMappedGrid<D> ActivePartitionGrid;
+		typedef Grid<std::vector<T>, D> ArrayGrid;
+		typedef typename ActivePartitionGrid::VecDu	VecDu;
+		typedef typename ActivePartitionGrid::VecDi	VecDi;
+
+		ActivePartitionGrid m_grid_active;
+		ArrayGrid m_grid_avals;
+	public:
+
+		SpatiallyPartitionedArray(const VecDu& dims, const VecDi& offset)
+		: m_grid_active(dims, offset), m_grid_avals(dims, offset)
+		{
+		}
+
+
+		UINT add(const VecDi& pos, const T& val)
+		{
+			m_grid_avals(pos).push_back(val);
+			return m_grid_active.add(pos);
+		}
+
+		ActivePartitionGrid& active()
+		{
+			return m_grid_active;
+		}
+
+
+		const ActivePartitionGrid& active() const
+		{
+			return m_grid_active;
+		}
+
+
+		void reset()
+		{
+			for (VecDi pos : m_grid_active.list())
+				m_grid_avals(pos).clear();
+			m_grid_active.reset();
+		}
+	};
 }
-
-
-
-
 #endif /* MAPPEDGRID_HPP_ */

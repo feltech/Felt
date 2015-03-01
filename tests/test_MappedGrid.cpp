@@ -23,12 +23,16 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		Vec3i pos1(0, 0, 1);
 		Vec3i pos2(1, 1, 0);
 		Vec3i pos3(2, 0, -1);
-		grid.add(pos1, 3.0f);
-		grid.add(pos2, -1.0f);
+		UINT idx1 = grid.add(pos1, 3.0f);
+		UINT idx2 = grid.add(pos2, -1.0f);
 		grid(pos2) = 5.0f;
-		grid.add(pos3, 7.0f);
+		UINT idx3 = grid.add(pos3, 7.0f);
+
 
 		BOOST_CHECK_EQUAL(grid.list().size(), 3);
+		BOOST_CHECK_EQUAL(idx1, 0);
+		BOOST_CHECK_EQUAL(idx2, 1);
+		BOOST_CHECK_EQUAL(idx3, 2);
 		BOOST_CHECK_EQUAL(grid(pos1), 3.0f);
 		BOOST_CHECK_EQUAL(grid(pos2), 5.0f);
 		BOOST_CHECK_EQUAL(grid(pos3), 7.0f);
@@ -87,10 +91,16 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL(grid(pos4), Grid_t::NULL_IDX);
 
 		// Add the positions to the array and set index lookup values.
-		grid.add(pos1);
-		grid.add(pos2);
-		grid.add(pos3);
-		grid.add(pos4);
+		UINT idx1 = grid.add(pos1);
+		UINT idx2 = grid.add(pos2);
+		UINT idx3 = grid.add(pos3);
+		UINT idx4 = grid.add(pos4);
+
+		BOOST_CHECK_EQUAL(idx1, 0);
+		BOOST_CHECK_EQUAL(idx2, 1);
+		BOOST_CHECK_EQUAL(idx3, 2);
+		BOOST_CHECK_EQUAL(idx4, 3);
+
 
 		// Check the positions were added to the array and their respective
 		// index lookups are as expected.
@@ -105,7 +115,7 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL(grid(pos4), 3);
 
 		// Attempt to add the same position to the array again (i.e. duplicate).
-		grid.add(pos1);
+		UINT idx5 = grid.add(pos2);
 
 		// Ensure nothing changed.
 		BOOST_REQUIRE_EQUAL(grid.list().size(), 4);
@@ -117,6 +127,7 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL(grid(pos2), 1);
 		BOOST_CHECK_EQUAL(grid(pos3), 2);
 		BOOST_CHECK_EQUAL(grid(pos4), 3);
+		BOOST_CHECK_EQUAL(idx5, 1);
 
 		// Remove a position by index.
 		grid.remove(1);
