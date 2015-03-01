@@ -5,7 +5,7 @@
 
 namespace felt
 {
-	template <typename T, UINT D>
+	template <typename T, UINT D, typename A = std::allocator<T>>
 	class ArrayMappedGrid : public felt::Grid<T, D>
 	{
 	protected:
@@ -13,7 +13,7 @@ namespace felt
 		typedef typename Grid_t::VecDu	VecDu;
 		typedef typename Grid_t::VecDi	VecDi;
 	public:
-		typedef std::vector<VecDi>		PosArray;
+		typedef std::vector<VecDi, A>		PosArray;
 	protected:
 		PosArray	m_aPos;
 
