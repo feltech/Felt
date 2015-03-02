@@ -167,34 +167,35 @@ namespace felt
 		}
 	};
 
-	template <UINT D>
-	const UINT
+	template <UINT D> const UINT
 	PosArrayMappedGrid<D>::NULL_IDX = std::numeric_limits<UINT>::max();
 
 
 
 	template <typename T, UINT D>
-	class SpatiallyPartitionedArray
+	class SpatiallyPartitionedArray : public felt::Grid<std::vector<T>, D>
 	{
 	protected:
 		typedef PosArrayMappedGrid<D> ActivePartitionGrid;
-		typedef Grid<std::vector<T>, D> ArrayGrid;
-		typedef typename ActivePartitionGrid::VecDu	VecDu;
-		typedef typename ActivePartitionGrid::VecDi	VecDi;
+		typedef Grid<std::vector<T>, D> Grid_t;
+		typedef typename Grid_t::VecDu	VecDu;
+		typedef typename Grid_t::VecDi	VecDi;
 
 		ActivePartitionGrid m_grid_active;
-		ArrayGrid m_grid_avals;
 	public:
+		static const UINT NULL_IDX;
+
 
 		SpatiallyPartitionedArray(const VecDu& dims, const VecDi& offset)
-		: m_grid_active(dims, offset), m_grid_avals(dims, offset)
+		: Grid_t(dims, offset), m_grid_active(dims, offset)
 		{
+
 		}
 
 
 		UINT add(const VecDi& pos, const T& val)
 		{
-			m_grid_avals(pos).push_back(val);
+			(*this)(pos).push_back(val);
 			return m_grid_active.add(pos);
 		}
 
@@ -213,9 +214,13 @@ namespace felt
 		void reset()
 		{
 			for (VecDi pos : m_grid_active.list())
-				m_grid_avals(pos).clear();
+				(*this)(pos).clear();
 			m_grid_active.reset();
 		}
 	};
+
+	template <typename T, UINT D> const UINT
+	SpatiallyPartitionedArray<T, D>::NULL_IDX = PosArrayMappedGrid<D>::NULL_IDX;
+
 }
 #endif /* MAPPEDGRID_HPP_ */

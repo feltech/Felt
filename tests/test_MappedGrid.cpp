@@ -160,10 +160,77 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 
 		// Ensure array is zero size and remaining associated index lookups
 		// have null value.
-		BOOST_REQUIRE_EQUAL(grid.list().size(), 0);
+		BOOST_CHECK_EQUAL(grid.list().size(), 0);
 		BOOST_CHECK_EQUAL(grid(pos1), Grid_t::NULL_IDX);
 		BOOST_CHECK_EQUAL(grid(pos2), Grid_t::NULL_IDX);
 		BOOST_CHECK_EQUAL(grid(pos3), Grid_t::NULL_IDX);
 		BOOST_CHECK_EQUAL(grid(pos4), Grid_t::NULL_IDX);
+	}
+
+
+	BOOST_AUTO_TEST_CASE(test_SpatiallyPartitionedArray)
+	{
+		typedef SpatiallyPartitionedArray<FLOAT, 3> Grid_t;
+		Grid_t grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
+
+		Vec3i pos1(1, 0, -1);
+		Vec3i pos2(2, 1, 0);
+		Vec3i pos3(3, -1, 0);
+		Vec3i pos4(4, -1, 2);
+
+		// Check initialised to zero length with null index references.
+		BOOST_CHECK_EQUAL(grid.active().list().size(), 0);
+		BOOST_CHECK_EQUAL(grid.active()(pos1), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.active()(pos2), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.active()(pos3), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.active()(pos4), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL(grid(pos1).size(), 0);
+		BOOST_CHECK_EQUAL(grid(pos2).size(), 0);
+		BOOST_CHECK_EQUAL(grid(pos3).size(), 0);
+		BOOST_CHECK_EQUAL(grid(pos4).size(), 0);
+
+		const UINT& idx1_1 = grid.add(pos1, 1.0f);
+		const UINT& idx2_1 = grid.add(pos2, 1.0f);
+		const UINT& idx2_2 = grid.add(pos2, 2.0f);
+		const UINT& idx3_1 = grid.add(pos3, 1.0f);
+		const UINT& idx3_2 = grid.add(pos3, 2.0f);
+		const UINT& idx3_3 = grid.add(pos3, 3.0f);
+		const UINT& idx4_1 = grid.add(pos4, 1.0f);
+		const UINT& idx4_2 = grid.add(pos4, 1.0f);
+		const UINT& idx4_3 = grid.add(pos4, 1.0f);
+		const UINT& idx4_4 = grid.add(pos4, 1.0f);
+
+		BOOST_CHECK_EQUAL(idx1_1, 0);
+		BOOST_CHECK_EQUAL(idx2_1, 1);
+		BOOST_CHECK_EQUAL(idx3_1, 2);
+		BOOST_CHECK_EQUAL(idx4_1, 3);
+		BOOST_CHECK_EQUAL(idx2_1, idx2_2);
+		BOOST_CHECK_EQUAL(idx3_1, idx3_2);
+		BOOST_CHECK_EQUAL(idx4_1, idx4_2);
+		BOOST_CHECK_EQUAL(idx3_2, idx3_3);
+		BOOST_CHECK_EQUAL(idx4_2, idx4_3);
+		BOOST_CHECK_EQUAL(idx4_3, idx4_4);
+
+		BOOST_CHECK_EQUAL(grid.active()(pos1), 0);
+		BOOST_CHECK_EQUAL(grid.active()(pos2), 1);
+		BOOST_CHECK_EQUAL(grid.active()(pos3), 2);
+		BOOST_CHECK_EQUAL(grid.active()(pos4), 3);
+		BOOST_CHECK_EQUAL(grid.active().list()[0], pos1);
+		BOOST_CHECK_EQUAL(grid.active().list()[1], pos2);
+		BOOST_CHECK_EQUAL(grid.active().list()[2], pos3);
+		BOOST_CHECK_EQUAL(grid.active().list()[3], pos4);
+
+
+		grid.reset();
+		BOOST_CHECK_EQUAL(grid.active().list().size(), 0);
+		BOOST_CHECK_EQUAL(grid.active()(pos1), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.active()(pos2), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.active()(pos3), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.active()(pos4), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL(grid(pos1).size(), 0);
+		BOOST_CHECK_EQUAL(grid(pos2).size(), 0);
+		BOOST_CHECK_EQUAL(grid(pos3).size(), 0);
+		BOOST_CHECK_EQUAL(grid(pos4).size(), 0);
+
 	}
 BOOST_AUTO_TEST_SUITE_END()
