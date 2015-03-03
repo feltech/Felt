@@ -66,17 +66,20 @@ namespace felt
 		{
 		}
 
+
 		Grid (UINT x, UINT y) :
 		m_dx(1)
 		{
 			this->init(Vec2u(x,y));
 		}
 
+
 		Grid (UINT x, UINT y, UINT z) :
 		m_dx(1)
 		{
 			this->init(Vec3u(x,y,z));
 		}
+
 
 		/**
 		 * Initialise a grid with given dimension, offset and delta x.
@@ -93,6 +96,7 @@ namespace felt
 		{
 			this->init(dims, offset, delta);
 		}
+
 
 		void init (
 			const VecDu& dims, const VecDi& offset = VecDi::Zero(),

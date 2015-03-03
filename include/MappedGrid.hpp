@@ -5,7 +5,9 @@
 
 namespace felt
 {
-	template <typename T, UINT D, typename A = std::allocator<T>>
+	template <
+		typename T, UINT D, UINT N=1, typename A=Eigen::aligned_allocator<T>
+	>
 	class ArrayMappedGrid : public felt::Grid<T, D>
 	{
 	protected:
@@ -13,9 +15,9 @@ namespace felt
 		typedef typename Grid_t::VecDu	VecDu;
 		typedef typename Grid_t::VecDi	VecDi;
 	public:
-		typedef std::vector<VecDi, A>		PosArray;
+		typedef std::vector<VecDi, A>	PosArray;
 	protected:
-		PosArray	m_aPos;
+		PosArray	m_aPos[N];
 
 	public:
 
@@ -33,64 +35,62 @@ namespace felt
 		}
 
 
-		const PosArray& list() const
+		const PosArray& list(const UINT& arr_idx = 0) const
 		{
-			return m_aPos;
+			return m_aPos[arr_idx];
 		}
 
 
-		UINT add(const VecDi& pos, const T& val)
+		PosArray& list(const UINT& arr_idx = 0)
+		{
+			return m_aPos[arr_idx];
+		}
+
+
+		UINT add(const VecDi& pos, const T& val, const UINT& arr_idx = 0)
 		{
 			(*this)(pos) = val;
-			return add(pos);
+			list(arr_idx).push_back(pos);
+			return list(arr_idx).size() - 1;
 		}
 
 
-		UINT add(const VecDi& pos)
+		void reset(const T& val, const UINT& arr_idx = 0)
 		{
-			m_aPos.push_back(pos);
-			return m_aPos.size() - 1;
-		}
-
-
-		void reset(const T& val)
-		{
-			for (VecDi pos : m_aPos)
+			for (VecDi pos : list(arr_idx))
 				(*this)(pos) = val;
-			reset();
+			list(arr_idx).clear();
 		}
 
 
-		void reset()
+		void remove(const UINT& idx, const UINT& arr_idx = 0)
 		{
-			m_aPos.clear();
-		}
-
-
-		void remove(const UINT& idx)
-		{
-			const UINT& size = m_aPos.size();
+			const UINT& size = m_aPos[arr_idx].size();
 			if (size > 1)
 			{
 				// Duplicate last element into this index.
-				const VecDi& pos_last = m_aPos[size - 1];
-				m_aPos[idx] = pos_last;
+				const VecDi& pos_last = m_aPos[arr_idx][size - 1];
+				m_aPos[arr_idx][idx] = pos_last;
 			}
-			m_aPos.pop_back();
+			list(arr_idx).pop_back();
 		}
 	};
 
 
-	template <UINT D>
-	class PosArrayMappedGrid
-	: public ArrayMappedGrid<UINT, D>
+	template <UINT D, UINT N=1>
+	class PosArrayMappedGrid : public ArrayMappedGrid<UINT, D, N>
 	{
 	protected:
-		typedef ArrayMappedGrid<UINT, D> Grid_t;
+		typedef ArrayMappedGrid<UINT, D, N> Grid_t;
 		typedef typename Grid_t::VecDu	VecDu;
 		typedef typename Grid_t::VecDi	VecDi;
 	public:
 		static const UINT NULL_IDX;
+
+		static inline const UINT num_lists()
+		{
+			return N;
+		}
 
 		PosArrayMappedGrid(const VecDu& dims, const VecDi& offset)
 		: Grid_t(dims, offset)
@@ -98,41 +98,41 @@ namespace felt
 			this->fill(NULL_IDX);
 		}
 
-		UINT add(const VecDi& pos)
+		UINT add(const VecDi& pos, const UINT& arr_idx = 0)
 		{
 			const UINT idx = (*this)(pos);
 			// Do not allow duplicates.
 			if (idx != NULL_IDX)
 				return idx;
-			return this->add(pos, this->m_aPos.size());
+			return this->add(pos, this->list(arr_idx).size(), arr_idx);
 		}
 
-		void reset()
+		void reset(const UINT& arr_idx = 0)
 		{
-			reset(NULL_IDX);
+			reset(NULL_IDX, arr_idx);
 		}
 
-		void remove(const UINT& idx)
+		void remove(const UINT& idx, const UINT& arr_idx = 0)
 		{
-			const VecDi& pos = this->m_aPos[idx];
+			const VecDi& pos = this->list(arr_idx)[idx];
 			remove(idx, pos);
 		}
 
-		void remove(const VecDi& pos)
+		void remove(const VecDi& pos, const UINT& arr_idx = 0)
 		{
 			const UINT& idx = (*this)(pos);
-			remove(idx, pos);
+			remove(idx, pos, arr_idx);
 		}
 
-	private:
-		UINT add(const VecDi& pos, const UINT& val)
+	protected:
+		UINT add(const VecDi& pos, const UINT& val, const UINT& arr_idx)
 		{
-			return Grid_t::add(pos, val);
+			return Grid_t::add(pos, val, arr_idx);
 		}
 
-		void reset(const UINT& val)
+		void reset(const UINT& val, const UINT& arr_idx)
 		{
-			Grid_t::reset(NULL_IDX);
+			Grid_t::reset(val, arr_idx);
 		}
 
 		/**
@@ -144,7 +144,7 @@ namespace felt
 		 * @param idx
 		 * @param pos
 		 */
-		void remove(const UINT idx, const VecDi& pos)
+		void remove(const UINT idx, const VecDi& pos, const UINT& arr_idx = 0)
 		{
 			// Set index lookup to null value.
 			(*this)(pos) = NULL_IDX;
@@ -152,24 +152,23 @@ namespace felt
 			// If this is not the last remaining position in the array, then
 			// we must move the last position to this position and update the
 			// lookup grid.
-			const UINT& size = this->m_aPos.size();
+			const UINT& size = this->m_aPos[arr_idx].size();
 			if (size > 1)
 			{
 				// Duplicate last element into this index.
-				const VecDi& pos_last = this->m_aPos[size - 1];
-				this->m_aPos[idx] = pos_last;
+				const VecDi& pos_last = this->list(arr_idx)[size - 1];
+				this->list(arr_idx)[idx] = pos_last;
 				// Set the lookup grid to reference the new index in the array.
 				(*this)(pos_last) = idx;
 			}
 			// Remove the last element in the array (which is at this point
 			// either the last remaining element or a duplicate).
-			this->m_aPos.pop_back();
+			this->list(arr_idx).pop_back();
 		}
 	};
 
-	template <UINT D> const UINT
-	PosArrayMappedGrid<D>::NULL_IDX = std::numeric_limits<UINT>::max();
-
+	template <UINT D, UINT N> const UINT
+	PosArrayMappedGrid<D, N>::NULL_IDX = std::numeric_limits<UINT>::max();
 
 
 	template <typename T, UINT D>
@@ -184,7 +183,6 @@ namespace felt
 		ActivePartitionGrid m_grid_active;
 	public:
 		static const UINT NULL_IDX;
-
 
 		SpatiallyPartitionedArray(const VecDu& dims, const VecDi& offset)
 		: Grid_t(dims, offset), m_grid_active(dims, offset)

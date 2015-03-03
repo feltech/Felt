@@ -676,5 +676,4 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 			BOOST_CHECK_CLOSE(sharp_corner_curvature_3D, 1.5f, 0.00001f);
 		}
 	}
-
 BOOST_AUTO_TEST_SUITE_END()
