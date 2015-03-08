@@ -175,6 +175,8 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		const Vec3i pos2(2, 1, 0);
 		const Vec3i pos3(3, -1, 0);
 		const Vec3i pos4(4, -1, 2);
+		const Vec3i pos5(5, -2, 1);
+		const Vec3i pos6(6, -2, 2);
 
 		// Add the positions to the array and set index lookup values.
 		const UINT& idx1 = grid.add(pos1, 0);
@@ -211,31 +213,48 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL(grid(pos3), 0);
 		BOOST_CHECK_EQUAL(grid(pos4), 0);
 
-		const Vec3i pos5(5, -2, 1);
-
 		grid.add(pos5, 2);
+		grid.add(pos6, 2);
 
 		BOOST_CHECK_EQUAL(grid.list(0).size(), 1);
 		BOOST_CHECK_EQUAL(grid.list(1).size(), 1);
-		BOOST_CHECK_EQUAL(grid.list(2).size(), 2);
+		BOOST_CHECK_EQUAL(grid.list(2).size(), 3);
 		BOOST_CHECK_EQUAL(grid.list(0)[0], pos1);
 		BOOST_CHECK_EQUAL(grid.list(1)[0], pos3);
 		BOOST_CHECK_EQUAL(grid.list(2)[0], pos4);
 		BOOST_CHECK_EQUAL(grid.list(2)[1], pos5);
+		BOOST_CHECK_EQUAL(grid.list(2)[2], pos6);
 		BOOST_CHECK_EQUAL(grid(pos1), 0);
 		BOOST_CHECK_EQUAL(grid(pos2), Grid_t::NULL_IDX);
 		BOOST_CHECK_EQUAL(grid(pos3), 0);
 		BOOST_CHECK_EQUAL(grid(pos4), 0);
 		BOOST_CHECK_EQUAL(grid(pos5), 1);
+		BOOST_CHECK_EQUAL(grid(pos6), 2);
+
+		grid.remove(pos4, 2);
+		grid.remove(0, 0);
+
+		BOOST_CHECK_EQUAL(grid.list(0).size(), 0);
+		BOOST_CHECK_EQUAL(grid.list(1).size(), 1);
+		BOOST_CHECK_EQUAL(grid.list(2).size(), 2);
+		BOOST_CHECK_EQUAL(grid.list(0)[0], pos1);
+		BOOST_CHECK_EQUAL(grid.list(1)[0], pos3);
+		BOOST_CHECK_EQUAL(grid.list(2)[1], pos5);
+		BOOST_CHECK_EQUAL(grid.list(2)[0], pos6);
+		BOOST_CHECK_EQUAL(grid(pos1), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL(grid(pos2), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL(grid(pos3), 0);
+		BOOST_CHECK_EQUAL(grid(pos4), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL(grid(pos5), 1);
+		BOOST_CHECK_EQUAL(grid(pos6), 0);
 
 		grid.reset(2);
 
-		BOOST_CHECK_EQUAL(grid.list(0).size(), 1);
+		BOOST_CHECK_EQUAL(grid.list(0).size(), 0);
 		BOOST_CHECK_EQUAL(grid.list(1).size(), 1);
 		BOOST_CHECK_EQUAL(grid.list(2).size(), 0);
-		BOOST_CHECK_EQUAL(grid.list(0)[0], pos1);
 		BOOST_CHECK_EQUAL(grid.list(1)[0], pos3);
-		BOOST_CHECK_EQUAL(grid(pos1), 0);
+		BOOST_CHECK_EQUAL(grid(pos1), Grid_t::NULL_IDX);
 		BOOST_CHECK_EQUAL(grid(pos2), Grid_t::NULL_IDX);
 		BOOST_CHECK_EQUAL(grid(pos3), 0);
 		BOOST_CHECK_EQUAL(grid(pos4), Grid_t::NULL_IDX);

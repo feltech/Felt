@@ -54,20 +54,6 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 
 		const float test_const = grid(Vec3i(1,2,3));
 		BOOST_CHECK_EQUAL(test_const, 17.0f);
-
-		// Shortcuts
-		{
-			// 2D.
-			Grid <FLOAT,2> grid(3, 7);
-			grid.fill(2);
-			BOOST_CHECK_EQUAL(grid(1,1), (float)2.0f);
-		}
-		{
-			// 3D.
-			Grid <FLOAT,3> grid(3, 7, 11);
-			grid.fill(2);
-			BOOST_CHECK_EQUAL(grid(1,1,1), (float)2.0f);
-		}
 	}
 
 	/*
@@ -423,7 +409,7 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 			Eigen::Matrix<FLOAT, 1, 1> pos;
 			pos(0) = 0.3;
 
-			std::vector< FLOAT > out = grid._interp(input, pos);
+			std::vector< FLOAT > out = grid.interp(input, pos);
 
 			BOOST_CHECK_EQUAL(out[0], 0.7f);
 		}
@@ -446,14 +432,14 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 
 			Vec2f pos(0.8f, 0.5f);
 
-			std::vector< FLOAT > output = grid._interp(input, pos);
+			std::vector< FLOAT > output = grid.interp(input, pos);
 
 			BOOST_CHECK_CLOSE(output[0], 0.4f, 0.00001f);
 			BOOST_CHECK_CLOSE(output[1], 0.8f, 0.00001f);
 
 			input = output;
 
-			output = grid._interp(input, pos);
+			output = grid.interp(input, pos);
 			BOOST_CHECK_CLOSE(output[0], 0.6f, 0.00001f);
 		}
 	}
@@ -483,7 +469,7 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 
 			Vec3f pos(0.5f, 0.75f, 0.5f);
 
-			std::vector< FLOAT > output4 = grid._interp(input, pos);
+			std::vector< FLOAT > output4 = grid.interp(input, pos);
 
 			BOOST_CHECK_EQUAL(output4[0 /*00x*/], 0.4f);
 			BOOST_CHECK_EQUAL(output4[1 /*01x*/], 1.0f);
@@ -491,12 +477,12 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 			BOOST_CHECK_EQUAL(output4[3 /*11x*/], 1.0f);
 
 			input = output4;
-			std::vector< FLOAT > output2 = grid._interp(input, pos);
+			std::vector< FLOAT > output2 = grid.interp(input, pos);
 			BOOST_CHECK_CLOSE(output2[0 /*0yx*/], 0.85f, 0.00001f);
 			BOOST_CHECK_CLOSE(output2[1 /*1yx*/], 0.75f, 0.00001f);
 
 			input = output2;
-			std::vector< FLOAT > output1 = grid._interp(input, pos);
+			std::vector< FLOAT > output1 = grid.interp(input, pos);
 			BOOST_CHECK_CLOSE(output1[0 /*zyx*/], 0.8f, 0.00001f);
 		}
 	}
@@ -532,7 +518,7 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 	/*
 	 * Gradient interpolation.
 	 */
-	BOOST_AUTO_TEST_CASE(grad_forward_interp)
+	BOOST_AUTO_TEST_CASE(grad_forwardinterp)
 	{
 		Grid <FLOAT,2> grid(Vec2u(5, 5), Vec2i(-2,-2));
 		grid.fill(0);

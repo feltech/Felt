@@ -35,6 +35,11 @@ namespace felt
 		}
 
 
+		ArrayMappedGrid () : Grid_t::Grid()
+		{
+		}
+
+
 		const PosArray& list(const UINT& arr_idx = 0) const
 		{
 			return m_aPos[arr_idx];
@@ -100,7 +105,7 @@ namespace felt
 
 		UINT add(const VecDi& pos, const UINT& arr_idx = 0)
 		{
-			const UINT idx = (*this)(pos);
+			const UINT& idx = (*this)(pos);
 			// Do not allow duplicates.
 			if (idx != NULL_IDX)
 				return idx;

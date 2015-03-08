@@ -1,6 +1,7 @@
+#ifndef Surface_hpp
+#define Surface_hpp
+
 #include <vector>
-//#include <set>
-//#include <unordered_set>
 #include <functional>
 #include <limits>
 #include <boost/math/special_functions/round.hpp>
@@ -1024,3 +1025,4 @@ namespace felt {
 
 	};
 }
+#endif

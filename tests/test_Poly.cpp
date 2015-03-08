@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		// Ensure vertex was added.
 		BOOST_CHECK_EQUAL(poly3D.vtx().size(), 1);
 		// Ensure vertex lookup grid is updated.
-		BOOST_CHECK_EQUAL(poly3D.grid_vtx()(0,0,0), Vec3u(1,2,3));
+		BOOST_CHECK_EQUAL(poly3D.grid_vtx()(Vec3i(0,0,0)), Vec3u(1,2,3));
 		// Ensure simplex was added to array.
 		BOOST_CHECK_EQUAL(poly3D.spx().size(), 1);
 
