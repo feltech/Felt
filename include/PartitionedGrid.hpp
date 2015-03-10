@@ -24,10 +24,6 @@ namespace felt
 		static const VecDu	udims_child;
 		static const VecDi	idims_child;
 
-		VecDu	m_dims_parent;
-		VecDi	m_offset_parent;
-
-
 		PartitionedGrid () : Grid_t::Grid(), m_grid_parts()
 		{}
 
@@ -47,27 +43,23 @@ namespace felt
 		}
 
 
-		static const VecDi pos_to_partn (const VecDi& pos)
+		const VecDi pos_to_partn (const VecDi& pos) const
 		{
-			return (pos.array() / idims_child.array()).matrix();
+			return (
+				(pos - this->offset()).array() / idims_child.array()
+			).matrix() + m_grid_parts.offset();
 		}
-		
-		
-		static const VecDu dims_to_partn (const VecDu& pos)
-		{
-			return (pos.array() / udims_child.array()).matrix();
-		}
-		
+
 
 		const UINT index_parent (const VecDi& pos) const
 		{
-			return Grid_t::index(pos, m_dims_parent, m_offset_parent);
+			return Grid_t::index(pos, m_grid_parts.dims(), m_grid_parts.offset());
 		}
 
 
 		const VecDi index_parent (const UINT& idx) const
 		{
-			return Grid_t::index(idx, m_dims_parent, m_offset_parent);
+			return Grid_t::index(idx, m_grid_parts.dims(), m_grid_parts.offset());
 		}
 		
 
@@ -98,14 +90,12 @@ namespace felt
 		 * @param vec_NewDims
 		 * @return
 		 */
-		const VecDu dims (const VecDu& dims_new)
+		void dims (const VecDu& dims_grid)
 		{
-			m_dims_parent = dims_to_partn(dims_new);
+			this->m_vec_dims = dims_grid;
 
-			VecDu dims_old = this->m_vec_dims;
-			this->m_vec_dims = dims_new;
 			VecDu dims_parent = (
-				dims_new.array() / udims_child.array()
+				dims_grid.array() / udims_child.array()
 			).matrix();
 
 			m_grid_parts.dims(dims_parent);
@@ -115,28 +105,32 @@ namespace felt
 				Partition_t& part = m_grid_parts.data()(idx);
 				part.dims(udims_child);
 			}
-
-			// Return old dimensions.
-			return dims_old;
 		}
 
 
-		void offset (const VecDi& vec_offset)
+		void offset (const VecDi& offset_grid)
 		{
-			m_offset_parent = pos_to_partn(vec_offset);
-			m_grid_parts.offset(m_offset_parent);
+			Grid_t::offset(offset_grid);
+
+			const VecDi& offset_parent = (
+				offset_grid.array() / idims_child.array()
+			).matrix();
+
+			m_grid_parts.offset(offset_parent);
+
 			for (UINT idx = 0; idx < m_grid_parts.data().size(); idx++)
 			{
 				Partition_t& part = m_grid_parts.data()(idx);
 				const VecDi& pos_part = this->index_parent(idx);
 				const VecDi& offset_part = (
-					(pos_part.array() * idims_child.array()).matrix()
-					+ (vec_offset.array() / idims_child.array()).matrix()
+					(
+						(pos_part.array() - m_grid_parts.offset().array())
+						* idims_child.array()
+					).matrix() + offset_grid
 				);
 
 				part.offset(offset_part);
 			}
-			Grid_t::offset(vec_offset);
 		}
 
 

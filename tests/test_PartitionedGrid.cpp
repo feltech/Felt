@@ -157,8 +157,6 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 
 		grid.fill(-1.0f);
 
-		BOOST_CHECK_EQUAL(grid(Vec3i(-2,-2,1)), -1.0f);
-
 		for (INT x = -2; x <= 1; x++)
 			for (INT y = -2; y <= 1; y++)
 				for (INT z = -2; z <= 1; z++)
@@ -166,6 +164,24 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 					Vec3i pos(x, y, z);
 					BOOST_CHECK_EQUAL(grid(pos), -1.0f);
 				}
+
+		const Vec3i pos1(-2, -2, -2);
+		const Vec3i pos2(-1, -1, -1);
+		const Vec3i pos3( 0,  0,  0);
+		const Vec3i pos4( 1,  1,  1);
+		const Vec3i pos5(-2, -1,  1);
+
+		grid(pos1) = 1.0f;
+		grid(pos2) = 2.0f;
+		grid(pos3) = 3.0f;
+		grid(pos4) = 4.0f;
+		grid(pos5) = 5.0f;
+
+		BOOST_CHECK_EQUAL(grid(pos1), 1.0f);
+		BOOST_CHECK_EQUAL(grid(pos2), 2.0f);
+		BOOST_CHECK_EQUAL(grid(pos3), 3.0f);
+		BOOST_CHECK_EQUAL(grid(pos4), 4.0f);
+		BOOST_CHECK_EQUAL(grid(pos5), 5.0f);
 	}
 
 BOOST_AUTO_TEST_SUITE_END()

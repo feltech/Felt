@@ -299,9 +299,8 @@ namespace felt
 		 * @param vec_NewDims
 		 * @return
 		 */
-		virtual const VecDu dims (const VecDu& dims_new)
+		virtual void dims (const VecDu& dims_new)
 		{
-			VecDu dims_old = m_vec_dims;
 			m_vec_dims = dims_new;
 
 			INT uGridSize = m_vec_dims(0);
@@ -310,9 +309,6 @@ namespace felt
 				uGridSize *= m_vec_dims(i);
 			}
 			m_vec_Data.resize(uGridSize);
-
-			// Return old dimensions.
-			return dims_old;
 		}
 
 		/**
