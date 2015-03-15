@@ -54,6 +54,8 @@ namespace felt
 		ArrayData m_vec_Data;
 
 	public:
+		virtual ~Grid ()
+		{}
 
 		/**
 		 * Initialise a zero-dimensional grid.

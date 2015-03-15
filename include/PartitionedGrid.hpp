@@ -6,30 +6,32 @@
 
 namespace felt
 {
-	template <typename T, UINT D, UINT P, typename Part_t=Grid<T, D> >
-	class PartitionedGrid : public Grid<T, D>
+	template <
+		typename T, UINT D, UINT P, class G=Grid<T, D>, class PG=Grid<G, D>
+	>
+	class PartitionedGrid : public G
 	{
-	public:
-		typedef Part_t	Partition_t;
 	protected:
-		typedef Grid<T, D>					Grid_t;
-		typedef typename Grid_t::VecDu		VecDu;
-		typedef typename Grid_t::VecDi		VecDi;
-
-		ArrayMappedGrid<Part_t, D>	m_grid_parts;
-
+		typedef G			Base_t;
 	public:
-		typedef ArrayMappedGrid<Part_t, D>	PartGrid_t;
+		typedef PG			PartGrid_t;
+	protected:
+		typedef typename Base_t::VecDu			VecDu;
+		typedef typename Base_t::VecDi			VecDi;
+
+		PartGrid_t	m_grid_parts;
 
 		static const VecDu	udims_child;
 		static const VecDi	idims_child;
 
-		PartitionedGrid () : Grid_t::Grid(), m_grid_parts()
+	public:
+
+		PartitionedGrid () : Base_t(), m_grid_parts()
 		{}
 
 		PartitionedGrid (
 			const VecDu& dims, const VecDi& offset, const FLOAT& delta = 1
-		) : Grid_t::Grid(), m_grid_parts()
+		) : Base_t(), m_grid_parts()
 		{
 
 			if ((dims / P) * P != dims)
@@ -53,13 +55,17 @@ namespace felt
 
 		const UINT index_parent (const VecDi& pos) const
 		{
-			return Grid_t::index(pos, m_grid_parts.dims(), m_grid_parts.offset());
+			return Base_t::index(
+				pos, m_grid_parts.dims(), m_grid_parts.offset()
+			);
 		}
 
 
 		const VecDi index_parent (const UINT& idx) const
 		{
-			return Grid_t::index(idx, m_grid_parts.dims(), m_grid_parts.offset());
+			return Base_t::index(
+				idx, m_grid_parts.dims(), m_grid_parts.offset()
+			);
 		}
 		
 
@@ -81,7 +87,7 @@ namespace felt
 		 */
 		const VecDu& dims () const
 		{
-			return Grid_t::dims();
+			return Base_t::dims();
 		}
 
 		/**
@@ -102,7 +108,7 @@ namespace felt
 
 			for (UINT idx = 0; idx < m_grid_parts.data().size(); idx++)
 			{
-				Partition_t& part = m_grid_parts.data()(idx);
+				Base_t& part = m_grid_parts.data()(idx);
 				part.dims(udims_child);
 			}
 		}
@@ -110,7 +116,7 @@ namespace felt
 
 		void offset (const VecDi& offset_grid)
 		{
-			Grid_t::offset(offset_grid);
+			Base_t::offset(offset_grid);
 
 			const VecDi& offset_parent = (
 				offset_grid.array() / idims_child.array()
@@ -120,11 +126,11 @@ namespace felt
 
 			for (UINT idx = 0; idx < m_grid_parts.data().size(); idx++)
 			{
-				Partition_t& part = m_grid_parts.data()(idx);
+				Base_t& part = m_grid_parts.data()(idx);
 				const VecDi& pos_part = this->index_parent(idx);
 				const VecDi& offset_part = (
 					(
-						(pos_part.array() - m_grid_parts.offset().array())
+						(pos_part - m_grid_parts.offset()).array()
 						* idims_child.array()
 					).matrix() + offset_grid
 				);
@@ -136,7 +142,7 @@ namespace felt
 
 		const VecDi offset () const
 		{
-			return Grid_t::offset();
+			return Base_t::offset();
 		}
 
 
@@ -149,7 +155,7 @@ namespace felt
 		{
 			for (UINT idx = 0; idx < m_grid_parts.data().size(); idx++)
 			{
-				Partition_t& part = m_grid_parts.data()(idx);
+				Base_t& part = m_grid_parts.data()(idx);
 				part.fill(val);
 			}
 		}
@@ -158,7 +164,7 @@ namespace felt
 		T& get (const VecDi& pos)
 		{
 			const UINT& idx_parent = this->index_parent(pos_to_partn(pos));
-			Partition_t& part = m_grid_parts.data()(idx_parent);
+			Base_t& part = m_grid_parts.data()(idx_parent);
 			return part.get(pos);
 		}
 
@@ -166,19 +172,61 @@ namespace felt
 		const T& get (const VecDi& pos) const
 		{
 			const UINT& idx_parent = this->index_parent(pos_to_partn(pos));
-			const Partition_t& part = m_grid_parts.data()(idx_parent);
+			const Base_t& part = m_grid_parts.data()(idx_parent);
 			return part.get(pos);
 		}
 
 	};
 
 
-	template <typename T, UINT D, UINT P, typename Part_t>
-		const typename PartitionedGrid<T, D, P, Part_t>::VecDu
-			PartitionedGrid<T, D, P, Part_t>::udims_child(P, P, P);
-	template <typename T, UINT D, UINT P, typename Part_t>
-		const typename PartitionedGrid<T, D, P, Part_t>::VecDi
-			PartitionedGrid<T, D, P, Part_t>::idims_child(P, P, P);
+	template <typename T, UINT D, UINT P, class G, class PG>
+		const typename PartitionedGrid<T, D, P, G, PG>::VecDu
+			PartitionedGrid<T, D, P, G, PG>::udims_child(P, P, P);
+	template <typename T, UINT D, UINT P, class G, class PG>
+		const typename PartitionedGrid<T, D, P, G, PG>::VecDi
+			PartitionedGrid<T, D, P, G, PG>::idims_child(P, P, P);
+
+
+
+	/**
+	 * Specialisation for ArrayMappedGrid.
+	 */
+	template <typename T, UINT D, UINT P, UINT N>
+	class MappedPartitionedGrid
+	: public PartitionedGrid <
+		T, D, P, ArrayMappedGrid<T, D, N>,
+		ArrayMappedGrid<ArrayMappedGrid<T, D, N>, D, N>
+	>
+	{
+	protected:
+		typedef PartitionedGrid <
+			T, D, P, ArrayMappedGrid<T, D, N>,
+			ArrayMappedGrid<ArrayMappedGrid<T, D, N>, D, N>
+		> Base_t;
+		typedef typename Base_t::Grid_t	Grid_t;
+		typedef typename Grid_t::VecDu	VecDu;
+		typedef typename Grid_t::VecDi	VecDi;
+	public:
+		typedef typename Base_t::PartGrid_t	PartGrid_t;
+
+		MappedPartitionedGrid () : Base_t()
+		{}
+
+		MappedPartitionedGrid (
+			const VecDu& dims, const VecDi& offset, const FLOAT& delta = 1
+		) : Base_t(dims, offset, delta)
+		{}
+
+		UINT add(const VecDi& pos, const T& val, const UINT& arr_idx = 0)
+		{
+			const VecDi& part_pos = this->pos_to_partn(pos);
+			const UINT& idx_parent = this->index_parent(part_pos);
+
+			this->list(arr_idx).push_back(part_pos);
+
+			return this->m_grid_parts.data()(idx_parent).add(pos, val, arr_idx);
+		}
+	};
 
 }
 #endif /* PARTITIONEDGRID_HPP_ */
