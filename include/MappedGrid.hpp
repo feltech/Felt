@@ -6,7 +6,7 @@
 namespace felt
 {
 	template <
-		typename T, UINT D, UINT N=1, typename A=Eigen::aligned_allocator<T>
+		typename T, UINT D, UINT N=1
 	>
 	class ArrayMappedGrid : public felt::Grid<T, D>
 	{
@@ -15,7 +15,7 @@ namespace felt
 		typedef typename Grid_t::VecDu	VecDu;
 		typedef typename Grid_t::VecDi	VecDi;
 	public:
-		typedef std::vector<VecDi, A>	PosArray;
+		typedef std::vector<VecDi, Eigen::aligned_allocator<T>>	PosArray;
 	protected:
 		PosArray	m_aPos[N];
 
