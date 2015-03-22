@@ -9,6 +9,8 @@
 namespace felt
 {
 
+
+
 	typedef float FLOAT;
 	typedef int INT;
 	typedef size_t UINT;
@@ -37,8 +39,8 @@ namespace felt
 	}
 
 
-	template <class T, UINT D>
-	class Grid
+	template <typename T, UINT D, typename R=T>
+	class GridBase
 	{
 	public:
 		typedef Eigen::Matrix<UINT, D, 1> VecDu;
@@ -54,13 +56,13 @@ namespace felt
 		ArrayData m_vec_Data;
 
 	public:
-		virtual ~Grid ()
+		virtual ~GridBase ()
 		{}
 
 		/**
-		 * Initialise a zero-dimensional grid.
+		 * Initialise a zero-dimensional GridBase.
 		 */
-		Grid () :
+		GridBase () :
 		m_vec_offset(VecDi::Zero()),
 		m_vec_dims(VecDu::Zero()),
 		m_dx(1)
@@ -68,27 +70,27 @@ namespace felt
 		}
 
 
-		Grid (UINT x, UINT y) :
+		GridBase (UINT x, UINT y) :
 		m_dx(1)
 		{
 			this->init(Vec2u(x,y));
 		}
 
 
-		Grid (UINT x, UINT y, UINT z) :
+		GridBase (UINT x, UINT y, UINT z) :
 		m_dx(1)
 		{
 			this->init(Vec3u(x,y,z));
 		}
 
 		/**
-		 * Initialise a grid with given dimension, offset and delta x.
+		 * Initialise a GridBase with given dimension, offset and delta x.
 		 *
 		 * @param dims
 		 * @param offset
 		 * @param delta
 		 */
-		Grid (
+		GridBase (
 			const VecDu& dims, const VecDi& offset = VecDi::Zero(),
 			const FLOAT& delta = 1
 		) :
@@ -101,15 +103,14 @@ namespace felt
 		virtual void init (
 			const VecDu& dims, const VecDi& offset = VecDi::Zero(),
 			const FLOAT& delta = 1
-		)
-		{
+		) {
 			this->dx(delta);
 			this->dims(dims);
 			this->offset(offset);
 		}
 
 		/**
-		 * Set grid offset.
+		 * Set GridBase offset.
 		 *
 		 * @return
 		 */
@@ -119,7 +120,7 @@ namespace felt
 		}
 
 		/**
-		 * Get grid offset.
+		 * Get GridBase offset.
 		 *
 		 * @return
 		 */
@@ -130,7 +131,7 @@ namespace felt
 
 
 		/**
-		 * Get grid delta x.
+		 * Get GridBase delta x.
 		 * @return
 		 */
 		inline const FLOAT& dx () const
@@ -139,7 +140,7 @@ namespace felt
 		}
 
 		/**
-		 * Set grid delta x.
+		 * Set GridBase delta x.
 		 * @param delta
 		 */
 		void dx (const FLOAT& delta)
@@ -149,36 +150,28 @@ namespace felt
 
 
 		/**
-		 * Get/set grid values.
+		 * Get/set GridBase values.
 		 * @param pos
 		 * @return
 		 */
-		T& operator() (const VecDi& pos)
+		R& operator() (const VecDi& pos)
 		{
 			return this->get(pos);
 		}
 
 		/**
-		 * Get grid values.
+		 * Get GridBase values.
 		 * @param pos
 		 * @return
 		 */
-		const T& operator() (const VecDi& pos) const
+		const R& operator() (const VecDi& pos) const
 		{
 			return this->get(pos);
 		}
 
-		virtual T& get (const VecDi& pos)
-		{
-			const UINT& idx = this->index(pos);
-			return this->data()(idx);
-		}
+		virtual R& get (const VecDi& pos) = 0;
 
-		virtual const T& get (const VecDi& pos) const
-		{
-			const UINT& idx = this->index(pos);
-			return this->data()(idx);
-		}
+		virtual const R& get (const VecDi& pos) const = 0;
 
 
 		/**
@@ -188,7 +181,7 @@ namespace felt
 		 */
 		UINT index (const VecDi& pos) const
 		{
-			return Grid<T,D>::index(pos, this->dims(), this->offset());
+			return GridBase<T,D,R>::index(pos, this->dims(), this->offset());
 		}
 
 		/**
@@ -223,7 +216,7 @@ namespace felt
 		 */
 		VecDi index (const UINT& idx) const
 		{
-			return Grid<T,D>::index(idx, this->dims(), this->offset());
+			return GridBase<T,D,R>::index(idx, this->dims(), this->offset());
 		}
 
 		/**
@@ -259,7 +252,7 @@ namespace felt
 		}
 
 		/**
-		 * Get interpolated grid value.
+		 * Get interpolated GridBase value.
 		 * @param pos
 		 * @return
 		 */
@@ -269,7 +262,7 @@ namespace felt
 		}
 
 		/**
-		 * Get interpolated grid value.
+		 * Get interpolated GridBase value.
 		 * @param pos
 		 * @return
 		 */
@@ -279,7 +272,7 @@ namespace felt
 		}
 
 		/**
-		 * Retrieve a reference to the data stored in grid.
+		 * Retrieve a reference to the data stored in GridBase.
 		 * @return
 		 */
 		ArrayData& data ()
@@ -287,7 +280,7 @@ namespace felt
 			return m_vec_Data;
 		}
 		/**
-		 * Retrieve a reference to the data stored in grid.
+		 * Retrieve a reference to the data stored in GridBase.
 		 * @return
 		 */
 		const ArrayData& data () const
@@ -296,7 +289,7 @@ namespace felt
 		}
 
 		/**
-		 * Reshape grid.
+		 * Reshape GridBase.
 		 *
 		 * @param vec_NewDims
 		 * @return
@@ -305,16 +298,16 @@ namespace felt
 		{
 			m_vec_dims = dims_new;
 
-			INT uGridSize = m_vec_dims(0);
+			INT uGridBaseSize = m_vec_dims(0);
 			for (INT i = 1; i < m_vec_dims.size(); i++)
 			{
-				uGridSize *= m_vec_dims(i);
+				uGridBaseSize *= m_vec_dims(i);
 			}
-			m_vec_Data.resize(uGridSize);
+			m_vec_Data.resize(uGridBaseSize);
 		}
 
 		/**
-		 * Get grid dimensions.
+		 * Get GridBase dimensions.
 		 *
 		 * @return
 		 */
@@ -328,7 +321,7 @@ namespace felt
 		 *
 		 * @param val
 		 */
-		void fill (const T& val)
+		virtual void fill (const T& val)
 		{
 			this->data().fill(val);
 		}
@@ -359,14 +352,14 @@ namespace felt
 			const VecDi& pos, std::vector<VecDi>& vout, bool bcheck = false
 		) const
 		{
-			// Reference to grid dimensions.
+			// Reference to GridBase dimensions.
 			const VecDu& dims = this->dims();
 			// Most likely all 6 neighbours are valid.
 			vout.reserve(6);
 			// Position for look-around.
 			VecDi vec_dir(pos);
 			for (INT axis = 0; axis < dims.size(); axis++) {
-				// Check if backward value is within grid.
+				// Check if backward value is within GridBase.
 				vec_dir(axis) -= 1;
 				if (this->inside(vec_dir) && (!bcheck ||
 					std::find(vout.begin(), vout.end(), vec_dir) == vout.end())
@@ -374,7 +367,7 @@ namespace felt
 				{
 					vout.push_back(vec_dir);
 				}
-				// Check if forward value is within grid.
+				// Check if forward value is within GridBase.
 				vec_dir(axis) += 2;
 				if (this->inside(vec_dir) && (!bcheck ||
 					std::find(vout.begin(), vout.end(), vec_dir) == vout.end())
@@ -388,18 +381,18 @@ namespace felt
 
 //		void neighs (const VecDi& pos, std::unordered_set<VecDi, UINT (*) (const VecDi& a)>& vout) const
 //		{
-//			// Reference to grid dimensions.
+//			// Reference to GridBase dimensions.
 //			const VecDu& dims = this->dims();
 //			// Position for look-around.
 //			VecDi vec_dir(pos);
 //			for (INT axis = 0; axis < dims.size(); axis++) {
-//				// Check if backward value is within grid.
+//				// Check if backward value is within GridBase.
 //				vec_dir(axis) -= 1;
 //				if (this->inside(vec_dir))
 //				{
 //					vout.insert(vec_dir);
 //				}
-//				// Check if forward value is within grid.
+//				// Check if forward value is within GridBase.
 //				vec_dir(axis) += 2;
 //				if (this->inside(vec_dir))
 //				{
@@ -412,10 +405,10 @@ namespace felt
 
 		void neighs (
 			const VecDi& pos, std::vector<VecDi>& vout,
-			Grid<bool,D>& grid_check
+			GridBase<bool,D>& GridBase_check
 		) const
 		{
-			// Reference to grid dimensions.
+			// Reference to GridBase dimensions.
 			const VecDu& dims = this->dims();
 			// Most likely all 6 neighbours are valid.
 			vout.reserve(6);
@@ -423,19 +416,19 @@ namespace felt
 			VecDi vec_dir(pos);
 			for (INT axis = 0; axis < dims.size(); axis++)
 			{
-				// Check if backward value is within grid.
+				// Check if backward value is within GridBase.
 				vec_dir(axis) -= 1;
-				if (this->inside(vec_dir) && !grid_check(vec_dir))
+				if (this->inside(vec_dir) && !GridBase_check(vec_dir))
 				{
 					vout.push_back(vec_dir);
-					grid_check(vec_dir) = true;
+					GridBase_check(vec_dir) = true;
 				}
-				// Check if forward value is within grid.
+				// Check if forward value is within GridBase.
 				vec_dir(axis) += 2;
-				if (this->inside(vec_dir) && !grid_check(vec_dir))
+				if (this->inside(vec_dir) && !GridBase_check(vec_dir))
 				{
 					vout.push_back(vec_dir);
-					grid_check(vec_dir) = true;
+					GridBase_check(vec_dir) = true;
 				}
 				vec_dir(axis) -= 1;
 			}
@@ -452,7 +445,7 @@ namespace felt
 		{
 			// Value at this point.
 			const T val_centre = (*this)(pos);
-			// Reference to grid dimensions.
+			// Reference to GridBase dimensions.
 			const VecDu& dims = this->dims();
 			// Vector to store gradient calculation.
 			VecDT vec_grad(dims.size());
@@ -480,7 +473,7 @@ namespace felt
 		{
 			// Value at this point.
 			const T val_centre = (*this)(pos);
-			// Reference to grid dimensions.
+			// Reference to GridBase dimensions.
 			const VecDu& dims = this->dims();
 			// Vector to store gradient calculation.
 			VecDT vec_grad(dims.size());
@@ -505,7 +498,7 @@ namespace felt
 		template <typename PosType>
 		VecDT gradC (const Eigen::Matrix<PosType, D, 1>& pos) const
 		{
-			// Reference to grid dimensions.
+			// Reference to GridBase dimensions.
 			const VecDu& dims = this->dims();
 			// Vector to store gradient calculation.
 			VecDT vec_grad(dims.size());
@@ -528,15 +521,15 @@ namespace felt
 		/**
 		 * Safe gradient.
 		 * Will calculate central, forward or backward difference along each
-		 * axis, depending what grid values are available.
-		 * That is, for grid points at the edge of the grid it will return
+		 * axis, depending what GridBase values are available.
+		 * That is, for GridBase points at the edge of the GridBase it will return
 		 * forward/backward differences.
 		 * @param pos
 		 * @return
 		 */
 		VecDT grad (const VecDi& pos) const
 		{
-			// Reference to grid dimensions.
+			// Reference to GridBase dimensions.
 			const VecDu& dims = this->dims();
 			// Vector to store gradient calculation.
 			VecDT vec_grad(dims.size());
@@ -550,13 +543,13 @@ namespace felt
 				T back = centre;
 				T forward = centre;
 				UINT order = 0;
-				// Check if backward value is within grid.
+				// Check if backward value is within GridBase.
 				pos_test(axis) -= 1;
 				if (this->inside(pos_test)) {
 					back = (*this)(pos_test);
 					order++;
 				}
-				// Check if forward value is within grid.
+				// Check if forward value is within GridBase.
 				pos_test(axis) += 2;
 				if (this->inside(pos_test)) {
 					forward = (*this)(pos_test);
@@ -586,7 +579,7 @@ namespace felt
 			typedef Eigen::Matrix<PosType, D, 1> VecDp;
 			// Value at this point.
 			const T centre = (*this)(pos);
-			// Reference to grid dimensions.
+			// Reference to GridBase dimensions.
 			const VecDu& dims = this->dims();
 			// Vector to store gradient calculation.
 			VecDT vec_grad(dims.size());
@@ -778,6 +771,18 @@ namespace felt
 	protected:
 	#endif
 
+		T& get_internal (const VecDi& pos) {
+			const UINT& idx = this->index(pos);
+			return this->data()(idx);
+		}
+
+
+		const T& get_internal (const VecDi& pos) const {
+			const UINT& idx = this->index(pos);
+			return this->data()(idx);
+		}
+
+
 		std::vector<T> interp (
 			const std::vector<T>& val_corners_in, const VecDf& vec_fpos
 		) const
@@ -811,6 +816,51 @@ namespace felt
 			return val_corners_out;
 		}
 
+	};
+
+
+	template <typename T, UINT D>
+	class Grid : public GridBase<T, D, T>
+	{
+	protected:
+		typedef GridBase<T, D, T>	Base_t;
+		typedef typename Base_t::VecDu	VecDu;
+		typedef typename Base_t::VecDi	VecDi;
+		typedef typename Base_t::VecDf	VecDf;
+	public:
+		virtual ~Grid ()
+		{}
+
+		/**
+		 * Initialise a zero-dimensional GridBase.
+		 */
+		Grid () : Base_t()
+		{}
+
+
+		/**
+		 * Initialise a GridBase with given dimension, offset and delta x.
+		 *
+		 * @param dims
+		 * @param offset
+		 * @param delta
+		 */
+		Grid (
+			const VecDu& dims, const VecDi& offset = VecDi::Zero(),
+			const FLOAT& delta = 1
+		) : Base_t(dims, offset, delta)
+		{}
+
+
+		virtual T& get (const VecDi& pos)
+		{
+			return this->get_internal(pos);
+		}
+
+		virtual const T& get (const VecDi& pos) const
+		{
+			return this->get_internal(pos);
+		}
 	};
 
 }// End namespace felt.
