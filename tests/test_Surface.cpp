@@ -312,8 +312,13 @@ BOOST_AUTO_TEST_CASE(delta_phi_update)
 	surface.update_start();
 	{
 		// Check update_start cleared the above surface.dphi changes.
-		for (UINT threadIdx = 0; threadIdx < surface.num_threads(); threadIdx++)
-			BOOST_CHECK_EQUAL(surface.dphi(threadIdx).size(), 0u);
+		for (INT threadIdx = 0; threadIdx < surface.num_threads(); threadIdx++)
+			for (INT layerID = -2; layerID <= 2; layerID++)
+				BOOST_CHECK_MESSAGE(
+					surface.dphi(threadIdx, layerID).size() == 0u,
+					"adphi[" << threadIdx << "][" << layerID << "].size() = "
+					<< surface.dphi(threadIdx, layerID).size()
+				);
 		BOOST_CHECK_EQUAL(dphi(Vec3i(0, 0, 0)), 0);
 	}
 	// Apply delta phi.
@@ -391,6 +396,15 @@ BOOST_AUTO_TEST_CASE(distance_transform)
 		surface.update_start();
 		{
 			surface.dphi(Vec2i(0, 0), -0.4f);
+		}
+		surface.update_end();
+
+		surface.update_start();
+		{
+			// Check update_start cleared the above surface.dphi changes.
+			for (INT threadIdx = 0; threadIdx < surface.num_threads(); threadIdx++)
+				for (INT layerID = -2; layerID <= 2; layerID++)
+					BOOST_CHECK_EQUAL(surface.dphi(threadIdx, layerID).size(), 0u);
 		}
 		surface.update_end();
 

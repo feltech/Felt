@@ -769,17 +769,20 @@ namespace felt {
 		 */
 		void update_start ()
 		{
-			Grid<FLOAT,D>& dphi = this->dphi();
+			Grid<FLOAT,D>& grid_dphi = this->dphi();
 			for (
-				UINT threadIdx = 0; threadIdx < this->num_threads();
+				INT threadIdx = 0; threadIdx < this->num_threads();
 				threadIdx++
 			) {
-				std::vector<VecDi>& apos = this->dphi(threadIdx);
-				// Reset delta phi to zero.
-				for (UINT pos_idx = 0; pos_idx < apos.size(); pos_idx++)
-					dphi(apos[pos_idx]) = 0;
-				// Clear position list.
-				apos.clear();
+				for (INT layerID = -(INT)L; layerID <= (INT)L; layerID++)
+				{
+					std::vector<VecDi>& apos = this->dphi(threadIdx, layerID);
+					// Reset delta phi to zero.
+					for (UINT pos_idx = 0; pos_idx < apos.size(); pos_idx++)
+						grid_dphi(apos[pos_idx]) = 0;
+					// Clear position list.
+					apos.clear();
+				}
 				// Clear status change lists.
 				m_omp_aStatusChangePos[threadIdx].clear();
 				m_omp_aStatusChangeFromLayer[threadIdx].clear();
