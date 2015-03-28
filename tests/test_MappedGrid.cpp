@@ -12,27 +12,24 @@ using namespace felt;
  */
 BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 	/*
-	 * ArrayMappedGrid.
+	 * MappedGrid.
 	 */
-	BOOST_AUTO_TEST_CASE(test_ArrayMappedGrid)
+	BOOST_AUTO_TEST_CASE(test_MappedGrid)
 	{
-		typedef ArrayMappedGrid<FLOAT, 3> Grid_t;
+		typedef MappedGrid<FLOAT, 3> Grid_t;
 
 		Grid_t grid(Vec3u(5,5,5), Vec3i(-2,-2,-2));
 
 		Vec3i pos1(0, 0, 1);
 		Vec3i pos2(1, 1, 0);
 		Vec3i pos3(2, 0, -1);
-		UINT idx1 = grid.add(pos1, 3.0f);
-		UINT idx2 = grid.add(pos2, -1.0f);
+		grid.add(pos1, 3.0f);
+		grid.add(pos2, -1.0f);
 		grid(pos2) = 5.0f;
-		UINT idx3 = grid.add(pos3, 7.0f);
+		grid.add(pos3, 7.0f);
 
 
 		BOOST_CHECK_EQUAL(grid.list().size(), 3);
-		BOOST_CHECK_EQUAL(idx1, 0);
-		BOOST_CHECK_EQUAL(idx2, 1);
-		BOOST_CHECK_EQUAL(idx3, 2);
 		BOOST_CHECK_EQUAL(grid(pos1), 3.0f);
 		BOOST_CHECK_EQUAL(grid(pos2), 5.0f);
 		BOOST_CHECK_EQUAL(grid(pos3), 7.0f);
@@ -68,9 +65,9 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 	}
 
 
-	BOOST_AUTO_TEST_CASE(test_PosArrayMappedGrid)
+	BOOST_AUTO_TEST_CASE(test_LookupGrid)
 	{
-		typedef PosArrayMappedGrid<3> Grid_t;
+		typedef LookupGrid<3> Grid_t;
 		Grid_t grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
 
 		Vec3i pos1(1, 0, -1);
@@ -86,15 +83,10 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL((UINT)grid(pos4)(0), Grid_t::NULL_IDX);
 
 		// Add the positions to the array and set index lookup values.
-		const UINT& idx1 = grid.add(pos1);
-		const UINT& idx2 = grid.add(pos2);
-		const UINT& idx3 = grid.add(pos3);
-		const UINT& idx4 = grid.add(pos4);
-
-		BOOST_CHECK_EQUAL(idx1, 0);
-		BOOST_CHECK_EQUAL(idx2, 1);
-		BOOST_CHECK_EQUAL(idx3, 2);
-		BOOST_CHECK_EQUAL(idx4, 3);
+		grid.add(pos1);
+		grid.add(pos2);
+		grid.add(pos3);
+		grid.add(pos4);
 
 
 		// Check the positions were added to the array and their respective
@@ -110,7 +102,7 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL((UINT)grid(pos4)(0), 3);
 
 		// Attempt to add the same position to the array again (i.e. duplicate).
-		UINT idx5 = grid.add(pos2);
+		grid.add(pos2);
 
 		// Ensure nothing changed.
 		BOOST_REQUIRE_EQUAL(grid.list().size(), 4);
@@ -122,7 +114,6 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL((UINT)grid(pos2)(0), 1);
 		BOOST_CHECK_EQUAL((UINT)grid(pos3)(0), 2);
 		BOOST_CHECK_EQUAL((UINT)grid(pos4)(0), 3);
-		BOOST_CHECK_EQUAL(idx5, 1);
 
 		// Remove a position by index.
 		grid.remove(1);
@@ -163,9 +154,9 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 	}
 
 
-	BOOST_AUTO_TEST_CASE(test_multi_PosArrayMappedGrid)
+	BOOST_AUTO_TEST_CASE(test_multi_LookupGrid)
 	{
-		typedef PosArrayMappedGrid<3, 3> Grid_t;
+		typedef LookupGrid<3, 3> Grid_t;
 		Grid_t grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
 
 		BOOST_CHECK_EQUAL(Grid_t::num_lists(), 3);
@@ -179,10 +170,10 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		const Vec3i pos6(6, -2, 2);
 
 		// Add the positions to the array and set index lookup values.
-		const UINT& idx1 = grid.add(pos1, 0);
-		const UINT& idx2 = grid.add(pos2, 1);
-		const UINT& idx3 = grid.add(pos3, 1);
-		const UINT& idx4 = grid.add(pos4, 2);
+		grid.add(pos1, 0);
+		grid.add(pos2, 1);
+		grid.add(pos3, 1);
+		grid.add(pos4, 2);
 
 		BOOST_CHECK_EQUAL(grid.list(0).size(), 1);
 		BOOST_CHECK_EQUAL(grid.list(1).size(), 2);
@@ -195,10 +186,6 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL((UINT)grid(pos2)(1), 0);
 		BOOST_CHECK_EQUAL((UINT)grid(pos3)(1), 1);
 		BOOST_CHECK_EQUAL((UINT)grid(pos4)(2), 0);
-		BOOST_CHECK_EQUAL(idx1, 0);
-		BOOST_CHECK_EQUAL(idx2, 0);
-		BOOST_CHECK_EQUAL(idx3, 1);
-		BOOST_CHECK_EQUAL(idx4, 0);
 
 		grid.remove(pos2, 1);
 
@@ -262,9 +249,9 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 	}
 
 
-	BOOST_AUTO_TEST_CASE(test_multi_shared_PosArrayMappedGrid)
+	BOOST_AUTO_TEST_CASE(test_multi_shared_LookupGrid)
 	{
-		typedef PosArrayMappedSharedGrid<3, 3> Grid_t;
+		typedef LookupSharedGrid<3, 3> Grid_t;
 		Grid_t grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
 
 		const Vec3i pos1(1, 0, -1);
@@ -275,10 +262,10 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		const Vec3i pos6(6, -2, 2);
 
 		// Add the positions to the array and set index lookup values.
-		const UINT& idx1 = grid.add(pos1, 0);
-		const UINT& idx2 = grid.add(pos2, 1);
-		const UINT& idx3 = grid.add(pos3, 1);
-		const UINT& idx4 = grid.add(pos4, 2);
+		grid.add(pos1, 0);
+		grid.add(pos2, 1);
+		grid.add(pos3, 1);
+		grid.add(pos4, 2);
 
 		BOOST_CHECK_EQUAL(grid.list(0).size(), 1);
 		BOOST_CHECK_EQUAL(grid.list(1).size(), 2);
@@ -291,10 +278,6 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL((UINT)grid(pos2), 0);
 		BOOST_CHECK_EQUAL((UINT)grid(pos3), 1);
 		BOOST_CHECK_EQUAL((UINT)grid(pos4), 0);
-		BOOST_CHECK_EQUAL(idx1, 0);
-		BOOST_CHECK_EQUAL(idx2, 0);
-		BOOST_CHECK_EQUAL(idx3, 1);
-		BOOST_CHECK_EQUAL(idx4, 0);
 
 		grid.remove(pos2, 1);
 
@@ -356,5 +339,10 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL((UINT)grid(pos4), Grid_t::NULL_IDX);
 		BOOST_CHECK_EQUAL((UINT)grid(pos5), Grid_t::NULL_IDX);
 
+	}
+
+	BOOST_AUTO_TEST_CASE(test_TrackedGrid)
+	{
+		TrackedGrid<FLOAT, 3, 3> grid(Vec3u(9,9,9), Vec3i(-4,-4,-4));
 	}
 BOOST_AUTO_TEST_SUITE_END()

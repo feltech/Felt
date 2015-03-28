@@ -8,12 +8,12 @@ namespace felt
 	template <
 		typename T, UINT D, UINT N=1, typename R=T
 	>
-	class ArrayMappedGrid : public felt::GridBase<T, D, R>
+	class MappedGrid : public felt::GridBase<T, D, R>
 	{
 	protected:
-		typedef GridBase<T, D, R>	Grid_t;
-		typedef typename Grid_t::VecDu		VecDu;
-		typedef typename Grid_t::VecDi		VecDi;
+		typedef GridBase<T, D, R>		Grid_t;
+		typedef typename Grid_t::VecDu	VecDu;
+		typedef typename Grid_t::VecDi	VecDi;
 	public:
 		typedef std::vector<VecDi, Eigen::aligned_allocator<T> >	PosArray;
 	protected:
@@ -21,7 +21,7 @@ namespace felt
 
 	public:
 
-		virtual ~ArrayMappedGrid () {}
+		virtual ~MappedGrid () {}
 		/**
 		 * Initialise a grid with given dimension and offset.
 		 *
@@ -29,14 +29,14 @@ namespace felt
 		 * @param offset
 		 * @param delta
 		 */
-		ArrayMappedGrid (
+		MappedGrid (
 			const VecDu& dims, const VecDi& offset
 		) : Grid_t(dims, offset)
 		{
 		}
 
 
-		ArrayMappedGrid () : Grid_t()
+		MappedGrid () : Grid_t()
 		{
 		}
 
@@ -53,23 +53,22 @@ namespace felt
 		}
 
 
-		virtual inline const PosArray& list(const UINT& arr_idx = 0) const
+		virtual const PosArray& list(const UINT& arr_idx = 0) const
 		{
 			return m_aPos[arr_idx];
 		}
 
 
-		virtual inline PosArray& list(const UINT& arr_idx = 0)
+		virtual PosArray& list(const UINT& arr_idx = 0)
 		{
 			return m_aPos[arr_idx];
 		}
 
 
-		UINT add(const VecDi& pos, const T& val, const UINT& arr_idx = 0)
+		void add(const VecDi& pos, const T& val, const UINT& arr_idx = 0)
 		{
 			(*this)(pos) = val;
 			list(arr_idx).push_back(pos);
-			return list(arr_idx).size() - 1;
 		}
 
 		void reset(const T& val, const UINT& arr_idx = 0)
@@ -95,16 +94,16 @@ namespace felt
 
 
 	template <UINT D, UINT N, typename I, typename V>
-	class PosArrayMappedGridBase
+	class LookupGridBase
 	: public GridBase<I, D, V>
 	{
 	public:
 		typedef I								Idx_t;
 		typedef V								Val_t;
 	protected:
-		typedef GridBase<Idx_t, D, Val_t>		Base_t;
-		typedef typename Base_t::VecDu			VecDu;
-		typedef typename Base_t::VecDi			VecDi;
+		typedef GridBase<Idx_t, D, Val_t>		Base;
+		typedef typename Base::VecDu			VecDu;
+		typedef typename Base::VecDi			VecDi;
 	public:
 		typedef std::vector<
 			VecDi, Eigen::aligned_allocator<VecDi>
@@ -121,24 +120,22 @@ namespace felt
 			return N;
 		}
 
-		virtual ~PosArrayMappedGridBase() {}
+		virtual ~LookupGridBase() {}
 
-		PosArrayMappedGridBase() : Base_t()
+		LookupGridBase() : Base()
 		{}
 
 
-		PosArrayMappedGridBase(const VecDu& dims, const VecDi& offset)
-		: Base_t()
+		LookupGridBase(const VecDu& dims, const VecDi& offset)
+		: Base()
 		{
 			this->init(dims, offset);
 		}
 
 
-		void init (
-			const VecDu& dims, const VecDi& offset = VecDi::Zero(),
-			const FLOAT& delta = 1
-		) {
-			Base_t::init(dims, offset, delta);
+		virtual void dims (const VecDu& dims_new)
+		{
+			Base::dims(dims_new);
 			this->fill(NULL_IDX_TUPLE);
 		}
 
@@ -155,29 +152,42 @@ namespace felt
 		}
 
 
-		virtual UINT add(const VecDi& pos, const UINT& arr_idx = 0) = 0;
+		virtual void add (const VecDi& pos, const UINT& arr_idx = 0)
+		{
+			add(pos, arr_idx, arr_idx);
+		}
 
 
-		virtual void reset(const UINT& arr_idx = 0) = 0;
+		virtual void reset (const UINT& arr_idx = 0)
+		{
+			reset(arr_idx, arr_idx);
+		}
 
 
-		virtual void remove(const UINT& idx, const UINT& arr_idx = 0) = 0;
+		virtual void remove (const UINT& idx, const UINT& arr_idx = 0)
+		{
+			const VecDi& pos = this->list(arr_idx)[idx];
+			remove(idx, pos, arr_idx, arr_idx);
+		}
 
 
-		virtual void remove(const VecDi& pos, const UINT& arr_idx = 0) = 0;
+		virtual void remove (const VecDi& pos, const UINT& arr_idx = 0)
+		{
+			const UINT& idx = this->get_internal(pos)[arr_idx];
+			remove(idx, pos, arr_idx, arr_idx);
+		}
 
 	protected:
 
-		UINT add(
+		void add(
 			const VecDi& pos, const UINT& arr_idx, const UINT& lookup_idx
 		) {
 			UINT& idx = this->get_internal(pos)[lookup_idx];
 			// Do not allow duplicates.
 			if (idx != NULL_IDX)
-				return idx;
+				return;
 			idx = this->list(arr_idx).size();
 			this->list(arr_idx).push_back(pos);
-			return idx;
 		}
 
 
@@ -226,25 +236,25 @@ namespace felt
 
 
 	template <UINT D, UINT N, typename V, typename I>
-	const typename PosArrayMappedGridBase<D, N, V, I>::Idx_t
-	PosArrayMappedGridBase<D, N, V, I>::NULL_IDX_TUPLE =
-		PosArrayMappedGridBase<D, N, V, I>::Idx_t::Constant(
+	const typename LookupGridBase<D, N, V, I>::Idx_t
+	LookupGridBase<D, N, V, I>::NULL_IDX_TUPLE =
+		LookupGridBase<D, N, V, I>::Idx_t::Constant(
 			std::numeric_limits<UINT>::max()
 		);
 
 	template <UINT D, UINT N, typename V, typename I>
 	const UINT
-	PosArrayMappedGridBase<D, N, V, I>::NULL_IDX = std::numeric_limits<UINT>::max();
+	LookupGridBase<D, N, V, I>::NULL_IDX = std::numeric_limits<UINT>::max();
 
 
 	template <UINT D, UINT N=1>
-	class PosArrayMappedGrid
-	: public PosArrayMappedGridBase<
+	class LookupGrid
+	: public LookupGridBase<
 	  D, N, Eigen::Matrix<UINT, N, 1>, Eigen::Matrix<UINT, N, 1>
 	>
 	{
 	protected:
-		typedef PosArrayMappedGridBase<
+		typedef LookupGridBase<
 			D, N, Eigen::Matrix<UINT, N, 1>, Eigen::Matrix<UINT, N, 1>
 		> Base_t;
 		typedef typename Base_t::VecDu			VecDu;
@@ -253,13 +263,13 @@ namespace felt
 	public:
 		typedef typename Eigen::Matrix<UINT, N, 1>	Val_t;
 
-		virtual ~PosArrayMappedGrid() {}
+		virtual ~LookupGrid() {}
 
-		PosArrayMappedGrid() : Base_t()
+		LookupGrid() : Base_t()
 		{}
 
 
-		PosArrayMappedGrid(const VecDu& dims, const VecDi& offset)
+		LookupGrid(const VecDu& dims, const VecDi& offset)
 		: Base_t(dims, offset)
 		{}
 
@@ -273,56 +283,29 @@ namespace felt
 		{
 			const UINT& idx = this->index(pos);
 			return this->data()(idx);
-		}
-
-
-		UINT add (const VecDi& pos, const UINT& arr_idx = 0)
-		{
-			return Base_t::add(pos, arr_idx, arr_idx);
-		}
-
-
-		void reset (const UINT& arr_idx = 0)
-		{
-			Base_t::reset(arr_idx, arr_idx);
-		}
-
-
-		void remove (const UINT& idx, const UINT& arr_idx = 0)
-		{
-			const VecDi& pos = this->list(arr_idx)[idx];
-			Base_t::remove(idx, pos, arr_idx, arr_idx);
-		}
-
-
-		void remove (const VecDi& pos, const UINT& arr_idx = 0)
-		{
-			const UINT& idx = this->get_internal(pos)[arr_idx];
-			Base_t::remove(idx, pos, arr_idx, arr_idx);
 		}
 	};
 
 
 	template <UINT D, UINT N=1>
-	class PosArrayMappedSharedGrid
-	: public PosArrayMappedGridBase<D, N, Eigen::Matrix<UINT, 1, 1>, UINT>
+	class LookupSharedGrid
+	: public LookupGridBase<D, N, Eigen::Matrix<UINT, 1, 1>, UINT>
 	{
 	public:
 		typedef Eigen::Matrix<UINT, 1, 1>					Idx_t;
 		typedef UINT										Val_t;
 	protected:
-		typedef PosArrayMappedGridBase<D, N, Idx_t, Val_t>	Base_t;
+		typedef LookupGridBase<D, N, Idx_t, Val_t>	Base_t;
 		typedef typename Base_t::VecDu						VecDu;
 		typedef typename Base_t::VecDi						VecDi;
-
 	public:
-		virtual ~PosArrayMappedSharedGrid() {}
+		virtual ~LookupSharedGrid() {}
 
-		PosArrayMappedSharedGrid() : Base_t()
+		LookupSharedGrid() : Base_t()
 		{}
 
 
-		PosArrayMappedSharedGrid(const VecDu& dims, const VecDi& offset)
+		LookupSharedGrid(const VecDu& dims, const VecDi& offset)
 		: Base_t(dims, offset)
 		{}
 
@@ -338,9 +321,9 @@ namespace felt
 			return this->data()(idx)[0];
 		}
 
-		UINT add (const VecDi& pos, const UINT& arr_idx = 0)
+		void add (const VecDi& pos, const UINT& arr_idx = 0)
 		{
-			return Base_t::add(pos, arr_idx, 0u);
+			Base_t::add(pos, arr_idx, 0u);
 		}
 
 
@@ -361,6 +344,109 @@ namespace felt
 		{
 			const UINT& idx = this->get_internal(pos)[0];
 			Base_t::remove(idx, pos, arr_idx, 0);
+		}
+	};
+
+
+	template <typename T, UINT D, UINT N>
+	class TrackedGrid : public Grid<T, D>
+	{
+	protected:
+		typedef LookupGrid<D, N>				Lookup;
+		typedef	Grid<T, D>						Base;
+		typedef typename Base::VecDu			VecDu;
+		typedef typename Base::VecDi			VecDi;
+		typedef typename Lookup::PosArray		PosArray;
+
+		Lookup									m_grid_lookup;
+	public:
+		TrackedGrid() : Base(), m_grid_lookup()
+		{}
+
+
+		TrackedGrid(const VecDu& dims, const VecDi& offset)
+		: Base(), m_grid_lookup()
+		{
+			this->init(dims, offset);
+		}
+
+
+		const VecDu& dims () const
+		{
+			return Base::dims();
+		}
+
+
+		void dims (const VecDu& dims_new)
+		{
+			Base::dims(dims_new);
+			m_grid_lookup.dims(dims_new);
+		}
+
+
+		const VecDi offset () const
+		{
+			return Base::offset();
+		}
+
+
+		void offset (const VecDi& offset_new)
+		{
+			Base::offset(offset_new);
+			m_grid_lookup.offset(offset_new);
+		}
+
+
+		Lookup& lookup()
+		{
+			return m_grid_lookup;
+		}
+
+
+		const Lookup& lookup() const
+		{
+			return m_grid_lookup;
+		}
+
+
+		const PosArray& list(const UINT& arr_idx = 0) const
+		{
+			return m_grid_lookup.list(arr_idx);
+		}
+
+
+		PosArray& list(const UINT& arr_idx = 0)
+		{
+			return m_grid_lookup.list(arr_idx);
+		}
+
+
+		void add(const VecDi& pos, const UINT& arr_idx = 0)
+		{
+			m_grid_lookup.add(pos, arr_idx);
+		}
+
+		void reset(const T& val, const UINT& arr_idx = 0)
+		{
+			for (VecDi pos : m_grid_lookup(arr_idx))
+				this->get(pos) = val;
+			reset(arr_idx);
+		}
+
+		void reset(const UINT& arr_idx = 0)
+		{
+			m_grid_lookup.reset(arr_idx);
+		}
+
+		void remove(const UINT& idx, const UINT& arr_idx = 0)
+		{
+			m_grid_lookup.remove(idx, arr_idx);
+		}
+
+
+		void remove (const VecDi& pos, const UINT& arr_idx = 0)
+		{
+			m_grid_lookup.remove(pos, arr_idx);
 		}
 	};
 }

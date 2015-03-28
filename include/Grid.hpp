@@ -50,10 +50,10 @@ namespace felt
 		typedef Eigen::Array<T, 1, Eigen::Dynamic> ArrayData;
 
 	protected:
-		VecDi m_vec_offset;
-		VecDu m_vec_dims;
+		VecDi m_offset;
+		VecDu m_dims;
 		FLOAT m_dx;
-		ArrayData m_vec_Data;
+		ArrayData m_data;
 
 	public:
 		virtual ~GridBase ()
@@ -63,8 +63,8 @@ namespace felt
 		 * Initialise a zero-dimensional GridBase.
 		 */
 		GridBase () :
-		m_vec_offset(VecDi::Zero()),
-		m_vec_dims(VecDu::Zero()),
+		m_offset(VecDi::Zero()),
+		m_dims(VecDu::Zero()),
 		m_dx(1)
 		{
 		}
@@ -114,9 +114,9 @@ namespace felt
 		 *
 		 * @return
 		 */
-		virtual void offset (const VecDi& vec_offset)
+		virtual void offset (const VecDi& offset_new)
 		{
-			m_vec_offset = vec_offset;
+			m_offset = offset_new;
 		}
 
 		/**
@@ -126,7 +126,7 @@ namespace felt
 		 */
 		const VecDi& offset () const
 		{
-			return m_vec_offset;
+			return m_offset;
 		}
 
 
@@ -277,7 +277,7 @@ namespace felt
 		 */
 		ArrayData& data ()
 		{
-			return m_vec_Data;
+			return m_data;
 		}
 		/**
 		 * Retrieve a reference to the data stored in GridBase.
@@ -285,7 +285,7 @@ namespace felt
 		 */
 		const ArrayData& data () const
 		{
-			return m_vec_Data;
+			return m_data;
 		}
 
 		/**
@@ -296,14 +296,14 @@ namespace felt
 		 */
 		virtual void dims (const VecDu& dims_new)
 		{
-			m_vec_dims = dims_new;
+			m_dims = dims_new;
 
-			INT uGridBaseSize = m_vec_dims(0);
-			for (INT i = 1; i < m_vec_dims.size(); i++)
+			INT uGridBaseSize = m_dims(0);
+			for (INT i = 1; i < m_dims.size(); i++)
 			{
-				uGridBaseSize *= m_vec_dims(i);
+				uGridBaseSize *= m_dims(i);
 			}
-			m_vec_Data.resize(uGridBaseSize);
+			m_data.resize(uGridBaseSize);
 		}
 
 		/**
@@ -313,7 +313,7 @@ namespace felt
 		 */
 		const VecDu& dims () const
 		{
-			return m_vec_dims;
+			return m_dims;
 		}
 
 		/**
@@ -354,8 +354,8 @@ namespace felt
 		{
 			// Reference to GridBase dimensions.
 			const VecDu& dims = this->dims();
-			// Most likely all 6 neighbours are valid.
-			vout.reserve(6);
+			// Most likely all neighbours are valid.
+			vout.reserve(2*D);
 			// Position for look-around.
 			VecDi vec_dir(pos);
 			for (INT axis = 0; axis < dims.size(); axis++) {

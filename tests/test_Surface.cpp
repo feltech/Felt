@@ -48,33 +48,6 @@ BOOST_AUTO_TEST_CASE(init)
 		const FLOAT val_centre = phi(Vec2i(0, 0));
 		BOOST_CHECK_EQUAL(val_centre, 3);
 	}
-
-	{
-		// Check OpenMP thread support.
-
-		const UINT num_threads = omp_get_max_threads();
-		BOOST_WARN_GT(omp_get_max_threads(), 1);
-		BOOST_TEST_MESSAGE("Num OpenMP threads: " << num_threads);
-
-		BOOST_CHECK_EQUAL(omp_get_max_threads(), omp_get_num_procs());
-
-		for (UINT threadIdx = 0; threadIdx < num_threads; threadIdx++)
-		{
-			std::vector<Vec2i>* pary_omp_dPhi = &surface.dphi(threadIdx);
-			BOOST_CHECK_EQUAL(pary_omp_dPhi->size(), 0u);
-		}
-
-		// Check delta phi grid.
-
-		Grid<FLOAT, 2>& dphi = surface.dphi();
-
-		const Vec2u dphi_dims = dphi.dims();
-		BOOST_CHECK_EQUAL(dphi_dims, Vec2u(7, 7));
-
-		// Initialised to zero.
-		const FLOAT val_centre = dphi(Vec2i(0, 0));
-		BOOST_CHECK_EQUAL(val_centre, 0);
-	}
 }
 
 /*
@@ -159,7 +132,7 @@ BOOST_AUTO_TEST_CASE(seed)
 	2, 1, 0, 1, 2,	// x
 	3, 2, 1, 2, 3,	// +
 	3, 3, 2, 3, 3;	// |
-	//	|____ - y + ____|
+//	|____ - y + ____|
 //	std::cerr << phi.data() << std::endl << std::endl;
 //	std::cerr << phi_check.data() << std::endl << std::endl;
 
@@ -237,7 +210,7 @@ BOOST_AUTO_TEST_CASE(delta_phi)
 	// Basic non-threaded check.
 	{
 		Surface<3, 2> surface(Vec3u(5, 5, 5));
-		Grid<FLOAT, 3>& dphi = surface.dphi();
+		Surface<3, 2>::DeltaPhiGrid& dphi = surface.dphi();
 
 		Vec3i pos = Vec3i(0, 0, 0);
 		// Apply a delta to the surface.
@@ -247,47 +220,9 @@ BOOST_AUTO_TEST_CASE(delta_phi)
 		// Check position vector of point in surface grid that delta was
 		// applied to is stored in a corresponding list to be iterated over.
 		UINT sum = 0;
-		for (UINT threadIdx = 0; threadIdx < surface.num_threads(); threadIdx++)
-			sum += surface.dphi(threadIdx).size();
+		for (const Vec3i& pos_child : dphi.branch().list(surface.layerIdx(0)))
+			sum += dphi.child(pos_child).list(surface.layerIdx(0)).size();
 		BOOST_CHECK_EQUAL(sum, 1);
-	}
-
-	// Multi-threaded check.
-	{
-		Surface<3, 2> surface(Vec3u(5, 5, 5));
-		BOOST_WARN_MESSAGE(
-			omp_get_max_threads() >= 1,
-			"only " << omp_get_max_threads() <<
-				" OpenMP thread available, not a good test of OpenMP."
-		);
-		surface.num_threads(omp_get_max_threads());
-		Grid<FLOAT, 3>& dphi = surface.dphi();
-
-		#pragma omp parallel for// num_threads(4)
-		for (UINT threadIdx = 0; threadIdx < surface.num_threads(); threadIdx++)
-		{
-			#pragma omp critical
-			BOOST_REQUIRE_EQUAL(omp_get_thread_num(), threadIdx);
-
-			Vec3i pos = Vec3i(0, 0, threadIdx);
-			surface.dphi(pos, threadIdx + 1);
-		}
-
-		for (UINT threadIdx = 0; threadIdx < surface.num_threads(); threadIdx++)
-		{
-			Vec3i pos = Vec3i(0, 0, threadIdx);
-			BOOST_CHECK_EQUAL(dphi(pos), threadIdx + 1);
-
-			std::vector<Vec3i>& apos_thread = surface.dphi(threadIdx);
-
-			UINT uThreadSize = apos_thread.size();
-			BOOST_REQUIRE_EQUAL(uThreadSize, 1);
-
-			Vec3i pos_thread = apos_thread[0];
-
-			INT dist = (pos - pos_thread).sum();
-			BOOST_CHECK_EQUAL(dist, 0);
-		}
 	}
 }
 
@@ -296,14 +231,10 @@ BOOST_AUTO_TEST_CASE(delta_phi)
  */
 BOOST_AUTO_TEST_CASE(delta_phi_update)
 {
-	UINT sum;
 	Surface<3, 2> surface(Vec3u(5, 5, 5));
-	omp_set_dynamic(0);
-	omp_set_num_threads(4);
-	surface.num_threads(4);
 
 	Grid<FLOAT, 3>& phi = surface.phi();
-	Grid<FLOAT, 3>& dphi = surface.dphi();
+	Surface<3, 2>::DeltaPhiGrid& dphi = surface.dphi();
 
 	// Put in 'dirty' state, to check update_start is doing it's job.
 	surface.dphi(Vec3i(0, 0, 0), 1.0f);
@@ -312,13 +243,14 @@ BOOST_AUTO_TEST_CASE(delta_phi_update)
 	surface.update_start();
 	{
 		// Check update_start cleared the above surface.dphi changes.
-		for (INT threadIdx = 0; threadIdx < surface.num_threads(); threadIdx++)
-			for (INT layerID = -2; layerID <= 2; layerID++)
-				BOOST_CHECK_MESSAGE(
-					surface.dphi(threadIdx, layerID).size() == 0u,
-					"adphi[" << threadIdx << "][" << layerID << "].size() = "
-					<< surface.dphi(threadIdx, layerID).size()
+		for (INT layerID = -2; layerID <= 2; layerID++)
+		{
+			const UINT& layerIdx = surface.layerIdx(layerID);
+			for (const Vec3i& pos_child : dphi.branch().list(layerIdx))
+				BOOST_CHECK_EQUAL(
+					dphi.child(pos_child).list(layerIdx).size(), 0u
 				);
+		}
 		BOOST_CHECK_EQUAL(dphi(Vec3i(0, 0, 0)), 0);
 	}
 	// Apply delta phi.
@@ -340,9 +272,16 @@ BOOST_AUTO_TEST_CASE(delta_phi_update)
 	// centre which == 0.
 	BOOST_CHECK_EQUAL(phi.data().sum(), 3 * 5 * 5 * 5 - 3);
 	// Delta phi position vector list should still contain one point.
-	sum = 0;
-	for (UINT threadIdx = 0; threadIdx < surface.num_threads(); threadIdx++)
-		sum += surface.dphi(threadIdx).size();
+	typedef Surface<3, 2>::DeltaPhiGrid::ChildGrid	ChildGrid;
+	typedef Surface<3, 2>::DeltaPhiGrid::BranchGrid	BranchGrid;
+	UINT sum = 0;
+	const UINT layerIdx = surface.layerIdx(0);
+	const BranchGrid& branch = dphi.branch();
+	for (const Vec3i& pos_child : branch.list(layerIdx))
+	{
+		ChildGrid child = dphi.child(pos_child);
+		sum += child.list(layerIdx).size();
+	}
 	BOOST_CHECK_EQUAL(sum, 1u);
 	// Delta phi grid itself should have reset back to zero.
 	BOOST_CHECK_EQUAL(dphi(Vec3i(0, 0, 0)), 0);
@@ -402,11 +341,15 @@ BOOST_AUTO_TEST_CASE(distance_transform)
 		surface.update_start();
 		{
 			// Check update_start cleared the above surface.dphi changes.
-			for (INT threadIdx = 0; threadIdx < surface.num_threads(); threadIdx++)
+			for (const Vec2i& pos_child : surface.dphi().branch().list())
 				for (INT layerID = -2; layerID <= 2; layerID++)
-					BOOST_CHECK_EQUAL(surface.dphi(threadIdx, layerID).size(), 0u);
+					BOOST_CHECK_EQUAL(
+						surface.dphi().child(pos_child).list(2+layerID).size(),
+						0u
+					);
 		}
 		surface.update_end();
+
 
 		phi_check.data() = phi_check.data() - phi.data();
 		const FLOAT diff = phi_check.data().sum();
@@ -724,8 +667,9 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 		const FLOAT diff = phi_check.data().sum();
 		// phi_check uses 'whole' 0.5s, but internally, to prevent rounding,
 		// max phi at grid boundary is 0.5-epsilon*2.
-		BOOST_CHECK_SMALL(diff,
-				std::numeric_limits<FLOAT>::epsilon() * 7 * 7 * 2);
+		BOOST_CHECK_SMALL(
+			diff, std::numeric_limits<FLOAT>::epsilon() * 7 * 7 * 2
+		);
 
 		BOOST_CHECK_EQUAL(surface.layer(0).size(), 4);
 		BOOST_CHECK_EQUAL(surface.layer(-1).size(), 1);
@@ -770,36 +714,33 @@ BOOST_AUTO_TEST_CASE(affected_outer_layers)
 
 		std::vector<Vec2i> aposCheck[5];
 		aposCheck[2 + -2] = std::vector<Vec2i>();
-		aposCheck[2 + -1] = std::vector<Vec2i>(
-		{ Vec2i(0, 0), });
-		aposCheck[2 + 0] = std::vector<Vec2i>(
-		{
-		// We don't care for now abouve zero-layer points.
+		aposCheck[2 + -1] = std::vector<Vec2i>({
+			Vec2i(0, 0)
+		});
+		aposCheck[2 + 0] = std::vector<Vec2i>({
+		// We don't care for now about zero-layer points.
 //			Vec2i(0,1),
 //			Vec2i(1,0)
-				});
-		aposCheck[2 + 1] = std::vector<Vec2i>(
-		{
+		});
+		aposCheck[2 + 1] = std::vector<Vec2i>({
+			// For (0,1):
+			Vec2i(-1, 1), Vec2i(1, 1), Vec2i(0, 2),
 
-		// For (0,1):
-				Vec2i(-1, 1), Vec2i(1, 1), Vec2i(0, 2),
+			// For (1,0):
+			Vec2i(2, 0), Vec2i(1, -1)
+		});
 
-				// For (1,0):
-				Vec2i(2, 0), Vec2i(1, -1) });
+		aposCheck[2 + 2] = std::vector<Vec2i>({
+			// For (0,1):
+			Vec2i(-2, 1), Vec2i(2, 1),
 
-		aposCheck[2 + 2] = std::vector<Vec2i>(
-		{
+			Vec2i(-1, 2), Vec2i(1, 2),
 
-		// For (0,1):
-				Vec2i(-2, 1), Vec2i(2, 1),
+			Vec2i(0, 3),
 
-				Vec2i(-1, 2), Vec2i(1, 2),
-
-				Vec2i(0, 3),
-
-				// For (1,0):
-
-				Vec2i(3, 0), Vec2i(1, -2), Vec2i(2, -1) });
+			// For (1,0):
+			Vec2i(3, 0), Vec2i(1, -2), Vec2i(2, -1)
+		});
 
 		for (INT layerID = -2; layerID <= 2; layerID++)
 		{
@@ -808,13 +749,15 @@ BOOST_AUTO_TEST_CASE(affected_outer_layers)
 
 			const INT layerIdx = 2 + layerID;
 //			std::cerr << "Affected points: layer " << layerID << std::endl;
-			BOOST_CHECK_EQUAL(aAffected[layerIdx].size(),
-					aposCheck[layerIdx].size());
+			BOOST_CHECK_EQUAL(
+				aAffected[layerIdx].size(), aposCheck[layerIdx].size()
+			);
 
 			for (auto pos : aAffected[layerIdx])
 			{
-				auto iter = std::find(aposCheck[layerIdx].begin(),
-						aposCheck[layerIdx].end(), pos);
+				auto iter = std::find(
+					aposCheck[layerIdx].begin(), aposCheck[layerIdx].end(), pos
+				);
 				BOOST_CHECK(iter != aposCheck[layerIdx].end());
 			}
 		}

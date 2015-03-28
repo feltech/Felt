@@ -8,16 +8,33 @@
 #include <eigen3/Eigen/Dense>
 #include <omp.h>
 
-#include "Grid.hpp"
+#include "PartitionedGrid.hpp"
 
 
 namespace felt {
 
-	template <UINT D, UINT L=2>
-	class Surface {
+	template <UINT D, UINT L=2, UINT P=2>
+	class Surface
+	{
+	protected:
 		typedef Eigen::Matrix<UINT, D, 1> VecDu;
 		typedef Eigen::Matrix<INT, D, 1> VecDi;
 		typedef Eigen::Matrix<FLOAT, D, 1> VecDf;
+
+		struct StatusChange
+		{
+			StatusChange(
+				const VecDi& pos_, const INT& from_layer_, const INT& to_layer_
+			) : pos(pos_), from_layer(from_layer_), to_layer(to_layer_){}
+
+			VecDi pos;
+			INT from_layer;
+			INT to_layer;
+		};
+
+	public:
+
+		typedef MappedPartitionedGrid<FLOAT, D, P, 2*L+1>	DeltaPhiGrid;
 
 #ifndef _TESTING
 	protected:
@@ -29,14 +46,20 @@ namespace felt {
 		VecDi m_pos_max;
 
 		Grid<FLOAT,D> m_grid_phi;
-		Grid<FLOAT,D> m_grid_dphi;
-		Grid<UINT,D> m_grid_idx;
 		Grid<bool,D> m_grid_flag;
 
+		// TODO: Switch to PosMappedPartitionedSharedGrid<FLOAT, D, ?, 2*L+1>
+		Grid<UINT,D> m_grid_idx;
 		std::vector<VecDi> m_layers[2*L+1];
 
 		UINT m_uThreads;
-		std::vector<std::vector<std::vector<VecDi> > > m_omp_adphi;
+
+		// TODO: Switch to MappedPartitionedGrid<FLOAT, D, ?, 2*L+1>
+		DeltaPhiGrid m_parent_grid_dphi;
+
+
+		// TODO: Switch to PartitionedArray<StatusChange, D>
+		// (same dims as partitioned grids).
 		std::vector<std::vector<VecDi> > m_omp_aStatusChangePos;
 		std::vector<std::vector<INT> > m_omp_aStatusChangeFromLayer;
 		std::vector<std::vector<INT> > m_omp_aStatusChangeToLayer;
@@ -94,16 +117,13 @@ namespace felt {
 			if (uThreads == 0)
 				uThreads = omp_get_max_threads();
 			m_uThreads = uThreads;
-			m_omp_adphi.resize(m_uThreads);
 			m_omp_aStatusChangePos.resize(m_uThreads);
 			m_omp_aStatusChangeFromLayer.resize(m_uThreads);
 			m_omp_aStatusChangeToLayer.resize(m_uThreads);
 			for (
-				UINT threadIdx = 0; threadIdx < m_omp_adphi.size(); threadIdx++
+				UINT threadIdx = 0; threadIdx < m_omp_aStatusChangePos.size();
+				threadIdx++
 			) {
-				m_omp_adphi[threadIdx] = std::vector<std::vector<VecDi> >(
-					2*L+1
-				);
 				m_omp_aStatusChangePos[threadIdx] = std::vector<VecDi>();
 				m_omp_aStatusChangeFromLayer[threadIdx] = std::vector<INT>();
 				m_omp_aStatusChangeToLayer[threadIdx] = std::vector<INT>();
@@ -128,7 +148,7 @@ namespace felt {
 		void dims (const VecDu& udims, const UINT& uborder = 0)
 		{
 			Grid<FLOAT,D>& phi = this->phi();
-			Grid<FLOAT,D>& dphi = this->dphi();
+			DeltaPhiGrid& dphi = this->dphi();
 			Grid<UINT,D>& idx = this->idx();
 
 			const VecDi idims = udims.template cast<INT>();
@@ -138,8 +158,7 @@ namespace felt {
 			phi.dims(udims);
 			phi.offset(offset);
 			// Configure delta phi embedding.
-			dphi.dims(udims);
-			dphi.offset(offset);
+			dphi.init(udims, offset);
 			// Configure layer index spatial lookup.
 			idx.dims(udims);
 			idx.offset(offset);
@@ -221,7 +240,7 @@ namespace felt {
 		 * @brief Get reference to phi grid.
 		 * @return
 		 */
-		Grid<FLOAT,D>& phi ()
+		Grid<FLOAT, D>& phi ()
 		{
 			return m_grid_phi;
 		}
@@ -230,19 +249,17 @@ namespace felt {
 		 * @brief Get reference to phi grid.
 		 * @return
 		 */
-		const Grid<FLOAT,D>& phi () const
+		const Grid<FLOAT, D>& phi () const
 		{
 			return m_grid_phi;
 		}
 
-		/**
-		 * @brief Get reference to phi grid.
-		 * @return
-		 */
-		FLOAT phi (const VecDi& pos) const
+
+		const FLOAT& phi (const VecDi pos)
 		{
-			return this->phi()(pos);
+			return m_grid_phi(pos);
 		}
+
 
 		/**
 		 * @brief Test whether a given value lies within the narrow band or not.
@@ -359,55 +376,30 @@ namespace felt {
 		 * @brief Get reference to delta phi grid.
 		 * @return
 		 */
-		Grid<FLOAT,D>& dphi ()
+		DeltaPhiGrid& dphi ()
 		{
-			return m_grid_dphi;
+			return m_parent_grid_dphi;
 		}
 
-		/**
-		 * @brief Get reference to delta phi grid.
-		 * @return
-		 */
-		const Grid<FLOAT,D>& dphi () const
+		const DeltaPhiGrid& dphi () const
 		{
-			return m_grid_dphi;
+			return m_parent_grid_dphi;
 		}
 
-		/**
-		 * @brief Get reference to delta phi array.
-		 *
-		 * Contains positions of non-zero points in dPhi, split across threads.
-		 *
-		 * @param idx - the thread index
-		 * @return
-		 */
-		std::vector<VecDi>& dphi(const INT& threadIdx, const INT& layerID = 0)
-		{
-			return m_omp_adphi[threadIdx][layerID+L];
-		}
 
 		/**
 		 * @brief Update delta phi grid and append point to change list for
 		 * current thread.
+		 *
 		 * @param pos
 		 * @param val
 		 */
 		void dphi (const UINT& uPos, const FLOAT& val, const INT& layerID = 0)
 		{
-			this->dphi(
-				layer(layerID)[uPos], val, omp_get_thread_num(), layerID
-			);
+			this->dphi(layer(layerID)[uPos], val, layerID);
 		}
-		/**
-		 * @brief Update delta phi grid and append point to change list for
-		 * current thread.
-		 * @param pos
-		 * @param val
-		 */
-		void dphi (const VecDi& pos, const FLOAT& val, const INT& layerID = 0)
-		{
-			this->dphi(pos, val, omp_get_thread_num(), layerID);
-		}
+
+
 		/**
 		 * @brief Update delta phi grid and append point to change list for
 		 * given thread.
@@ -415,12 +407,8 @@ namespace felt {
 		 * @param val
 		 */
 		void dphi (
-			const VecDi& pos, FLOAT val, const INT& threadIdx,
-			const INT& layerID
+			const VecDi& pos, FLOAT val, const INT& layerID = 0
 		) {
-			Grid<FLOAT,D>& dphi = this->dphi();
-			std::vector<VecDi>& adphi = this->dphi(threadIdx, layerID);
-
 			// If this is the zero-layer, then ensure we cannot leave the grid
 			// boundary.
 			if (layerID == 0)
@@ -444,8 +432,7 @@ namespace felt {
 					}
 			}
 
-			dphi(pos) = val;
-			adphi.push_back(pos);
+			this->dphi().add(pos, val, this->layerIdx(layerID));
 		}
 		/**
 		 * @brief Get reference to index lookup grid.
@@ -485,30 +472,20 @@ namespace felt {
 		 * @param id
 		 * @return
 		 */
-		std::vector<VecDi>& layer (const INT& id)
+		std::vector<VecDi>& layer (const INT& id = 0)
 		{
 			return m_layers[id+L];
 		}
 
 
 		/**
-		 * @brief Get reference to the zero-layer of the narrow band.
+		 * @brief Get reference to a single layer of the narrow band.
 		 * @param id
 		 * @return
 		 */
-		std::vector<VecDi>& layer()
+		const std::vector<VecDi>& layer (const INT& id = 0) const
 		{
-			return m_layers[L];
-		}
-
-		/**
-		 * @brief Get reference to the zero-layer of the narrow band.
-		 * @param id
-		 * @return
-		 */
-		const std::vector<VecDi>& layer() const
-		{
-			return m_layers[L];
+			return m_layers[id+L];
 		}
 
 		/**
@@ -517,7 +494,7 @@ namespace felt {
 		 */
 		typename std::vector<VecDi>::iterator begin()
 		{
-			return layer().begin();
+			return layer(0).begin();
 		}
 
 		/**
@@ -526,7 +503,7 @@ namespace felt {
 		 */
 		typename std::vector<VecDi>::iterator end()
 		{
-			return layer().end();
+			return layer(0).end();
 		}
 
 		/**
@@ -536,7 +513,7 @@ namespace felt {
 		 */
 		UINT size()
 		{
-			return layer().size();
+			return layer(0).size();
 		}
 
 		void each(std::function<void (const VecDi)> func)
@@ -769,25 +746,19 @@ namespace felt {
 		 */
 		void update_start ()
 		{
-			Grid<FLOAT,D>& grid_dphi = this->dphi();
+			for (UINT layerIdx = 0; layerIdx < 2*L+1; layerIdx++)
+				this->dphi().reset(0, layerIdx);
+
 			for (
 				INT threadIdx = 0; threadIdx < this->num_threads();
 				threadIdx++
 			) {
-				for (INT layerID = -(INT)L; layerID <= (INT)L; layerID++)
-				{
-					std::vector<VecDi>& apos = this->dphi(threadIdx, layerID);
-					// Reset delta phi to zero.
-					for (UINT pos_idx = 0; pos_idx < apos.size(); pos_idx++)
-						grid_dphi(apos[pos_idx]) = 0;
-					// Clear position list.
-					apos.clear();
-				}
 				// Clear status change lists.
 				m_omp_aStatusChangePos[threadIdx].clear();
 				m_omp_aStatusChangeFromLayer[threadIdx].clear();
 				m_omp_aStatusChangeToLayer[threadIdx].clear();
 			}
+;
 		}
 
 
@@ -797,25 +768,19 @@ namespace felt {
 		void update_zero_layer ()
 		{
 			Grid<FLOAT,D>& phi = this->phi();
-			Grid<FLOAT,D>& dphi = this->dphi();
-			// Loop through thread-localised update points along zero layer.
-//#pragma omp parallel for
-			for (
-				UINT threadIdx = 0; threadIdx < this->num_threads();
-				threadIdx++
-			) {
-				// Get zero-layer update points for this thread.
-				std::vector<VecDi>& apos = this->dphi(threadIdx);
-				// Loop through positions, updating phi by delta phi.
-				for (UINT pos_idx = 0; pos_idx < apos.size(); pos_idx++)
+			const DeltaPhiGrid& dphi = this->dphi();
+			typedef typename DeltaPhiGrid::BranchGrid DeltaPhiBranch;
+			const DeltaPhiBranch& branch = dphi.branch();
+			const UINT& layerIdx = this->layerIdx(0);
+
+			for (const VecDi& pos_child : branch.list(layerIdx))
+				for (const VecDi& pos : branch(pos_child).list(layerIdx))
 				{
-					const VecDi& pos = apos[pos_idx];
-					const FLOAT fphi = phi(pos);
-					const FLOAT fdphi = dphi(pos);
-					const FLOAT fval = fphi + fdphi;
+					const FLOAT& fphi = phi(pos);
+					const FLOAT& fdphi = dphi(pos);
+					const FLOAT& fval = fphi + fdphi;
 					this->phi(pos, fval);
 				}
-			}
 		}
 
 		/**
@@ -885,7 +850,7 @@ namespace felt {
 		void update_distance(
 			const INT& layerID, const INT& side, std::vector<VecDi>& alayer
 		) {
-			Grid<FLOAT,D>& dphi = this->dphi();
+			DeltaPhiGrid& dphi = this->dphi();
 
 			// Calculate distance of every point in this layer to the zero
 			// layer, and store in delta phi grid.
@@ -960,19 +925,26 @@ namespace felt {
 		{
 			// Reference to phi grid.
 			const Grid<FLOAT, D>& phi = this->phi();
+			const DeltaPhiGrid& dphi = this->dphi();
 			// Number of thread-localised lists to iterate over.
 			const UINT num_threads = this->num_threads();
 
 			// Vector of all neighbours of all modified phi points.
 			std::vector<VecDi> aneighs;
 
-			// Loop through thread-localised dphi lists, copying to neighbour
-			// list.
-			for (UINT threadIdx = 0; threadIdx < num_threads; threadIdx++)
+			typedef typename DeltaPhiGrid::BranchGrid DeltaPhiBranch;
+			typedef typename DeltaPhiGrid::ChildGrid DeltaPhiChild;
+			typedef typename DeltaPhiGrid::PosArray PosArray;
+			// Loop through dphi lists, copying to neighbour list.
+			const DeltaPhiBranch& branch = dphi.branch();
+			const UINT& layerIdx = this->layerIdx(0);
+			for (const VecDi& pos_child : branch.list(layerIdx))
 			{
-				const std::vector<VecDi>& aposdphi = this->dphi(threadIdx);
+				const DeltaPhiChild& child = branch(pos_child);
+				const PosArray& aposdphi = child.list(layerIdx);
 				aneighs.insert(aneighs.end(), aposdphi.begin(), aposdphi.end());
 			}
+
 			// Loop again through dphi/neighbours, setting flag to true to
 			// avoid re-visiting.
 			for (UINT upos = 0; upos < aneighs.size(); upos++)
