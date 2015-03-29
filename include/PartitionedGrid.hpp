@@ -325,7 +325,6 @@ namespace felt
 	};
 
 
-
 	template <typename G>
 	class LeafsContainer
 	{
@@ -515,15 +514,71 @@ namespace felt
 	};
 
 
+	template <typename T, UINT D, UINT P, UINT N, class G>
+	class TrackingPartitionedGridBase : public PartitionedGrid<T, D, P, G, N>
+	{
+	protected:
+		typedef PartitionedGrid<T, D, P, G, N> 				Base;
+		typedef TrackingPartitionedGridBase<T, D, P, N, G>	ThisType;
+		friend class LeafsContainer<ThisType>;
+	public:
+		typedef typename Base::ChildGrid				ChildGrid;
+	protected:
+		typedef typename ChildGrid::VecDu				VecDu;
+		typedef typename ChildGrid::VecDi				VecDi;
+	public:
+		typedef typename Base::BranchGrid				BranchGrid;
+		typedef typename ChildGrid::PosArray			PosArray;
+
+	public:
+		virtual ~TrackingPartitionedGridBase()
+		{}
+
+		TrackingPartitionedGridBase () : Base()
+		{}
+
+
+		TrackingPartitionedGridBase (
+			const VecDu& dims, const VecDi& offset, const FLOAT& delta = 1
+		) : Base(dims, offset, delta)
+		{}
+
+
+		const LeafsContainer<ThisType> leafs(const UINT& listIdx) const
+		{
+			return LeafsContainer<ThisType>(this, listIdx);
+		}
+
+
+		void reset(const UINT& arr_idx = 0)
+		{
+			BranchGrid& branch = this->branch();
+			for (const VecDi& pos_child : branch.list(arr_idx))
+				branch(pos_child).reset(arr_idx);
+
+			Base::reset(arr_idx);
+		}
+
+
+		void remove(const VecDi& pos, const UINT& arr_idx = 0)
+		{
+			const VecDi& pos_child = this->pos_child(pos);
+			ChildGrid& child = this->child(pos_child);
+			child.remove(pos, arr_idx);
+			if (child.list(arr_idx).size() == 0)
+				this->remove_child(pos_child, arr_idx);
+		}
+	};
+
 
 	template <typename T, UINT D, UINT P, UINT N>
-	class TrackedPartitionedGrid : public PartitionedGrid<
-		T, D, P, TrackedGrid<T, D, N>, N
+	class TrackedPartitionedGrid : public TrackingPartitionedGridBase<
+		T, D, P, N, TrackedGrid<T, D, N>
 	>
 	{
 	protected:
-		typedef PartitionedGrid<
-			T, D, P, TrackedGrid<T, D, N>, N
+		typedef TrackingPartitionedGridBase<
+			T, D, P, N, TrackedGrid<T, D, N>
 		> Base;
 		typedef TrackedPartitionedGrid<T, D, P, N>		ThisType;
 		friend class LeafsContainer<ThisType>;
@@ -549,19 +604,10 @@ namespace felt
 
 		void add(const VecDi& pos, const T& val, const UINT& arr_idx = 0)
 		{
-			BranchGrid& branch = this->branch();
 			const VecDi& pos_child = this->pos_child(pos);
-			branch(pos_child).add(pos, val, arr_idx);
-
+			this->child(pos_child).add(pos, val, arr_idx);
 			Base::add_child(pos_child, arr_idx);
 		}
-
-
-		const LeafsContainer<ThisType> leafs(const UINT& listIdx) const
-		{
-			return LeafsContainer<ThisType>(this, listIdx);
-		}
-
 
 		void reset(const T& val, const UINT& arr_idx = 0)
 		{
@@ -571,119 +617,125 @@ namespace felt
 
 			Base::reset(arr_idx);
 		}
+	};
 
 
-		void reset(const UINT& arr_idx = 0)
+	template <typename T, UINT D, UINT P, UINT N>
+	class SharedTrackedPartitionedGrid : public TrackingPartitionedGridBase<
+		T, D, P, N, TrackedGrid<T, D, N, Shared>
+	>
+	{
+	protected:
+		typedef TrackingPartitionedGridBase<
+			T, D, P, N, TrackedGrid<T, D, N, Shared>
+		> Base;
+		typedef SharedTrackedPartitionedGrid<T, D, P, N>	ThisType;
+		friend class LeafsContainer<ThisType>;
+	public:
+		typedef typename Base::ChildGrid				ChildGrid;
+	protected:
+		typedef typename ChildGrid::VecDu				VecDu;
+		typedef typename ChildGrid::VecDi				VecDi;
+	public:
+		typedef typename Base::BranchGrid				BranchGrid;
+		typedef typename ChildGrid::PosArray			PosArray;
+
+	public:
+		SharedTrackedPartitionedGrid () : Base()
+		{}
+
+
+		SharedTrackedPartitionedGrid (
+			const VecDu& dims, const VecDi& offset, const FLOAT& delta = 1
+		) : Base(dims, offset, delta)
+		{}
+
+
+		void add(const VecDi& pos, const T& val, const UINT& arr_idx = 0)
+		{
+			const VecDi& pos_child = this->pos_child(pos);
+			this->child(pos_child).add(pos, val, arr_idx);
+			Base::add_child(pos_child, arr_idx);
+		}
+
+		void reset(const T& val, const UINT& arr_idx = 0)
 		{
 			BranchGrid& branch = this->branch();
 			for (const VecDi& pos_child : branch.list(arr_idx))
-				branch(pos_child).reset(arr_idx);
+				branch(pos_child).reset(val, arr_idx);
 
 			Base::reset(arr_idx);
-		}
-
-
-		void remove(const VecDi& pos, const UINT& arr_idx = 0)
-		{
-			const VecDi& pos_child = this->pos_child(pos);
-			ChildGrid& child = this->child(pos_child);
-			child.remove(pos, arr_idx);
-			if (child.list(arr_idx).size() == 0)
-				this->remove_child(pos_child, arr_idx);
 		}
 	};
 
 
-	template <UINT D, UINT P, UINT N>
-	using PosMappedPartitionedGridBase = PartitionedGrid<
-		Eigen::Matrix<UINT, N, 1>, D, P, LookupGrid<D, N>, N
-	>;
 
 	template <UINT D, UINT P, UINT N>
-	class PosMappedPartitionedGrid
-	: public PosMappedPartitionedGridBase<D, P, N>
+	class LookupPartitionedGrid : public TrackingPartitionedGridBase<
+		Eigen::Matrix<UINT, N, 1>, D, P, N, LookupGrid<D, N>
+	>
 	{
-	public:
-		typedef LookupGrid<D, N>						Lookup;
-		typedef typename Lookup::PosArray				PosArray;
 	protected:
-		typedef PosMappedPartitionedGridBase<D, P, N>	Base;
+		typedef TrackingPartitionedGridBase<
+			Eigen::Matrix<UINT, N, 1>, D, P, N, LookupGrid<D, N>
+		> Base;
 		typedef typename Base::ChildGrid				ChildGrid;
 		typedef typename ChildGrid::VecDu				VecDu;
 		typedef typename ChildGrid::VecDi				VecDi;
 	public:
 		typedef typename Base::BranchGrid				BranchGrid;
 
-	protected:
-		Lookup											m_grid_lookup;
-
 	public:
-		PosMappedPartitionedGrid () : Base(), m_grid_lookup()
+		LookupPartitionedGrid () : Base()
 		{}
 
 
-		PosMappedPartitionedGrid (
+		LookupPartitionedGrid (
 			const VecDu& dims, const VecDi& offset, const FLOAT& delta = 1
-		) : Base(), m_grid_lookup()
-		{
-			init(dims, offset, delta);
-		}
-
-
-		void init (
-			const VecDu& dims, const VecDi& offset = VecDi::Zero(),
-			const FLOAT& delta = 1
-		) {
-			Base::init(dims, offset, delta);
-			lookup().init(dims, offset, delta);
-		}
-
-
-		Lookup& lookup()
-		{
-			return m_grid_lookup;
-		}
-
-
-		const Lookup& lookup() const
-		{
-			return m_grid_lookup;
-		}
+		) : Base(dims, offset, delta)
+		{}
 
 
 		void add(const VecDi& pos, const UINT& arr_idx = 0)
 		{
 			const VecDi& pos_child = this->pos_child(pos);
-			BranchGrid& parent = this->branch();
-			Lookup& lookup = this->lookup();
-			ChildGrid& child = parent(pos_child);
-
-			lookup.add(pos_child, arr_idx);
-			child.add(pos, arr_idx);
+			this->child(pos_child).add(pos, arr_idx);
+			Base::add_child(pos_child, arr_idx);
 		}
+	};
 
 
-		void reset(const UINT& arr_idx = 0)
-		{
-			BranchGrid& parent = this->branch();
-			Lookup& lookup = this->lookup();
-			for (const VecDi& child_pos : lookup.list(arr_idx))
-			{
-				parent(child_pos).reset(arr_idx);
-			}
-			lookup.reset(arr_idx);
-		}
+	template <UINT D, UINT P, UINT N>
+	class SharedLookupPartitionedGrid : public TrackingPartitionedGridBase<
+		UINT, D, P, N, LookupGrid<D, N, Shared>
+	>
+	{
+	protected:
+		typedef TrackingPartitionedGridBase<
+			UINT, D, P, N, LookupGrid<D, N, Shared>
+		> Base;
+		typedef typename Base::ChildGrid				ChildGrid;
+		typedef typename ChildGrid::VecDu				VecDu;
+		typedef typename ChildGrid::VecDi				VecDi;
+	public:
+		typedef typename Base::BranchGrid				BranchGrid;
+
+	public:
+		SharedLookupPartitionedGrid () : Base()
+		{}
 
 
-		void remove(const VecDi& pos, const UINT& arr_idx = 0)
+		SharedLookupPartitionedGrid (
+			const VecDu& dims, const VecDi& offset, const FLOAT& delta = 1
+		) : Base(dims, offset, delta)
+		{}
+
+
+		void add(const VecDi& pos, const UINT& arr_idx = 0)
 		{
 			const VecDi& pos_child = this->pos_child(pos);
-			BranchGrid& branch = this->branch();
-			Lookup& lookup = this->lookup();
-			ChildGrid& child = branch(pos_child);
-			child.remove(pos, arr_idx);
-			if (child.list(arr_idx).size() == 0)
-				lookup.remove(pos_child, arr_idx);
+			this->child(pos_child).add(pos, arr_idx);
+			Base::add_child(pos_child, arr_idx);
 		}
 	};
 

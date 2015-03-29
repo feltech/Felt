@@ -353,11 +353,12 @@ namespace felt
 	};
 
 
-	template <typename T, UINT D, UINT N>
+	template <typename T, UINT D, UINT N, bool S=NotShared>
 	class TrackedGrid : public Grid<T, D>
 	{
+	public:
+		typedef LookupGrid<D, N, S>				Lookup;
 	protected:
-		typedef LookupGrid<D, N>				Lookup;
 		typedef	Grid<T, D>						Base;
 		typedef typename Lookup::PosArray		PosArray;
 

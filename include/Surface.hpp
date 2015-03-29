@@ -37,6 +37,7 @@ namespace felt {
 	public:
 
 		typedef TrackedPartitionedGrid<FLOAT, D, P, 2*L+1>	DeltaPhiGrid;
+		typedef SharedLookupPartitionedGrid<D, P, 2*L+1>	PhiGrid;
 
 #ifndef _TESTING
 	protected:
@@ -47,12 +48,13 @@ namespace felt {
 		VecDi m_pos_min;
 		VecDi m_pos_max;
 
-		Grid<FLOAT,D> m_grid_phi;
 		Grid<bool,D> m_grid_flag;
 
 		// TODO: Switch to PosMappedPartitionedSharedGrid<FLOAT, D, ?, 2*L+1>
+		Grid<FLOAT,D> m_grid_phi;
 		Grid<UINT,D> m_grid_idx;
 		std::vector<VecDi> m_layers[2*L+1];
+
 
 		DeltaPhiGrid 		m_grid_dphi;
 
