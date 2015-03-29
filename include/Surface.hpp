@@ -55,7 +55,7 @@ namespace felt {
 		UINT m_uThreads;
 
 		// TODO: Switch to MappedPartitionedGrid<FLOAT, D, ?, 2*L+1>
-		DeltaPhiGrid m_parent_grid_dphi;
+		DeltaPhiGrid m_grid_dphi;
 
 
 		// TODO: Switch to PartitionedArray<StatusChange, D>
@@ -255,11 +255,15 @@ namespace felt {
 		}
 
 
-		const FLOAT& phi (const VecDi pos)
+		const FLOAT& phi (const VecDi& pos) const
 		{
 			return m_grid_phi(pos);
 		}
 
+		FLOAT& phi (const VecDi& pos)
+		{
+			return m_grid_phi(pos);
+		}
 
 		/**
 		 * @brief Test whether a given value lies within the narrow band or not.
@@ -378,12 +382,23 @@ namespace felt {
 		 */
 		DeltaPhiGrid& dphi ()
 		{
-			return m_parent_grid_dphi;
+			return m_grid_dphi;
 		}
 
 		const DeltaPhiGrid& dphi () const
 		{
-			return m_parent_grid_dphi;
+			return m_grid_dphi;
+		}
+
+
+		FLOAT& dphi (const VecDi& pos)
+		{
+			return m_grid_dphi(pos);
+		}
+
+		const FLOAT& dphi (const VecDi& pos) const
+		{
+			return m_grid_dphi(pos);
 		}
 
 
@@ -767,20 +782,25 @@ namespace felt {
 		 */
 		void update_zero_layer ()
 		{
-			Grid<FLOAT,D>& phi = this->phi();
-			const DeltaPhiGrid& dphi = this->dphi();
-			typedef typename DeltaPhiGrid::BranchGrid DeltaPhiBranch;
-			const DeltaPhiBranch& branch = dphi.branch();
+			const typename DeltaPhiGrid::BranchGrid&
+			branch = this->dphi().branch();
+
 			const UINT& layerIdx = this->layerIdx(0);
 
-			for (const VecDi& pos_child : branch.list(layerIdx))
+			#pragma omp parallel for
+			for (
+				UINT idx_child = 0; idx_child < branch.list(layerIdx).size();
+				idx_child++
+			) {
+				const VecDi& pos_child = branch.list(layerIdx)[idx_child];
 				for (const VecDi& pos : branch(pos_child).list(layerIdx))
 				{
-					const FLOAT& fphi = phi(pos);
-					const FLOAT& fdphi = dphi(pos);
+					const FLOAT& fphi = this->phi(pos);
+					const FLOAT& fdphi = this->dphi(pos);
 					const FLOAT& fval = fphi + fdphi;
 					this->phi(pos, fval);
 				}
+			}
 		}
 
 		/**

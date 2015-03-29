@@ -1,7 +1,8 @@
 #ifndef PARTITIONEDGRID_HPP_
 #define PARTITIONEDGRID_HPP_
 
-#include <stdexcept>
+#include <boost/iterator/iterator_facade.hpp>
+
 #include "MappedGrid.hpp"
 
 namespace felt
@@ -193,21 +194,150 @@ namespace felt
 		= PartitionedGrid<T, D, P, G, N>::VecDi::Constant(P);
 
 
+	template <typename G>
+	class LeafsContainer
+	{
+	private:
+		typedef G							GridTree;
+		typedef typename GridTree::VecDi	VecDi;
+		typedef typename GridTree::PosArray	PosArray;
+
+		const GridTree* m_pgrid;
+		const UINT	m_listIdx;
+
+		class iterator : public boost::iterator_facade<
+			LeafsContainer::iterator,
+			const VecDi, boost::forward_traversal_tag
+		>
+		{
+		private:
+			typedef typename PosArray::const_iterator	Iter;
+		public:
+			iterator() : m_pgrid(NULL), m_it_child_end()
+			{}
+
+			iterator(
+				const GridTree* pgrid, const UINT& listIdx,
+				const Iter& it_child, const Iter& it_leaf
+			)
+			: m_pgrid(pgrid), m_listIdx(listIdx), m_it_child(it_child),
+			  m_it_leaf(it_leaf),
+			  m_it_child_end(pgrid->branch().list(listIdx).end())
+			{}
+
+		private:
+			friend class boost::iterator_core_access;
+
+			const GridTree* m_pgrid;
+			const UINT	m_listIdx;
+			Iter		m_it_child;
+			Iter		m_it_leaf;
+			const Iter	m_it_child_end;
+
+
+		    void increment()
+		    {
+ 		    	if (m_it_child == m_it_child_end)
+		    		return;
+
+		    	if (m_it_leaf == m_it_child)
+		    	{
+		    		m_it_leaf = m_pgrid->child(
+		    			*m_it_child
+					).list(m_listIdx).begin();
+	 		    	return;
+		    	}
+
+		    	m_it_leaf++;
+
+		    	if (
+		    		m_it_leaf == m_pgrid->child(
+		    			*m_it_child
+					).list(m_listIdx).end()
+				) {
+		    		m_it_child++;
+		    		m_it_leaf = m_it_child;
+		    		increment();
+		    		return;
+		    	}
+		    }
+
+
+		    bool equal(const iterator& other) const
+		    {
+		        return (
+		        	m_it_child == other.m_it_child
+					&& m_it_leaf == other.m_it_leaf
+				);
+		    }
+
+
+		    const VecDi& dereference() const {
+		    	const VecDi& pos = *m_it_leaf;
+		    	return *m_it_leaf;
+		    }
+		};
+	public:
+		LeafsContainer(const GridTree* pgrid, const UINT& listIdx)
+		: m_pgrid(pgrid), m_listIdx(listIdx)
+		{}
+
+		const iterator begin() const
+		{
+			const typename PosArray::const_iterator& it_child_begin
+				= m_pgrid->branch().list(m_listIdx).cbegin();
+			const typename PosArray::const_iterator& it_child_end
+				= m_pgrid->branch().list(m_listIdx).cend();
+
+			typename PosArray::const_iterator it_leaf_begin = it_child_end;
+
+			if (it_child_begin != it_child_end)
+			{
+				it_leaf_begin = m_pgrid->child(
+					*it_child_begin
+				).list(m_listIdx).begin();
+			}
+
+			return iterator(
+				m_pgrid, m_listIdx,
+				it_child_begin,
+				it_leaf_begin
+			);
+		}
+
+		const iterator end() const
+		{
+			return iterator(
+				m_pgrid, m_listIdx,
+				m_pgrid->branch().list(m_listIdx).cend(),
+				m_pgrid->branch().list(m_listIdx).cend()
+			);
+		}
+
+		UINT size() const
+		{
+			UINT sum = 0;
+			for (const VecDi& pos_child : m_pgrid->branch().list(m_listIdx))
+				sum += m_pgrid->child(pos_child).list(m_listIdx).size();
+			return sum;
+		}
+	};
+
 
 	/**
 	 * Specialisation for MappedGrid.
 	 */
-
 	template <typename T, UINT D, UINT P, UINT N>
-	using MappedPartitionedGridBase = PartitionedGrid<
+	class MappedPartitionedGrid : public PartitionedGrid<
 		T, D, P, MappedGrid<T, D, N>, N
-	>;
-
-	template <typename T, UINT D, UINT P, UINT N>
-	class MappedPartitionedGrid : public MappedPartitionedGridBase<T, D, P, N>
+	>
 	{
 	protected:
-		typedef MappedPartitionedGridBase<T, D, P, N>	Base;
+		typedef PartitionedGrid<
+			T, D, P, MappedGrid<T, D, N>, N
+		> Base;
+		typedef MappedPartitionedGrid<T, D, P, N>		ThisType;
+		friend class LeafsContainer<ThisType>;
 	public:
 		typedef typename Base::ChildGrid				ChildGrid;
 	protected:
@@ -215,8 +345,9 @@ namespace felt
 		typedef typename ChildGrid::VecDi				VecDi;
 	public:
 		typedef typename Base::BranchGrid				BranchGrid;
+		typedef typename ChildGrid::PosArray			PosArray;
 
-
+	public:
 		MappedPartitionedGrid () : Base()
 		{}
 
@@ -235,6 +366,10 @@ namespace felt
 			branch(pos_child).add(pos, val, arr_idx);
 		}
 
+		const LeafsContainer<ThisType> leafs(const UINT& listIdx) const
+		{
+			return LeafsContainer<ThisType>(this, listIdx);
+		}
 
 		void reset(const T& val, const UINT& arr_idx = 0)
 		{

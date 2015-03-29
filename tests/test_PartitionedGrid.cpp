@@ -246,6 +246,14 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		BOOST_CHECK_EQUAL(branch(part1_3_4).list(1).size(), 1);
 		BOOST_CHECK_EQUAL(branch(part2_5).list(2).size(), 1);
 
+		std::vector<Vec3i> apos_check;
+		for (const Vec3i& pos : grid.leafs(1))
+			apos_check.push_back(pos);
+
+		BOOST_REQUIRE_EQUAL(apos_check.size(), 2);
+		BOOST_CHECK_EQUAL(apos_check[0], pos1);
+		BOOST_CHECK_EQUAL(apos_check[1], pos2);
+
 		grid.reset(-1.0f, 1);
 
 		BOOST_CHECK_EQUAL(branch.list(0).size(), 1);

@@ -15,7 +15,8 @@ namespace felt
 		typedef typename Grid_t::VecDu	VecDu;
 		typedef typename Grid_t::VecDi	VecDi;
 	public:
-		typedef std::vector<VecDi, Eigen::aligned_allocator<T> >	PosArray;
+		typedef std::vector<VecDi, Eigen::aligned_allocator<VecDi> >
+			PosArray;
 	protected:
 		std::array<PosArray, N>	m_aPos;
 

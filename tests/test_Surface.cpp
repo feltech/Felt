@@ -210,19 +210,15 @@ BOOST_AUTO_TEST_CASE(delta_phi)
 	// Basic non-threaded check.
 	{
 		Surface<3, 2> surface(Vec3u(5, 5, 5));
-		Surface<3, 2>::DeltaPhiGrid& dphi = surface.dphi();
 
 		Vec3i pos = Vec3i(0, 0, 0);
 		// Apply a delta to the surface.
 		surface.dphi(pos, -2);
 		// Check delta was stored in underlying grid.
-		BOOST_CHECK_EQUAL(dphi(pos), -2);
+		BOOST_CHECK_EQUAL(surface.dphi(pos), -2);
 		// Check position vector of point in surface grid that delta was
 		// applied to is stored in a corresponding list to be iterated over.
-		UINT sum = 0;
-		for (const Vec3i& pos_child : dphi.branch().list(surface.layerIdx(0)))
-			sum += dphi.child(pos_child).list(surface.layerIdx(0)).size();
-		BOOST_CHECK_EQUAL(sum, 1);
+		BOOST_CHECK_EQUAL(surface.dphi().leafs(surface.layerIdx(0)).size(), 1);
 	}
 }
 
@@ -245,11 +241,9 @@ BOOST_AUTO_TEST_CASE(delta_phi_update)
 		// Check update_start cleared the above surface.dphi changes.
 		for (INT layerID = -2; layerID <= 2; layerID++)
 		{
-			const UINT& layerIdx = surface.layerIdx(layerID);
-			for (const Vec3i& pos_child : dphi.branch().list(layerIdx))
-				BOOST_CHECK_EQUAL(
-					dphi.child(pos_child).list(layerIdx).size(), 0u
-				);
+			BOOST_CHECK_EQUAL(
+				surface.dphi().leafs(surface.layerIdx(layerID)).size(), 0u
+			);
 		}
 		BOOST_CHECK_EQUAL(dphi(Vec3i(0, 0, 0)), 0);
 	}
@@ -272,17 +266,7 @@ BOOST_AUTO_TEST_CASE(delta_phi_update)
 	// centre which == 0.
 	BOOST_CHECK_EQUAL(phi.data().sum(), 3 * 5 * 5 * 5 - 3);
 	// Delta phi position vector list should still contain one point.
-	typedef Surface<3, 2>::DeltaPhiGrid::ChildGrid	ChildGrid;
-	typedef Surface<3, 2>::DeltaPhiGrid::BranchGrid	BranchGrid;
-	UINT sum = 0;
-	const UINT layerIdx = surface.layerIdx(0);
-	const BranchGrid& branch = dphi.branch();
-	for (const Vec3i& pos_child : branch.list(layerIdx))
-	{
-		ChildGrid child = dphi.child(pos_child);
-		sum += child.list(layerIdx).size();
-	}
-	BOOST_CHECK_EQUAL(sum, 1u);
+	BOOST_CHECK_EQUAL(surface.dphi().leafs(surface.layerIdx(0)).size(), 1u);
 	// Delta phi grid itself should have reset back to zero.
 	BOOST_CHECK_EQUAL(dphi(Vec3i(0, 0, 0)), 0);
 
@@ -298,8 +282,6 @@ BOOST_AUTO_TEST_CASE(delta_phi_update)
 	// Ensure change applied.  Every point in grid == 3, except centre which
 	// == 0.4.
 	BOOST_CHECK_EQUAL(phi.data().sum(), 3 * 5 * 5 * 5 - 3 + 0.4f);
-
-	omp_set_dynamic(1);
 }
 
 /*
@@ -341,12 +323,11 @@ BOOST_AUTO_TEST_CASE(distance_transform)
 		surface.update_start();
 		{
 			// Check update_start cleared the above surface.dphi changes.
-			for (const Vec2i& pos_child : surface.dphi().branch().list())
-				for (INT layerID = -2; layerID <= 2; layerID++)
-					BOOST_CHECK_EQUAL(
-						surface.dphi().child(pos_child).list(2+layerID).size(),
-						0u
-					);
+			for (INT layerID = -2; layerID <= 2; layerID++)
+				BOOST_CHECK_EQUAL(
+					surface.dphi().leafs(surface.layerIdx(layerID)).size(),
+					0u
+				);
 		}
 		surface.update_end();
 
