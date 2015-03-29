@@ -32,6 +32,8 @@ namespace felt {
 			INT to_layer;
 		};
 
+		typedef PartitionedArray<StatusChange, D, P>	StatusChangeGrid;
+
 	public:
 
 		typedef TrackedPartitionedGrid<FLOAT, D, P, 2*L+1>	DeltaPhiGrid;
@@ -52,21 +54,16 @@ namespace felt {
 		Grid<UINT,D> m_grid_idx;
 		std::vector<VecDi> m_layers[2*L+1];
 
-		UINT m_uThreads;
+		DeltaPhiGrid 		m_grid_dphi;
 
-		DeltaPhiGrid m_grid_dphi;
+		StatusChangeGrid	m_grid_status_change;
 
-		// TODO: Switch to PartitionedArray<StatusChange, D>
-		// (same dims as partitioned grids).
-		std::vector<std::vector<VecDi> > m_omp_aStatusChangePos;
-		std::vector<std::vector<INT> > m_omp_aStatusChangeFromLayer;
-		std::vector<std::vector<INT> > m_omp_aStatusChangeToLayer;
 
 	public:
 		Surface ()
 		:	m_grid_phi(),
 			m_grid_idx(),
-			m_uThreads(1)
+			m_grid_status_change()
 		{
 			this->init();
 		}
@@ -74,7 +71,7 @@ namespace felt {
 		Surface (const VecDu& vec_dims, const UINT& uborder = 0)
 		:	m_grid_phi(),
 			m_grid_idx(),
-			m_uThreads(1)
+			m_grid_status_change()
 		{
 			this->init();
 			this->dims(vec_dims, uborder);
@@ -84,8 +81,6 @@ namespace felt {
 		{
 			for (UINT layerIdx = 0; layerIdx < 2*L+1; layerIdx++)
 				m_layers[layerIdx].reserve(100);
-
-			this->num_threads(uThreads);
 		}
 
 
@@ -97,44 +92,6 @@ namespace felt {
 		VecDi operator[] (const UINT& index)
 		{
 			return this->layer(0)[index];
-		}
-
-
-		/**
-		 * @brief Set number of threads to use for OpenMP parallelisation.
-		 *
-		 * Felt requires data structures to store (mainly) lists of points to
-		 * process (one for each narrow band layer).  These lists can be spread
-		 * across multiple threads, with a separate list for each thread, so we
-		 * must create them here to be used throughout.
-		 *
-		 * @param uThreads
-		 */
-		void num_threads(UINT uThreads)
-		{
-			if (uThreads == 0)
-				uThreads = omp_get_max_threads();
-			m_uThreads = uThreads;
-			m_omp_aStatusChangePos.resize(m_uThreads);
-			m_omp_aStatusChangeFromLayer.resize(m_uThreads);
-			m_omp_aStatusChangeToLayer.resize(m_uThreads);
-			for (
-				UINT threadIdx = 0; threadIdx < m_omp_aStatusChangePos.size();
-				threadIdx++
-			) {
-				m_omp_aStatusChangePos[threadIdx] = std::vector<VecDi>();
-				m_omp_aStatusChangeFromLayer[threadIdx] = std::vector<INT>();
-				m_omp_aStatusChangeToLayer[threadIdx] = std::vector<INT>();
-			}
-		}
-
-
-		/**
-		 * @brief Get number of threads to be used by Felt.
-		 * @return
-		 */
-		UINT num_threads() const {
-			return m_uThreads;
 		}
 
 
@@ -157,6 +114,8 @@ namespace felt {
 			phi.offset(offset);
 			// Configure delta phi embedding.
 			dphi.init(udims, offset);
+			// Configure status change partitioned lists.
+			m_grid_status_change.init(udims, offset);
 			// Configure layer index spatial lookup.
 			idx.dims(udims);
 			idx.offset(offset);
@@ -341,12 +300,8 @@ namespace felt {
 		void status_change (
 			const VecDi& pos, const INT& fromLayerID, const INT& toLayerID
 		) {
-			m_omp_aStatusChangePos[omp_get_thread_num()].push_back(pos);
-			m_omp_aStatusChangeFromLayer[omp_get_thread_num()].push_back(
-				fromLayerID
-			);
-			m_omp_aStatusChangeToLayer[omp_get_thread_num()].push_back(
-				toLayerID
+			m_grid_status_change.add(
+				pos, StatusChange(pos, fromLayerID, toLayerID)
 			);
 		}
 
@@ -354,21 +309,16 @@ namespace felt {
 		void status_change ()
 		{
 			for (
-				UINT threadIdx = 0; threadIdx < m_omp_aStatusChangePos.size();
-				threadIdx++
+				const VecDi& pos_child : m_grid_status_change.branch().list()
 			) {
 				for (
-					UINT posIdx = 0;
-					posIdx < m_omp_aStatusChangePos[threadIdx].size(); posIdx++
+					const StatusChange& change
+					: m_grid_status_change.child(pos_child)
 				) {
-					const VecDi& pos =
-						m_omp_aStatusChangePos[threadIdx][posIdx];
-					const INT& fromLayerID =
-						m_omp_aStatusChangeFromLayer[threadIdx][posIdx];
-					const INT& toLayerID =
-						m_omp_aStatusChangeToLayer[threadIdx][posIdx];
 
-					this->layer_move(pos, fromLayerID, toLayerID);
+					this->layer_move(
+						change.pos, change.from_layer, change.to_layer
+					);
 				}
 			}
 		}
@@ -762,16 +712,7 @@ namespace felt {
 			for (UINT layerIdx = 0; layerIdx < 2*L+1; layerIdx++)
 				this->dphi().reset(0, layerIdx);
 
-			for (
-				INT threadIdx = 0; threadIdx < this->num_threads();
-				threadIdx++
-			) {
-				// Clear status change lists.
-				m_omp_aStatusChangePos[threadIdx].clear();
-				m_omp_aStatusChangeFromLayer[threadIdx].clear();
-				m_omp_aStatusChangeToLayer[threadIdx].clear();
-			}
-;
+			m_grid_status_change.reset();
 		}
 
 
@@ -944,8 +885,6 @@ namespace felt {
 			// Reference to phi grid.
 			const Grid<FLOAT, D>& phi = this->phi();
 			const DeltaPhiGrid& dphi = this->dphi();
-			// Number of thread-localised lists to iterate over.
-			const UINT num_threads = this->num_threads();
 
 			// Vector of all neighbours of all modified phi points.
 			std::vector<VecDi> aneighs;

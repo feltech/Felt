@@ -247,8 +247,12 @@ namespace felt
 	const UINT
 	LookupGridBase<D, N, V, I>::NULL_IDX = std::numeric_limits<UINT>::max();
 
+	enum LookupIsShared
+	{
+		Shared, NotShared
+	};
 
-	template <UINT D, UINT N=1>
+	template <UINT D, UINT N=1, UINT S=NotShared>
 	class LookupGrid
 	: public LookupGridBase<
 	  D, N, Eigen::Matrix<UINT, N, 1>, Eigen::Matrix<UINT, N, 1>
@@ -288,8 +292,8 @@ namespace felt
 	};
 
 
-	template <UINT D, UINT N=1>
-	class LookupSharedGrid
+	template <UINT D, UINT N>
+	class LookupGrid<D, N, Shared>
 	: public LookupGridBase<D, N, Eigen::Matrix<UINT, 1, 1>, UINT>
 	{
 	public:
@@ -300,13 +304,13 @@ namespace felt
 		typedef typename Base_t::VecDu						VecDu;
 		typedef typename Base_t::VecDi						VecDi;
 	public:
-		virtual ~LookupSharedGrid() {}
+		virtual ~LookupGrid() {}
 
-		LookupSharedGrid() : Base_t()
+		LookupGrid() : Base_t()
 		{}
 
 
-		LookupSharedGrid(const VecDu& dims, const VecDi& offset)
+		LookupGrid(const VecDu& dims, const VecDi& offset)
 		: Base_t(dims, offset)
 		{}
 
@@ -355,12 +359,14 @@ namespace felt
 	protected:
 		typedef LookupGrid<D, N>				Lookup;
 		typedef	Grid<T, D>						Base;
-		typedef typename Base::VecDu			VecDu;
-		typedef typename Base::VecDi			VecDi;
 		typedef typename Lookup::PosArray		PosArray;
 
 		Lookup									m_grid_lookup;
 	public:
+		typedef typename Base::VecDu			VecDu;
+		typedef typename Base::VecDi			VecDi;
+
+
 		TrackedGrid() : Base(), m_grid_lookup()
 		{}
 
@@ -442,10 +448,12 @@ namespace felt
 			reset(arr_idx);
 		}
 
+
 		void reset(const UINT& arr_idx = 0)
 		{
 			m_grid_lookup.reset(arr_idx);
 		}
+
 
 		void remove(const UINT& idx, const UINT& arr_idx = 0)
 		{

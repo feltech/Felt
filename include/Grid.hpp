@@ -823,18 +823,20 @@ namespace felt
 	class Grid : public GridBase<T, D, T>
 	{
 	protected:
-		typedef GridBase<T, D, T>	Base_t;
-		typedef typename Base_t::VecDu	VecDu;
-		typedef typename Base_t::VecDi	VecDi;
-		typedef typename Base_t::VecDf	VecDf;
+		typedef GridBase<T, D, T>	Base;
+
 	public:
+		typedef typename Base::VecDu	VecDu;
+		typedef typename Base::VecDi	VecDi;
+		typedef typename Base::VecDf	VecDf;
+
 		virtual ~Grid ()
 		{}
 
 		/**
 		 * Initialise a zero-dimensional GridBase.
 		 */
-		Grid () : Base_t()
+		Grid () : Base()
 		{}
 
 
@@ -848,7 +850,7 @@ namespace felt
 		Grid (
 			const VecDu& dims, const VecDi& offset = VecDi::Zero(),
 			const FLOAT& delta = 1
-		) : Base_t(dims, offset, delta)
+		) : Base(dims, offset, delta)
 		{}
 
 

@@ -251,7 +251,7 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 
 	BOOST_AUTO_TEST_CASE(test_multi_shared_LookupGrid)
 	{
-		typedef LookupSharedGrid<3, 3> Grid_t;
+		typedef LookupGrid<3, 3, Shared> Grid_t;
 		Grid_t grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
 
 		const Vec3i pos1(1, 0, -1);
