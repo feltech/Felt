@@ -34,7 +34,7 @@ namespace felt {
 
 	public:
 
-		typedef MappedPartitionedGrid<FLOAT, D, P, 2*L+1>	DeltaPhiGrid;
+		typedef TrackedPartitionedGrid<FLOAT, D, P, 2*L+1>	DeltaPhiGrid;
 
 #ifndef _TESTING
 	protected:
@@ -54,9 +54,7 @@ namespace felt {
 
 		UINT m_uThreads;
 
-		// TODO: Switch to MappedPartitionedGrid<FLOAT, D, ?, 2*L+1>
 		DeltaPhiGrid m_grid_dphi;
-
 
 		// TODO: Switch to PartitionedArray<StatusChange, D>
 		// (same dims as partitioned grids).

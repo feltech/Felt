@@ -422,14 +422,22 @@ namespace felt
 		}
 
 
+		void add(const VecDi& pos, const T& val, const UINT& arr_idx = 0)
+		{
+			this->get(pos) = val;
+			add(pos, arr_idx);
+		}
+
+
 		void add(const VecDi& pos, const UINT& arr_idx = 0)
 		{
 			m_grid_lookup.add(pos, arr_idx);
 		}
 
+
 		void reset(const T& val, const UINT& arr_idx = 0)
 		{
-			for (VecDi pos : m_grid_lookup(arr_idx))
+			for (VecDi pos : m_grid_lookup.list(arr_idx))
 				this->get(pos) = val;
 			reset(arr_idx);
 		}
