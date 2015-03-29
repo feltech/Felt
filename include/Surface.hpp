@@ -37,7 +37,7 @@ namespace felt {
 	public:
 
 		typedef TrackedPartitionedGrid<FLOAT, D, P, 2*L+1>	DeltaPhiGrid;
-		typedef SharedLookupPartitionedGrid<D, P, 2*L+1>	PhiGrid;
+		typedef SharedTrackedPartitionedGrid<FLOAT, D, P, 2*L+1>	PhiGrid;
 
 #ifndef _TESTING
 	protected:
@@ -50,11 +50,7 @@ namespace felt {
 
 		Grid<bool,D> m_grid_flag;
 
-		// TODO: Switch to PosMappedPartitionedSharedGrid<FLOAT, D, ?, 2*L+1>
-		Grid<FLOAT,D> m_grid_phi;
-		Grid<UINT,D> m_grid_idx;
-		std::vector<VecDi> m_layers[2*L+1];
-
+		PhiGrid				m_grid_phi_parent;
 
 		DeltaPhiGrid 		m_grid_dphi;
 
@@ -63,37 +59,22 @@ namespace felt {
 
 	public:
 		Surface ()
-		:	m_grid_phi(),
-			m_grid_idx(),
+		:	m_grid_phi_parent(),
+			m_grid_status_change()
+		{}
+
+
+		Surface (const VecDu& dims, const UINT& uborder = 0)
+		:	m_grid_phi_parent(),
 			m_grid_status_change()
 		{
-			this->init();
-		}
-
-		Surface (const VecDu& vec_dims, const UINT& uborder = 0)
-		:	m_grid_phi(),
-			m_grid_idx(),
-			m_grid_status_change()
-		{
-			this->init();
-			this->dims(vec_dims, uborder);
-		}
-
-		void init (const UINT uThreads = 0)
-		{
-			for (UINT layerIdx = 0; layerIdx < 2*L+1; layerIdx++)
-				m_layers[layerIdx].reserve(100);
+			this->dims(dims, uborder);
 		}
 
 
 		FLOAT operator() (const VecDi& pos)
 		{
 			return this->phi()(pos);
-		}
-
-		VecDi operator[] (const UINT& index)
-		{
-			return this->layer(0)[index];
 		}
 
 
@@ -104,59 +85,36 @@ namespace felt {
 		 */
 		void dims (const VecDu& udims, const UINT& uborder = 0)
 		{
-			Grid<FLOAT,D>& phi = this->phi();
-			DeltaPhiGrid& dphi = this->dphi();
-			Grid<UINT,D>& idx = this->idx();
-
 			const VecDi idims = udims.template cast<INT>();
 			const VecDi offset = -idims/2;
 
-			// Configure phi embedding.
-			phi.dims(udims);
-			phi.offset(offset);
+			m_grid_phi_parent.init(udims, offset);
+
 			// Configure delta phi embedding.
-			dphi.init(udims, offset);
+			m_grid_dphi.init(udims, offset);
 			// Configure status change partitioned lists.
 			m_grid_status_change.init(udims, offset);
-			// Configure layer index spatial lookup.
-			idx.dims(udims);
-			idx.offset(offset);
+
 			// Configure boolean flag grid.
 			m_grid_flag.dims(udims);
 			m_grid_flag.offset(offset);
 
 			// Store min and max usable positions in phi embedding.
-			this->pos_min(VecDi::Constant(L + uborder + 1) + phi.offset());
+			this->pos_min(
+				VecDi::Constant(L + uborder + 1) + m_grid_phi_parent.offset()
+			);
 			this->pos_max(
 				(idims - VecDi::Constant(L + uborder + 1))
-				+ phi.offset() - VecDi::Constant(1)
+				+ m_grid_phi_parent.offset() - VecDi::Constant(1)
 			);
 			// Fill phi grid with 'outside' value.
-			phi.fill(L+1);
-			// Fill index lookup with null index value.
-			idx.fill(this->null_idx());
+			m_grid_phi_parent.fill(L+1);
 			// Initialise delta phi to zero.
-			dphi.fill(0);
+			m_grid_dphi.fill(0);
 			// Initialise flag grid to false.
 			m_grid_flag.fill(false);
 		}
 
-		/**
-		 * @brief Get dimensions.
-		 * @return
-		 */
-		const VecDu& dims () const
-		{
-			return m_grid_phi.dims();
-		}
-		/**
-		 * @brief Get offset.
-		 * @return
-		 */
-		const VecDi& offset () const
-		{
-			return m_grid_phi.offset();
-		}
 		/**
 		 * @brief Get minimum usable position in phi grid.
 		 * @return
@@ -199,29 +157,29 @@ namespace felt {
 		 * @brief Get reference to phi grid.
 		 * @return
 		 */
-		Grid<FLOAT, D>& phi ()
+		PhiGrid& phi ()
 		{
-			return m_grid_phi;
+			return m_grid_phi_parent;
 		}
 
 		/**
 		 * @brief Get reference to phi grid.
 		 * @return
 		 */
-		const Grid<FLOAT, D>& phi () const
+		const PhiGrid& phi () const
 		{
-			return m_grid_phi;
+			return m_grid_phi_parent;
 		}
 
 
 		const FLOAT& phi (const VecDi& pos) const
 		{
-			return m_grid_phi(pos);
+			return m_grid_phi_parent(pos);
 		}
 
 		FLOAT& phi (const VecDi& pos)
 		{
-			return m_grid_phi(pos);
+			return m_grid_phi_parent(pos);
 		}
 
 		/**
@@ -250,7 +208,7 @@ namespace felt {
 		 */
 		void phi (const VecDi& pos, const FLOAT& val, const INT& layerID = 0)
 		{
-			Grid<FLOAT,D>& phi = this->phi();
+			PhiGrid& phi = this->phi();
 			const INT newLayerID = this->layerID(val);
 			phi(pos) = val;
 
@@ -354,19 +312,6 @@ namespace felt {
 
 		/**
 		 * @brief Update delta phi grid and append point to change list for
-		 * current thread.
-		 *
-		 * @param pos
-		 * @param val
-		 */
-		void dphi (const UINT& uPos, const FLOAT& val, const INT& layerID = 0)
-		{
-			this->dphi(layer(layerID)[uPos], val, layerID);
-		}
-
-
-		/**
-		 * @brief Update delta phi grid and append point to change list for
 		 * given thread.
 		 * @param pos
 		 * @param val
@@ -399,76 +344,34 @@ namespace felt {
 
 			this->dphi().add(pos, val, this->layerIdx(layerID));
 		}
-		/**
-		 * @brief Get reference to index lookup grid.
-		 * @return
-		 */
-		Grid<UINT,D>& idx ()
-		{
-			return m_grid_idx;
-		}
-		/**
-		 * @brief Get reference to index lookup grid.
-		 * @return
-		 */
-		const Grid<UINT,D>& idx () const
-		{
-			return m_grid_idx;
-		}
-
-
-		UINT idx (const VecDi& pos) const
-		{
-			return m_grid_idx(pos);
-		}
-		/**
-		 * @brief Get default (null) narrow band index lookup.
-		 * Used to indicate that a grid point is outside the narrow band.
-		 * @return
-		 */
-		static inline UINT null_idx ()
-		{
-			return std::numeric_limits<UINT>::max();
-		}
-
 
 		/**
 		 * @brief Get reference to a single layer of the narrow band.
 		 * @param id
 		 * @return
 		 */
-		std::vector<VecDi>& layer (const INT& id = 0)
-		{
-			return m_layers[id+L];
+		typename PhiGrid::PosArray& layer (
+			const VecDi& pos_child, const INT& id = 0
+		) {
+			return m_grid_phi_parent.child(pos_child).list(id+L);
 		}
-
 
 		/**
 		 * @brief Get reference to a single layer of the narrow band.
 		 * @param id
 		 * @return
 		 */
-		const std::vector<VecDi>& layer (const INT& id = 0) const
+		const typename PhiGrid::PosArray& layer (
+			const VecDi& pos_child, const INT& id = 0
+		) const
 		{
-			return m_layers[id+L];
+			return m_grid_phi_parent.child(pos_child).list(id+L);
 		}
 
-		/**
-		 * @brief Shortcut to zero-layer vector begin() iterator.
-		 * @return
-		 */
-		typename std::vector<VecDi>::iterator begin()
-		{
-			return layer(0).begin();
-		}
 
-		/**
-		 * @brief Shortcut to zero-layer vector end() iterator.
-		 * @return
-		 */
-		typename std::vector<VecDi>::iterator end()
+		const LeafsContainer<PhiGrid> layer(const UINT& layerID) const
 		{
-			return layer(0).end();
+			return m_grid_phi_parent.leafs(this->layerIdx(layerID));
 		}
 
 		/**
@@ -478,14 +381,8 @@ namespace felt {
 		 */
 		UINT size()
 		{
-			return layer(0).size();
+			return m_grid_phi_parent.leafs(0).size();
 		}
-
-		void each(std::function<void (const VecDi)> func)
-		{
-			std::for_each(this->begin(), this->end(), func);
-		}
-
 
 		/**
 		 * @brief Append position to a layer of the narrow band.
@@ -497,13 +394,8 @@ namespace felt {
 			// Do nothing if position is outside narrow band.
 			if (!this->inside_band(layerID))
 				return;
-			std::vector<VecDi>& layer = this->layer(layerID);
-			Grid<UINT,D>& idx = this->idx();
-
-			layer.push_back(pos);
-			idx(pos) = layer.size()-1;
+			m_grid_phi_parent.add(pos, this->layerIdx(layerID));
 		}
-
 
 		/**
 		 * @brief Append position to a layer of the narrow band.
@@ -518,29 +410,16 @@ namespace felt {
 			this->layer_add(id, pos);
 		}
 
+
 		void layer_remove(const VecDi& pos, const INT& layerID)
 		{
 			// Do nothing if position is outside narrow band.
 			if (!this->inside_band(layerID))
 				return;
 
-			std::vector<VecDi>& layer = this->layer(layerID);
-			Grid<UINT,D>& grid_idx = this->idx();
-			// Get index of point in layer.
-			const UINT idx = grid_idx(pos);
-			// Reset index lookup to null value.
-			grid_idx(pos) = this->null_idx();
-			const UINT layer_size = layer.size();
-			if (layer_size > 1)
-			{
-				// Duplicate last element into this index.
-				VecDi& posLast = layer[layer_size-1];
-				grid_idx(posLast) = idx;
-				layer[idx] = posLast;
-			}
-			// Pop last element.
-			layer.pop_back();
+			m_grid_phi_parent.remove(pos, this->layerIdx(layerID));
 		}
+
 
 		void layer_move(
 			const VecDi& pos, const INT& fromLayerID, const INT& toLayerID
@@ -556,8 +435,7 @@ namespace felt {
 		 */
 		INT layerID(const VecDi& pos) const
 		{
-			const Grid<FLOAT,D>& phi = this->phi();
-			return this->layerID(phi(pos));
+			return this->layerID(this->phi(pos));
 		}
 		/**
 		 * @brief Get narrow band layer id of value.
@@ -649,7 +527,7 @@ namespace felt {
 			if (this->layerID(pos) == 0)
 				return pos;
 
-			const Grid<FLOAT,D>& phi = this->phi();
+			const PhiGrid& phi = this->phi();
 
 			// Get all neighbours of this point.
 			std::vector<VecDi> neighs;
@@ -768,9 +646,10 @@ namespace felt {
 		 */
 		void update_end_local ()
 		{
+			typedef typename PhiGrid::PosArray PosArray;
 			// Get points in outer layers that are affected by changes in
 			// zero-layer.
-			std::vector<VecDi> aAffected[2*L+1];
+			PosArray aAffected[2*L+1];
 			this->affected(aAffected);
 
 			// Update the zero layer, applying delta to phi.
@@ -779,13 +658,13 @@ namespace felt {
 			// Update distance transform for inner layers of the narrow band.
 			for (INT layerID = -1; layerID >= -(INT)L; layerID--)
 			{
-				std::vector<VecDi>& apos = aAffected[this->layerIdx(layerID)];
+				PosArray& apos = aAffected[this->layerIdx(layerID)];
 				this->update_distance(layerID, -1, apos);
 			}
 			// Update distance transform for outer layers of the narrow band.
 			for (INT layerID = 1; layerID <= (INT)L; layerID++)
 			{
-				std::vector<VecDi>& apos = aAffected[this->layerIdx(layerID)];
+				PosArray& apos = aAffected[this->layerIdx(layerID)];
 				this->update_distance(layerID, 1, apos);
 			}
 			this->status_change();
@@ -798,7 +677,12 @@ namespace felt {
 		 */
 		void update_distance(const INT& layerID, const INT& side)
 		{
-			this->update_distance(layerID, side, this->layer(layerID));
+			const UINT& layerIdx = this->layerIdx(layerID);
+			for (const VecDi& pos_child : m_grid_phi_parent.list(layerIdx))
+				this->update_distance(
+					layerID, side,
+					m_grid_phi_parent.child(pos_child).list(layerIdx)
+				);
 		}
 
 		/**
@@ -809,7 +693,8 @@ namespace felt {
 		 * @param alayer
 		 */
 		void update_distance(
-			const INT& layerID, const INT& side, std::vector<VecDi>& alayer
+			const INT& layerID, const INT& side,
+			typename PhiGrid::PosArray& alayer
 		) {
 			DeltaPhiGrid& dphi = this->dphi();
 
@@ -858,7 +743,7 @@ namespace felt {
 		 */
 		FLOAT distance (const VecDi& pos, const FLOAT& side) const
 		{
-			const Grid<FLOAT,D>& phi = this->phi();
+			const PhiGrid& phi = this->phi();
 			// Get neighbouring point that is next closest to the zero-layer.
 			const VecDi pos_closest = this->next_closest(pos, side);
 			const FLOAT val_closest = phi(pos_closest);
@@ -882,10 +767,10 @@ namespace felt {
 		 * - Use a std::unordered_set with a suitable hashing function.
 		 * @param apos
 		 */
-		void affected(std::vector<VecDi>* apos)
+		void affected(typename PhiGrid::PosArray* apos)
 		{
 			// Reference to phi grid.
-			const Grid<FLOAT, D>& phi = this->phi();
+			const PhiGrid& phi = this->phi();
 			const DeltaPhiGrid& dphi = this->dphi();
 
 			// Vector of all neighbours of all modified phi points.

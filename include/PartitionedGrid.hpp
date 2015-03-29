@@ -201,17 +201,20 @@ namespace felt
 		typedef typename ChildGrid::VecDu	VecDu;
 		typedef typename ChildGrid::VecDi	VecDi;
 
+		Grid<T, D>*	m_pgrid_snapshot;
 	public:
 		virtual ~PartitionedGrid ()
-		{}
+		{
+			delete m_pgrid_snapshot;
+		}
 
-		PartitionedGrid () : Base(), ChildGrid()
+		PartitionedGrid () : Base(), ChildGrid(), m_pgrid_snapshot(NULL)
 		{}
 
 
 		PartitionedGrid (
 			const VecDu& dims, const VecDi& offset, const FLOAT& delta = 1
-		) : Base(), ChildGrid()
+		) : Base(), ChildGrid(), m_pgrid_snapshot(NULL)
 		{
 			this->init(dims, offset, delta);
 		}
@@ -322,6 +325,24 @@ namespace felt
 		{
 			Base::reset(arr_idx);
 		}
+
+		typename Grid<T, D>::ArrayData& data()
+		{
+			delete m_pgrid_snapshot;
+			m_pgrid_snapshot = new Grid<T, D>(this->dims(), this->offset());
+
+			for (UINT i = 0; i < this->branch().data().size(); i++)
+			{
+				const ChildGrid& child = this->branch().data()[i];
+				for (
+					UINT leaf_idx; leaf_idx < child.data().size(); leaf_idx++
+				) {
+					const VecDi& pos = child.index(leaf_idx);
+					m_pgrid_snapshot->get(pos) = child(pos);
+				}
+			}
+			return m_pgrid_snapshot->data();
+		}
 	};
 
 
@@ -336,6 +357,7 @@ namespace felt
 		const GridTree* m_pgrid;
 		const UINT	m_listIdx;
 
+	public:
 		class iterator : public boost::iterator_facade<
 			LeafsContainer::iterator,
 			const VecDi, boost::forward_traversal_tag
@@ -408,7 +430,8 @@ namespace felt
 		    	return *m_it_leaf;
 		    }
 		};
-	public:
+
+
 		LeafsContainer(const GridTree* pgrid, const UINT& listIdx)
 		: m_pgrid(pgrid), m_listIdx(listIdx)
 		{}
@@ -544,12 +567,6 @@ namespace felt
 		{}
 
 
-		const LeafsContainer<ThisType> leafs(const UINT& listIdx) const
-		{
-			return LeafsContainer<ThisType>(this, listIdx);
-		}
-
-
 		void reset(const UINT& arr_idx = 0)
 		{
 			BranchGrid& branch = this->branch();
@@ -557,6 +574,14 @@ namespace felt
 				branch(pos_child).reset(arr_idx);
 
 			Base::reset(arr_idx);
+		}
+
+
+		void add(const VecDi& pos, const UINT& arr_idx = 0)
+		{
+			const VecDi& pos_child = this->pos_child(pos);
+			this->child(pos_child).add(pos, arr_idx);
+			Base::add_child(pos_child, arr_idx);
 		}
 
 
@@ -602,12 +627,19 @@ namespace felt
 		{}
 
 
+		const LeafsContainer<ThisType> leafs(const UINT& listIdx) const
+		{
+			return LeafsContainer<ThisType>(this, listIdx);
+		}
+
+
 		void add(const VecDi& pos, const T& val, const UINT& arr_idx = 0)
 		{
 			const VecDi& pos_child = this->pos_child(pos);
 			this->child(pos_child).add(pos, val, arr_idx);
 			Base::add_child(pos_child, arr_idx);
 		}
+
 
 		void reset(const T& val, const UINT& arr_idx = 0)
 		{
@@ -641,6 +673,7 @@ namespace felt
 		typedef typename ChildGrid::PosArray			PosArray;
 
 	public:
+
 		SharedTrackedPartitionedGrid () : Base()
 		{}
 
@@ -651,12 +684,25 @@ namespace felt
 		{}
 
 
-		void add(const VecDi& pos, const T& val, const UINT& arr_idx = 0)
+		const LeafsContainer<ThisType> leafs(const UINT& listIdx) const
+		{
+			return LeafsContainer<ThisType>(this, listIdx);
+		}
+
+
+		void add(const VecDi& pos, const T& val, const UINT& arr_idx)
 		{
 			const VecDi& pos_child = this->pos_child(pos);
 			this->child(pos_child).add(pos, val, arr_idx);
 			Base::add_child(pos_child, arr_idx);
 		}
+
+
+		void add(const VecDi& pos, const UINT& arr_idx)
+		{
+			Base::add(pos, arr_idx);
+		}
+
 
 		void reset(const T& val, const UINT& arr_idx = 0)
 		{
@@ -676,6 +722,7 @@ namespace felt
 	>
 	{
 	protected:
+		typedef LookupPartitionedGrid<D, P, N>	ThisType;
 		typedef TrackingPartitionedGridBase<
 			Eigen::Matrix<UINT, N, 1>, D, P, N, LookupGrid<D, N>
 		> Base;
@@ -695,12 +742,9 @@ namespace felt
 		) : Base(dims, offset, delta)
 		{}
 
-
-		void add(const VecDi& pos, const UINT& arr_idx = 0)
+		const LeafsContainer<ThisType> leafs(const UINT& listIdx) const
 		{
-			const VecDi& pos_child = this->pos_child(pos);
-			this->child(pos_child).add(pos, arr_idx);
-			Base::add_child(pos_child, arr_idx);
+			return LeafsContainer<ThisType>(this, listIdx);
 		}
 	};
 
@@ -711,6 +755,7 @@ namespace felt
 	>
 	{
 	protected:
+		typedef SharedLookupPartitionedGrid<D, P, N>	ThisType;
 		typedef TrackingPartitionedGridBase<
 			UINT, D, P, N, LookupGrid<D, N, Shared>
 		> Base;
@@ -730,12 +775,9 @@ namespace felt
 		) : Base(dims, offset, delta)
 		{}
 
-
-		void add(const VecDi& pos, const UINT& arr_idx = 0)
+		const LeafsContainer<ThisType> leafs(const UINT& listIdx) const
 		{
-			const VecDi& pos_child = this->pos_child(pos);
-			this->child(pos_child).add(pos, arr_idx);
-			Base::add_child(pos_child, arr_idx);
+			return LeafsContainer<ThisType>(this, listIdx);
 		}
 	};
 

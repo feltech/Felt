@@ -88,7 +88,6 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 
 			BOOST_CHECK_EQUAL(grid.dims(), Vec3u(9,9,9));
 
-			BOOST_CHECK_EQUAL(grid.data().size(), 0);
 			BOOST_CHECK_EQUAL((UINT)parent.data().size(), 27u);
 
 			const Vec3u part_dims(3,3,3);
@@ -218,8 +217,6 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		BOOST_CHECK_EQUAL(branch(pos_child).list(1).size(), 1);
 		BOOST_CHECK_EQUAL(branch(pos_child).list(1)[0], pos1);
 		BOOST_CHECK_EQUAL(branch(pos_child)(pos1), 1.0f);
-		BOOST_CHECK_EQUAL(grid.data().size(), 0);
-
 
 		const Vec3i pos2( 2, -4, -4);
 		const Vec3i pos3( 3, -4, -4);
@@ -556,7 +553,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		const Vec3i part2_3(1, -1, -1);
 		const Vec3i part4(1,  0, -1);
 
-		grid.add(pos1, 1.0f);
+		grid.add(pos1, 1.0f, 0);
 		grid.add(pos2, 2.0f, 0);
 		grid.add(pos3, 3.0f, 0);
 		grid.add(pos4, 4.0f, 2);

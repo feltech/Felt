@@ -70,8 +70,8 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 
 		SurfaceFixture() :
 			surface(Vec3u(13,13,13)),
-			poly(surface.dims(), surface.offset()),
-			poly_null(surface.dims(), surface.offset()),
+			poly(surface.phi().dims(), surface.phi().offset()),
+			poly_null(surface.phi().dims(), surface.phi().offset()),
 			phi(surface.phi()),
 			dims(phi.dims()),
 			offset(phi.offset()),
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 			surface.dphi(Vec3i(0,0,0), -1);
 			surface.update_end();
 			surface.update_start();;
-			for (auto pos : surface)
+			for (auto pos : surface.layer(0))
 				surface.dphi(pos, -expandBy);
 			surface.update_end();
 
@@ -176,8 +176,8 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 
 		Poly<2>::Vertex vertex2D;
 		Poly<3>::Vertex vertex3D;
-		Poly<2> poly2D(surface2D.dims(), surface2D.offset());
-		Poly<3> poly3D(surface3D.dims(), surface3D.offset());
+		Poly<2> poly2D(surface2D.phi().dims(), surface2D.phi().offset());
+		Poly<3> poly3D(surface3D.phi().dims(), surface3D.phi().offset());
 
 		// Text extremities of grid, ensure no segmentation fault errors.
 		poly2D.idx(surface2D.phi(), surface2D.pos_min(), 0);
@@ -255,7 +255,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 	{
 		// Initialise a 2D grid for testing.
 		Surface<2> surface(Vec2u(9,9));
-		Poly<2> poly(surface.dims(), surface.offset());
+		Poly<2> poly(surface.phi().dims(), surface.phi().offset());
 		surface.phi().data() <<
 			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3,
 			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
@@ -307,7 +307,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		{
 			// Initialise a surface.
 			Surface<3> surface(Vec3u(13,13,13));
-			Poly<3> poly(surface.dims(), surface.offset());
+			Poly<3> poly(surface.phi().dims(), surface.phi().offset());
 			unsigned short mask;
 			// At time of init, all points are "outside" the surface (there is
 			// no surface).
@@ -351,11 +351,11 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 
 			// Expand the surface outwards twice.
 			surface.update_start();;
-			for (auto pos : surface)
+			for (auto pos : surface.layer(0))
 				surface.dphi(pos, -1);
 			surface.update_end();
 			surface.update_start();;
-			for (auto pos : surface)
+			for (auto pos : surface.layer(0))
 				surface.dphi(pos, -1);
 			surface.update_end();
 
@@ -379,7 +379,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 	BOOST_AUTO_TEST_CASE(edge_vertices_2D)
 	{
 		Surface<2> surface(Vec2u(9,9));
-		Poly<2> poly(surface.dims(), surface.offset());
+		Poly<2> poly(surface.phi().dims(), surface.phi().offset());
 		surface.phi().data() <<
 			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3,
 			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
@@ -446,7 +446,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 	{
 		// Initialise a surface.
 		Surface<3> surface(Vec3u(13,13,13));
-		Poly<3> poly(surface.dims(), surface.offset());
+		Poly<3> poly(surface.phi().dims(), surface.phi().offset());
 		unsigned short mask, vtx_mask;
 		// At time of init, all points are "outside" the surface
 		// (there is no surface).
@@ -584,7 +584,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		// gives a vertex along the cube  edge, rather than precisely at the
 		// corner, so no degenerate triangles.
 		surface.update_start();
-		for (auto pos : surface)
+		for (auto pos : surface.layer(0))
 			surface.dphi(pos, -0.3);
 		surface.update_end();
 /*

@@ -19,7 +19,7 @@ BOOST_AUTO_TEST_CASE(init)
 
 	Surface<2, 2> surface(Vec2u(7, 7));
 	{
-		const Vec2u vec_dims = surface.dims();
+		const Vec2u vec_dims = surface.phi().dims();
 
 		BOOST_CHECK_EQUAL((UINT)vec_dims(0), 7);
 		BOOST_CHECK_EQUAL((UINT)vec_dims(1), 7);
@@ -57,34 +57,26 @@ BOOST_AUTO_TEST_CASE(layers)
 {
 	// 3D surface with default (=2) number of layers.
 	Surface<3> surface(Vec3u(7, 7, 7));
-	Grid<FLOAT, 3>& phi = surface.phi();
-	Grid<UINT, 3>& idx = surface.idx();
-
+	Surface<3>::PhiGrid::BranchGrid branch;
 	Vec3i pos = Vec3i(0, 0, 0);
 
-	BOOST_CHECK_EQUAL(surface.layer(-2).size(), 0);
-	BOOST_CHECK_EQUAL(surface.layer(-1).size(), 0);
-	BOOST_CHECK_EQUAL(surface.layer(0).size(), 0);
-	BOOST_CHECK_EQUAL(surface.layer(1).size(), 0);
-	BOOST_CHECK_EQUAL(surface.layer(2).size(), 0);
-
-	// Check layer index lookup initialisation.
-	BOOST_CHECK_EQUAL(idx(pos), surface.null_idx());
+	BOOST_CHECK_EQUAL(branch.list(surface.layerIdx(-2)).size(), 0);
+	BOOST_CHECK_EQUAL(branch.list(surface.layerIdx(-1)).size(), 0);
+	BOOST_CHECK_EQUAL(branch.list(surface.layerIdx(0)).size(), 0);
+	BOOST_CHECK_EQUAL(branch.list(surface.layerIdx(1)).size(), 0);
+	BOOST_CHECK_EQUAL(branch.list(surface.layerIdx(2)).size(), 0);
 
 	// Add a single zero-layer point.
-	phi(pos) = 0;
+	surface.phi(pos) = 0;
 	surface.layer_add(0, pos);
 
 	// Check zero-layer array has registered point.
 	BOOST_CHECK_EQUAL(surface.layer(0).size(), 1);
-	BOOST_CHECK_EQUAL((surface.layer(0)[0] - pos), Vec3i::Zero());
+	BOOST_CHECK_EQUAL((*surface.layer(0).begin() - pos), Vec3i::Zero());
 
 	// Check layer calculation from value.
 	// -- zero-layer point just added.
 	BOOST_CHECK_EQUAL(surface.layerID(pos), 0);
-
-	// Check index grid has registered new zero-layer point.
-	BOOST_CHECK_EQUAL(idx(pos), 0);
 
 	// Add three arbitrary points to layer -1.
 	surface.layer_add(-1, Vec3i(0, 0, 1));
@@ -101,8 +93,6 @@ BOOST_AUTO_TEST_CASE(layers)
 	surface.layer_move(pos, 0, -1);
 	BOOST_CHECK_EQUAL(surface.layer(-1).size(), 2);
 
-	// Arbitrary point @ 0, so moved point @ 1.
-	BOOST_CHECK_EQUAL(idx(pos), 1);
 	// Check lists updated.
 	BOOST_CHECK_EQUAL(surface.layer(0).size(), 0);
 	BOOST_CHECK_EQUAL(surface.layer(-1).size(), 2);
@@ -114,7 +104,7 @@ BOOST_AUTO_TEST_CASE(layers)
 BOOST_AUTO_TEST_CASE(seed)
 {
 	Surface<2, 2> surface(Vec2u(5, 5));
-	Grid<FLOAT, 2>& phi = surface.phi();
+	Surface<2, 2>::PhiGrid& phi = surface.phi();
 
 	surface.seed(Vec2i(0, 0));
 
@@ -127,12 +117,13 @@ BOOST_AUTO_TEST_CASE(seed)
 	// A 2D 2-layer singularity (seed) point should look like the following.
 
 	Grid<FLOAT, 2> phi_check(Vec2u(5, 5));
-	phi_check.data() << 3, 3, 2, 3, 3,	// |
-	3, 2, 1, 2, 3,	// -
-	2, 1, 0, 1, 2,	// x
-	3, 2, 1, 2, 3,	// +
-	3, 3, 2, 3, 3;	// |
-//	|____ - y + ____|
+	phi_check.data() <<
+		3, 3, 2, 3, 3,	// |
+		3, 2, 1, 2, 3,	// -
+		2, 1, 0, 1, 2,	// x
+		3, 2, 1, 2, 3,	// +
+		3, 3, 2, 3, 3;	// |
+	//	|____ - y + ____|
 //	std::cerr << phi.data() << std::endl << std::endl;
 //	std::cerr << phi_check.data() << std::endl << std::endl;
 
@@ -305,7 +296,7 @@ BOOST_AUTO_TEST_CASE(distance_transform)
 	// distances are updated.
 	{
 		Surface<2, 2> surface(Vec2u(5, 5));
-		Grid<FLOAT, 2>& phi = surface.phi();
+		Surface<2, 2>::PhiGrid& phi = surface.phi();
 
 		surface.seed(Vec2i(0, 0));
 
@@ -345,7 +336,7 @@ BOOST_AUTO_TEST_CASE(distance_transform)
 BOOST_AUTO_TEST_CASE(layer_update)
 {
 	Surface<2, 2> surface(Vec2u(9, 9));
-	Grid<FLOAT, 2>& phi = surface.phi();
+	Surface<2, 2>::PhiGrid& phi = surface.phi();
 	// Grid to set values of manually, for checking against.
 	Grid<FLOAT, 2> phi_check(Vec2u(9, 9));
 
@@ -380,8 +371,8 @@ BOOST_AUTO_TEST_CASE(layer_update)
 	// Cycle new zero-layer points and move back to original signed distance.
 	surface.update_start();
 	{
-		for (UINT posIdx = 0; posIdx < surface.layer().size(); posIdx++)
-			surface.dphi(posIdx, 0.6f);
+		for (const Vec2i& pos : surface.layer(0))
+			surface.dphi(pos, 0.6f);
 	}
 	surface.update_end();
 
@@ -401,8 +392,8 @@ BOOST_AUTO_TEST_CASE(layer_update)
 	// Collapse the seed completely, leaving no zero-layer, only outer layers.
 	surface.update_start();
 	{
-		for (UINT posIdx = 0; posIdx < surface.size(); posIdx++)
-			surface.dphi(posIdx, 1.0f);
+		for (const Vec2i& pos : surface.layer(0))
+			surface.dphi(pos, 1.0f);
 	}
 	surface.update_end();
 
@@ -429,8 +420,8 @@ BOOST_AUTO_TEST_CASE(layer_update)
 	surface.update_start();
 	{
 		// Has no effect, since zero-layer is gone size is 0.
-		for (UINT posIdx = 0; posIdx < surface.size(); posIdx++)
-			surface.dphi(posIdx, 1.0f);
+		for (const Vec2i& pos : surface.layer(0))
+			surface.dphi(pos, 1.0f);
 	}
 	surface.update_end();
 
@@ -457,8 +448,8 @@ BOOST_AUTO_TEST_CASE(layer_update)
 	surface.update_start();
 	{
 		// Has no effect, since zero-layer is gone size is 0.
-		for (UINT posIdx = 0; posIdx < surface.layer().size(); posIdx++)
-			surface.dphi(posIdx, 1.0f);
+		for (const Vec2i& pos : surface.layer(0))
+			surface.dphi(pos, 1.0f);
 	}
 	surface.update_end();
 
@@ -485,8 +476,8 @@ BOOST_AUTO_TEST_CASE(layer_update)
 	surface.update_start();
 	{
 		// Has no effect, since zero-layer is gone size is 0.
-		for (UINT posIdx = 0; posIdx < surface.size(); posIdx++)
-			surface.dphi(posIdx, 1.0f);
+		for (const Vec2i& pos : surface.layer(0))
+			surface.dphi(pos, 1.0f);
 	}
 	surface.update_end();
 
@@ -534,20 +525,29 @@ BOOST_AUTO_TEST_CASE(iterate_zero_layer)
 
 	BOOST_CHECK_EQUAL(surface.size(), 6);
 
-	// Iterate over surface, using parameterised index.
+	// Iterate over surface, using partitioned grid.
 	// Only version that can be parallelised easily using OpenMP.
 	counter = 0;
 	pos_sum = Vec3i(0, 0, 0);
-#pragma omp parallel for
-	for (UINT i = 0; i < surface.size(); i++)
-	{
-		Vec3i pos = surface[i];
-		FLOAT val = surface(pos);
-#pragma omp critical
-		{
-			BOOST_CHECK_EQUAL(val, 0);
-			counter++;
-			pos_sum += pos;
+	const UINT& zeroLayerIdx = surface.layerIdx(0);
+
+	#pragma omp parallel for
+	for (
+		UINT i = 0; i < surface.phi().branch().list(zeroLayerIdx).size();
+		i++
+	) {
+		const Vec3i& pos_child = surface.phi().branch().list(zeroLayerIdx)[i];
+		for (
+			const Vec3i& pos
+			: surface.phi().child(pos_child).list(zeroLayerIdx)
+		) {
+			FLOAT val = surface(pos);
+			#pragma omp critical
+			{
+				BOOST_CHECK_EQUAL(val, 0);
+				counter++;
+				pos_sum += pos;
+			}
 		}
 	};
 	BOOST_CHECK_EQUAL(counter, 6);
@@ -556,30 +556,21 @@ BOOST_AUTO_TEST_CASE(iterate_zero_layer)
 	// Iterate over zero-layer using STL for_each and lambda callback function.
 	counter = 0;
 	pos_sum = Vec3i(0, 0, 0);
-	std::for_each(surface.begin(), surface.end(), [&](Vec3i& pos)
-	{
-		pos_sum += pos;
-		counter++;
-	});
-	BOOST_CHECK_EQUAL(counter, 6);
-	BOOST_CHECK_EQUAL(pos_sum, Vec3i(0, 0, 0));
-
-	// Iterate over zero-layer using wrapped for_each.
-	counter = 0;
-	pos_sum = Vec3i(0, 0, 0);
-	surface.each([&](Vec3i pos)
-	{
-		pos_sum += pos;
-		counter++;
-	});
-
+	std::for_each(
+		surface.layer(0).begin(), surface.layer(0).end(),
+		[&](const Vec3i& pos)
+		{
+			pos_sum += pos;
+			counter++;
+		}
+	);
 	BOOST_CHECK_EQUAL(counter, 6);
 	BOOST_CHECK_EQUAL(pos_sum, Vec3i(0, 0, 0));
 
 	// Iterate over zero-layer using range based for loop.
 	counter = 0;
 	pos_sum = Vec3i(0, 0, 0);
-	for (auto pos : surface)
+	for (auto pos : surface.layer(0))
 	{
 		pos_sum += pos;
 		counter++;
@@ -597,7 +588,7 @@ BOOST_AUTO_TEST_CASE(iterate_zero_layer)
 BOOST_AUTO_TEST_CASE(check_bounded)
 {
 	Surface<2, 2> surface(Vec2u(9, 9));
-	Grid<FLOAT, 2>& phi = surface.phi();
+	Surface<2, 2>::PhiGrid& phi = surface.phi();
 	// Grid to set values of manually, for checking against.
 	Grid<FLOAT, 2> phi_check(Vec2u(9, 9));
 
@@ -605,7 +596,7 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 	surface.seed(Vec2i(0, 0));
 	surface.update_start();
 	{
-		for (auto pos : surface)
+		for (auto pos : surface.phi().leafs(0))
 		{
 			surface.dphi(pos, -1.0f);
 		}
@@ -616,7 +607,7 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 	// delta phi should be modified from -1.0 to approx -0.5.
 	surface.update_start();
 	{
-		for (auto pos : surface)
+		for (auto pos : surface.phi().leafs(0))
 		{
 			surface.dphi(pos, -1.0f);
 		}
@@ -627,7 +618,7 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 	// delta phi should be modified from -1.0 to 0.
 	surface.update_start();
 	{
-		for (auto pos : surface)
+		for (auto pos : surface.phi().leafs(0))
 		{
 			surface.dphi(pos, -1.0f);
 		}
@@ -670,7 +661,7 @@ BOOST_AUTO_TEST_CASE(affected_outer_layers)
 	surface.seed(Vec2i(0, 0));
 	surface.update_start();
 	{
-		for (auto pos : surface)
+		for (auto pos : surface.layer(0))
 		{
 			surface.dphi(pos, -1.0f);
 		}
@@ -682,7 +673,8 @@ BOOST_AUTO_TEST_CASE(affected_outer_layers)
 		surface.dphi(Vec2i(0, 1), 0.3f);
 		surface.dphi(Vec2i(1, 0), 0.3f);
 
-		std::vector<Vec2i> aAffected[5];
+		typedef typename Surface<2, 2>::PhiGrid::PosArray PosArray;
+		PosArray aAffected[5];
 		surface.affected(aAffected);
 
 //		3.0,	3.0,	3.0,	 2.0,	3.0,	3.0,	3.0,
@@ -693,17 +685,17 @@ BOOST_AUTO_TEST_CASE(affected_outer_layers)
 //		3.0,	3.0,	2.0,	 1.0,	2.0,	3.0,	3.0,
 //		3.0,	3.0,	3.0,	 2.0,	3.0,	3.0,	3.0;
 
-		std::vector<Vec2i> aposCheck[5];
-		aposCheck[2 + -2] = std::vector<Vec2i>();
-		aposCheck[2 + -1] = std::vector<Vec2i>({
+		PosArray aposCheck[5];
+		aposCheck[2 + -2] = PosArray();
+		aposCheck[2 + -1] = PosArray({
 			Vec2i(0, 0)
 		});
-		aposCheck[2 + 0] = std::vector<Vec2i>({
+		aposCheck[2 + 0] = PosArray({
 		// We don't care for now about zero-layer points.
 //			Vec2i(0,1),
 //			Vec2i(1,0)
 		});
-		aposCheck[2 + 1] = std::vector<Vec2i>({
+		aposCheck[2 + 1] = PosArray({
 			// For (0,1):
 			Vec2i(-1, 1), Vec2i(1, 1), Vec2i(0, 2),
 
@@ -711,7 +703,7 @@ BOOST_AUTO_TEST_CASE(affected_outer_layers)
 			Vec2i(2, 0), Vec2i(1, -1)
 		});
 
-		aposCheck[2 + 2] = std::vector<Vec2i>({
+		aposCheck[2 + 2] = PosArray({
 			// For (0,1):
 			Vec2i(-2, 1), Vec2i(2, 1),
 
@@ -752,7 +744,7 @@ BOOST_AUTO_TEST_CASE(affected_outer_layers)
 BOOST_AUTO_TEST_CASE(local_update)
 {
 	Surface<2, 2> surface(Vec2u(9, 9));
-	Grid<FLOAT, 2>& phi = surface.phi();
+	Surface<2, 2>::PhiGrid& phi = surface.phi();
 	// Grid to set values of manually, for checking against.
 	Grid<FLOAT, 2> phi_check(Vec2u(9, 9));
 
@@ -797,8 +789,8 @@ BOOST_AUTO_TEST_CASE(local_update)
 	// Cycle new zero-layer points and move back to original signed distance.
 	surface.update_start();
 	{
-		for (UINT posIdx = 0; posIdx < surface.size(); posIdx++)
-			surface.dphi(posIdx, 0.6f);
+		for (const Vec2i& pos : surface.layer(0))
+			surface.dphi(pos, 0.6f);
 	}
 	surface.update_end_local();
 
