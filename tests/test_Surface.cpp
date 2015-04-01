@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(layers)
 
 	// Add a single zero-layer point.
 	surface.phi(pos) = 0;
-	surface.layer_add(0, pos);
+	surface.layer_add(pos, 0);
 
 	// Check zero-layer array has registered point.
 	BOOST_CHECK_EQUAL(surface.layer(0).size(), 1);
@@ -79,9 +79,9 @@ BOOST_AUTO_TEST_CASE(layers)
 	BOOST_CHECK_EQUAL(surface.layerID(pos), 0);
 
 	// Add three arbitrary points to layer -1.
-	surface.layer_add(-1, Vec3i(0, 0, 1));
-	surface.layer_add(-1, Vec3i(0, 0, 2));
-	surface.layer_add(-1, Vec3i(0, 0, 3));
+	surface.layer_add(Vec3i(0, 0, 1), -1);
+	surface.layer_add(Vec3i(0, 0, 2), -1);
+	surface.layer_add(Vec3i(0, 0, 3), -1);
 
 	// Remove two points from layer -1
 	surface.layer_remove(Vec3i(0, 0, 1), -1);
@@ -176,6 +176,7 @@ BOOST_AUTO_TEST_CASE(next_closest_grid_point)
 	surface.phi().data() <<
 		2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -2,
 		-2, -2, -2, -2;
+	surface.phi().flush_snapshot();
 	// NOTE: ...but accessed as (x,y)
 	pos_next = Vec2i(2, 0);
 
@@ -220,7 +221,7 @@ BOOST_AUTO_TEST_CASE(delta_phi_update)
 {
 	Surface<3, 2> surface(Vec3u(5, 5, 5));
 
-	Grid<FLOAT, 3>& phi = surface.phi();
+	Surface<3, 2>::PhiGrid& phi = surface.phi();
 	Surface<3, 2>::DeltaPhiGrid& dphi = surface.dphi();
 
 	// Put in 'dirty' state, to check update_start is doing it's job.
@@ -282,8 +283,9 @@ BOOST_AUTO_TEST_CASE(distance_transform)
 {
 	// Check distance calculation for a single point.
 	{
-		Surface<3, 2> surface(Vec3u(5, 5, 5));
-		Grid<FLOAT, 3>& phi = surface.phi();
+		typedef Surface<3, 2> SurfaceT;
+		SurfaceT surface(Vec3u(5, 5, 5));
+		SurfaceT::PhiGrid& phi = surface.phi();
 
 		surface.seed(Vec3i(0, 0, 0));
 
@@ -295,8 +297,9 @@ BOOST_AUTO_TEST_CASE(distance_transform)
 	// Update seed point by less than |0.5| and check outer layer
 	// distances are updated.
 	{
-		Surface<2, 2> surface(Vec2u(5, 5));
-		Surface<2, 2>::PhiGrid& phi = surface.phi();
+		typedef Surface<2, 2> SurfaceT;
+		SurfaceT surface(Vec2u(5, 5));
+		SurfaceT::PhiGrid& phi = surface.phi();
 
 		surface.seed(Vec2i(0, 0));
 
@@ -335,8 +338,9 @@ BOOST_AUTO_TEST_CASE(distance_transform)
  */
 BOOST_AUTO_TEST_CASE(layer_update)
 {
-	Surface<2, 2> surface(Vec2u(9, 9));
-	Surface<2, 2>::PhiGrid& phi = surface.phi();
+	typedef Surface<2, 2> SurfaceT;
+	SurfaceT surface(Vec2u(9, 9));
+	SurfaceT::PhiGrid& phi = surface.phi();
 	// Grid to set values of manually, for checking against.
 	Grid<FLOAT, 2> phi_check(Vec2u(9, 9));
 
@@ -523,7 +527,7 @@ BOOST_AUTO_TEST_CASE(iterate_zero_layer)
 	}
 	surface.update_end();
 
-	BOOST_CHECK_EQUAL(surface.size(), 6);
+	BOOST_CHECK_EQUAL(surface.layer(0).size(), 6);
 
 	// Iterate over surface, using partitioned grid.
 	// Only version that can be parallelised easily using OpenMP.
@@ -587,8 +591,9 @@ BOOST_AUTO_TEST_CASE(iterate_zero_layer)
  */
 BOOST_AUTO_TEST_CASE(check_bounded)
 {
-	Surface<2, 2> surface(Vec2u(9, 9));
-	Surface<2, 2>::PhiGrid& phi = surface.phi();
+	typedef Surface<2, 2> SurfaceT;
+	SurfaceT surface(Vec2u(9, 9));
+	SurfaceT::PhiGrid& phi = surface.phi();
 	// Grid to set values of manually, for checking against.
 	Grid<FLOAT, 2> phi_check(Vec2u(9, 9));
 
@@ -743,8 +748,9 @@ BOOST_AUTO_TEST_CASE(affected_outer_layers)
  */
 BOOST_AUTO_TEST_CASE(local_update)
 {
-	Surface<2, 2> surface(Vec2u(9, 9));
-	Surface<2, 2>::PhiGrid& phi = surface.phi();
+	typedef Surface<2, 2> SurfaceT;
+	SurfaceT surface(Vec2u(9, 9));
+	SurfaceT::PhiGrid& phi = surface.phi();
 	// Grid to set values of manually, for checking against.
 	Grid<FLOAT, 2> phi_check(Vec2u(9, 9));
 

@@ -331,17 +331,44 @@ namespace felt
 			delete m_pgrid_snapshot;
 			m_pgrid_snapshot = new Grid<T, D>(this->dims(), this->offset());
 
-			for (UINT i = 0; i < this->branch().data().size(); i++)
-			{
-				const ChildGrid& child = this->branch().data()[i];
+			for (
+				UINT branch_idx = 0; branch_idx < this->branch().data().size();
+				branch_idx++
+			) {
+				const ChildGrid& child = this->branch().data()[branch_idx];
 				for (
-					UINT leaf_idx; leaf_idx < child.data().size(); leaf_idx++
+					UINT leaf_idx = 0; leaf_idx < child.data().size();
+					leaf_idx++
 				) {
 					const VecDi& pos = child.index(leaf_idx);
-					m_pgrid_snapshot->get(pos) = child(pos);
+					if (m_pgrid_snapshot->inside(pos))
+						m_pgrid_snapshot->get_internal(pos)
+							= child.get_internal(pos);
 				}
 			}
 			return m_pgrid_snapshot->data();
+		}
+
+		void flush_snapshot()
+		{
+			if (m_pgrid_snapshot == NULL)
+				return;
+
+			for (
+				UINT branch_idx = 0; branch_idx < this->branch().data().size();
+				branch_idx++
+			) {
+				ChildGrid& child = this->branch().data()[branch_idx];
+				for (
+					UINT leaf_idx = 0; leaf_idx < child.data().size();
+					leaf_idx++
+				) {
+					const VecDi& pos = child.index(leaf_idx);
+					if (m_pgrid_snapshot->inside(pos))
+						child.get_internal(pos)
+							= m_pgrid_snapshot->get_internal(pos);
+				}
+			}
 		}
 	};
 
@@ -592,6 +619,12 @@ namespace felt
 			child.remove(pos, arr_idx);
 			if (child.list(arr_idx).size() == 0)
 				this->remove_child(pos_child, arr_idx);
+		}
+
+	private:
+		PosArray& list(const UINT& arr_idx = 0)
+		{
+			return ChildGrid::list(arr_idx);
 		}
 	};
 

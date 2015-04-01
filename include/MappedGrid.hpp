@@ -221,7 +221,7 @@ namespace felt
 			// we must move the last position to this position and update the
 			// lookup grid.
 			const UINT& size = this->list(arr_idx).size();
-			if (size > 1)
+			if (idx < size - 1)
 			{
 				// Duplicate last element into this index.
 				const VecDi& pos_last = this->list(arr_idx)[size - 1];

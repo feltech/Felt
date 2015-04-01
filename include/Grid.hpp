@@ -767,10 +767,6 @@ namespace felt
 			return val / (this->dx()*this->dx());
 		}
 
-	#ifndef _TESTING
-	protected:
-	#endif
-
 		T& get_internal (const VecDi& pos) {
 			const UINT& idx = this->index(pos);
 			return this->data()(idx);
@@ -781,6 +777,11 @@ namespace felt
 			const UINT& idx = this->index(pos);
 			return this->data()(idx);
 		}
+
+
+	#ifndef _TESTING
+	protected:
+	#endif
 
 
 		std::vector<T> interp (

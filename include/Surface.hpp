@@ -212,40 +212,40 @@ namespace felt {
 			const INT newLayerID = this->layerID(val);
 			phi(pos) = val;
 
-			if (newLayerID != layerID)
-			{
-				this->status_change(pos, layerID, newLayerID);
+			if (newLayerID == layerID)
+				return;
 
-				// If outside point moving inward, must create new outside
-				// points.
-				if (std::abs(layerID) == L && std::abs(newLayerID) == L-1)
+			this->status_change(pos, layerID, newLayerID);
+
+			// If outside point moving inward, must create new outside
+			// points.
+			if (!(std::abs(layerID) == L && std::abs(newLayerID) == L-1))
+				return;
+
+			// Get neighbouring points.
+			std::vector<VecDi> neighs;
+			phi.neighs(pos, neighs);
+			// Get which side of the zero-layer this point lies on.
+			const INT side = sgn(newLayerID);
+
+			for (
+				UINT neighIdx = 0; neighIdx < neighs.size(); neighIdx++
+			) {
+				const VecDi& pos_neigh = neighs[neighIdx];
+				const INT fromLayerID = this->layerID(pos_neigh);
+				// If neighbouring point is not already within the
+				// narrow band.
+				if (!this->inside_band(fromLayerID))
 				{
-					// Get neighbouring points.
-					std::vector<VecDi> neighs;
-					phi.neighs(pos, neighs);
-					// Get which side of the zero-layer this point lies on.
-					const INT side = sgn(newLayerID);
-
-					for (
-						UINT neighIdx = 0; neighIdx < neighs.size(); neighIdx++
-					) {
-						const VecDi& pos_neigh = neighs[neighIdx];
-						const INT fromLayerID = this->layerID(pos_neigh);
-						// If neighbouring point is not already within the
-						// narrow band.
-						if (!this->inside_band(fromLayerID))
-						{
-							// Get distance of this new point to the zero layer.
-							const FLOAT dist_neigh = this->distance(
-								pos_neigh, side
-							);
-							// Set distance in phi grid.
-							phi(pos_neigh) = dist_neigh;
-							// Add to status change list to be added to the
-							// outer layer.
-							this->status_change(pos_neigh, fromLayerID, side*L);
-						}
-					}
+					// Get distance of this new point to the zero layer.
+					const FLOAT dist_neigh = this->distance(
+						pos_neigh, side
+					);
+					// Set distance in phi grid.
+					phi(pos_neigh) = dist_neigh;
+					// Add to status change list to be added to the
+					// outer layer.
+					this->status_change(pos_neigh, fromLayerID, side*L);
 				}
 			}
 		}
@@ -276,8 +276,21 @@ namespace felt {
 					: m_grid_status_change.child(pos_child)
 				) {
 
-					this->layer_move(
-						change.pos, change.from_layer, change.to_layer
+					this->layer_remove(
+						change.pos, change.from_layer
+					);
+				}
+			}
+			for (
+				const VecDi& pos_child : m_grid_status_change.branch().list()
+			) {
+				for (
+					const StatusChange& change
+					: m_grid_status_change.child(pos_child)
+				) {
+
+					this->layer_add(
+						change.pos, change.to_layer
 					);
 				}
 			}
@@ -375,21 +388,11 @@ namespace felt {
 		}
 
 		/**
-		 * @brief Get size, in voxels, of the surface. That is, the size of the
-		 * zero-layer.
-		 * @return size of zero-layer.
-		 */
-		UINT size()
-		{
-			return m_grid_phi_parent.leafs(0).size();
-		}
-
-		/**
 		 * @brief Append position to a layer of the narrow band.
 		 * @param id
 		 * @param pos
 		 */
-		void layer_add (const INT& layerID, const VecDi& pos)
+		void layer_add (const VecDi& pos, const INT& layerID)
 		{
 			// Do nothing if position is outside narrow band.
 			if (!this->inside_band(layerID))
@@ -404,10 +407,10 @@ namespace felt {
 		 * @param pos
 		 * @param val
 		 */
-		void layer_add (const VecDi& pos, const FLOAT& val)
+		void layer_add (const FLOAT& val, const VecDi& pos)
 		{
-			const INT id = this->layerID(val);
-			this->layer_add(id, pos);
+			const INT& id = this->layerID(val);
+			this->layer_add(pos, id);
 		}
 
 
@@ -468,7 +471,7 @@ namespace felt {
 		 */
 		void seed (const VecDi& pos_centre)
 		{
-			Grid<FLOAT,D>& phi = this->phi();
+			PhiGrid& phi = this->phi();
 			const VecDu dims = phi.dims();
 
 			// Width of seed.
@@ -494,7 +497,7 @@ namespace felt {
 			{
 				// Calculate vector position from integer index,
 				// using Felt::Grid utility function, index().
-				VecDi pos = Grid<FLOAT,D>::index(u_pos, pos_size);
+				VecDi pos = PhiGrid::index(u_pos, pos_size);
 				// Translate position into phi grid space.
 				pos += pos_min;
 				// Calculate vector distance from this position to seed centre.
@@ -509,7 +512,7 @@ namespace felt {
 					// Set distance as value in phi grid.
 					phi(pos) = f_dist;
 					// Append point to a narrow band layer (if applicable).
-					this->layer_add(pos, f_dist);
+					this->layer_add(f_dist, pos);
 				}
 			}
 		}
@@ -606,7 +609,7 @@ namespace felt {
 
 			const UINT& layerIdx = this->layerIdx(0);
 
-			#pragma omp parallel for
+//			#pragma omp parallel for
 			for (
 				UINT idx_child = 0; idx_child < branch.list(layerIdx).size();
 				idx_child++
@@ -678,11 +681,15 @@ namespace felt {
 		void update_distance(const INT& layerID, const INT& side)
 		{
 			const UINT& layerIdx = this->layerIdx(layerID);
-			for (const VecDi& pos_child : m_grid_phi_parent.list(layerIdx))
+			for (
+				const VecDi& pos_child
+				: m_grid_phi_parent.branch().list(layerIdx)
+			) {
 				this->update_distance(
 					layerID, side,
 					m_grid_phi_parent.child(pos_child).list(layerIdx)
 				);
+			}
 		}
 
 		/**
@@ -697,6 +704,7 @@ namespace felt {
 			typename PhiGrid::PosArray& alayer
 		) {
 			DeltaPhiGrid& dphi = this->dphi();
+			const UINT& size = alayer.size();
 
 			// Calculate distance of every point in this layer to the zero
 			// layer, and store in delta phi grid.
