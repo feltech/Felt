@@ -601,7 +601,7 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 	surface.seed(Vec2i(0, 0));
 	surface.update_start();
 	{
-		for (auto pos : surface.phi().leafs(0))
+		for (auto pos : surface.layer(0))
 		{
 			surface.dphi(pos, -1.0f);
 		}
@@ -612,7 +612,7 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 	// delta phi should be modified from -1.0 to approx -0.5.
 	surface.update_start();
 	{
-		for (auto pos : surface.phi().leafs(0))
+		for (auto pos : surface.layer(0))
 		{
 			surface.dphi(pos, -1.0f);
 		}
@@ -623,7 +623,7 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 	// delta phi should be modified from -1.0 to 0.
 	surface.update_start();
 	{
-		for (auto pos : surface.phi().leafs(0))
+		for (auto pos : surface.layer(0))
 		{
 			surface.dphi(pos, -1.0f);
 		}

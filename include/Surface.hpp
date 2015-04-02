@@ -276,21 +276,8 @@ namespace felt {
 					: m_grid_status_change.child(pos_child)
 				) {
 
-					this->layer_remove(
-						change.pos, change.from_layer
-					);
-				}
-			}
-			for (
-				const VecDi& pos_child : m_grid_status_change.branch().list()
-			) {
-				for (
-					const StatusChange& change
-					: m_grid_status_change.child(pos_child)
-				) {
-
-					this->layer_add(
-						change.pos, change.to_layer
+					this->layer_move(
+						change.pos, change.from_layer, change.to_layer
 					);
 				}
 			}

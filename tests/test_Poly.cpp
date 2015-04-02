@@ -266,6 +266,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
 			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
 			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3;
+		surface.phi().flush_snapshot();
 
 		unsigned short mask;
 		mask = Poly<2>::mask(surface.phi(), Vec2i(-3,-3));
@@ -390,6 +391,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
 			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
 			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3;
+		surface.phi().flush_snapshot();
 
 		unsigned short mask, vtx_mask;
 
