@@ -1,3 +1,7 @@
+/**
+ * Define the core Grid template class and utility functions.
+ */
+
 #ifndef Grid_hpp
 #define Grid_hpp
 
@@ -8,26 +12,63 @@
 
 namespace felt
 {
-
-
-
+	/**
+	 * Use 32 bit float by default.
+	 */
 	typedef float FLOAT;
+
+	/**
+	 * Use 32 bit int by default.
+	 */
 	typedef int INT;
+
+	/**
+	 * Use 32 bit unsigned int by default.
+	 */
 	typedef size_t UINT;
 
+	/**
+	 * Shorthand for 2D float vector.
+	 */
 	typedef Eigen::Matrix<FLOAT, 2, 1> Vec2f;
+	/**
+	 * Shorthand for 2D unsigned integer vector.
+	 */
 	typedef Eigen::Matrix<UINT, 2, 1> Vec2u;
+	/**
+	 * Shorthand for 2D integer vector.
+	 */
 	typedef Eigen::Matrix<INT, 2, 1> Vec2i;
+	/**
+	 * Shorthand for 3D float vector.
+	 */
 	typedef Eigen::Matrix<FLOAT, 3, 1> Vec3f;
+	/**
+	 * Shorthand for 3D unsigned integer vector.
+	 */
 	typedef Eigen::Matrix<UINT, 3, 1> Vec3u;
+	/**
+	 * Shorthand for 3D integer vector.
+	 */
 	typedef Eigen::Matrix<INT, 3, 1> Vec3i;
 
-	// Following signnum from http://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
+	/**
+	 * Get the sign of a value (+/-1).
+	 *
+	 * @param val
+	 * @return
+	 */
 	template <typename T> int sgn(T val)
 	{
 		return (T(0) < val) - (val < T(0));
 	}
 
+	/**
+	 * ASM optimised logarithm to base 2.
+	 *
+	 * @param x
+	 * @return
+	 */
 	static inline uint32_t log2(const uint32_t x)
 	{
 	  uint32_t y;
@@ -39,28 +80,81 @@ namespace felt
 	}
 
 
+	/**
+	 * Abstract base class for n-dimensional grid.
+	 *
+	 * Subclasses can override the get() method to return a datatype other
+	 * than that stored in the grid, so that grid values can be mutated
+	 * before e.g. using in gradient calculations.
+	 *
+	 * @tparam T the data type to store in the grid.
+	 * @tparam D the number of dimensions of the grid.
+	 * @tparam R the data type return by get().
+	 */
 	template <typename T, UINT D, typename R=T>
 	class GridBase
 	{
 	public:
+		/**
+		 * D-dimensional unsigned integer vector.
+		 */
 		typedef Eigen::Matrix<UINT, D, 1> VecDu;
+		/**
+		 * D-dimensional integer vector.
+		 */
 		typedef Eigen::Matrix<INT, D, 1> VecDi;
+		/**
+		 * D-dimensional float vector.
+		 */
 		typedef Eigen::Matrix<FLOAT, D, 1> VecDf;
+		/**
+		 * D-dimensional vector of type T.
+		 */
 		typedef Eigen::Matrix<T, D, 1> VecDT;
+		/**
+		 * Dynamic 1D vector (i.e. a resizeable array of data) of
+		 * type T.
+		 */
 		typedef Eigen::Array<T, 1, Eigen::Dynamic> ArrayData;
+		/**
+		 * Resizeable array of VecDi (i.e. grid locations).
+		 *
+		 * Uses Eigen::aligned_allocator for optimal address alignment.
+		 */
+		typedef std::vector<
+			VecDi, Eigen::aligned_allocator<VecDi>
+		> PosArray;
 
 	protected:
+		/**
+		 * The translational offset of the grid's zero coordinate.
+		 */
 		VecDi m_offset;
+		/**
+		 * The dimensions (size) of the grid.
+		 */
 		VecDu m_dims;
+		/**
+		 * The physical size of a grid node (used for spatial derivatives).
+		 */
 		FLOAT m_dx;
+		/**
+		 * The actual grid data store.
+		 */
 		ArrayData m_data;
 
 	public:
+		/**
+		 * Trivial destructor.
+		 */
 		virtual ~GridBase ()
 		{}
 
 		/**
-		 * Initialise a zero-dimensional GridBase.
+		 * Initialise a zero-size grid.
+		 *
+		 * If custom initialisation is required, then use this constructor
+		 * and call init() in the derived class.
 		 */
 		GridBase () :
 		m_offset(VecDi::Zero()),
@@ -69,22 +163,8 @@ namespace felt
 		{
 		}
 
-
-		GridBase (UINT x, UINT y) :
-		m_dx(1)
-		{
-			this->init(Vec2u(x,y));
-		}
-
-
-		GridBase (UINT x, UINT y, UINT z) :
-		m_dx(1)
-		{
-			this->init(Vec3u(x,y,z));
-		}
-
 		/**
-		 * Initialise a GridBase with given dimension, offset and delta x.
+		 * Initialise a grid with given dimension, offset and delta x.
 		 *
 		 * @param dims
 		 * @param offset
@@ -99,7 +179,13 @@ namespace felt
 			this->init(dims, offset, delta);
 		}
 
-
+		/**
+		 * Initialise the grid dimensions and offset.
+		 *
+		 * @param dims
+		 * @param offset
+		 * @param delta
+		 */
 		virtual void init (
 			const VecDu& dims, const VecDi& offset = VecDi::Zero(),
 			const FLOAT& delta = 1
@@ -110,9 +196,13 @@ namespace felt
 		}
 
 		/**
-		 * Set GridBase offset.
+		 * Set grid offset.
 		 *
-		 * @return
+		 * The offset is used to 'centre' the grid, so that e.g. negative
+		 * grid positions can be used. It is equal to the spatial position
+		 * of the zero coordinate.
+		 *
+		 * @param offset_new
 		 */
 		virtual void offset (const VecDi& offset_new)
 		{
@@ -120,7 +210,7 @@ namespace felt
 		}
 
 		/**
-		 * Get GridBase offset.
+		 * Get the grid offset parameter.
 		 *
 		 * @return
 		 */
@@ -129,9 +219,8 @@ namespace felt
 			return m_offset;
 		}
 
-
 		/**
-		 * Get GridBase delta x.
+		 * Get grid's delta x.
 		 * @return
 		 */
 		inline const FLOAT& dx () const
@@ -140,7 +229,7 @@ namespace felt
 		}
 
 		/**
-		 * Set GridBase delta x.
+		 * Set grid's delta x.
 		 * @param delta
 		 */
 		void dx (const FLOAT& delta)
@@ -148,9 +237,9 @@ namespace felt
 			m_dx = delta;
 		}
 
-
 		/**
-		 * Get/set GridBase values.
+		 * Shorthand to access grid values.
+		 *
 		 * @param pos
 		 * @return
 		 */
@@ -160,7 +249,7 @@ namespace felt
 		}
 
 		/**
-		 * Get GridBase values.
+		 * Shorthand to access grid values (const version).
 		 * @param pos
 		 * @return
 		 */
@@ -169,13 +258,33 @@ namespace felt
 			return this->get(pos);
 		}
 
+		/**
+		 * Abstract getter to be overriden by subclasses.
+		 *
+		 * This allows the subclass to mutate the value stored in the grid
+		 * before it is used.
+		 *
+		 * @param pos
+		 * @return
+		 */
 		virtual R& get (const VecDi& pos) = 0;
 
+
+		/**
+		 * Abstract getter to be overriden by subclasses (const version).
+		 *
+		 * @param pos
+		 * @return
+		 */
 		virtual const R& get (const VecDi& pos) const = 0;
 
 
 		/**
-		 * Get index of position.
+		 * Get index in data array of position vector.
+		 *
+		 * The grid is packed in a 1D array, so this method is required to
+		 * get the index in that array of the D-dimensional position.
+		 *
 		 * @param pos
 		 * @return
 		 */
@@ -185,7 +294,11 @@ namespace felt
 		}
 
 		/**
-		 * Get index of position.
+		 * Get index in data array of position vector.
+		 *
+		 * The grid is packed in a 1D array, so this method is required to
+		 * get the index in that array of the D-dimensional position.
+		 *
 		 * @param pos
 		 * @param dims
 		 * @param offset
@@ -211,6 +324,10 @@ namespace felt
 
 		/**
 		 * Get position of index.
+		 *
+		 * Given an index in the 1D grid data array, calculate the position
+		 * vector that it pertains to.
+		 *
 		 * @param idx
 		 * @return
 		 */
@@ -221,6 +338,11 @@ namespace felt
 
 		/**
 		 * Get position of index.
+		 *
+		 * Given an index and the dimensions and offset of a grid, calculate
+		 * the position vector that the index pertains to in a representative
+		 * 1D array.
+		 *
 		 * @param idx
 		 * @param dims
 		 * @param offset
@@ -252,7 +374,11 @@ namespace felt
 		}
 
 		/**
-		 * Get interpolated GridBase value.
+		 * Get interpolated grid value.
+		 *
+		 * Passing a floating point position vector will initiate a linear
+		 * interpolation of the grid at that real-valued location.
+		 *
 		 * @param pos
 		 * @return
 		 */
@@ -262,7 +388,11 @@ namespace felt
 		}
 
 		/**
-		 * Get interpolated GridBase value.
+		 * Get interpolated grid value.
+		 *
+		 * Convenience operator to return linearly interpolated value given
+		 * a real-valued location.
+		 *
 		 * @param pos
 		 * @return
 		 */
@@ -272,15 +402,18 @@ namespace felt
 		}
 
 		/**
-		 * Retrieve a reference to the data stored in GridBase.
+		 * Retrieve a reference to the raw grid data array.
+		 *
 		 * @return
 		 */
 		ArrayData& data ()
 		{
 			return m_data;
 		}
+
 		/**
-		 * Retrieve a reference to the data stored in GridBase.
+		 * Retrieve a reference to the raw grid data array (const version).
+		 *
 		 * @return
 		 */
 		const ArrayData& data () const
@@ -289,7 +422,9 @@ namespace felt
 		}
 
 		/**
-		 * Reshape GridBase.
+		 * Set the dimensions of the grid and resize it.
+		 *
+		 * Values will be default initialised (or not at all).
 		 *
 		 * @param vec_NewDims
 		 * @return
@@ -307,7 +442,7 @@ namespace felt
 		}
 
 		/**
-		 * Get GridBase dimensions.
+		 * Get grid dimensions.
 		 *
 		 * @return
 		 */
@@ -317,7 +452,7 @@ namespace felt
 		}
 
 		/**
-		 * Fill with a single value.
+		 * Fill grid with a single value.
 		 *
 		 * @param val
 		 */
@@ -327,7 +462,7 @@ namespace felt
 		}
 
 		/**
-		 * Inside/outside test.
+		 * Test if a position is inside the grid bounds.
 		 *
 		 * @param pos
 		 * @return
@@ -347,9 +482,20 @@ namespace felt
 			return true;
 		}
 
-
+		/**
+		 * Get the neighbouring positions in the cardinal directions.
+		 *
+		 * Neighbour positions will be added to vout.
+		 *
+		 * If bcheck is true then duplicates will not be allowed in vout,
+		 * using a linear search to ensure so.
+		 *
+		 * @param pos
+		 * @param vout
+		 * @param bcheck
+		 */
 		void neighs (
-			const VecDi& pos, std::vector<VecDi>& vout, bool bcheck = false
+			const VecDi& pos, PosArray& vout, bool bcheck = false
 		) const
 		{
 			// Reference to GridBase dimensions.
@@ -402,33 +548,44 @@ namespace felt
 //			}
 //		}
 
-
+		/**
+		 * Get the neighbouring positions in the cardinal directions.
+		 *
+		 * Neighbour positions will be added to vout.
+		 *
+		 * grid_check will be used as a lookup to ensure no duplicates are
+		 * added to apos_out.
+		 *
+		 * @param pos
+		 * @param apos_out
+		 * @param grid_check
+		 */
 		void neighs (
-			const VecDi& pos, std::vector<VecDi>& vout,
-			GridBase<bool,D>& GridBase_check
+			const VecDi& pos, PosArray& apos_out,
+			GridBase<bool,D>& grid_check
 		) const
 		{
 			// Reference to GridBase dimensions.
 			const VecDu& dims = this->dims();
-			// Most likely all 6 neighbours are valid.
-			vout.reserve(6);
+			// Most likely all neighbours are valid.
+			apos_out.reserve(2*D);
 			// Position for look-around.
 			VecDi vec_dir(pos);
 			for (INT axis = 0; axis < dims.size(); axis++)
 			{
 				// Check if backward value is within GridBase.
 				vec_dir(axis) -= 1;
-				if (this->inside(vec_dir) && !GridBase_check(vec_dir))
+				if (this->inside(vec_dir) && !grid_check(vec_dir))
 				{
-					vout.push_back(vec_dir);
-					GridBase_check(vec_dir) = true;
+					apos_out.push_back(vec_dir);
+					grid_check(vec_dir) = true;
 				}
 				// Check if forward value is within GridBase.
 				vec_dir(axis) += 2;
-				if (this->inside(vec_dir) && !GridBase_check(vec_dir))
+				if (this->inside(vec_dir) && !grid_check(vec_dir))
 				{
-					vout.push_back(vec_dir);
-					GridBase_check(vec_dir) = true;
+					apos_out.push_back(vec_dir);
+					grid_check(vec_dir) = true;
 				}
 				vec_dir(axis) -= 1;
 			}
@@ -520,10 +677,12 @@ namespace felt
 
 		/**
 		 * Safe gradient.
+		 *
 		 * Will calculate central, forward or backward difference along each
-		 * axis, depending what GridBase values are available.
-		 * That is, for GridBase points at the edge of the GridBase it will return
-		 * forward/backward differences.
+		 * axis, depending what grid values are available.
+		 * That is, for grid points at the edge of the grid it will
+		 * return forward/backward differences.
+		 *
 		 * @param pos
 		 * @return
 		 */
@@ -655,6 +814,7 @@ namespace felt
 
 		/**
 		 * Curvature calculation based on difference of normals method.
+		 *
 		 * @param pos
 		 * @return
 		 */
@@ -751,6 +911,7 @@ namespace felt
 
 		/**
 		 * Calculate divergence, i.e. d2f(x)/dx2
+		 *
 		 * @param pos
 		 * @return
 		 */
@@ -767,12 +928,24 @@ namespace felt
 			return val / (this->dx()*this->dx());
 		}
 
+		/**
+		 * Get the value stored in the grid, circumventing subclass's mutation.
+		 *
+		 * @param pos
+		 * @return
+		 */
 		T& get_internal (const VecDi& pos) {
 			const UINT& idx = this->index(pos);
 			return this->data()(idx);
 		}
 
-
+		/**
+		 * Get the value stored in the grid, circumventing subclass's mutation
+		 * (const version).
+		 *
+		 * @param pos
+		 * @return
+		 */
 		const T& get_internal (const VecDi& pos) const {
 			const UINT& idx = this->index(pos);
 			return this->data()(idx);
@@ -784,6 +957,17 @@ namespace felt
 	#endif
 
 
+		/**
+		 * Interpolate down one dimension.
+		 *
+		 * The values of val_corners_in are interpolated to one dimension
+		 * smaller than they are currently (cube->square, square->line,
+		 * line->point).
+		 *
+		 * @param val_corners_in
+		 * @param vec_fpos
+		 * @return
+		 */
 		std::vector<T> interp (
 			const std::vector<T>& val_corners_in, const VecDf& vec_fpos
 		) const
@@ -820,6 +1004,12 @@ namespace felt
 	};
 
 
+	/**
+	 * A standard n-dimensional grid for storing arbitrary values.
+	 *
+	 * @tparam T the type of data to store in the grid.
+	 * @tparam D the number of dimensions of the grid.
+	 */
 	template <typename T, UINT D>
 	class Grid : public GridBase<T, D, T>
 	{
@@ -831,6 +1021,7 @@ namespace felt
 		typedef typename Base::VecDi	VecDi;
 		typedef typename Base::VecDf	VecDf;
 
+
 		virtual ~Grid ()
 		{}
 
@@ -840,9 +1031,8 @@ namespace felt
 		Grid () : Base()
 		{}
 
-
 		/**
-		 * Initialise a GridBase with given dimension, offset and delta x.
+		 * Delegates to GridBase's constructor.
 		 *
 		 * @param dims
 		 * @param offset
@@ -854,12 +1044,24 @@ namespace felt
 		) : Base(dims, offset, delta)
 		{}
 
-
+		/**
+		 * Override GridBase::get to simply return the value stored in the grid.
+		 *
+		 * @param pos
+		 * @return
+		 */
 		virtual T& get (const VecDi& pos)
 		{
 			return this->get_internal(pos);
 		}
 
+		/**
+		 * Override GridBase::get to simply return the value stored in the grid
+		 * (const version).
+		 *
+		 * @param pos
+		 * @return
+		 */
 		virtual const T& get (const VecDi& pos) const
 		{
 			return this->get_internal(pos);

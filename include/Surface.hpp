@@ -13,14 +13,51 @@
 
 namespace felt {
 
+	/**
+	 * A n-dimensional sparse-field spatially partitioned level set.
+	 *
+	 * @tparam D the number of dimensions of the surface.
+	 * @tparam L the number of narrow band layers surrounding the zero-level
+	 * surface.
+	 * @tparam P the size of a spatial partition.
+	 */
 	template <UINT D, UINT L=2, UINT P=2>
 	class Surface
 	{
-	protected:
-		typedef Eigen::Matrix<UINT, D, 1> VecDu;
-		typedef Eigen::Matrix<INT, D, 1> VecDi;
-		typedef Eigen::Matrix<FLOAT, D, 1> VecDf;
+	public:
+		/**
+		 * A delta phi update grid with active (non-zero) grid points tracked.
+		 */
+		typedef TrackedPartitionedGrid<FLOAT, D, P, 2*L+1>		DeltaPhiGrid;
+		/**
+		 * A level set embedding phi grid, with active grid points (the narrow
+		 * band) tracked.
+		 */
+		typedef SharedTrackedPartitionedGrid<FLOAT, D, P, 2*L+1>	PhiGrid;
 
+	protected:
+
+		/**
+		 * A resizable array of D-dimensional grid positions.
+		 */
+		typedef typename PhiGrid::PosArray	PosArray;
+		/**
+		 * D-dimensional unsigned int vector.
+		 */
+		typedef typename PhiGrid::VecDu	VecDu;
+		/**
+		 * D-dimensional integer vector.
+		 */
+		typedef typename PhiGrid::VecDi VecDi;
+		/**
+		 * D-dimensional float vector.
+		 */
+		typedef typename PhiGrid::VecDf VecDf;
+
+		/**
+		 * Storage class for flagging a point in the grid to be moved from one
+		 * narrow band layer to another.
+		 */
 		struct StatusChange
 		{
 			StatusChange(
@@ -32,63 +69,121 @@ namespace felt {
 			INT to_layer;
 		};
 
+		/**
+		 * A spatially partitioned array of StatusChange objects.
+		 */
 		typedef PartitionedArray<StatusChange, D, P>	StatusChangeGrid;
 
-	public:
 
-		typedef TrackedPartitionedGrid<FLOAT, D, P, 2*L+1>	DeltaPhiGrid;
-		typedef SharedTrackedPartitionedGrid<FLOAT, D, P, 2*L+1>	PhiGrid;
-
-#ifndef _TESTING
 	protected:
-#else
-	public:
-#endif
 
+		/**
+		 * The minimum usable position in the grid for the surface (zero-layer).
+		 *
+		 * Additional space is required at the border of the phi embedding for
+		 * the outer layers, so this is the effective minimum position a point
+		 * on the surface can occupy.
+		 */
 		VecDi m_pos_min;
+		/**
+		 * The maximum usable position in the grid for the surface (zero-layer).
+		 *
+		 * Additional space is required at the border of the phi embedding for
+		 * the outer layers, so this is the effective maximum position a point
+		 * on the surface can occupy.
+		 */
 		VecDi m_pos_max;
 
+		/**
+		 * TODO: replace with partitioned grid.
+		 */
 		Grid<bool,D> m_grid_flag;
 
-		PhiGrid				m_grid_phi_parent;
+		/**
+		 * The main level set embedding phi grid.
+		 *
+		 * Named after the greek letter often used to represent the level set
+		 * function.
+		 */
+		PhiGrid				m_grid_phi;
 
+		/**
+		 * The delta phi update grid.
+		 *
+		 * Used to allow for asynchronous updating.
+		 */
 		DeltaPhiGrid 		m_grid_dphi;
 
+		/**
+		 * The (spatially partitioned) status change list.
+		 *
+		 * The list is appended to when a point in the narrow band moves from
+		 * one layer to another.
+		 */
 		StatusChangeGrid	m_grid_status_change;
 
 
 	public:
+		/**
+		 * Default constructor initialising a zero-dimensional embedding.
+		 */
 		Surface ()
-		:	m_grid_phi_parent(),
+		:	m_grid_phi(),
 			m_grid_status_change()
 		{}
 
-
-		Surface (const VecDu& dims, const UINT& uborder = 0)
-		:	m_grid_phi_parent(),
+		/**
+		 * Construct a level set embedding of size dims.
+		 *
+		 * All points will be marked as outside the surface (i.e. no surface).
+		 *
+		 * @param dims
+		 * @param uborder
+		 */
+		Surface (const VecDu& dims)
+		:	m_grid_phi(),
 			m_grid_status_change()
 		{
-			this->dims(dims, uborder);
+			this->dims(dims);
 		}
 
-
-		FLOAT operator() (const VecDi& pos)
+		/**
+		 * Shorthand for accessing the phi (level set) grid at a given position.
+		 *
+		 * @param pos
+		 * @return
+		 */
+		FLOAT& operator() (const VecDi& pos)
 		{
 			return this->phi()(pos);
 		}
 
+		/**
+		 * Shorthand for accessing the phi (level set) grid (const version).
+		 *
+		 * @param pos
+		 * @return
+		 */
+		const FLOAT& operator() (const VecDi& pos) const
+		{
+			return this->phi()(pos);
+		}
 
 		/**
-		 * @brief Set dimensions and store limits adjusted for narrow band
-		 * space.
-		 * @param vec_dims
+		 * Initialise level set embedding with given dimensions.
+		 *
+		 * Initialises the various lookup grids and (indirectly) the level set
+		 * sparse field layers. Also calculates and stores the spatial limits
+		 * of the grid accounting for the narrow band space required.
+		 *
+		 * @param udims
 		 */
-		void dims (const VecDu& udims, const UINT& uborder = 0)
+		void dims (const VecDu& udims)
 		{
 			const VecDi idims = udims.template cast<INT>();
 			const VecDi offset = -idims/2;
 
-			m_grid_phi_parent.init(udims, offset);
+			m_grid_phi.init(udims, offset);
 
 			// Configure delta phi embedding.
 			m_grid_dphi.init(udims, offset);
@@ -101,14 +196,14 @@ namespace felt {
 
 			// Store min and max usable positions in phi embedding.
 			this->pos_min(
-				VecDi::Constant(L + uborder + 1) + m_grid_phi_parent.offset()
+				VecDi::Constant(L + 1) + m_grid_phi.offset()
 			);
 			this->pos_max(
-				(idims - VecDi::Constant(L + uborder + 1))
-				+ m_grid_phi_parent.offset() - VecDi::Constant(1)
+				(idims - VecDi::Constant(L + 1))
+				+ m_grid_phi.offset() - VecDi::Constant(1)
 			);
 			// Fill phi grid with 'outside' value.
-			m_grid_phi_parent.fill(L+1);
+			m_grid_phi.fill(L+1);
 			// Initialise delta phi to zero.
 			m_grid_dphi.fill(0);
 			// Initialise flag grid to false.
@@ -116,7 +211,8 @@ namespace felt {
 		}
 
 		/**
-		 * @brief Get minimum usable position in phi grid.
+		 * Get minimum usable position in phi grid.
+		 *
 		 * @return
 		 */
 		const VecDi& pos_min () const
@@ -125,7 +221,8 @@ namespace felt {
 		}
 
 		/**
-		 * @brief Get maximum usable position in phi grid.
+		 * Get maximum usable position in phi grid.
+		 *
 		 * @return
 		 */
 		const VecDi& pos_max () const
@@ -135,7 +232,8 @@ namespace felt {
 
 
 		/**
-		 * @brief Set minimum usable position in phi grid.
+		 * Set minimum usable position in phi grid.
+		 *
 		 * @param pos
 		 */
 		void pos_min (const VecDi& pos)
@@ -144,7 +242,8 @@ namespace felt {
 		}
 
 		/**
-		 * @brief Set maximum usable position in phi grid.
+		 * Set maximum usable position in phi grid.
+		 *
 		 * @param pos
 		 */
 		void pos_max (const VecDi& pos)
@@ -154,36 +253,51 @@ namespace felt {
 
 
 		/**
-		 * @brief Get reference to phi grid.
+		 * Get reference to phi grid.
+		 *
 		 * @return
 		 */
 		PhiGrid& phi ()
 		{
-			return m_grid_phi_parent;
+			return m_grid_phi;
 		}
 
 		/**
-		 * @brief Get reference to phi grid.
+		 * Get reference to phi grid.
+		 *
 		 * @return
 		 */
 		const PhiGrid& phi () const
 		{
-			return m_grid_phi_parent;
-		}
-
-
-		const FLOAT& phi (const VecDi& pos) const
-		{
-			return m_grid_phi_parent(pos);
-		}
-
-		FLOAT& phi (const VecDi& pos)
-		{
-			return m_grid_phi_parent(pos);
+			return m_grid_phi;
 		}
 
 		/**
-		 * @brief Test whether a given value lies within the narrow band or not.
+		 * Shorthand for accessing phi grid at given position (const
+		 * version).
+		 *
+		 * @param pos
+		 * @return
+		 */
+		const FLOAT& phi (const VecDi& pos) const
+		{
+			return m_grid_phi(pos);
+		}
+
+		/**
+		 * Shorthand for accessing phi grid at given position.
+		 *
+		 * @param pos
+		 * @return
+		 */
+		FLOAT& phi (const VecDi& pos)
+		{
+			return m_grid_phi(pos);
+		}
+
+		/**
+		 * Test whether a given value lies within the narrow band or not.
+		 *
 		 * @param val
 		 * @return
 		 */
@@ -193,15 +307,18 @@ namespace felt {
 			return (UINT)std::abs(val) <= L;
 		}
 
-
 		/**
-		 * @brief Update phi grid point at pos by val.
-		 * Checks if the layer should change and adds to the appropriate status
-		 * change list.
+		 * Update phi grid point at pos by val.
+		 *
+		 * Checks if the layer should change and if so adds to the appropriate
+		 * status change list.
+		 *
 		 * Also expands the outer layers as the surface expands/contracts.
+		 *
 		 * TODO: because of the outer layer expansion code, this function is
 		 * not, in general, thread safe.  Must move outer layer expansion to a
 		 * separate routine.
+		 *
 		 * @param pos
 		 * @param val
 		 * @param layerID
@@ -223,7 +340,7 @@ namespace felt {
 				return;
 
 			// Get neighbouring points.
-			std::vector<VecDi> neighs;
+			PosArray neighs;
 			phi.neighs(pos, neighs);
 			// Get which side of the zero-layer this point lies on.
 			const INT side = sgn(newLayerID);
@@ -251,8 +368,9 @@ namespace felt {
 		}
 
 		/**
-		 * @brief Add a point to the status change list to eventually be moved
+		 * Add a point to the status change list to eventually be moved
 		 * from one layer to another.
+		 *
 		 * @param pos
 		 * @param fromLayerID
 		 * @param toLayerID
@@ -265,7 +383,10 @@ namespace felt {
 			);
 		}
 
-
+		/**
+		 * Loop through the status change lists moving the referenced points
+		 * from one layer to another.
+		 */
 		void status_change ()
 		{
 			for (
@@ -275,7 +396,6 @@ namespace felt {
 					const StatusChange& change
 					: m_grid_status_change.child(pos_child)
 				) {
-
 					this->layer_move(
 						change.pos, change.from_layer, change.to_layer
 					);
@@ -283,9 +403,9 @@ namespace felt {
 			}
 		}
 
-
 		/**
-		 * @brief Get reference to delta phi grid.
+		 * Get reference to delta phi grid.
+		 *
 		 * @return
 		 */
 		DeltaPhiGrid& dphi ()
@@ -293,25 +413,41 @@ namespace felt {
 			return m_grid_dphi;
 		}
 
+		/**
+		 * Get reference to delta phi grid (const version).
+		 *
+		 * @return
+		 */
 		const DeltaPhiGrid& dphi () const
 		{
 			return m_grid_dphi;
 		}
 
-
+		/**
+		 * Shorthand for access to the delta phi grid at given position.
+		 *
+		 * @param pos
+		 * @return
+		 */
 		FLOAT& dphi (const VecDi& pos)
 		{
 			return m_grid_dphi(pos);
 		}
 
+		/**
+		 * Shorthand for access to the delta phi grid at given position (const
+		 * version)
+		 *
+		 * @param pos
+		 * @return
+		 */
 		const FLOAT& dphi (const VecDi& pos) const
 		{
 			return m_grid_dphi(pos);
 		}
 
-
 		/**
-		 * @brief Update delta phi grid and append point to change list for
+		 * Update delta phi grid and append point to change list for
 		 * given thread.
 		 * @param pos
 		 * @param val
@@ -346,36 +482,52 @@ namespace felt {
 		}
 
 		/**
-		 * @brief Get reference to a single layer of the narrow band.
+		 * Get reference to a single layer of the narrow band at a given
+		 * spatial partition.
+		 *
+		 * @param pos_child
 		 * @param id
 		 * @return
 		 */
-		typename PhiGrid::PosArray& layer (
-			const VecDi& pos_child, const INT& id = 0
-		) {
-			return m_grid_phi_parent.child(pos_child).list(id+L);
+		PosArray& layer (const VecDi& pos_child, const INT& id = 0)
+		{
+			return m_grid_phi.child(pos_child).list(id+L);
 		}
 
 		/**
-		 * @brief Get reference to a single layer of the narrow band.
+		 * Get reference to a single layer of the narrow band at a given
+		 * spatial partition (const version).
+		 *
+		 * @param pos_child
 		 * @param id
 		 * @return
 		 */
-		const typename PhiGrid::PosArray& layer (
+		const PosArray& layer (
 			const VecDi& pos_child, const INT& id = 0
 		) const
 		{
-			return m_grid_phi_parent.child(pos_child).list(id+L);
-		}
-
-
-		const LeafsContainer<PhiGrid> layer(const UINT& layerID) const
-		{
-			return m_grid_phi_parent.leafs(this->layerIdx(layerID));
+			return m_grid_phi.child(pos_child).list(id+L);
 		}
 
 		/**
-		 * @brief Append position to a layer of the narrow band.
+		 * Get a container providing an iterator to the grid positions in a
+		 * given layer of the narrow band.
+		 *
+		 * Spatial partitioning complicates matters, so a special data structure
+		 * is required for iterating over all the positions in a layer in
+		 * sequence.
+		 *
+		 * @param layerID
+		 * @return
+		 */
+		const LeafsContainer<PhiGrid> layer(const UINT& layerID) const
+		{
+			return m_grid_phi.leafs(this->layerIdx(layerID));
+		}
+
+		/**
+		 * Append position to a layer of the narrow band.
+		 *
 		 * @param id
 		 * @param pos
 		 */
@@ -384,13 +536,15 @@ namespace felt {
 			// Do nothing if position is outside narrow band.
 			if (!this->inside_band(layerID))
 				return;
-			m_grid_phi_parent.add(pos, this->layerIdx(layerID));
+			m_grid_phi.add(pos, this->layerIdx(layerID));
 		}
 
 		/**
-		 * @brief Append position to a layer of the narrow band.
+		 * Append position to a layer of the narrow band.
+		 *
 		 * Skip the lookup in the phi grid by assuming passed val is the phi
 		 * grid value of this point.
+		 *
 		 * @param pos
 		 * @param val
 		 */
@@ -400,17 +554,32 @@ namespace felt {
 			this->layer_add(pos, id);
 		}
 
-
+		/**
+		 * Remove a position from a given layer of the narrow band.
+		 *
+		 * Does not modify underlying grid value, just the layer list.
+		 *
+		 * @param pos
+		 * @param layerID
+		 */
 		void layer_remove(const VecDi& pos, const INT& layerID)
 		{
 			// Do nothing if position is outside narrow band.
 			if (!this->inside_band(layerID))
 				return;
 
-			m_grid_phi_parent.remove(pos, this->layerIdx(layerID));
+			m_grid_phi.remove(pos, this->layerIdx(layerID));
 		}
 
-
+		/**
+		 * Remove a point from one layer and move it into another.
+		 *
+		 * Simply adjusts the lists, does not modify the underlying grid values.
+		 *
+		 * @param pos
+		 * @param fromLayerID
+		 * @param toLayerID
+		 */
 		void layer_move(
 			const VecDi& pos, const INT& fromLayerID, const INT& toLayerID
 		) {
@@ -419,7 +588,7 @@ namespace felt {
 		}
 
 		/**
-		 * @brief Get narrow band layer id of location in phi grid.
+		 * Get narrow band layer id of location in phi grid.
 		 * @param pos
 		 * @return
 		 */
@@ -427,8 +596,9 @@ namespace felt {
 		{
 			return this->layerID(this->phi(pos));
 		}
+
 		/**
-		 * @brief Get narrow band layer id of value.
+		 * Get narrow band layer id of value.
 		 * @param val
 		 * @return
 		 */
@@ -441,8 +611,9 @@ namespace felt {
 		}
 
 		/**
-		 * @brief Get narrow band layer index of ID.
-		 * @param val
+		 * Get narrow band layer index of ID.
+		 *
+		 * @param id
 		 * @return
 		 */
 		UINT layerIdx(const INT& id) const
@@ -451,9 +622,10 @@ namespace felt {
 		}
 
 		/**
-		 * @brief Create a single singularity seed point in the phi grid.
+		 * Create a single singularity seed point in the phi grid.
 		 * NOTE: does not handle overwriting of points currently already on the
 		 * surface/in the volume.
+		 *
 		 * @param pos_centre
 		 */
 		void seed (const VecDi& pos_centre)
@@ -505,8 +677,9 @@ namespace felt {
 		}
 
 		/**
-		 * @brief Get neighbouring position in phi grid that is closest to
+		 * Get neighbouring position in phi grid that is closest to
 		 * zero-curve.
+		 *
 		 * @param pos
 		 * @param side
 		 * @return
@@ -520,7 +693,7 @@ namespace felt {
 			const PhiGrid& phi = this->phi();
 
 			// Get all neighbours of this point.
-			std::vector<VecDi> neighs;
+			PosArray neighs;
 			phi.neighs(pos, neighs);
 
 			VecDi pos_nearest = VecDi(pos);
@@ -559,8 +732,9 @@ namespace felt {
 		}
 
 		/**
-		 * @brief Get neighbouring position in phi grid that is closest to
+		 * Get neighbouring position in phi grid that is closest to the
 		 * zero-curve.
+		 *
 		 * @param pos
 		 * @return
 		 */
@@ -575,7 +749,7 @@ namespace felt {
 		}
 
 		/**
-		 * @brief Reset delta phi to zero and clear update lists.
+		 * Reset delta phi to zero and clear update lists.
 		 */
 		void update_start ()
 		{
@@ -587,7 +761,7 @@ namespace felt {
 
 
 		/**
-		 * @brief Apply delta phi to phi along the zero layer.
+		 * Apply delta phi to phi along the zero layer.
 		 */
 		void update_zero_layer ()
 		{
@@ -613,7 +787,7 @@ namespace felt {
 		}
 
 		/**
-		 * @brief Update zero layer then update distance transform for all
+		 * Update zero layer then update distance transform for all
 		 * points in all layers.
 		 */
 		void update_end ()
@@ -631,12 +805,11 @@ namespace felt {
 		}
 
 		/**
-		 * @brief Update zero layer then update distance transform for affected
+		 * Update zero layer then update distance transform for affected
 		 * points in each layer.
 		 */
 		void update_end_local ()
 		{
-			typedef typename PhiGrid::PosArray PosArray;
 			// Get points in outer layers that are affected by changes in
 			// zero-layer.
 			PosArray aAffected[2*L+1];
@@ -661,7 +834,8 @@ namespace felt {
 		}
 
 		/**
-		 * @brief Update distance transform for all points in given layer
+		 * Update distance transform for all points in given layer.
+		 *
 		 * @param layerID
 		 * @param side
 		 */
@@ -670,25 +844,25 @@ namespace felt {
 			const UINT& layerIdx = this->layerIdx(layerID);
 			for (
 				const VecDi& pos_child
-				: m_grid_phi_parent.branch().list(layerIdx)
+				: m_grid_phi.branch().list(layerIdx)
 			) {
 				this->update_distance(
 					layerID, side,
-					m_grid_phi_parent.child(pos_child).list(layerIdx)
+					m_grid_phi.child(pos_child).list(layerIdx)
 				);
 			}
 		}
 
 		/**
-		 * @brief Update distance transform for points in layer layerID given
+		 * Update distance transform for points in layer layerID given
 		 * in alayer.
+		 *
 		 * @param layerID
 		 * @param side
 		 * @param alayer
 		 */
 		void update_distance(
-			const INT& layerID, const INT& side,
-			typename PhiGrid::PosArray& alayer
+			const INT& layerID, const INT& side, PosArray& alayer
 		) {
 			DeltaPhiGrid& dphi = this->dphi();
 			const UINT& size = alayer.size();
@@ -731,7 +905,8 @@ namespace felt {
 
 
 		/**
-		 * @brief Calculate city-block distance from position to zero curve.
+		 * Calculate city-block distance from position to zero curve.
+		 *
 		 * @param pos
 		 * @param side
 		 * @return
@@ -751,29 +926,31 @@ namespace felt {
 
 
 		/**
-		 * @brief Find all outer layer points who's distance transform is
+		 * Find all outer layer points who's distance transform is
 		 * affected by modified zero-layer points.
-		 * TODO: several options for opmisation of removing duplicates:
+		 *
+		 * TODO: several options for optimisation of removing duplicates:
 		 * - Use a boolean flag grid to construct a de-duped vector (used
 		 * here).
 		 * - Check std::vector in Grid::neighs() using std::find to prevent
 		 * adding a duplicate in the first place.
 		 * - Use std::vector sort, unique, erase.
 		 * - Use a std::unordered_set with a suitable hashing function.
+		 *
 		 * @param apos
 		 */
-		void affected(typename PhiGrid::PosArray* apos)
+		void affected(PosArray* apos)
 		{
 			// Reference to phi grid.
 			const PhiGrid& phi = this->phi();
 			const DeltaPhiGrid& dphi = this->dphi();
 
 			// Vector of all neighbours of all modified phi points.
-			std::vector<VecDi> aneighs;
+			PosArray aneighs;
 
 			typedef typename DeltaPhiGrid::BranchGrid DeltaPhiBranch;
 			typedef typename DeltaPhiGrid::ChildGrid DeltaPhiChild;
-			typedef typename DeltaPhiGrid::PosArray PosArray;
+
 			// Loop through dphi lists, copying to neighbour list.
 			const DeltaPhiBranch& branch = dphi.branch();
 			const UINT& layerIdx = this->layerIdx(0);
