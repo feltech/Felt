@@ -698,14 +698,11 @@ namespace felt
 		friend class LeafsContainer<ThisType>;
 	public:
 		typedef typename Base::ChildGrid				ChildGrid;
-	protected:
 		typedef typename ChildGrid::VecDu				VecDu;
 		typedef typename ChildGrid::VecDi				VecDi;
-	public:
 		typedef typename Base::BranchGrid				BranchGrid;
 		typedef typename ChildGrid::PosArray			PosArray;
 
-	public:
 
 		SharedTrackedPartitionedGrid () : Base()
 		{}

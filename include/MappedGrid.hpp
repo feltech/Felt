@@ -106,9 +106,7 @@ namespace felt
 		typedef typename Base::VecDu			VecDu;
 		typedef typename Base::VecDi			VecDi;
 	public:
-		typedef std::vector<
-			VecDi, Eigen::aligned_allocator<VecDi>
-		> PosArray;
+		typedef typename Base::PosArray			PosArray;
 	protected:
 		std::array<PosArray, N>	m_aPos;
 	public:
