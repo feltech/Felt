@@ -27,9 +27,8 @@ dnl Check if Libtool is present
 dnl Libtool is used for building share libraries 
 AC_PROG_LIBTOOL
 
-AC_CONFIG_FILES(Makefile
-                exampleProgram/Makefile
-                tests/Makefile
-                libFelt/Makefile
-                include/Makefile)
+AC_CONFIG_FILES(
+	Makefile tests/Makefile libFelt/Makefile include/Makefile python/Makefile
+)
+#AC_CONFIG_FILES(libFelt/Makefile)                
 AC_OUTPUT

@@ -16,9 +16,35 @@ extensions = [
 		],
 		language="c++"
 	),
+	Extension(
+		"lib.PyRktSFMLInterface", 
+		sources=[
+			"lib/PyRktSFMLInterface.pyx"
+		],
+		include_dirs=[
+			os.path.join(project_dir, "include"),
+			os.path.join(project_dir, "libFelt")
+		],
+		library_dirs=[
+			os.path.join(project_dir, "lib/rocket/lib"),
+			os.path.join(project_dir, "libFelt/.libs")
+		],
+		libraries=[
+			"Felt", "RocketCore", "RocketControls", 
+			"RocketDebugger", "sfml-window", 
+			"sfml-system", "sfml-graphics"
+		],
+		language="c++",
+		extra_compile_args=["-g"],
+		extra_link_args=["-g"]
+	),			
 ]
+
 
 setup(
 	name="felt",
-	ext_modules=cythonize(extensions)
+	ext_modules=cythonize(
+		extensions, gdb_debug=True, 
+		output_dir=os.path.join(project_dir, "python/felt/lib")
+	)
 )

@@ -1,3 +1,3 @@
 
-SUBDIRS=libFelt include exampleProgram tests
+SUBDIRS=libFelt include tests python
 
