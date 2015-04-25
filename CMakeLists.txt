@@ -16,7 +16,7 @@ set(
 )
 set(
     CYTHON_INCLUDE "/usr/local/lib/python2.7/dist-packages/Cython/Includes" 
-    CACHE FILEPATH "Python 2.7 include directory"
+    CACHE FILEPATH "Cython include directory"
 )
 
 include_directories(
