@@ -19,6 +19,12 @@ set(
     CACHE FILEPATH "Cython include directory"
 )
 
+# Add python nature to generated eclipse project.
+set_property(
+    GLOBAL APPEND PROPERTY 
+    ECLIPSE_EXTRA_NATURES "org.python.pydev.pythonNature"
+)
+
 include_directories(
     ${PROJECT_ROOT}/include ${PROJECT_ROOT}/vendor/include ${PYTHON_2_7_INCLUDE}
 )
@@ -71,6 +77,4 @@ add_custom_target(cyfelt DEPENDS ${PROJECT_ROOT}/scripts/pyfelt.c)
 # pyfelt executable.
 add_executable(pyfelt ${PROJECT_ROOT}/scripts/pyfelt.c)
 add_dependencies(pyfelt cyfelt)
-
-
 target_link_libraries(pyfelt python2.7)
