@@ -4,8 +4,8 @@
 
 #define _TESTING
 
-#include "Felt.hpp"
-#include "Grid.hpp"
+#include "Felt/Felt.hpp"
+#include "Felt/Grid.hpp"
 
 using namespace felt;
 

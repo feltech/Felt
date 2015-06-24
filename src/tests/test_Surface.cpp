@@ -4,8 +4,8 @@
 
 #define _TESTING
 
-#include "Felt.hpp"
-#include "Surface.hpp"
+#include "Felt/Felt.hpp"
+#include "Felt/Surface.hpp"
 
 using namespace felt;
 
@@ -508,7 +508,7 @@ BOOST_AUTO_TEST_CASE(layer_update)
 /*
  * Iterating the zero-layer
  */
-BOOST_AUTO_TEST_CASE(iterate_zero_layer)
+BOOST_AUTO_TEST_CASE(iterate_layers)
 {
 	Surface<3> surface(Vec3u(9, 9, 9));
 
@@ -536,15 +536,10 @@ BOOST_AUTO_TEST_CASE(iterate_zero_layer)
 	const UINT& zeroLayerIdx = surface.layerIdx(0);
 
 	#pragma omp parallel for
-	for (
-		UINT i = 0; i < surface.phi().branch().list(zeroLayerIdx).size();
-		i++
-	) {
-		const Vec3i& pos_child = surface.phi().branch().list(zeroLayerIdx)[i];
-		for (
-			const Vec3i& pos
-			: surface.phi().child(pos_child).list(zeroLayerIdx)
-		) {
+	for (Vec3i& part : surface.parts(0))
+	{
+		for (const Vec3i& pos : surface.layer(part, 0))
+		{
 			FLOAT val = surface(pos);
 			#pragma omp critical
 			{
@@ -555,6 +550,28 @@ BOOST_AUTO_TEST_CASE(iterate_zero_layer)
 		}
 	};
 	BOOST_CHECK_EQUAL(counter, 6);
+	BOOST_CHECK_EQUAL(pos_sum, Vec3i(0, 0, 0));
+
+
+	counter = 0;
+	pos_sum = Vec3i(0, 0, 0);
+
+	for (
+		INT layerID = surface.LAYER_MIN; layerID <= surface.LAYER_MAX; layerID++
+	)
+		for (Vec3i& part : surface.parts(layerID))
+			for (const Vec3i& pos : surface.layer(part, layerID))
+			{
+				FLOAT val = surface(pos);
+				#pragma omp critical
+				{
+					BOOST_CHECK_EQUAL(val, layerID);
+					counter++;
+					pos_sum += pos;
+				}
+			}
+
+	BOOST_CHECK_EQUAL(counter, 63);
 	BOOST_CHECK_EQUAL(pos_sum, Vec3i(0, 0, 0));
 
 	// Iterate over zero-layer using STL for_each and lambda callback function.
@@ -728,15 +745,23 @@ BOOST_AUTO_TEST_CASE(affected_outer_layers)
 			const INT layerIdx = 2 + layerID;
 //			std::cerr << "Affected points: layer " << layerID << std::endl;
 			BOOST_CHECK_EQUAL(
-				aAffected[layerIdx].size(), aposCheck[layerIdx].size()
+				(UINT)aAffected[layerIdx].size(),
+				(UINT)aposCheck[layerIdx].size()
 			);
 
-			for (auto pos : aAffected[layerIdx])
+
+			for (auto pos : aposCheck[layerIdx])
 			{
 				auto iter = std::find(
-					aposCheck[layerIdx].begin(), aposCheck[layerIdx].end(), pos
+					aAffected[layerIdx].begin(), aAffected[layerIdx].end(), pos
 				);
-				BOOST_CHECK(iter != aposCheck[layerIdx].end());
+
+				BOOST_CHECK_MESSAGE(
+					iter != aAffected[layerIdx].end(),
+					"Layer " + std::to_string(layerID) + " expected ("
+					+ std::to_string(pos(0)) + "," + std::to_string(pos(1))
+					+ ")"
+				);
 			}
 		}
 	}
