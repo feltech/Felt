@@ -77,7 +77,7 @@ namespace felt {
 		 */
 		typedef PartitionedArray<StatusChange, D>	StatusChangeGrid;
 
-		typedef LookupPartitionedGrid<D, 1>			AffectedLookupGrid;
+		typedef LookupPartitionedGrid<D, 2*L+1>		AffectedLookupGrid;
 
 
 	protected:
@@ -312,6 +312,11 @@ namespace felt {
 		bool inside_band (const ValType& val)
 		{
 			return (UINT)std::abs(val) <= L;
+		}
+
+		const AffectedLookupGrid& affected ()
+		{
+			return m_grid_affected;
 		}
 
 		/**
@@ -774,10 +779,12 @@ namespace felt {
 		void update_start ()
 		{
 			for (UINT layerIdx = 0; layerIdx < 2*L+1; layerIdx++)
+			{
 				this->dphi().reset(0, layerIdx);
+				m_grid_affected.reset(layerIdx);
+			}
 
 			m_grid_status_change.reset();
-			m_grid_affected.reset();
 		}
 
 
@@ -833,8 +840,7 @@ namespace felt {
 		{
 			// Get points in outer layers that are affected by changes in
 			// zero-layer.
-			PosArray aAffected[2*L+1];
-			this->affected(aAffected);
+			this->calc_affected();
 
 			// Update the zero layer, applying delta to phi.
 			this->update_zero_layer();
@@ -842,14 +848,19 @@ namespace felt {
 			// Update distance transform for inner layers of the narrow band.
 			for (INT layerID = -1; layerID >= -(INT)L; layerID--)
 			{
-				PosArray& apos = aAffected[this->layerIdx(layerID)];
-				this->update_distance(layerID, -1, apos);
+				const UINT& layerIdx = this->layerIdx(layerID);
+				this->update_distance(
+					layerID, -1, m_grid_affected.leafs(layerIdx)
+				);
 			}
+
 			// Update distance transform for outer layers of the narrow band.
 			for (INT layerID = 1; layerID <= (INT)L; layerID++)
 			{
-				PosArray& apos = aAffected[this->layerIdx(layerID)];
-				this->update_distance(layerID, 1, apos);
+				const UINT& layerIdx = this->layerIdx(layerID);
+				this->update_distance(
+					layerID, 1, m_grid_affected.leafs(layerIdx)
+				);
 			}
 			this->status_change();
 		}
@@ -875,29 +886,24 @@ namespace felt {
 		}
 
 		/**
-		 * Update distance transform for points in layer layerID given
-		 * in alayer.
+		 * Update distance transform for affected points in given layer.
 		 *
 		 * @param layerID
 		 * @param side
 		 * @param alayer
 		 */
+		template <typename ListType>
 		void update_distance(
-			const INT& layerID, const INT& side, PosArray& alayer
+			const INT& layerID, const INT& side, const ListType& list
 		) {
-			DeltaPhiGrid& dphi = this->dphi();
-			const UINT& size = alayer.size();
-
 			// Calculate distance of every point in this layer to the zero
 			// layer, and store in delta phi grid.
 			// Delta phi grid is used to allow for asynchronous updates, that
 			// is, to prevent neighbouring points affecting the distance
 			// transform.
 //#pragma omp parallel for
-			for (UINT pos_idx = 0; pos_idx < alayer.size(); pos_idx++)
+			for (const VecDi& pos : list)
 			{
-				// Current position along this layer.
-				const VecDi& pos = alayer[pos_idx];
 				// Distance from this position to zero layer.
 				const FLOAT dist = this->distance(pos, side);
 				// Update delta phi grid.
@@ -906,17 +912,14 @@ namespace felt {
 
 			// Update distance in phi from delta phi and append any points that
 			// move out of their layer to a status change list.
-
 // TODO: cannot parallelise, since phi() can create new layer items for outer
 // layers.
 // Should split outer layer expansion to separate process.
 //#pragma omp parallel for
-			for (UINT pos_idx = 0; pos_idx < alayer.size(); pos_idx++)
+			for (const VecDi& pos : list)
 			{
-				// Current position along this layer.
-				const VecDi& pos = alayer[pos_idx];
 				// Distance calculated above.
-				const FLOAT& dist = dphi(pos);
+				const FLOAT& dist = this->dphi(pos);
 				// Update phi grid. Note that '=' is used here, rather than
 				// '+=' as with the zero layer.
 				this->phi(pos, dist, layerID);
@@ -960,110 +963,166 @@ namespace felt {
 		 *
 		 * @param apos
 		 */
-		void affected(PosArray* apos)
+		void calc_affected()
 		{
-			// Reference to phi grid.
-			typedef typename DeltaPhiGrid::BranchGrid DeltaPhiBranch;
-			typedef typename DeltaPhiGrid::ChildGrid DeltaPhiChild;
 			typedef typename AffectedLookupGrid::PosArray PosArray;
+			const UINT& layerIdxZero = this->layerIdx(0);
 
-			// Add modified zero-layer points to tracking list.
-			const UINT& layerIdx = this->layerIdx(0);
-			for (const VecDi& pos_child : this->dphi().branch().list(layerIdx))
+			// Loop over delta phi modified zero-layer points adding to
+			// tracking grid.
+
+			// Loop spatial partitions of dphi for zero-layer.
+			for (
+				const VecDi& pos_child
+				: this->dphi().branch().list(layerIdxZero))
 			{
-				const PosArray& aposdphi = (
-					this->dphi().child(pos_child).list(layerIdx)
-				);
-				for (const VecDi& pos_leaf : aposdphi)
-					m_grid_affected.add(pos_leaf);
+				// Loop leaf grid nodes with spatial partition
+				for (
+					const VecDi& pos_leaf
+					: this->dphi().child(pos_child).list(layerIdxZero)
+				)
+					// Add zero-layer point to tracking grid.
+					m_grid_affected.add(pos_leaf, layerIdxZero);
 			}
 
-			std::vector<UINT> aidx_first_neigh;
-			std::vector<UINT> aidx_last_neigh;
+			// Arrays to store first and last element in tracking list within
+			// each spatial partition of tracking grid.
+			std::array<std::vector<UINT>, 2*L+1> aidx_first_neigh;
+			std::array<std::vector<UINT>, 2*L+1> aidx_last_neigh;
 
-			aidx_first_neigh.resize(m_grid_affected.branch().list().size());
-			aidx_last_neigh.resize(m_grid_affected.branch().list().size());
-
+			// Loop round L times, searching outward for affected outer layer
+			// grid nodes.
 			for (UINT udist = 1; udist <= L; udist++)
 			{
-				const UINT size_prev = aidx_first_neigh.size();
-				const UINT size_now = m_grid_affected.branch().list().size();
+				// Reset the first and last element indices for each
+				// spatial partition in each layer.
 
-				aidx_first_neigh.resize(size_now);
-				aidx_last_neigh.resize(size_now);
-
-				for (
-					UINT idx_child = size_prev; idx_child < size_now;
-					idx_child++
-				)
-					aidx_first_neigh[idx_child] = 0;
-
-				for (UINT idx_child = 0; idx_child < size_now; idx_child++)
+				for (INT layerID = LAYER_MIN; layerID <= LAYER_MAX; layerID++)
 				{
-					const PosArray& apos_child = m_grid_affected.branch().list();
-					const VecDi& pos_child = apos_child[idx_child];
-					aidx_last_neigh[idx_child] = (
-						m_grid_affected.child(pos_child).list().size()
+					const UINT& layerIdx = this->layerIdx(layerID);
+					// Get number of spatial partitions for this layer.
+					const UINT num_childs = (
+						m_grid_affected.branch().list(layerIdx).size()
 					);
-				}
-
-				for (UINT idx_child = 0; idx_child < size_now; idx_child++)
-				{
-					// Not by reference since tracking list can be resized.
-					const VecDi pos_child = (
-						m_grid_affected.branch().list()[idx_child]
-					);
-
+					// Resize spatial partition index lists for this layer to
+					// to include any newly added partitions.
+					aidx_last_neigh[layerIdx].resize(num_childs);
+					// Will initialise to zero, so no further work needed for
+					// these new indices giving the start of the range.
+					aidx_first_neigh[layerIdx].resize(num_childs);
+					// The final index needs to be copied from the current size
+					// of each spatial partition, so loop over partitions,
+					// copying their size into the respective last index list.
 					for (
-						UINT idx_neigh = aidx_first_neigh[idx_child];
-						idx_neigh < aidx_last_neigh[idx_child]; idx_neigh++
+						UINT idx_child = 0; idx_child < num_childs; idx_child++
 					) {
-						const PosArray& apos_neigh = (
-							m_grid_affected.child(pos_child).list()
+						// Get position of this spatial partition in parent
+						// lookup grid.
+						const VecDi& pos_child = (
+							m_grid_affected.branch().list(layerIdx)[idx_child]
 						);
-						const VecDi& pos_neigh = apos_neigh[idx_neigh];
-
-						this->phi().neighs(pos_neigh, &m_grid_affected);
+						// Copy number of active grid nodes for this partition
+						// into relevant index in the list.
+						aidx_last_neigh[layerIdx][idx_child] = (
+							m_grid_affected.child(pos_child)
+								.list(layerIdx).size()
+						);
 					}
 				}
-				for (UINT idx = 0; idx < size_now; idx++)
-					aidx_first_neigh[idx] = aidx_last_neigh[idx];
-			}
 
+				// Loop each layer finding the affected outer layer points
+				// for each partition using the start and end points cached
+				// above.
 
-//			// Cycle through neighbours out to a distance of L.
-//			UINT idx_first_neigh = 0;
-//			UINT idx_last_neigh = 0;
-//			for (UINT udist = 1; udist <= L; udist++)
-//			{
-//				idx_last_neigh = aneighs.size();
-//				// Cycle current subset of neighbours.
-//				for (
-//					UINT idx_neigh = idx_first_neigh;
-//					idx_neigh < idx_last_neigh; idx_neigh++
-//				) {
-//					// NOTE: cannot get pos by reference, must make a copy,
-//					// because phi.neighs() can cause a reallocation, making
-//					// the reference invalid.
-//					const VecDi pos_neigh = aneighs[idx_neigh];
-//					// Append new neighbours to neighbour vector.
-//					phi.neighs(pos_neigh, aneighs, m_grid_flag);
-//				}
-//				idx_first_neigh = idx_last_neigh;
-//			}
-
-			// Cycle de-duped set of neighbours.
-			for (VecDi pos_neigh : m_grid_affected.leafs())
-			{
-				const INT layer_neigh = this->layerID(pos_neigh);
-				// Ensure this point lies in an outer layer.
-				if (this->inside_band(layer_neigh))
+				for (INT layerID = LAYER_MIN; layerID <= LAYER_MAX; layerID++)
 				{
-					// Append the point index to the output list at the
-					// appropriate layer index.
-					apos[L + layer_neigh].push_back(pos_neigh);
+					const UINT& layerIdx = this->layerIdx(layerID);
+
+					// Loop over spatial partitions, ignoring newly added ones
+					// since we're using the cached spatial partition list as
+					// the end of the range.
+					for (
+						UINT idx_child = 0;
+						idx_child < aidx_first_neigh[layerIdx].size();
+						idx_child++
+					) {
+						// Get position of this spatial partition in this
+						// layer.
+						const VecDi& pos_child = (
+							m_grid_affected.branch().list(layerIdx)[idx_child]
+						);
+
+						// Loop over leaf grid nodes within this spatial
+						// partition, using the cached start and end indices,
+						// so that newly added points are skipped.
+						for (
+							UINT idx_neigh = (
+								aidx_first_neigh[layerIdx][idx_child]
+							);
+							idx_neigh < aidx_last_neigh[layerIdx][idx_child];
+							idx_neigh++
+						) {
+							// Get list of active leaf grid nodes in this
+							// spatial partition.
+							const PosArray& apos_neigh = (
+								m_grid_affected.child(pos_child).list(layerIdx)
+							);
+							// This leaf grid nodes is the centre to search
+							// about.
+							const VecDi& pos_centre = apos_neigh[idx_neigh];
+
+							// Use utility method from Grid to get neighbouring
+							// grid nodes and call a lambda to add the point
+							// to the appropriate tracking list.
+
+							this->phi().neighs(
+								pos_centre,
+								[this](const VecDi& pos_neigh) {
+									// Calculate layer of this neighbouring
+									// point from the phi grid.
+									const INT& layerID = (
+										this->layerID(pos_neigh)
+									);
+									// If the calculated layer lies within the
+									// narrow band, then we want to track it.
+									if (this->inside_band(layerID))
+									{
+										// Add the neighbour point to the
+										// tracking grid. Will reject
+										// duplicates.
+										this->m_grid_affected.add(
+											pos_neigh, this->layerIdx(layerID)
+										);
+									}
+
+								}
+							); // End neighbourhood query.
+						} // End for leaf grid node.
+					} // End for spatial partition.
+				} // End for layer.
+
+				// Now we've found the neighbours of the pre-existing grid
+				// points in the tracking list, we want to skip these on the
+				// next loop, so set the start index for each partition of
+				// each layer to the previous end index.
+
+				for (INT layerID = LAYER_MIN; layerID <= LAYER_MAX; layerID++)
+				{
+					const UINT& layerIdx = this->layerIdx(layerID);
+					// Loop over spatial partitions.
+					for (
+						UINT idx = 0; idx < aidx_first_neigh[layerIdx].size();
+						idx++
+					)
+						// Set first index in spatial partition's tracking list
+						// to be the previous last index, so we start there on
+						// next loop around.
+						aidx_first_neigh[layerIdx][idx] = (
+							aidx_last_neigh[layerIdx][idx]
+						);
 				}
 			}
+
 		}
 
 #ifndef _TESTING

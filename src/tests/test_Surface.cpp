@@ -696,8 +696,7 @@ BOOST_AUTO_TEST_CASE(affected_outer_layers)
 		surface.dphi(Vec2i(1, 0), 0.3f);
 
 		typedef typename Surface<2, 2>::PhiGrid::PosArray PosArray;
-		PosArray aAffected[5];
-		surface.affected(aAffected);
+		surface.calc_affected();
 
 //		3.0,	3.0,	3.0,	 2.0,	3.0,	3.0,	3.0,
 //		3.0,	3.0,	2.0,	 1.0,	2.0,	3.0,	3.0,
@@ -745,7 +744,7 @@ BOOST_AUTO_TEST_CASE(affected_outer_layers)
 			const INT layerIdx = 2 + layerID;
 //			std::cerr << "Affected points: layer " << layerID << std::endl;
 			BOOST_CHECK_EQUAL(
-				(UINT)aAffected[layerIdx].size(),
+				(UINT)surface.affected().leafs(layerIdx).size(),
 				(UINT)aposCheck[layerIdx].size()
 			);
 
@@ -753,11 +752,12 @@ BOOST_AUTO_TEST_CASE(affected_outer_layers)
 			for (auto pos : aposCheck[layerIdx])
 			{
 				auto iter = std::find(
-					aAffected[layerIdx].begin(), aAffected[layerIdx].end(), pos
+					surface.affected().leafs(layerIdx).begin(),
+					surface.affected().leafs(layerIdx).end(), pos
 				);
 
 				BOOST_CHECK_MESSAGE(
-					iter != aAffected[layerIdx].end(),
+					iter != surface.affected().leafs(layerIdx).end(),
 					"Layer " + std::to_string(layerID) + " expected ("
 					+ std::to_string(pos(0)) + "," + std::to_string(pos(1))
 					+ ")"

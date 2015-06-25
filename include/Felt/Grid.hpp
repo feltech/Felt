@@ -559,9 +559,9 @@ namespace felt
 		 * @param apos_out
 		 * @param grid_check
 		 */
-		template <UINT N>
-		void neighs (const VecDi& pos, LookupGrid<D, N>* pgrid_tracking) const
-		{
+		void neighs (
+			const VecDi& pos, const std::function<void(const VecDi&)>& fn
+		) const {
 			// Position for look-around.
 			VecDi vec_dir(pos);
 			for (INT axis = 0; axis < this->dims().size(); axis++)
@@ -569,13 +569,13 @@ namespace felt
 				// Check if backward value is within GridBase.
 				vec_dir(axis) -= 1;
 				if (this->inside(vec_dir))
-					pgrid_tracking->add(vec_dir);
+					fn(vec_dir);
 
 				// Check if forward value is within GridBase.
 				vec_dir(axis) += 2;
 
 				if (this->inside(vec_dir))
-					pgrid_tracking->add(vec_dir);
+					fn(vec_dir);
 
 				vec_dir(axis) -= 1;
 			}
