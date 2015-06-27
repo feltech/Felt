@@ -10,3 +10,4 @@
 /.settings/
 **/__pycache__/
 **/.fuse_hidden*
+/CMakeLists.txt~

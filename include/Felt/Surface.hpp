@@ -64,20 +64,22 @@ namespace felt {
 		struct StatusChange
 		{
 			StatusChange(
-				const VecDi& pos_, const INT& from_layer_, const INT& to_layer_
-			) : pos(pos_), from_layer(from_layer_), to_layer(to_layer_){}
+				const VecDi& pos_, const INT& from_layer_
+			) : pos(pos_), from_layer(from_layer_) {}
 
 			VecDi pos;
 			INT from_layer;
-			INT to_layer;
 		};
 
 		/**
 		 * A spatially partitioned array of StatusChange objects.
+		 *
+		 * There is one extra 'layer' for status change lists, one either side
+		 * of the narrow band, for those points that are going out of scope.
 		 */
-		typedef PartitionedArray<StatusChange, D>	StatusChangeGrid;
+		typedef PartitionedArray<StatusChange, D, 3*L+1>	StatusChangeGrid;
 
-		typedef LookupPartitionedGrid<D, 2*L+1>		AffectedLookupGrid;
+		typedef LookupPartitionedGrid<D, 2*L+1>				AffectedLookupGrid;
 
 
 	protected:
@@ -391,7 +393,7 @@ namespace felt {
 			const VecDi& pos, const INT& fromLayerID, const INT& toLayerID
 		) {
 			m_grid_status_change.add(
-				pos, StatusChange(pos, fromLayerID, toLayerID)
+				pos, StatusChange(pos, fromLayerID), toLayerID + (L + 1)
 			);
 		}
 
@@ -401,16 +403,21 @@ namespace felt {
 		 */
 		void status_change ()
 		{
-			for (
-				const VecDi& pos_child : m_grid_status_change.branch().list()
-			) {
+			for (UINT layerIdx = 0; layerIdx < 3*L+1; layerIdx++)
+			{
+				const INT& layerID = layerIdx - (L + 1);
 				for (
-					const StatusChange& change
-					: m_grid_status_change.child(pos_child)
+					const VecDi& pos_child
+					: m_grid_status_change.branch().list(layerIdx)
 				) {
-					this->layer_move(
-						change.pos, change.from_layer, change.to_layer
-					);
+					for (
+						const StatusChange& change
+						: m_grid_status_change.child(pos_child)[layerIdx]
+					) {
+						this->layer_move(
+							change.pos, change.from_layer, layerID
+						);
+					}
 				}
 			}
 		}
@@ -784,7 +791,8 @@ namespace felt {
 				m_grid_affected.reset(layerIdx);
 			}
 
-			m_grid_status_change.reset();
+			for (UINT layerIdx = 0; layerIdx < 3*L+1; layerIdx++)
+				m_grid_status_change.reset(layerIdx);
 		}
 
 

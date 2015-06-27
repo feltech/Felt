@@ -13,8 +13,6 @@ namespace felt
 	 * Base class for spatially partitioned structures.
 	 *
 	 * @tparam D number of dimensions of space.
-	 * @tparam P size of a partition (where PxPxP would be the size of a 3D
-	 * partition).
 	 * @tparam G type of object to store in a partition.
 	 * @tparam N number of tracking lists to use (see TrackedGrid).
 	 */
@@ -56,6 +54,17 @@ namespace felt
 		}
 
 
+		/**
+		 * Initialisation method to be called by non-trivial constructor or
+		 * subclasses.
+		 *
+		 * Similar to a Grid::init(), with the addition of setting the size of
+		 * spatial partitions.
+		 *
+		 * @param dims
+		 * @param offset
+		 * @param dims_partition
+		 */
 		void init (
 			const VecDu& dims, const VecDi& offset,
 			const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION)
@@ -65,40 +74,77 @@ namespace felt
 			this->offset(offset);
 		}
 
+		/**
+		 * Initialise size of spatial partitions.
+		 *
+		 * @param dims_partition
+		 */
 		void init (const VecDu& dims_partition)
 		{
 			m_udims_child = dims_partition;
 			m_idims_child = dims_partition.template cast<INT>();
 		}
 
+		/**
+		 * Get TrackedGrid branch grid - the spatial partition grid that stores
+		 * the child objects.
+		 * @see PartitionedGrid
+		 * @see PartitionedArray
+		 *
+		 * @return
+		 */
 		BranchGrid& branch ()
 		{
 			return m_grid_branch;
 		}
 
-
+		/**
+		 * Get TrackedGrid branch grid - the spatial partition grid that stores
+		 * the child objects.
+		 * @see PartitionedGrid
+		 * @see PartitionedArray
+		 *
+		 * @return
+		 */
 		const BranchGrid& branch () const
 		{
 			return m_grid_branch;
 		}
 		
 
+		/**
+		 * Get the child object at given position.
+		 *
+		 * Shorthand for branch().get(pos) or branch()(pos).
+		 *
+		 * @param pos
+		 * @return
+		 */
 		Child& child (const VecDi& pos)
 		{
 			return m_grid_branch(pos);
 		}
 
-
+		/**
+		 * Get the child object at given position.
+		 *
+		 * Shorthand for branch().get(pos) or branch()(pos).
+		 *
+		 * @param pos
+		 * @return
+		 */
 		const Child& child (const VecDi& pos) const
 		{
 			return m_grid_branch(pos);
 		}
 
-
 		/**
-		 * Reshape grid.
+		 * Reshape grid, computing the size of the branch grid.
 		 *
-		 * @param vec_NewDims
+		 * The branch grid will be increased in size by one, if required, to
+		 * ensure dims_grid leaf nodes are completely contained.
+		 *
+		 * @param dims_grid
 		 * @return
 		 */
 		virtual void dims (const VecDu& dims_grid)
@@ -118,6 +164,12 @@ namespace felt
 		}
 
 
+		/**
+		 * Calculate the offset of the branch grid from the given dims and the
+		 * size of a spatial partition (the child size).
+		 *
+		 * @param offset_grid
+		 */
 		virtual void offset (const VecDi& offset_grid)
 		{
 			const VecDi& offset_parent = (
@@ -127,62 +179,56 @@ namespace felt
 			m_grid_branch.offset(offset_parent);
 		}
 
-
+		/**
+		 * Remove a child at given position and tracking list index from
+		 * branch grid's tracking subgrid.
+		 *
+		 * @param pos
+		 * @param arr_idx
+		 * @return
+		 */
 		bool add_child(const VecDi& pos, const UINT& arr_idx = 0)
 		{
 			return this->branch().add(pos, arr_idx);
 		}
 
-
+		/**
+		 * Remove a child at given position and tracking list index from
+		 * branch grid's tracking subgrid.
+		 *
+		 * @param pos
+		 * @param arr_idx
+		 * @return
+		 */
 		void remove_child(const VecDi& pos, const UINT& arr_idx = 0)
 		{
 			this->branch().remove(pos, arr_idx);
 		}
 
-
+		/**
+		 * Reset the tracking list at given index in the branch grid.
+		 *
+		 * @param arr_idx
+		 */
 		void reset(const UINT& arr_idx = 0)
 		{
 			this->branch().reset(arr_idx);
 		}
 	};
 
-
-	/**
-	 * Spatially partitioned expandable list.
-	 *
-	 * A specialised partitioned grid, where the child grids are simply
-	 * expandable lists.
-	 *
-	 * @tparam T the type to store in elements of the list
-	 * @tparam D the dimension of the 'imaginary' grid.
-	 */
-	template <typename T, UINT D>
-	class PartitionedArray : public PartitionBase<
-		D, std::vector<T, Eigen::aligned_allocator<T> >, 1
-	>
+	template <typename T, UINT D, UINT N, typename A>
+	class PartitionedArrayBase : public PartitionBase<D, A, N>
 	{
 	protected:
-		typedef PartitionBase<
-			D, std::vector<T, Eigen::aligned_allocator<T> >, 1
-		> Base;
-
+		typedef PartitionBase<D, A, N> Base;
 		typedef typename Base::VecDu	VecDu;
 		typedef typename Base::VecDi	VecDi;
 
 		VecDi	m_offset;
 
 	public:
-		PartitionedArray () : Base()
+		PartitionedArrayBase () : Base()
 		{}
-
-
-		PartitionedArray (
-			const VecDu& dims, const VecDi& offset,
-			const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION)
-		) : Base()
-		{
-			this->init(dims, offset, dims_partition);
-		}
 
 		/**
 		 * Set offset of 'imaginary' grid containing the list.
@@ -193,6 +239,11 @@ namespace felt
 		{
 			m_offset = offset_grid;
 			Base::offset(offset_grid);
+		}
+
+		void dims (const VecDu& dims_grid)
+		{
+			Base::dims(dims_grid);
 		}
 
 		/**
@@ -207,6 +258,104 @@ namespace felt
 				(pos_leaf - m_offset).array() / this->m_idims_child.array()
 			).matrix() + this->branch().offset();
 		}
+	};
+
+	/**
+	 * Spatially partitioned expandable lists.
+	 *
+	 * A specialised partitioned grid, where the child grids are simply
+	 * expandable lists.
+	 *
+	 * @tparam T the type to store in elements of the list
+	 * @tparam D the dimension of the 'imaginary' grid.
+	 * @tparam N the dimension of the array(s).
+	 */
+	template <typename T, UINT D, UINT N=0>
+	class PartitionedArray : public PartitionedArrayBase<
+		T, D, N, std::array<std::vector<T, Eigen::aligned_allocator<T> >, N>
+	>
+	{
+		static_assert(N > 0, "Number of arrays N must be greater than 0.");
+	protected:
+		typedef PartitionedArrayBase<
+			T, D, N, std::array<std::vector<T, Eigen::aligned_allocator<T> >, N>
+		> Base;
+
+		typedef typename Base::VecDu	VecDu;
+		typedef typename Base::VecDi	VecDi;
+
+	public:
+		PartitionedArray () : Base()
+		{}
+
+
+		PartitionedArray (
+			const VecDu& dims, const VecDi& offset,
+			const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION)
+		) : Base()
+		{
+			this->init(dims, offset, dims_partition);
+		}
+
+
+		/**
+		 * Add val to list, placing in partition found from pos.
+		 *
+		 * @param pos position in 'imaginary' grid.
+		 * @param val value to insert in list.
+		 */
+		void add(const VecDi& pos, const T& val, const UINT& arr_idx = 0)
+		{
+			const VecDi& pos_child = this->pos_child(pos);
+			this->child(pos_child)[arr_idx].push_back(val);
+			Base::add_child(pos_child, arr_idx);
+		}
+
+		/**
+		 * Loop all spatial partitions, resizing their lists to zero.
+		 */
+		void reset(const UINT& arr_idx = 0)
+		{
+			for (const VecDi& pos_child : this->branch().list(arr_idx))
+				this->child(pos_child)[arr_idx].clear();
+			Base::reset(arr_idx);
+		}
+	};
+
+	/**
+	 * Spatially partitioned expandable list - 1D array specialisation.
+	 *
+	 * A specialised partitioned grid, where the child grids are simply
+	 * expandable lists.
+	 *
+	 * @tparam T the type to store in elements of the list
+	 * @tparam D the dimension of the 'imaginary' grid.
+	 */
+	template <typename T, UINT D>
+	class PartitionedArray<T, D, 0> : public PartitionedArrayBase<
+		T, D, 1, std::vector<T, Eigen::aligned_allocator<T> >
+	>
+	{
+	protected:
+		typedef PartitionedArrayBase<
+			T, D, 1, std::vector<T, Eigen::aligned_allocator<T> >
+		> Base;
+
+		typedef typename Base::VecDu	VecDu;
+		typedef typename Base::VecDi	VecDi;
+
+	public:
+		PartitionedArray () : Base()
+		{}
+
+		PartitionedArray (
+			const VecDu& dims, const VecDi& offset,
+			const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION)
+		) : Base()
+		{
+			this->init(dims, offset, dims_partition);
+		}
+
 
 		/**
 		 * Add val to list, placing in partition found from pos.
