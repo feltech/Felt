@@ -28,8 +28,8 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		Surface<3, 2> surface(Vec3u(9,9,9), Vec3u(3, 3, 3));
 		PolyGrid<3> poly(surface);
 
-		BOOST_CHECK_EQUAL(poly.polys().data().size(), 27);
-		BOOST_CHECK_EQUAL(poly.polys().lookup().data().size(), 27);
+		BOOST_CHECK_EQUAL(poly.data().size(), 27);
+		BOOST_CHECK_EQUAL(poly.lookup().data().size(), 27);
 
 		BOOST_CHECK_EQUAL(poly.changes().branch().data().size(), 27);
 	}
@@ -240,14 +240,14 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		poly_single.surf(surface);
 
-		BOOST_CHECK_EQUAL(poly.polys().get(Vec3i(0,0,0)).vtx().size(), 30);
-		BOOST_CHECK_EQUAL(poly.polys().get(Vec3i(0,0,0)).spx().size(), 56);
+		BOOST_CHECK_EQUAL(poly.get(Vec3i(0,0,0)).vtx().size(), 30);
+		BOOST_CHECK_EQUAL(poly.get(Vec3i(0,0,0)).spx().size(), 56);
 		BOOST_CHECK_EQUAL(
-			poly.polys().get(Vec3i(0,0,0)).vtx().size(),
+			poly.get(Vec3i(0,0,0)).vtx().size(),
 			poly_single.vtx().size()
 		);
 		BOOST_CHECK_EQUAL(
-			poly.polys().get(Vec3i(0,0,0)).spx().size(),
+			poly.get(Vec3i(0,0,0)).spx().size(),
 			poly_single.spx().size()
 		);
 
@@ -286,16 +286,16 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		UINT total_vtx = 0;
 		UINT total_spx = 0;
-		for (const Vec3i& pos_child : poly.polys().list())
+		for (const Vec3i& pos_child : poly.list())
 		{
-			total_vtx += poly.polys().get(pos_child).vtx().size();
-			if (poly.polys().get(pos_child).vtx().size() > 0)
+			total_vtx += poly.get(pos_child).vtx().size();
+			if (poly.get(pos_child).vtx().size() > 0)
 				BOOST_TEST_MESSAGE(
 					stringifyVector(pos_child)
 					+ " "
-					+ std::to_string(poly.polys().get(pos_child).vtx().size())
+					+ std::to_string(poly.get(pos_child).vtx().size())
 				);
-			total_spx += poly.polys().get(pos_child).spx().size();
+			total_spx += poly.get(pos_child).spx().size();
 		}
 
 		// Total simplices should be the same.
@@ -312,9 +312,9 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		BOOST_CHECK_EQUAL(total_vtx, poly_single.vtx().size() + 12 + 3 - 3);
 		// As mentioned above, each lower extremity non-central partition has 5
 		// vertices, making up the endpoint pyramids at those extremities.
-		BOOST_CHECK_EQUAL(poly.polys().get(Vec3i(-1,0,0)).vtx().size(), 5);
-		BOOST_CHECK_EQUAL(poly.polys().get(Vec3i(0,-1,0)).vtx().size(), 5);
-		BOOST_CHECK_EQUAL(poly.polys().get(Vec3i(0,0,-1)).vtx().size(), 5);
+		BOOST_CHECK_EQUAL(poly.get(Vec3i(-1,0,0)).vtx().size(), 5);
+		BOOST_CHECK_EQUAL(poly.get(Vec3i(0,-1,0)).vtx().size(), 5);
+		BOOST_CHECK_EQUAL(poly.get(Vec3i(0,0,-1)).vtx().size(), 5);
 
 
 		// ==== Action ====
@@ -355,16 +355,16 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		total_vtx = 0;
 		total_spx = 0;
-		for (const Vec3i& pos_child : poly.polys().list())
+		for (const Vec3i& pos_child : poly.list())
 		{
-			total_vtx += poly.polys().get(pos_child).vtx().size();
-			if (poly.polys().get(pos_child).vtx().size() > 0)
+			total_vtx += poly.get(pos_child).vtx().size();
+			if (poly.get(pos_child).vtx().size() > 0)
 				BOOST_TEST_MESSAGE(
 					stringifyVector(pos_child)
 					+ " "
-					+ std::to_string(poly.polys().get(pos_child).vtx().size())
+					+ std::to_string(poly.get(pos_child).vtx().size())
 				);
-			total_spx += poly.polys().get(pos_child).spx().size();
+			total_spx += poly.get(pos_child).spx().size();
 		}
 
 		// Total simplices should be the same.

@@ -17,7 +17,7 @@ namespace felt
 	 * @tparam D the number of dimensions of the surface and thus grid.
 	 */
 	template <UINT D>
-	class PolyGrid
+	class PolyGrid : public TrackedGrid<Poly<D>, D>
 	{
 	public:
 		/// Polygonisation of a single surface spatial partition.
@@ -25,15 +25,14 @@ namespace felt
 
 		typedef typename PolyLeaf::VecDu	VecDu;
 		typedef typename PolyLeaf::VecDi	VecDi;
-		/// Grid of polygonisations, one element for each spatial partition.
-		typedef	TrackedGrid<PolyLeaf, D>		PolyChildren;
+
+		typedef TrackedGrid<Poly<D>, D>		Base;
+
 		/// Lookup grid to track partitions containing zero-layer points.
 		typedef LookupPartitionedGrid<D>		PolyChanges;
 		/// Signed-distance surface (either 2D or 3D).
 		template <UINT L> using Surface_t = Surface<D, L>;
 	protected:
-		/// Grid of polygonisations, one element for each spatial partition.
-		PolyChildren	m_grid_polys;
 		/// Lookup grid to track partitions containing zero-layer points.
 		PolyChanges		m_grid_changes;
 
@@ -46,7 +45,7 @@ namespace felt
 		 */
 		template <UINT L>
 		PolyGrid (const Surface_t<L>& surface)
-		: 	m_grid_polys(
+		: 	Base(
 				surface.phi().branch().dims(), surface.phi().branch().offset()
 			), m_grid_changes(
 				surface.phi().dims(), surface.phi().offset(),
@@ -56,21 +55,11 @@ namespace felt
 			for (const VecDi& pos_child : surface.phi().branch())
 			{
 				// Add a one-element border to account for partition overlap.
-				m_grid_polys(pos_child).init(
+				this->get(pos_child).init(
 					surface.phi().child(pos_child).dims() + VecDu::Constant(2),
 					surface.phi().child(pos_child).offset() - VecDi::Constant(1)
 				);
 			}
-		}
-		
-		/**
-		 * Get the grid of individual polygonisations of spatial partitions.
-		 * 
-		 * @return grid of Poly objects.
-		 */
-		const PolyChildren& polys () const
-		{
-			return m_grid_polys;
 		}
 
 		/**
@@ -140,7 +129,7 @@ namespace felt
 				m_grid_changes.branch().add(pos_child);
 			}
 			// Zero-layer no longer cuts through spatial partition.
-			else if (m_grid_polys(pos_child).spx().size())
+			else if (this->get(pos_child).spx().size())
 			{
 				m_grid_changes.branch().add(pos_child);
 			}
@@ -182,10 +171,12 @@ namespace felt
 				}
 			}
 
+			// Second pass, since lookaround search above may have added extra
+			// spatial partitions.
 			for (const VecDi& pos_child : m_grid_changes.branch().list())
 			{
-				m_grid_polys.add(pos_child);
-				PolyLeaf& leaf = m_grid_polys(pos_child);
+				this->add(pos_child);
+				PolyLeaf& leaf = this->get(pos_child);
 				leaf.reset();
 				for (
 					const VecDi& pos_cube
