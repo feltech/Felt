@@ -57,6 +57,9 @@ namespace felt {
 		 */
 		typedef typename PhiGrid::VecDf VecDf;
 
+		typedef LookupPartitionedGrid<D, 2*L+1>				AffectedLookupGrid;
+
+	public:
 		/**
 		 * Storage class for flagging a point in the grid to be moved from one
 		 * narrow band layer to another.
@@ -66,6 +69,16 @@ namespace felt {
 			StatusChange(
 				const VecDi& pos_, const INT& from_layer_
 			) : pos(pos_), from_layer(from_layer_) {}
+
+			static UINT layer_idx(const INT& layer_id)
+			{
+				return layer_id + (L + 1);
+			}
+
+			static INT layer_id(const INT& layer_idx)
+			{
+				return layer_idx - (L + 1);
+			}
 
 			VecDi pos;
 			INT from_layer;
@@ -78,9 +91,6 @@ namespace felt {
 		 * of the narrow band, for those points that are going out of scope.
 		 */
 		typedef PartitionedArray<StatusChange, D, 3*L+1>	StatusChangeGrid;
-
-		typedef LookupPartitionedGrid<D, 2*L+1>				AffectedLookupGrid;
-
 
 	protected:
 
@@ -335,38 +345,38 @@ namespace felt {
 		 *
 		 * @param pos
 		 * @param val
-		 * @param layerID
+		 * @param layer_id
 		 */
-		void phi (const VecDi& pos, const FLOAT& val, const INT& layerID = 0)
+		void phi (const VecDi& pos, const FLOAT& val, const INT& layer_id = 0)
 		{
 			PhiGrid& phi = this->phi();
-			const INT newLayerID = this->layerID(val);
+			const INT newlayer_id = this->layer_id(val);
 			phi(pos) = val;
 
-			if (newLayerID == layerID)
+			if (newlayer_id == layer_id)
 				return;
 
-			this->status_change(pos, layerID, newLayerID);
+			this->status_change(pos, layer_id, newlayer_id);
 
 			// If outside point moving inward, must create new outside
 			// points.
-			if (!(std::abs(layerID) == L && std::abs(newLayerID) == L-1))
+			if (!(std::abs(layer_id) == L && std::abs(newlayer_id) == L-1))
 				return;
 
 			// Get neighbouring points.
 			PosArray neighs;
 			phi.neighs(pos, neighs);
 			// Get which side of the zero-layer this point lies on.
-			const INT side = sgn(newLayerID);
+			const INT side = sgn(newlayer_id);
 
 			for (
 				UINT neighIdx = 0; neighIdx < neighs.size(); neighIdx++
 			) {
 				const VecDi& pos_neigh = neighs[neighIdx];
-				const INT fromLayerID = this->layerID(pos_neigh);
+				const INT fromlayer_id = this->layer_id(pos_neigh);
 				// If neighbouring point is not already within the
 				// narrow band.
-				if (!this->inside_band(fromLayerID))
+				if (!this->inside_band(fromlayer_id))
 				{
 					// Get distance of this new point to the zero layer.
 					const FLOAT dist_neigh = this->distance(
@@ -376,24 +386,32 @@ namespace felt {
 					phi(pos_neigh) = dist_neigh;
 					// Add to status change list to be added to the
 					// outer layer.
-					this->status_change(pos_neigh, fromLayerID, side*L);
+					this->status_change(pos_neigh, fromlayer_id, side*L);
 				}
 			}
 		}
+
+
+		const StatusChangeGrid& status_change () const
+		{
+			return m_grid_status_change;
+		}
+
 
 		/**
 		 * Add a point to the status change list to eventually be moved
 		 * from one layer to another.
 		 *
 		 * @param pos
-		 * @param fromLayerID
-		 * @param toLayerID
+		 * @param fromlayer_id
+		 * @param tolayer_id
 		 */
 		void status_change (
-			const VecDi& pos, const INT& fromLayerID, const INT& toLayerID
+			const VecDi& pos, const INT& from_layer_id, const INT& to_layer_id
 		) {
 			m_grid_status_change.add(
-				pos, StatusChange(pos, fromLayerID), toLayerID + (L + 1)
+				pos, StatusChange(pos, from_layer_id),
+				StatusChange::layer_idx(to_layer_id)
 			);
 		}
 
@@ -401,21 +419,23 @@ namespace felt {
 		 * Loop through the status change lists moving the referenced points
 		 * from one layer to another.
 		 */
-		void status_change ()
+		void flush_status_change ()
 		{
-			for (UINT layerIdx = 0; layerIdx < 3*L+1; layerIdx++)
-			{
-				const INT& layerID = layerIdx - (L + 1);
+			for (
+				UINT layer_idx = 0; layer_idx < StatusChangeGrid::NUM_LISTS;
+				layer_idx++
+			) {
+				const INT& layer_id = StatusChange::layer_id(layer_idx);
 				for (
 					const VecDi& pos_child
-					: m_grid_status_change.branch().list(layerIdx)
+					: m_grid_status_change.branch().list(layer_idx)
 				) {
 					for (
 						const StatusChange& change
-						: m_grid_status_change.child(pos_child)[layerIdx]
+						: m_grid_status_change.child(pos_child)[layer_idx]
 					) {
 						this->layer_move(
-							change.pos, change.from_layer, layerID
+							change.pos, change.from_layer, layer_id
 						);
 					}
 				}
@@ -472,11 +492,11 @@ namespace felt {
 		 * @param val
 		 */
 		void dphi (
-			const VecDi& pos, FLOAT val, const INT& layerID = 0
+			const VecDi& pos, FLOAT val, const INT& layer_id = 0
 		) {
 			// If this is the zero-layer, then ensure we cannot leave the grid
 			// boundary.
-			if (layerID == 0)
+			if (layer_id == 0)
 			{
 				const VecDi& pos_min = this->pos_min();
 				const VecDi& pos_max = this->pos_max();
@@ -497,7 +517,7 @@ namespace felt {
 					}
 			}
 
-			this->dphi().add(pos, val, this->layerIdx(layerID));
+			this->dphi().add(pos, val, this->layer_idx(layer_id));
 		}
 
 
@@ -505,7 +525,7 @@ namespace felt {
 		 * Get reference to the active partitions of a given layer of the narrow
 		 * band.
 		 *
-		 * @param layerID
+		 * @param layer_id
 		 * @return
 		 */
 		PosArray& parts (const INT& id = 0)
@@ -549,12 +569,12 @@ namespace felt {
 		 * is required for iterating over all the positions in a layer in
 		 * sequence.
 		 *
-		 * @param layerID
+		 * @param layer_id
 		 * @return
 		 */
-		const LeafsContainer<PhiGrid> layer(const UINT& layerID) const
+		const LeafsContainer<PhiGrid> layer(const UINT& layer_id) const
 		{
-			return m_grid_phi.leafs(this->layerIdx(layerID));
+			return m_grid_phi.leafs(this->layer_idx(layer_id));
 		}
 
 		/**
@@ -563,12 +583,12 @@ namespace felt {
 		 * @param id
 		 * @param pos
 		 */
-		void layer_add (const VecDi& pos, const INT& layerID)
+		void layer_add (const VecDi& pos, const INT& layer_id)
 		{
 			// Do nothing if position is outside narrow band.
-			if (!this->inside_band(layerID))
+			if (!this->inside_band(layer_id))
 				return;
-			m_grid_phi.add(pos, this->layerIdx(layerID));
+			m_grid_phi.add(pos, this->layer_idx(layer_id));
 		}
 
 		/**
@@ -582,7 +602,7 @@ namespace felt {
 		 */
 		void layer_add (const FLOAT& val, const VecDi& pos)
 		{
-			const INT& id = this->layerID(val);
+			const INT& id = this->layer_id(val);
 			this->layer_add(pos, id);
 		}
 
@@ -592,15 +612,15 @@ namespace felt {
 		 * Does not modify underlying grid value, just the layer list.
 		 *
 		 * @param pos
-		 * @param layerID
+		 * @param layer_id
 		 */
-		void layer_remove(const VecDi& pos, const INT& layerID)
+		void layer_remove(const VecDi& pos, const INT& layer_id)
 		{
 			// Do nothing if position is outside narrow band.
-			if (!this->inside_band(layerID))
+			if (!this->inside_band(layer_id))
 				return;
 
-			m_grid_phi.remove(pos, this->layerIdx(layerID));
+			m_grid_phi.remove(pos, this->layer_idx(layer_id));
 		}
 
 		/**
@@ -609,14 +629,14 @@ namespace felt {
 		 * Simply adjusts the lists, does not modify the underlying grid values.
 		 *
 		 * @param pos
-		 * @param fromLayerID
-		 * @param toLayerID
+		 * @param fromlayer_id
+		 * @param tolayer_id
 		 */
 		void layer_move(
-			const VecDi& pos, const INT& fromLayerID, const INT& toLayerID
+			const VecDi& pos, const INT& fromlayer_id, const INT& tolayer_id
 		) {
-			this->layer_remove(pos, fromLayerID);
-			this->layer_add(pos, toLayerID);
+			this->layer_remove(pos, fromlayer_id);
+			this->layer_add(pos, tolayer_id);
 		}
 
 		/**
@@ -624,9 +644,9 @@ namespace felt {
 		 * @param pos
 		 * @return
 		 */
-		INT layerID(const VecDi& pos) const
+		INT layer_id(const VecDi& pos) const
 		{
-			return this->layerID(this->phi(pos));
+			return this->layer_id(this->phi(pos));
 		}
 
 		/**
@@ -634,7 +654,7 @@ namespace felt {
 		 * @param val
 		 * @return
 		 */
-		INT layerID(const FLOAT& val) const
+		INT layer_id(const FLOAT& val) const
 		{
 			// Round to value+epsilon, to catch cases of precisely +/-0.5.
 			return boost::math::round(
@@ -648,7 +668,7 @@ namespace felt {
 		 * @param id
 		 * @return
 		 */
-		UINT layerIdx(const INT& id) const
+		UINT layer_idx(const INT& id) const
 		{
 			return id+L;
 		}
@@ -698,7 +718,7 @@ namespace felt {
 				FLOAT f_dist = (FLOAT)vec_dist.template lpNorm<1>();
 				// Check distance indicates that this point is within the
 				// narrow band.
-				if ((UINT)std::abs(this->layerID(f_dist)) <= L)
+				if ((UINT)std::abs(this->layer_id(f_dist)) <= L)
 				{
 					// Set distance as value in phi grid.
 					phi(pos) = f_dist;
@@ -719,7 +739,7 @@ namespace felt {
 		VecDi next_closest (const VecDi& pos, const FLOAT& side) const
 		{
 			// Trivially return if this is already a zero-layer point.
-			if (this->layerID(pos) == 0)
+			if (this->layer_id(pos) == 0)
 				return pos;
 
 			const PhiGrid& phi = this->phi();
@@ -785,14 +805,14 @@ namespace felt {
 		 */
 		void update_start ()
 		{
-			for (UINT layerIdx = 0; layerIdx < 2*L+1; layerIdx++)
+			for (UINT layer_idx = 0; layer_idx < 2*L+1; layer_idx++)
 			{
-				this->dphi().reset(0, layerIdx);
-				m_grid_affected.reset(layerIdx);
+				this->dphi().reset(0, layer_idx);
+				m_grid_affected.reset(layer_idx);
 			}
 
-			for (UINT layerIdx = 0; layerIdx < 3*L+1; layerIdx++)
-				m_grid_status_change.reset(layerIdx);
+			for (UINT layer_idx = 0; layer_idx < 3*L+1; layer_idx++)
+				m_grid_status_change.reset(layer_idx);
 		}
 
 
@@ -804,15 +824,15 @@ namespace felt {
 			const typename DeltaPhiGrid::BranchGrid&
 			branch = this->dphi().branch();
 
-			const UINT& layerIdx = this->layerIdx(0);
+			const UINT& layer_idx = this->layer_idx(0);
 
 //			#pragma omp parallel for
 			for (
-				UINT idx_child = 0; idx_child < branch.list(layerIdx).size();
+				UINT idx_child = 0; idx_child < branch.list(layer_idx).size();
 				idx_child++
 			) {
-				const VecDi& pos_child = branch.list(layerIdx)[idx_child];
-				for (const VecDi& pos : branch(pos_child).list(layerIdx))
+				const VecDi& pos_child = branch.list(layer_idx)[idx_child];
+				for (const VecDi& pos : branch(pos_child).list(layer_idx))
 				{
 					const FLOAT& fphi = this->phi(pos);
 					const FLOAT& fdphi = this->dphi(pos);
@@ -831,13 +851,13 @@ namespace felt {
 			this->update_zero_layer();
 
 			// Update distance transform for inner layers of the narrow band.
-			for (INT layerID = -1; layerID >= -(INT)L; layerID--)
-				this->update_distance(layerID, -1);
+			for (INT layer_id = -1; layer_id >= -(INT)L; layer_id--)
+				this->update_distance(layer_id, -1);
 			// Update distance transform for outer layers of the narrow band.
-			for (INT layerID = 1; layerID <= (INT)L; layerID++)
-				this->update_distance(layerID, 1);
+			for (INT layer_id = 1; layer_id <= (INT)L; layer_id++)
+				this->update_distance(layer_id, 1);
 
-			this->status_change();
+			this->flush_status_change();
 		}
 
 		/**
@@ -854,41 +874,41 @@ namespace felt {
 			this->update_zero_layer();
 
 			// Update distance transform for inner layers of the narrow band.
-			for (INT layerID = -1; layerID >= -(INT)L; layerID--)
+			for (INT layer_id = -1; layer_id >= -(INT)L; layer_id--)
 			{
-				const UINT& layerIdx = this->layerIdx(layerID);
+				const UINT& layer_idx = this->layer_idx(layer_id);
 				this->update_distance(
-					layerID, -1, m_grid_affected.leafs(layerIdx)
+					layer_id, -1, m_grid_affected.leafs(layer_idx)
 				);
 			}
 
 			// Update distance transform for outer layers of the narrow band.
-			for (INT layerID = 1; layerID <= (INT)L; layerID++)
+			for (INT layer_id = 1; layer_id <= (INT)L; layer_id++)
 			{
-				const UINT& layerIdx = this->layerIdx(layerID);
+				const UINT& layer_idx = this->layer_idx(layer_id);
 				this->update_distance(
-					layerID, 1, m_grid_affected.leafs(layerIdx)
+					layer_id, 1, m_grid_affected.leafs(layer_idx)
 				);
 			}
-			this->status_change();
+			this->flush_status_change();
 		}
 
 		/**
 		 * Update distance transform for all points in given layer.
 		 *
-		 * @param layerID
+		 * @param layer_id
 		 * @param side
 		 */
-		void update_distance(const INT& layerID, const INT& side)
+		void update_distance(const INT& layer_id, const INT& side)
 		{
-			const UINT& layerIdx = this->layerIdx(layerID);
+			const UINT& layer_idx = this->layer_idx(layer_id);
 			for (
 				const VecDi& pos_child
-				: m_grid_phi.branch().list(layerIdx)
+				: m_grid_phi.branch().list(layer_idx)
 			) {
 				this->update_distance(
-					layerID, side,
-					m_grid_phi.child(pos_child).list(layerIdx)
+					layer_id, side,
+					m_grid_phi.child(pos_child).list(layer_idx)
 				);
 			}
 		}
@@ -896,13 +916,13 @@ namespace felt {
 		/**
 		 * Update distance transform for affected points in given layer.
 		 *
-		 * @param layerID
+		 * @param layer_id
 		 * @param side
 		 * @param alayer
 		 */
 		template <typename ListType>
 		void update_distance(
-			const INT& layerID, const INT& side, const ListType& list
+			const INT& layer_id, const INT& side, const ListType& list
 		) {
 			// Calculate distance of every point in this layer to the zero
 			// layer, and store in delta phi grid.
@@ -915,7 +935,7 @@ namespace felt {
 				// Distance from this position to zero layer.
 				const FLOAT dist = this->distance(pos, side);
 				// Update delta phi grid.
-				this->dphi(pos, dist, layerID);
+				this->dphi(pos, dist, layer_id);
 			}
 
 			// Update distance in phi from delta phi and append any points that
@@ -930,7 +950,7 @@ namespace felt {
 				const FLOAT& dist = this->dphi(pos);
 				// Update phi grid. Note that '=' is used here, rather than
 				// '+=' as with the zero layer.
-				this->phi(pos, dist, layerID);
+				this->phi(pos, dist, layer_id);
 			} // End for pos_idx.
 
 		}
@@ -974,7 +994,7 @@ namespace felt {
 		void calc_affected()
 		{
 			typedef typename AffectedLookupGrid::PosArray PosArray;
-			const UINT& layerIdxZero = this->layerIdx(0);
+			const UINT& layer_idxZero = this->layer_idx(0);
 
 			// Loop over delta phi modified zero-layer points adding to
 			// tracking grid.
@@ -982,15 +1002,15 @@ namespace felt {
 			// Loop spatial partitions of dphi for zero-layer.
 			for (
 				const VecDi& pos_child
-				: this->dphi().branch().list(layerIdxZero))
+				: this->dphi().branch().list(layer_idxZero))
 			{
 				// Loop leaf grid nodes with spatial partition
 				for (
 					const VecDi& pos_leaf
-					: this->dphi().child(pos_child).list(layerIdxZero)
+					: this->dphi().child(pos_child).list(layer_idxZero)
 				)
 					// Add zero-layer point to tracking grid.
-					m_grid_affected.add(pos_leaf, layerIdxZero);
+					m_grid_affected.add(pos_leaf, layer_idxZero);
 			}
 
 			// Arrays to store first and last element in tracking list within
@@ -1005,19 +1025,19 @@ namespace felt {
 				// Reset the first and last element indices for each
 				// spatial partition in each layer.
 
-				for (INT layerID = LAYER_MIN; layerID <= LAYER_MAX; layerID++)
+				for (INT layer_id = LAYER_MIN; layer_id <= LAYER_MAX; layer_id++)
 				{
-					const UINT& layerIdx = this->layerIdx(layerID);
+					const UINT& layer_idx = this->layer_idx(layer_id);
 					// Get number of spatial partitions for this layer.
 					const UINT num_childs = (
-						m_grid_affected.branch().list(layerIdx).size()
+						m_grid_affected.branch().list(layer_idx).size()
 					);
 					// Resize spatial partition index lists for this layer to
 					// to include any newly added partitions.
-					aidx_last_neigh[layerIdx].resize(num_childs);
+					aidx_last_neigh[layer_idx].resize(num_childs);
 					// Will initialise to zero, so no further work needed for
 					// these new indices giving the start of the range.
-					aidx_first_neigh[layerIdx].resize(num_childs);
+					aidx_first_neigh[layer_idx].resize(num_childs);
 					// The final index needs to be copied from the current size
 					// of each spatial partition, so loop over partitions,
 					// copying their size into the respective last index list.
@@ -1027,13 +1047,13 @@ namespace felt {
 						// Get position of this spatial partition in parent
 						// lookup grid.
 						const VecDi& pos_child = (
-							m_grid_affected.branch().list(layerIdx)[idx_child]
+							m_grid_affected.branch().list(layer_idx)[idx_child]
 						);
 						// Copy number of active grid nodes for this partition
 						// into relevant index in the list.
-						aidx_last_neigh[layerIdx][idx_child] = (
+						aidx_last_neigh[layer_idx][idx_child] = (
 							m_grid_affected.child(pos_child)
-								.list(layerIdx).size()
+								.list(layer_idx).size()
 						);
 					}
 				}
@@ -1042,22 +1062,22 @@ namespace felt {
 				// for each partition using the start and end points cached
 				// above.
 
-				for (INT layerID = LAYER_MIN; layerID <= LAYER_MAX; layerID++)
+				for (INT layer_id = LAYER_MIN; layer_id <= LAYER_MAX; layer_id++)
 				{
-					const UINT& layerIdx = this->layerIdx(layerID);
+					const UINT& layer_idx = this->layer_idx(layer_id);
 
 					// Loop over spatial partitions, ignoring newly added ones
 					// since we're using the cached spatial partition list as
 					// the end of the range.
 					for (
 						UINT idx_child = 0;
-						idx_child < aidx_first_neigh[layerIdx].size();
+						idx_child < aidx_first_neigh[layer_idx].size();
 						idx_child++
 					) {
 						// Get position of this spatial partition in this
 						// layer.
 						const VecDi& pos_child = (
-							m_grid_affected.branch().list(layerIdx)[idx_child]
+							m_grid_affected.branch().list(layer_idx)[idx_child]
 						);
 
 						// Loop over leaf grid nodes within this spatial
@@ -1065,15 +1085,15 @@ namespace felt {
 						// so that newly added points are skipped.
 						for (
 							UINT idx_neigh = (
-								aidx_first_neigh[layerIdx][idx_child]
+								aidx_first_neigh[layer_idx][idx_child]
 							);
-							idx_neigh < aidx_last_neigh[layerIdx][idx_child];
+							idx_neigh < aidx_last_neigh[layer_idx][idx_child];
 							idx_neigh++
 						) {
 							// Get list of active leaf grid nodes in this
 							// spatial partition.
 							const PosArray& apos_neigh = (
-								m_grid_affected.child(pos_child).list(layerIdx)
+								m_grid_affected.child(pos_child).list(layer_idx)
 							);
 							// This leaf grid nodes is the centre to search
 							// about.
@@ -1088,18 +1108,18 @@ namespace felt {
 								[this](const VecDi& pos_neigh) {
 									// Calculate layer of this neighbouring
 									// point from the phi grid.
-									const INT& layerID = (
-										this->layerID(pos_neigh)
+									const INT& layer_id = (
+										this->layer_id(pos_neigh)
 									);
 									// If the calculated layer lies within the
 									// narrow band, then we want to track it.
-									if (this->inside_band(layerID))
+									if (this->inside_band(layer_id))
 									{
 										// Add the neighbour point to the
 										// tracking grid. Will reject
 										// duplicates.
 										this->m_grid_affected.add(
-											pos_neigh, this->layerIdx(layerID)
+											pos_neigh, this->layer_idx(layer_id)
 										);
 									}
 
@@ -1114,19 +1134,19 @@ namespace felt {
 				// next loop, so set the start index for each partition of
 				// each layer to the previous end index.
 
-				for (INT layerID = LAYER_MIN; layerID <= LAYER_MAX; layerID++)
+				for (INT layer_id = LAYER_MIN; layer_id <= LAYER_MAX; layer_id++)
 				{
-					const UINT& layerIdx = this->layerIdx(layerID);
+					const UINT& layer_idx = this->layer_idx(layer_id);
 					// Loop over spatial partitions.
 					for (
-						UINT idx = 0; idx < aidx_first_neigh[layerIdx].size();
+						UINT idx = 0; idx < aidx_first_neigh[layer_idx].size();
 						idx++
 					)
 						// Set first index in spatial partition's tracking list
 						// to be the previous last index, so we start there on
 						// next loop around.
-						aidx_first_neigh[layerIdx][idx] = (
-							aidx_last_neigh[layerIdx][idx]
+						aidx_first_neigh[layer_idx][idx] = (
+							aidx_last_neigh[layer_idx][idx]
 						);
 				}
 			}

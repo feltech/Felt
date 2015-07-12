@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		{
 			typedef PartitionedGrid<FLOAT, 3> Grid_t;
 
-			Grid_t grid(Vec3u(8,8,8), Vec3i(-3,-3,-3));
+			Grid_t grid(Vec3u(8,8,8), Vec3i(-3,-3,-3), Vec3u(2, 2, 2));
 			const Grid_t::BranchGrid& parent = grid.branch();
 
 			BOOST_CHECK_EQUAL(grid.dims(), Vec3u(8,8,8));

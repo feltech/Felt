@@ -60,11 +60,11 @@ BOOST_AUTO_TEST_CASE(layers)
 	Surface<3>::PhiGrid::BranchGrid branch;
 	Vec3i pos = Vec3i(0, 0, 0);
 
-	BOOST_CHECK_EQUAL(branch.list(surface.layerIdx(-2)).size(), 0);
-	BOOST_CHECK_EQUAL(branch.list(surface.layerIdx(-1)).size(), 0);
-	BOOST_CHECK_EQUAL(branch.list(surface.layerIdx(0)).size(), 0);
-	BOOST_CHECK_EQUAL(branch.list(surface.layerIdx(1)).size(), 0);
-	BOOST_CHECK_EQUAL(branch.list(surface.layerIdx(2)).size(), 0);
+	BOOST_CHECK_EQUAL(branch.list(surface.layer_idx(-2)).size(), 0);
+	BOOST_CHECK_EQUAL(branch.list(surface.layer_idx(-1)).size(), 0);
+	BOOST_CHECK_EQUAL(branch.list(surface.layer_idx(0)).size(), 0);
+	BOOST_CHECK_EQUAL(branch.list(surface.layer_idx(1)).size(), 0);
+	BOOST_CHECK_EQUAL(branch.list(surface.layer_idx(2)).size(), 0);
 
 	// Add a single zero-layer point.
 	surface.phi(pos) = 0;
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(layers)
 
 	// Check layer calculation from value.
 	// -- zero-layer point just added.
-	BOOST_CHECK_EQUAL(surface.layerID(pos), 0);
+	BOOST_CHECK_EQUAL(surface.layer_id(pos), 0);
 
 	// Add three arbitrary points to layer -1.
 	surface.layer_add(Vec3i(0, 0, 1), -1);
@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE(delta_phi)
 		BOOST_CHECK_EQUAL(surface.dphi(pos), -2);
 		// Check position vector of point in surface grid that delta was
 		// applied to is stored in a corresponding list to be iterated over.
-		BOOST_CHECK_EQUAL(surface.dphi().leafs(surface.layerIdx(0)).size(), 1);
+		BOOST_CHECK_EQUAL(surface.dphi().leafs(surface.layer_idx(0)).size(), 1);
 	}
 }
 
@@ -231,10 +231,10 @@ BOOST_AUTO_TEST_CASE(delta_phi_update)
 	surface.update_start();
 	{
 		// Check update_start cleared the above surface.dphi changes.
-		for (INT layerID = -2; layerID <= 2; layerID++)
+		for (INT layer_id = -2; layer_id <= 2; layer_id++)
 		{
 			BOOST_CHECK_EQUAL(
-				surface.dphi().leafs(surface.layerIdx(layerID)).size(), 0u
+				surface.dphi().leafs(surface.layer_idx(layer_id)).size(), 0u
 			);
 		}
 		BOOST_CHECK_EQUAL(dphi(Vec3i(0, 0, 0)), 0);
@@ -258,7 +258,7 @@ BOOST_AUTO_TEST_CASE(delta_phi_update)
 	// centre which == 0.
 	BOOST_CHECK_EQUAL(phi.data().sum(), 3 * 5 * 5 * 5 - 3);
 	// Delta phi position vector list should still contain one point.
-	BOOST_CHECK_EQUAL(surface.dphi().leafs(surface.layerIdx(0)).size(), 1u);
+	BOOST_CHECK_EQUAL(surface.dphi().leafs(surface.layer_idx(0)).size(), 1u);
 	// Delta phi grid itself should have reset back to zero.
 	BOOST_CHECK_EQUAL(dphi(Vec3i(0, 0, 0)), 0);
 
@@ -317,9 +317,9 @@ BOOST_AUTO_TEST_CASE(distance_transform)
 		surface.update_start();
 		{
 			// Check update_start cleared the above surface.dphi changes.
-			for (INT layerID = -2; layerID <= 2; layerID++)
+			for (INT layer_id = -2; layer_id <= 2; layer_id++)
 				BOOST_CHECK_EQUAL(
-					surface.dphi().leafs(surface.layerIdx(layerID)).size(),
+					surface.dphi().leafs(surface.layer_idx(layer_id)).size(),
 					0u
 				);
 		}
@@ -533,7 +533,7 @@ BOOST_AUTO_TEST_CASE(iterate_layers)
 	// Only version that can be parallelised easily using OpenMP.
 	counter = 0;
 	pos_sum = Vec3i(0, 0, 0);
-	const UINT& zeroLayerIdx = surface.layerIdx(0);
+	const UINT& zeroLayerIdx = surface.layer_idx(0);
 
 	#pragma omp parallel for
 	for (Vec3i& part : surface.parts(0))
@@ -557,15 +557,15 @@ BOOST_AUTO_TEST_CASE(iterate_layers)
 	pos_sum = Vec3i(0, 0, 0);
 
 	for (
-		INT layerID = surface.LAYER_MIN; layerID <= surface.LAYER_MAX; layerID++
+		INT layer_id = surface.LAYER_MIN; layer_id <= surface.LAYER_MAX; layer_id++
 	)
-		for (Vec3i& part : surface.parts(layerID))
-			for (const Vec3i& pos : surface.layer(part, layerID))
+		for (Vec3i& part : surface.parts(layer_id))
+			for (const Vec3i& pos : surface.layer(part, layer_id))
 			{
 				FLOAT val = surface(pos);
 				#pragma omp critical
 				{
-					BOOST_CHECK_EQUAL(val, layerID);
+					BOOST_CHECK_EQUAL(val, layer_id);
 					counter++;
 					pos_sum += pos;
 				}
@@ -736,29 +736,29 @@ BOOST_AUTO_TEST_CASE(affected_outer_layers)
 			Vec2i(3, 0), Vec2i(1, -2), Vec2i(2, -1)
 		});
 
-		for (INT layerID = -2; layerID <= 2; layerID++)
+		for (INT layer_id = -2; layer_id <= 2; layer_id++)
 		{
-			if (layerID == 0)
+			if (layer_id == 0)
 				continue;
 
-			const INT layerIdx = 2 + layerID;
-//			std::cerr << "Affected points: layer " << layerID << std::endl;
+			const INT layer_idx = 2 + layer_id;
+//			std::cerr << "Affected points: layer " << layer_id << std::endl;
 			BOOST_CHECK_EQUAL(
-				(UINT)surface.affected().leafs(layerIdx).size(),
-				(UINT)aposCheck[layerIdx].size()
+				(UINT)surface.affected().leafs(layer_idx).size(),
+				(UINT)aposCheck[layer_idx].size()
 			);
 
 
-			for (auto pos : aposCheck[layerIdx])
+			for (auto pos : aposCheck[layer_idx])
 			{
 				auto iter = std::find(
-					surface.affected().leafs(layerIdx).begin(),
-					surface.affected().leafs(layerIdx).end(), pos
+					surface.affected().leafs(layer_idx).begin(),
+					surface.affected().leafs(layer_idx).end(), pos
 				);
 
 				BOOST_CHECK_MESSAGE(
-					iter != surface.affected().leafs(layerIdx).end(),
-					"Layer " + std::to_string(layerID) + " expected ("
+					iter != surface.affected().leafs(layer_idx).end(),
+					"Layer " + std::to_string(layer_id) + " expected ("
 					+ std::to_string(pos(0)) + "," + std::to_string(pos(1))
 					+ ")"
 				);

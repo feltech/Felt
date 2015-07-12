@@ -7,6 +7,7 @@
 
 namespace felt
 {
+	/// Default size of a spatial partition (in each dimension).
 	#define DEFAULT_PARTITION 4
 
 	/**
@@ -24,6 +25,10 @@ namespace felt
 		typedef G							Child;
 		/// Grid of partitions with tracking list(s) of active grid points.
 		typedef TrackedGrid<Child, D, N>	BranchGrid;
+
+		/// Width of the narrow band = number of tracking lists of points.
+		static const UINT NUM_LISTS = N;
+
 	protected:
 		/// D-dimensional unsigned int vector.
 		typedef typename BranchGrid::VecDu	VecDu;
@@ -83,6 +88,14 @@ namespace felt
 		{
 			m_udims_child = dims_partition;
 			m_idims_child = dims_partition.template cast<INT>();
+		}
+
+		/**
+		 * Get size of a spatial partition.
+		 */
+		const VecDu& child_dims() const
+		{
+			return m_udims_child;
 		}
 
 		/**
@@ -172,11 +185,11 @@ namespace felt
 		 */
 		virtual void offset (const VecDi& offset_grid)
 		{
-			const VecDi& offset_parent = (
+			const VecDi& offset_branch = (
 				offset_grid.array() / m_idims_child.array()
 			).matrix();
 
-			m_grid_branch.offset(offset_parent);
+			m_grid_branch.offset(offset_branch);
 		}
 
 		/**
@@ -424,7 +437,7 @@ namespace felt
 		 */
 		PartitionedGrid (
 			const VecDu& dims, const VecDi& offset,
-			const VecDu& dims_partition = VecDu::Constant(2),
+			const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION),
 			const FLOAT& delta = 1
 		) : Base(), ChildGrid(), m_pgrid_snapshot(NULL)
 		{
@@ -813,70 +826,6 @@ namespace felt
 			return sum;
 		}
 	};
-
-
-	/*
-	 * Spatially partitioned version of MappedGrid.
-	 *
-	 * @tparam T type of value stored in leaf grid nodes.
-	 * @tparam D dimension of the grid.
-	 * @tparam N number of tracking lists to use.
-	 */
-//	template <typename T, UINT D, UINT N>
-//	class MappedPartitionedGrid : public PartitionedGrid<
-//		T, D, MappedGrid<T, D, N>, N
-//	>
-//	{
-//	protected:
-//		typedef PartitionedGrid<
-//			T, D, MappedGrid<T, D, N>, N
-//		> Base;
-//		typedef MappedPartitionedGrid<T, D, N>			ThisType;
-//		friend class LeafsContainer<ThisType>;
-//	public:
-//		typedef typename Base::ChildGrid				ChildGrid;
-//	protected:
-//		typedef typename ChildGrid::VecDu				VecDu;
-//		typedef typename ChildGrid::VecDi				VecDi;
-//	public:
-//		typedef typename Base::BranchGrid				BranchGrid;
-//		typedef typename ChildGrid::PosArray			PosArray;
-//
-//	public:
-//		MappedPartitionedGrid () : Base()
-//		{}
-//
-//
-//		MappedPartitionedGrid (
-//			const VecDu& dims, const VecDi& offset,
-//			const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION),
-//			const FLOAT& delta = 1
-//		) : Base(dims, offset, dims_partition, delta)
-//		{}
-//
-//
-//		bool add(const VecDi& pos, const T& val, const UINT& arr_idx = 0)
-//		{
-//			BranchGrid& branch = this->branch();
-//			const VecDi& pos_child = this->pos_child(pos);
-//			Base::add_child(pos_child, arr_idx);
-//			return branch(pos_child).add(pos, val, arr_idx);
-//		}
-//
-//		const LeafsContainer<ThisType> leafs(const UINT& listIdx) const
-//		{
-//			return LeafsContainer<ThisType>(this, listIdx);
-//		}
-//
-//		void reset(const T& val, const UINT& arr_idx = 0)
-//		{
-//			BranchGrid& branch = this->branch();
-//			for (const VecDi& pos_child : branch.list(arr_idx))
-//				branch(pos_child).reset(val, arr_idx);
-//
-//			Base::reset(arr_idx);
-//		}
-//	};
 
 
 	/**

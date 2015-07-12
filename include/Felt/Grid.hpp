@@ -5,6 +5,7 @@
 #include <math.h>
 #include <vector>
 #include <eigen3/Eigen/Dense>
+#include <boost/iterator/iterator_facade.hpp>
 
 namespace felt
 {
@@ -123,6 +124,48 @@ namespace felt
 		typedef std::vector<
 			VecDi, Eigen::aligned_allocator<VecDi>
 		> PosArray;
+
+
+		class iterator : public boost::iterator_facade<
+			GridBase::iterator, const VecDi&, boost::forward_traversal_tag
+		> {
+		private:
+			friend class boost::iterator_core_access;
+
+			UINT			m_idx;
+			VecDi			m_pos;
+			const UINT&		m_num_elems;;
+			const VecDu&	m_dims;
+			const VecDi&	m_offset;
+		public:
+			iterator() : m_idx(0), m_num_elems(0),
+			m_dims(VecDu::Constant(0)), m_offset(VecDi::Constant(0))
+			{}
+
+			iterator(const GridBase& grid, const UINT& startIdx = 0)
+			: m_idx(startIdx), m_num_elems(grid.data().size()),
+			  m_dims(grid.dims()), m_offset(grid.offset()),
+			  m_pos(
+				GridBase<T, D, R>::index(startIdx, grid.dims(), grid.offset())
+			  )
+			{}
+		 private:
+
+		    void increment() {
+		    	m_idx++;
+		    	m_pos = GridBase<T, D, R>::index(m_idx, m_dims, m_offset);
+		    }
+
+		    bool equal(iterator const& other) const
+		    {
+		        return this->m_idx == other.m_idx;
+		    }
+
+		    const VecDi& dereference() const {
+		    	return m_pos;
+		    }
+		};
+
 
 	protected:
 		/**
@@ -418,6 +461,16 @@ namespace felt
 		const ArrayData& data () const
 		{
 			return m_data;
+		}
+
+		const iterator begin () const
+		{
+			return iterator(*this, 0);
+		}
+
+		const iterator end () const
+		{
+			return iterator(*this, this->data().size());
 		}
 
 		/**

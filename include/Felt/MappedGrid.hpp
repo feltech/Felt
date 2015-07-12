@@ -158,16 +158,33 @@ namespace felt
 		 * @param arr_idx
 		 * @return
 		 */
-		virtual inline PosArray& list(const UINT& arr_idx = 0)
+		virtual inline PosArray& list (const UINT& arr_idx = 0)
+		{
+			return m_aPos[arr_idx];
+		}
+		/**
+		 * Get tracking list by id.
+		 *
+		 * @param arr_idx
+		 * @return
+		 */
+		virtual inline const PosArray& list (const UINT& arr_idx = 0) const
 		{
 			return m_aPos[arr_idx];
 		}
 
-		virtual inline const PosArray& list(const UINT& arr_idx = 0) const
+		/**
+		 * Return true if position currently tracked for given list id, false
+		 * otherwise.
+		 *
+		 * @param pos
+		 * @param arr_idx
+		 * @return
+		 */
+		const bool is_active (const VecDi& pos, const UINT& arr_idx = 0) const
 		{
-			return m_aPos[arr_idx];
+			return this->get(pos)[arr_idx] != NULL_IDX;
 		}
-
 
 		/**
 		 * Add position to tracking list and store index in tracking list in
@@ -219,6 +236,8 @@ namespace felt
 		virtual void remove (const VecDi& pos, const UINT& arr_idx = 0)
 		{
 			const UINT& idx = this->get_internal(pos)[arr_idx];
+			if (idx == NULL_IDX)
+				return;
 			remove(idx, pos, arr_idx, arr_idx);
 		}
 
@@ -382,7 +401,7 @@ namespace felt
 	 * @tparam D the dimension of the grid.
 	 * @tparam N the number of tracking lists to use.
 	 */
-	template <UINT D, UINT N>
+	template <UINT D, UINT N=1>
 	class SharedLookupGrid
 	: public LookupGridBase<D, N, Eigen::Matrix<UINT, 1, 1>, UINT>
 	{
@@ -424,6 +443,18 @@ namespace felt
 			return this->data()(idx)[0];
 		}
 
+		/**
+		 * Return true if position currently tracked for given list id, false
+		 * otherwise.
+		 *
+		 * @param pos
+		 * @param arr_idx
+		 * @return
+		 */
+		const bool is_active (const VecDi& pos) const
+		{
+			return this->get(pos) != Base_t::NULL_IDX;
+		}
 		/**
 		 * Add position to tracking list and store index in tracking list in
 		 * grid.
@@ -684,7 +715,7 @@ namespace felt
 	 * Standard TrackedGridBase with multiple lookup indices per grid node, one
 	 * for each tracking list.
 	 */
-	template <typename T, UINT D, UINT N>
+	template <typename T, UINT D, UINT N=1>
 	using TrackedGrid = TrackedGridBase<T, D, N, LookupGrid<D, N> >;
 
 
@@ -694,7 +725,7 @@ namespace felt
 	 *
 	 * Useful where a grid node can only be in one of the tracking lists.
 	 */
-	template <typename T, UINT D, UINT N>
+	template <typename T, UINT D, UINT N=1>
 	using SharedTrackedGrid = TrackedGridBase<T, D, N, SharedLookupGrid<D, N> >;
 }
 #endif /* MAPPEDGRID_HPP_ */
