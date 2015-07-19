@@ -14,7 +14,7 @@ include_directories(
     ${PROJECT_ROOT}/include
 )
 
-add_definitions(-std=c++11)
+add_definitions(-std=c++14 -fopenmp)
 
 
 # C++ unit tests

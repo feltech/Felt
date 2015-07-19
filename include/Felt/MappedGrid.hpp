@@ -1,100 +1,13 @@
 #ifndef MAPPEDGRID_HPP_
 #define MAPPEDGRID_HPP_
 
+#include <array>
+#include <sstream>
+#include <mutex>
 #include "Grid.hpp"
 
 namespace felt
 {
-//	template <
-//		typename T, UINT D, UINT N=1, typename R=T
-//	>
-//	class MappedGrid : public felt::GridBase<T, D, R>
-//	{
-//	protected:
-//		typedef GridBase<T, D, R>		Grid_t;
-//		typedef typename Grid_t::VecDu	VecDu;
-//		typedef typename Grid_t::VecDi	VecDi;
-//	public:
-//		typedef std::vector<VecDi, Eigen::aligned_allocator<VecDi> >
-//			PosArray;
-//	protected:
-//		std::array<PosArray, N>	m_aPos;
-//
-//	public:
-//
-//		virtual ~MappedGrid () {}
-//		/*
-//		 * Initialise a grid with given dimension and offset.
-//		 *
-//		 * @param dims
-//		 * @param offset
-//		 * @param delta
-//		 */
-//		MappedGrid (
-//			const VecDu& dims, const VecDi& offset
-//		) : Grid_t(dims, offset)
-//		{
-//		}
-//
-//
-//		MappedGrid () : Grid_t()
-//		{
-//		}
-//
-//
-//		virtual R& get (const VecDi& pos)
-//		{
-//			return this->get_internal(pos);
-//		}
-//
-//
-//		virtual const R& get (const VecDi& pos) const
-//		{
-//			return this->get_internal(pos);
-//		}
-//
-//
-//		virtual const PosArray& list(const UINT& arr_idx = 0) const
-//		{
-//			return m_aPos[arr_idx];
-//		}
-//
-//
-//		virtual PosArray& list(const UINT& arr_idx = 0)
-//		{
-//			return m_aPos[arr_idx];
-//		}
-//
-//
-//		bool add(const VecDi& pos, const T& val, const UINT& arr_idx = 0)
-//		{
-//			(*this)(pos) = val;
-//			list(arr_idx).push_back(pos);
-//			return true;
-//		}
-//
-//		void reset(const T& val, const UINT& arr_idx = 0)
-//		{
-//			for (VecDi pos : list(arr_idx))
-//				(*this)(pos) = val;
-//			list(arr_idx).clear();
-//		}
-//
-//
-//		void remove(const UINT& idx, const UINT& arr_idx = 0)
-//		{
-//			const UINT& size = list(arr_idx).size();
-//			if (size > 1)
-//			{
-//				// Duplicate last element into this index.
-//				const VecDi& pos_last = list(arr_idx)[size - 1];
-//				list(arr_idx)[idx] = pos_last;
-//			}
-//			list(arr_idx).pop_back();
-//		}
-//	};
-
-
 	/**
 	 * Base class for a lookup grid, where array elements store grid positions
 	 * and grid nodes store array indices.
@@ -111,14 +24,14 @@ namespace felt
 	public:
 		typedef I								Idx_t;
 		typedef V								Val_t;
-	protected:
+		typedef LookupGridBase<D, N, I, V>		ThisType;
 		typedef GridBase<Idx_t, D, Val_t>		Base;
 		typedef typename Base::VecDu			VecDu;
 		typedef typename Base::VecDi			VecDi;
-	public:
 		typedef typename Base::PosArray			PosArray;
 	protected:
-		std::array<PosArray, N>	m_aPos;
+		std::array<PosArray, N>	m_a_pos;
+		std::mutex				m_mutex;
 	public:
 
 		static const Idx_t				 			NULL_IDX_TUPLE;
@@ -134,11 +47,42 @@ namespace felt
 		LookupGridBase() : Base()
 		{}
 
+		/**
+		 * (Unused/untested) copy constructor, since std::mutex is not copyable.
+		 *
+		 * @param other
+		 */
+		LookupGridBase(const ThisType& other)
+		{
+			m_a_pos = other.m_a_pos;
+			this->m_data = other.m_data;
+			this->m_offset = other.m_offset;
+			this->m_dims = other.m_dims;
+		}
+
+		/**
+		 * (Unused/untested) assignment op, since std::mutex is not copyable.
+		 *
+		 * @param other
+		 */
+		void operator=(const ThisType& other)
+		{
+			m_a_pos = other.m_a_pos;
+			this->m_data = other.m_data;
+			this->m_offset = other.m_offset;
+			this->m_dims = other.m_dims;
+		}
+
 
 		LookupGridBase(const VecDu& dims, const VecDi& offset)
 		: Base()
 		{
 			this->init(dims, offset);
+		}
+
+		std::mutex& mutex ()
+		{
+			return m_mutex;
 		}
 
 		/**
@@ -152,6 +96,11 @@ namespace felt
 			this->fill(NULL_IDX_TUPLE);
 		}
 
+		VecDu dims ()
+		{
+			return Base::dims();
+		}
+
 		/**
 		 * Get tracking list by id.
 		 *
@@ -160,7 +109,7 @@ namespace felt
 		 */
 		virtual inline PosArray& list (const UINT& arr_idx = 0)
 		{
-			return m_aPos[arr_idx];
+			return m_a_pos[arr_idx];
 		}
 		/**
 		 * Get tracking list by id.
@@ -170,7 +119,7 @@ namespace felt
 		 */
 		virtual inline const PosArray& list (const UINT& arr_idx = 0) const
 		{
-			return m_aPos[arr_idx];
+			return m_a_pos[arr_idx];
 		}
 
 		/**
@@ -261,6 +210,10 @@ namespace felt
 		bool add(
 			const VecDi& pos, const UINT& arr_idx, const UINT& lookup_idx
 		) {
+			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+			this->assert_pos_bounds(pos, "add: ");
+			#endif
+
 			UINT& idx = this->get_internal(pos)[lookup_idx];
 			// Do not allow duplicates.
 			if (idx != NULL_IDX)
@@ -300,6 +253,10 @@ namespace felt
 			const UINT idx, const VecDi& pos, const UINT& arr_idx,
 			const UINT& lookup_idx
 		) {
+			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+			this->assert_pos_bounds(pos, "remove: ");
+			#endif
+
 			// Set index lookup to null value.
 			this->get_internal(pos)[lookup_idx] = NULL_IDX;
 
@@ -409,18 +366,18 @@ namespace felt
 		typedef Eigen::Matrix<UINT, 1, 1>					Idx_t;
 		typedef UINT										Val_t;
 	protected:
-		typedef LookupGridBase<D, N, Idx_t, Val_t>			Base_t;
-		typedef typename Base_t::VecDu						VecDu;
-		typedef typename Base_t::VecDi						VecDi;
+		typedef LookupGridBase<D, N, Idx_t, Val_t>			Base;
+		typedef typename Base::VecDu						VecDu;
+		typedef typename Base::VecDi						VecDi;
 	public:
 		virtual ~SharedLookupGrid() {}
 
-		SharedLookupGrid() : Base_t()
+		SharedLookupGrid() : Base()
 		{}
 
 
 		SharedLookupGrid(const VecDu& dims, const VecDi& offset)
-		: Base_t(dims, offset)
+		: Base(dims, offset)
 		{}
 
 		/**
@@ -453,7 +410,7 @@ namespace felt
 		 */
 		const bool is_active (const VecDi& pos) const
 		{
-			return this->get(pos) != Base_t::NULL_IDX;
+			return this->get(pos) != Base::NULL_IDX;
 		}
 		/**
 		 * Add position to tracking list and store index in tracking list in
@@ -468,7 +425,7 @@ namespace felt
 		 */
 		bool add (const VecDi& pos, const UINT& arr_idx = 0)
 		{
-			return Base_t::add(pos, arr_idx, 0u);
+			return Base::add(pos, arr_idx, 0u);
 		}
 
 		/**
@@ -482,7 +439,7 @@ namespace felt
 		 */
 		void reset (const UINT& arr_idx = 0)
 		{
-			Base_t::reset(arr_idx, 0u);
+			Base::reset(arr_idx, 0u);
 		}
 
 		/**
@@ -498,7 +455,7 @@ namespace felt
 		void remove (const UINT& idx, const UINT& arr_idx = 0)
 		{
 			const VecDi& pos = this->list(arr_idx)[idx];
-			Base_t::remove(idx, pos, arr_idx, 0);
+			Base::remove(idx, pos, arr_idx, 0);
 		}
 
 		/**
@@ -514,7 +471,7 @@ namespace felt
 		void remove (const VecDi& pos, const UINT& arr_idx = 0)
 		{
 			const UINT& idx = this->get_internal(pos)[0];
-			Base_t::remove(idx, pos, arr_idx, 0);
+			Base::remove(idx, pos, arr_idx, 0);
 		}
 	};
 
@@ -707,6 +664,19 @@ namespace felt
 		void remove (const VecDi& pos, const UINT& arr_idx = 0)
 		{
 			m_grid_lookup.remove(pos, arr_idx);
+		}
+
+		/**
+		 * Return true if position currently tracked for given list id, false
+		 * otherwise.
+		 *
+		 * @param pos
+		 * @param arr_idx
+		 * @return
+		 */
+		const bool is_active (const VecDi& pos, const UINT& arr_idx = 0) const
+		{
+			return m_grid_lookup.is_active(pos, arr_idx);
 		}
 	};
 

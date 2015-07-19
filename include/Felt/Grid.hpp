@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include <math.h>
 #include <vector>
+#include <functional>
 #include <eigen3/Eigen/Dense>
 #include <boost/iterator/iterator_facade.hpp>
 
@@ -125,6 +126,7 @@ namespace felt
 			VecDi, Eigen::aligned_allocator<VecDi>
 		> PosArray;
 
+		typedef GridBase<T, D, R>	GridBase_t;
 
 		class iterator : public boost::iterator_facade<
 			GridBase::iterator, const VecDi&, boost::forward_traversal_tag
@@ -978,6 +980,9 @@ namespace felt
 		 * @return
 		 */
 		T& get_internal (const VecDi& pos) {
+			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+			assert_pos_bounds(pos, "get_internal: ");
+			#endif
 			const UINT& idx = this->index(pos);
 			return this->data()(idx);
 		}
@@ -989,11 +994,42 @@ namespace felt
 		 * @param pos
 		 * @return
 		 */
-		const T& get_internal (const VecDi& pos) const {
+		const T& get_internal (const VecDi& pos) const
+		{
+			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+			assert_pos_bounds(pos, "get_internal: ");
+			#endif
 			const UINT& idx = this->index(pos);
 			return this->data()(idx);
 		}
 
+	protected:
+		void assert_pos_bounds (
+			const VecDi& pos, std::string title
+		) const {
+			if (!this->inside(pos))
+			{
+				using namespace Eigen;
+				IOFormat fmt(
+					StreamPrecision, DontAlignCols, ", ", ", ",
+					"", "", "(", ")"
+				);
+				const VecDi& pos_min = this->offset();
+				const VecDi& pos_max = (
+					this->dims().template cast<INT>() + pos_min
+					- VecDi::Constant(1)
+				);
+				std::stringstream err;
+				err << title << pos.transpose().format(fmt)
+					<< " is outside grid "
+					<< pos_min.format(fmt) << "-" << pos_max.format(fmt)
+					<< std::endl;
+				std::string err_str = err.str();
+				throw std::domain_error(err_str);
+			}
+		}
+
+	public:
 
 	#ifndef _TESTING
 	protected:

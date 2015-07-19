@@ -25,6 +25,7 @@ namespace felt {
 	class Surface
 	{
 	public:
+		typedef Surface<D, L>	Surface_t;
 		/**
 		 * A delta phi update grid with active (non-zero) grid points tracked.
 		 */
@@ -35,8 +36,8 @@ namespace felt {
 		 */
 		typedef SharedTrackedPartitionedGrid<FLOAT, D, 2*L+1>	PhiGrid;
 
-		static const INT LAYER_MIN	= -L;
-		static const INT LAYER_MAX	= L;
+		static const INT LAYER_MIN	= (INT)-L;
+		static const INT LAYER_MAX	= (INT)L;
 
 	protected:
 
@@ -141,14 +142,14 @@ namespace felt {
 
 
 	public:
-//		/**
-//		 * Default constructor initialising a zero-dimensional embedding.
-//		 */
-//		Surface ()
-//		:	m_grid_phi(),
-//			m_grid_status_change(),
-//			m_grid_dphi()
-//		{}
+		/**
+		 * Default constructor initialising a zero-dimensional embedding.
+		 */
+		Surface ()
+		:	m_grid_phi(),
+			m_grid_status_change(),
+			m_grid_dphi()
+		{}
 
 		/**
 		 * Construct a level set embedding of size dims.
@@ -166,7 +167,20 @@ namespace felt {
 			m_grid_status_change(),
 			m_grid_dphi()
 		{
-			this->dims(dims, dims_partition);
+			this->init(dims, dims_partition);
+		}
+
+		/**
+		 * Initialise a Surface (e.g. after default-construction).
+		 *
+		 * @param dims
+		 * @param dims_partition
+		 */
+		void init (
+			const VecDu& dims_,
+			const VecDu& dims_partition_ = VecDu::Constant(DEFAULT_PARTITION)
+		) {
+			this->dims(dims_, dims_partition_);
 		}
 
 		/**
@@ -1151,6 +1165,22 @@ namespace felt {
 				}
 			}
 
+		} // End calc_affected.
+
+
+		void update(std::function<FLOAT(const VecDi&, const PhiGrid&)> fn_)
+		{
+			this->update_start();
+			#pragma omp parallel for
+			for (
+				UINT part_idx = 0; part_idx < parts().size();
+				part_idx++
+			) {
+				const Vec3i& pos_part = parts()[part_idx];
+				for (const Vec3i& pos : layer(pos_part))
+					this->dphi(pos, fn_(pos, m_grid_phi));
+			}
+			this->update_end();
 		}
 
 #ifndef _TESTING

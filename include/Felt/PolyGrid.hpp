@@ -8,58 +8,94 @@
 
 namespace felt
 {
+
+
 	/**
 	 * Container for a grid of Poly objects polygonising a spatially partitioned
 	 * signed distance grid.
 	 *
 	 * Each Poly object polygonises a single spatial partition.
 	 * 
-	 * @tparam D the number of dimensions of the surface and thus grid.
+	 * @tparam D number of dimensions of the surface and thus grid.
+	 * @tparam P Poly compatible class for storing the polygonisations of
+	 * spatial partitions.
 	 */
-	template <UINT D>
-	class PolyGrid : public TrackedGrid<Poly<D>, D>
+	template <UINT D, class P=Poly<D> >
+	class PolyGrid : public Grid<P, D>
 	{
 	public:
 		/// Polygonisation of a single surface spatial partition.
-		typedef Poly<D>				PolyLeaf;
+		typedef P							PolyLeaf;
 
 		typedef typename PolyLeaf::VecDu	VecDu;
 		typedef typename PolyLeaf::VecDi	VecDi;
 
-		typedef TrackedGrid<Poly<D>, D>		Base;
+		typedef Grid<PolyLeaf, D>	Base;
+
+		/// Standard 2-layer signed-distance surface (either 2D or 3D).
+		typedef Surface<D>	PolySurface;
 
 		/// Lookup grid to track partitions containing zero-layer points.
 		typedef LookupPartitionedGrid<D>		PolyChanges;
-		/// Signed-distance surface (either 2D or 3D).
-		template <UINT L> using Surface_t = Surface<D, L>;
 	protected:
 		/// Lookup grid to track partitions containing zero-layer points.
 		PolyChanges		m_grid_changes;
 
 	public:
+		virtual ~PolyGrid ()
+		{}
 		
+		/**
+		 * Initialise an empty grid of Poly objects.
+		 */
+		PolyGrid () : Base(), m_grid_changes()
+		{}
+
 		/**
 		 * Construct a grid of polygonisations to fit size of given Surface.
 		 * 
 		 * @param surface
 		 */
-		template <UINT L>
-		PolyGrid (const Surface_t<L>& surface)
-		: 	Base(
+		PolyGrid (const PolySurface& surface) : Base(), m_grid_changes()
+		{
+			this->init(surface);
+		}
+
+		/**
+		 * Initialise a grid of polygonisations to fit size of given Surface.
+		 *
+		 * @param surface
+		 */
+		void init(const PolySurface& surface)
+		{
+			Base::init(
 				surface.phi().branch().dims(), surface.phi().branch().offset()
-			), m_grid_changes(
+			);
+			m_grid_changes.init(
 				surface.phi().dims(), surface.phi().offset(),
 				surface.phi().child_dims()
-			)
-		{
+			);
 			for (const VecDi& pos_child : surface.phi().branch())
-			{
-				// Add a one-element border to account for partition overlap.
-				this->get(pos_child).init(
-					surface.phi().child(pos_child).dims() + VecDu::Constant(2),
-					surface.phi().child(pos_child).offset() - VecDi::Constant(1)
+				this->init_child(
+					pos_child, surface.phi().child(pos_child).dims(),
+					surface.phi().child(pos_child).offset()
 				);
-			}
+		}
+
+		/**
+		 * Initialise a single polygonisation of a spatial partition.
+		 *
+		 * Override in subclasses for derived Poly classes.
+		 *
+		 * @param pos_child
+		 */
+		virtual void init_child(
+			const VecDi& pos_child_, const VecDu& dims_, const VecDi& offset_
+		) {
+			// Add a one-element border to account for partition overlap.
+			this->get(pos_child_).init(
+				dims_ + VecDu::Constant(2), offset_ - VecDi::Constant(1)
+			);
 		}
 
 		/**
@@ -82,8 +118,7 @@ namespace felt
 		 *
 		 * @param surface
 		 */
-		template <UINT L>
-		void notify(const Surface_t<L>& surface)
+		void notify(const PolySurface& surface)
 		{
 			// Loop over partitions containing active delta phi grid nodes for
 			// zero-layer.
@@ -97,7 +132,7 @@ namespace felt
 			for (
 				const VecDi& pos_child
 				: surface.status_change().branch().list(
-					Surface<D, L>::StatusChange::layer_idx(0)
+					PolySurface::StatusChange::layer_idx(0)
 				)
 			) {
 				this->notify(surface, pos_child);
@@ -116,8 +151,7 @@ namespace felt
 		 * @param surface
 		 * @param pos_child
 		 */
-		template <UINT L>
-		void notify(const Surface_t<L>& surface, const VecDi& pos_child)
+		void notify(const PolySurface& surface, const VecDi& pos_child)
 		{
 			const UINT& zero_layer_idx = surface.layer_idx(0);
 			// Zero-layer cuts through spatial partition.
@@ -147,35 +181,51 @@ namespace felt
 		 *
 		 * @param surface
 		 */
-		template <UINT L>
-		void poly_cubes(const Surface_t<L>& surface)
+		void poly_cubes(const PolySurface& surface)
 		{
 			const UINT& zero_layer_idx = surface.layer_idx(0);
-			for (const VecDi& pos_child : m_grid_changes.branch().list())
+			const UINT branch_size = m_grid_changes.branch().list().size();
+			// NOTE: cannot use range-based loop since spatial partition
+			// tracking list can be resized in this loop.
+			#pragma omp parallel for
+			for (UINT child_idx = 0; child_idx < branch_size; child_idx++)
 			{
+				// pos_child is not a reference since reallocation can occur.
+				VecDi pos_child = m_grid_changes.branch().list()[child_idx];
 				for (
 					const VecDi& pos_centre
 					: surface.phi().child(pos_child).list(zero_layer_idx)
 				) {
 					// Must flag cubes (4x for 2D, 8x for 3D) surrounding the
 					// zero-layer point.
-					for (const VecDi& pos_offset : Poly<D>::corners)
+					for (const VecDi& pos_offset : PolyLeaf::corners)
 					{
 						const VecDi& pos_corner = pos_centre - (
-							pos_offset - Poly<D>::SpxGridPosOffset
+							pos_offset - PolyLeaf::SpxGridPosOffset
 						);
 						if (!m_grid_changes.inside(pos_corner))
 							continue;
-						m_grid_changes.add(pos_corner);
+						m_grid_changes.add_safe(pos_corner);
 					}
 				}
 			}
 
 			// Second pass, since lookaround search above may have added extra
 			// spatial partitions.
-			for (const VecDi& pos_child : m_grid_changes.branch().list())
-			{
-				this->add(pos_child);
+
+			#pragma omp parallel for
+			for (
+				UINT child_idx = 0;
+				child_idx < m_grid_changes.branch().list().size(); child_idx++
+			) {
+				const VecDi& pos_child = (
+					m_grid_changes.branch().list()[child_idx]
+				);
+
+				// TODO: not thread-safe, but maybe not even needed? Does this
+				// really have to be a TrackedGrid?
+//				this->add(pos_child);
+
 				PolyLeaf& leaf = this->get(pos_child);
 				leaf.reset();
 				for (
@@ -185,7 +235,21 @@ namespace felt
 					leaf.spx(pos_cube, surface.phi());
 				}
 			}
+		}
 
+		void update_end ()
+		{
+			m_grid_changes.reset();
+		}
+
+		/**
+		 * Reset all polygonisations and changes.
+		 */
+		void reset ()
+		{
+			for (const VecDi& pos_child : *this)
+				this->get(pos_child).reset();
+			m_grid_changes.reset();
 		}
 	};
 

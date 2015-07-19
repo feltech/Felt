@@ -11,18 +11,18 @@ namespace felt
 {
 	/// Utility: turn a vector into a string.
 	template <class T>
-	std::string stringifyVector(const T& p)
+	std::string stringifyVector(const T& p, const INT& prec = 3)
 	{
-		std::string str;
-		str += "(";
+		std::stringstream str;
+		str << "(";
 		for (UINT i = 0; i < p.size(); i++)
 		{
 			if (i != 0)
-				str += ", ";
-			str += std::to_string(p(i));
+				str << ", ";
+			str << std::setprecision(prec) << p(i);
 		}
-		str += ")";
-		return str;
+		str << ")";
+		return str.str();
 	}
 
 	/// Utility: turn a number into a bit string.

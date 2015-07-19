@@ -2,6 +2,8 @@
 #define PARTITIONEDGRID_HPP_
 
 #include <boost/iterator/iterator_facade.hpp>
+#include <array>
+#include <mutex>
 
 #include "MappedGrid.hpp"
 
@@ -37,6 +39,8 @@ namespace felt
 
 		/// Grid of partitions with tracking list(s) of active grid points.
 		BranchGrid	m_grid_branch;
+
+		std::mutex	m_mutex_update_branch;
 
 		/// A convenience vector of the (unsigned) size of a partition.
 		VecDu	m_udims_child;
@@ -202,6 +206,9 @@ namespace felt
 		 */
 		bool add_child(const VecDi& pos, const UINT& arr_idx = 0)
 		{
+			if (m_grid_branch.is_active(pos, arr_idx))
+				return false;
+			std::lock_guard<std::mutex> lock(m_mutex_update_branch);
 			return this->branch().add(pos, arr_idx);
 		}
 
@@ -215,6 +222,9 @@ namespace felt
 		 */
 		void remove_child(const VecDi& pos, const UINT& arr_idx = 0)
 		{
+			if (!m_grid_branch.is_active(pos, arr_idx))
+				return;
+			std::lock_guard<std::mutex> lock(m_mutex_update_branch);
 			this->branch().remove(pos, arr_idx);
 		}
 
@@ -839,16 +849,13 @@ namespace felt
 	template <typename T, UINT D, UINT N, class G>
 	class TrackingPartitionedGridBase : public PartitionedGrid<T, D, G, N>
 	{
-	protected:
+	public:
 		typedef PartitionedGrid<T, D, G, N> 				Base;
 		typedef TrackingPartitionedGridBase<T, D, N, G>		ThisType;
 		friend class LeafsContainer<ThisType>;
-	public:
 		typedef typename Base::ChildGrid				ChildGrid;
-	protected:
 		typedef typename ChildGrid::VecDu				VecDu;
 		typedef typename ChildGrid::VecDi				VecDi;
-	public:
 		typedef typename Base::BranchGrid				BranchGrid;
 		typedef typename ChildGrid::PosArray			PosArray;
 
@@ -906,6 +913,32 @@ namespace felt
 			const VecDi& pos_child = this->pos_child(pos);
 			Base::add_child(pos_child, arr_idx);
 			return this->child(pos_child).add(pos, arr_idx);
+		}
+
+		/**
+		 * Thread safely add a leaf position to be tracked to given tracking 
+		 * list.
+		 *
+		 * Descend to relevant child grid to add to their tracking structure.
+		 *
+		 * This is a safe version that uses a mutex lock on the child grid,
+		 * which is necessary if threads can "cross over" to other partitions.
+		 *
+		 * @param pos position to add.
+		 * @param arr_idx tracking list id.
+		 * @return true if grid node set in child lookup grid and position added
+		 * to tracking list, false if child grid node was already set so
+		 * position already in a list.
+		 */
+		bool add_safe(const VecDi& pos, const UINT& arr_idx = 0)
+		{
+			const VecDi& pos_child = this->pos_child(pos);
+			Base::add_child(pos_child, arr_idx);
+			ChildGrid& child = this->child(pos_child);
+			if (child.is_active(pos))
+				return false;
+			std::lock_guard<std::mutex> lock(child.mutex());
+			return child.add(pos, arr_idx);
 		}
 
 		/**

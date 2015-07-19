@@ -1,6 +1,7 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/test/output_test_stream.hpp>
 #include <array>
+#include <string>
 
 #define _TESTING
 
@@ -28,10 +29,10 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		Surface<3, 2> surface(Vec3u(9,9,9), Vec3u(3, 3, 3));
 		PolyGrid<3> poly(surface);
 
-		BOOST_CHECK_EQUAL(poly.data().size(), 27);
-		BOOST_CHECK_EQUAL(poly.lookup().data().size(), 27);
+		BOOST_CHECK_EQUAL((UINT)poly.data().size(), 27);
+//		BOOST_CHECK_EQUAL(poly.lookup().data().size(), 27);
 
-		BOOST_CHECK_EQUAL(poly.changes().branch().data().size(), 27);
+//		BOOST_CHECK_EQUAL((UINT)poly.changes().branch().data().size(), 27);
 	}
 
 
@@ -226,7 +227,6 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		// Initialise a seed.
 		surface.seed(Vec3i(0,0,0));
-		// TODO: dummy zero-layer update require to initialise dphi grid.
 		surface.update_start();
 		surface.dphi(Vec3i(0,0,0), -1.0f);
 		surface.update_end();
@@ -286,7 +286,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		UINT total_vtx = 0;
 		UINT total_spx = 0;
-		for (const Vec3i& pos_child : poly.list())
+		for (const Vec3i& pos_child : poly)
 		{
 			total_vtx += poly.get(pos_child).vtx().size();
 			if (poly.get(pos_child).vtx().size() > 0)
@@ -355,7 +355,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		total_vtx = 0;
 		total_spx = 0;
-		for (const Vec3i& pos_child : poly.list())
+		for (const Vec3i& pos_child : poly)
 		{
 			total_vtx += poly.get(pos_child).vtx().size();
 			if (poly.get(pos_child).vtx().size() > 0)
@@ -373,5 +373,128 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		// So, now just 8 duplicates + 2 endpoints - 2 cut from the central
 		// partition.
 		BOOST_CHECK_EQUAL(total_vtx, poly_single.vtx().size() + 8 + 2 - 2);
+
+
+		// ==== Action ====
+		poly.reset();
+
+
+		// ==== Confirm ====
+		total_vtx = 0;
+		total_spx = 0;
+		for (const Vec3i& pos_child : poly)
+		{
+			total_vtx += poly.get(pos_child).vtx().size();
+			BOOST_TEST_MESSAGE(
+				stringifyVector(pos_child)
+				+ " "
+				+ std::to_string(poly.get(pos_child).vtx().size())
+			);
+			total_spx += poly.get(pos_child).spx().size();
+		}
+		BOOST_CHECK_EQUAL(total_vtx, 0);
+		BOOST_CHECK_EQUAL(total_spx, 0);
+		BOOST_CHECK_EQUAL(poly.changes().leafs().size(), 0);
+	}
+
+	/**
+	 * Test (re-)polygonisations based on tracked changes.
+	 *
+	 * Test case similar to above, but failed originally because of std::vector
+	 * reinitialisation invalidating references during poly_cubes.
+	 */
+	BOOST_AUTO_TEST_CASE(poly_cubes_2)
+	{
+		// ==== Setup ====
+		Surface<3> surface(Vec3u(13,13,13), Vec3u(4,4,4));
+
+		surface.update_start();
+		for (auto pos : surface.layer(0))
+			surface.dphi(pos, -1.0);
+		surface.update_end();
+
+		PolyGrid<3> polys(surface);
+		Poly<3> poly(surface.phi().dims(), surface.phi().offset());
+
+		surface.seed(Vec3i(0,0,0));
+
+		// ==== Action ====
+
+		surface.update_start();
+		for (auto pos : surface.layer(0))
+			surface.dphi(pos, -1.0);
+		surface.update_end();
+
+		polys.notify(surface);
+
+		surface.update_start();
+		for (auto pos : surface.layer(0))
+			surface.dphi(pos, -1.0);
+		surface.update_end();
+
+		polys.notify(surface);
+		polys.poly_cubes(surface);
+
+
+		// ==== Confirm ====
+		poly.surf(surface);
+
+		UINT total_vtx = 0;
+		UINT total_spx = 0;
+		for (const Vec3i& pos_child : polys)
+		{
+			total_vtx += polys.get(pos_child).vtx().size();
+			if (polys.get(pos_child).vtx().size() > 0)
+				BOOST_TEST_MESSAGE(
+					stringifyVector(pos_child)
+					+ " "
+					+ std::to_string(polys.get(pos_child).vtx().size())
+				);
+			total_spx += polys.get(pos_child).spx().size();
+
+			for (const Poly<3>::Simplex& polys_spx : polys.get(pos_child).spx())
+			{
+				Vec3f polys_vtxs[3];
+				polys_vtxs[0] = polys.get(pos_child).vtx()[
+					polys_spx.idxs(0)
+				].pos;
+				polys_vtxs[1] = polys.get(pos_child).vtx()[
+					polys_spx.idxs(1)
+				].pos;
+				polys_vtxs[2] = polys.get(pos_child).vtx()[
+					polys_spx.idxs(2)
+				].pos;
+				auto it = std::find_if(
+					poly.spx().begin(), poly.spx().end(),
+					[&](const Poly<3>::Simplex& poly_spx) {
+						Vec3f poly_vtxs[3];
+						poly_vtxs[0] = poly.vtx()[poly_spx.idxs(0)].pos;
+						poly_vtxs[1] = poly.vtx()[poly_spx.idxs(1)].pos;
+						poly_vtxs[2] = poly.vtx()[poly_spx.idxs(2)].pos;
+						return (
+							poly_vtxs[0] == polys_vtxs[0]
+							&& poly_vtxs[1] == polys_vtxs[1]
+							&& poly_vtxs[2] == polys_vtxs[2]
+						);
+					}
+				);
+
+				BOOST_CHECK_MESSAGE(
+					it != polys.get(pos_child).spx().end(),
+					(
+						"Simplex "
+						+ stringifyVector(polys_vtxs[0]) + "-"
+						+ stringifyVector(polys_vtxs[1]) + "-"
+						+ stringifyVector(polys_vtxs[2])
+						+ " found in partition"
+					)
+				);
+			}
+		}
+
+		BOOST_TEST_MESSAGE(std::to_string(total_spx) + " spxs");
+		BOOST_TEST_MESSAGE(std::to_string(total_vtx) + " vtxs");
+
+		BOOST_CHECK_EQUAL(total_spx, poly.spx().size());
 	}
 BOOST_AUTO_TEST_SUITE_END()

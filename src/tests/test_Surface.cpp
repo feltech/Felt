@@ -338,9 +338,9 @@ BOOST_AUTO_TEST_CASE(distance_transform)
  */
 BOOST_AUTO_TEST_CASE(layer_update)
 {
-	typedef Surface<2, 2> SurfaceT;
-	SurfaceT surface(Vec2u(9, 9));
-	SurfaceT::PhiGrid& phi = surface.phi();
+	typedef Surface<2, 2> Surface_t;
+	Surface_t surface(Vec2u(9, 9));
+	Surface_t::PhiGrid& phi = surface.phi();
 	// Grid to set values of manually, for checking against.
 	Grid<FLOAT, 2> phi_check(Vec2u(9, 9));
 
@@ -373,12 +373,18 @@ BOOST_AUTO_TEST_CASE(layer_update)
 	}
 
 	// Cycle new zero-layer points and move back to original signed distance.
-	surface.update_start();
-	{
-		for (const Vec2i& pos : surface.layer(0))
-			surface.dphi(pos, 0.6f);
-	}
-	surface.update_end();
+//	surface.update_start();
+//	{
+//		for (const Vec2i& pos : surface.layer(0))
+//			surface.dphi(pos, 0.6f);
+//	}
+//	surface.update_end();
+
+	// Update using lambda.
+	surface.update([](const Vec2i& pos, const Surface_t::PhiGrid& phi) {
+		return 0.6f;
+	});
+
 
 	{
 //		std::cerr << surface.phi().data() << std::endl;
@@ -536,9 +542,10 @@ BOOST_AUTO_TEST_CASE(iterate_layers)
 	const UINT& zeroLayerIdx = surface.layer_idx(0);
 
 	#pragma omp parallel for
-	for (Vec3i& part : surface.parts(0))
+	for (UINT part_idx = 0; part_idx < surface.parts().size(); part_idx++)
 	{
-		for (const Vec3i& pos : surface.layer(part, 0))
+		const Vec3i& pos_part = surface.parts()[part_idx];
+		for (const Vec3i& pos : surface.layer(pos_part, 0))
 		{
 			FLOAT val = surface(pos);
 			#pragma omp critical
@@ -557,7 +564,8 @@ BOOST_AUTO_TEST_CASE(iterate_layers)
 	pos_sum = Vec3i(0, 0, 0);
 
 	for (
-		INT layer_id = surface.LAYER_MIN; layer_id <= surface.LAYER_MAX; layer_id++
+		INT layer_id = surface.LAYER_MIN; layer_id <= surface.LAYER_MAX;
+		layer_id++
 	)
 		for (Vec3i& part : surface.parts(layer_id))
 			for (const Vec3i& pos : surface.layer(part, layer_id))
