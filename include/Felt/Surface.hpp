@@ -1167,7 +1167,15 @@ namespace felt {
 
 		} // End calc_affected.
 
-
+		/**
+		 * Perform a a full (parallelised) update of the narrow band.
+		 *
+		 * Lambda function passed will be given the position to process and
+		 * a reference to the phi grid, and is expected to return delta phi to
+		 * apply.
+		 *
+		 * @param fn_ (pos, phi) -> float
+		 */
 		void update(std::function<FLOAT(const VecDi&, const PhiGrid&)> fn_)
 		{
 			this->update_start();
@@ -1176,8 +1184,8 @@ namespace felt {
 				UINT part_idx = 0; part_idx < parts().size();
 				part_idx++
 			) {
-				const Vec3i& pos_part = parts()[part_idx];
-				for (const Vec3i& pos : layer(pos_part))
+				const VecDi& pos_part = parts()[part_idx];
+				for (const VecDi& pos : layer(pos_part))
 					this->dphi(pos, fn_(pos, m_grid_phi));
 			}
 			this->update_end();

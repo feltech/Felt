@@ -237,6 +237,12 @@ namespace felt
 			}
 		}
 
+		/**
+		 * Reset change tracking grid ready for next polygonisation.
+		 *
+		 * This is separated from poly_cubes() so that derived classes can
+		 * access the changes() before it is reset (e.g. to update the GPU).
+		 */
 		void update_end ()
 		{
 			m_grid_changes.reset();
