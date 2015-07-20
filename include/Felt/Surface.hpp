@@ -25,19 +25,22 @@ template <UINT D, UINT L=2>
 class Surface
 {
 public:
+	static const INT LAYER_MIN	= (INT)-L;
+	static const INT LAYER_MAX	= (INT)L;
+	static const UINT NUM_LAYERS = 2*L+1;
+
 	typedef Surface<D, L>	Surface_t;
 	/**
 	 * A delta phi update grid with active (non-zero) grid points tracked.
 	 */
-	typedef TrackedPartitionedGrid<FLOAT, D, 2*L+1>		DeltaPhiGrid;
+	typedef TrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>		DeltaPhiGrid;
 	/**
 	 * A level set embedding phi grid, with active grid points (the narrow
 	 * band) tracked.
 	 */
-	typedef SharedTrackedPartitionedGrid<FLOAT, D, 2*L+1>	PhiGrid;
+	typedef SharedTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>	PhiGrid;
 
-	static const INT LAYER_MIN	= (INT)-L;
-	static const INT LAYER_MAX	= (INT)L;
+
 
 protected:
 
@@ -992,6 +995,92 @@ public:
 
 
 	/**
+	 * Walk the narrow band from given position out to given distance.
+	 *
+	 * @param pos_
+	 * @param distance_
+	 * @return SharedLookupGrid with tracking lists for visited points, one list
+	 * for each layer.
+	 */
+	SharedLookupGrid<D, 2*L+1> walk_band (
+		const VecDi& pos_, const UINT& distance_
+	) {
+		typedef SharedLookupGrid<D, 2*L+1>	Lookup;
+		typedef typename Lookup::PosArray 	PosArray;
+
+		Lookup lookup(
+			VecDu::Constant(distance_ * 2 + 1),
+			pos_ - VecDi::Constant(distance_)
+		);
+
+		const INT& layer_id = this->layer_id(pos_);
+		if (!this->inside_band(layer_id))
+			return lookup;
+
+		lookup.add(pos_, this->layer_idx(layer_id));
+
+		// Arrays to store first and last element in tracking list within
+		// each spatial partition of tracking grid.
+		std::array<UINT, NUM_LAYERS> aidx_first_neigh;
+		std::array<UINT, NUM_LAYERS> aidx_last_neigh;
+		aidx_first_neigh.fill(0);
+
+		// Loop round searching outward for zero layer grid nodes.
+		for (UINT udist = 1; udist <= distance_; udist++)
+		{
+			// Copy number of active grid nodes for this partition
+			// into relevant index in the list.
+			for (UINT i = 0; i < NUM_LAYERS; i++)
+				aidx_last_neigh[i] = lookup.list(i).size();
+
+			for (UINT layer_idx = 0; layer_idx < NUM_LAYERS; layer_idx++)
+			{
+				// Loop over leaf grid nodes, using the cached start and end
+				// indices, so that newly added points are skipped.
+				for (
+					UINT idx_neigh = aidx_first_neigh[layer_idx];
+					idx_neigh < aidx_last_neigh[layer_idx];
+					idx_neigh++
+				) {
+					// This leaf grid nodes is the centre to search
+					// about.
+					const VecDi& pos_centre = lookup.list(layer_idx)[idx_neigh];
+
+					// Use utility method from Grid to get neighbouring
+					// grid nodes and call a lambda to add the point
+					// to the appropriate tracking list.
+
+					this->phi().neighs(
+						pos_centre,
+						[this, &lookup](const VecDi& pos_neigh) {
+							// Calculate layer of this neighbouring
+							// point from the phi grid.
+							const INT& layer_id = this->layer_id(pos_neigh);
+							// If the calculated layer lies within the
+							// narrow band, then we want to track it.
+							if (this->inside_band(layer_id))
+							{
+								// Add the neighbour point to the
+								// tracking grid. Will reject
+								// duplicates.
+								lookup.add(
+									pos_neigh, this->layer_idx(layer_id)
+								);
+							}
+						}
+					); // End neighbourhood query.
+				} // End for leaf grid node.
+			}
+			// Set first index to be the previous last index, so we start there
+			// on next loop around.
+			for (UINT i = 0; i < NUM_LAYERS; i++)
+				aidx_first_neigh[i] = aidx_last_neigh[i];
+		}
+
+		return lookup;
+	}
+
+	/**
 	 * Find all outer layer points who's distance transform is
 	 * affected by modified zero-layer points.
 	 *
@@ -1007,7 +1096,6 @@ public:
 	 */
 	void calc_affected()
 	{
-		typedef typename AffectedLookupGrid::PosArray PosArray;
 		const UINT& layer_idxZero = this->layer_idx(0);
 
 		// Loop over delta phi modified zero-layer points adding to
@@ -1166,6 +1254,9 @@ public:
 		}
 
 	} // End calc_affected.
+
+
+
 
 	/**
 	 * Perform a a full (parallelised) update of the narrow band.

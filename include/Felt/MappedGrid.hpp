@@ -48,7 +48,9 @@ namespace felt
 		{}
 
 		/**
-		 * (Unused/untested) copy constructor, since std::mutex is not copyable.
+		 * Copy constructor.
+		 *
+		 * Required since destructor defined and mutex is non-copyable.
 		 *
 		 * @param other
 		 */
@@ -61,25 +63,69 @@ namespace felt
 		}
 
 		/**
-		 * (Unused/untested) assignment op, since std::mutex is not copyable.
+		 * Move constructor,
+		 *
+		 * Required since destructor defined and mutex is non-movable.
 		 *
 		 * @param other
 		 */
-		void operator=(const ThisType& other)
+		LookupGridBase(ThisType&& other)
+		{
+			m_a_pos = std::move(other.m_a_pos);
+			this->m_data = std::move(other.m_data);
+			this->m_offset = std::move(other.m_offset);
+			this->m_dims = std::move(other.m_dims);
+		}
+
+		/**
+		 * Copy assigment operator.
+		 *
+		 * Required since destructor defined and mutex is non-movable.
+		 *
+		 * @param other
+		 */
+		ThisType& operator=(const ThisType& other)
 		{
 			m_a_pos = other.m_a_pos;
 			this->m_data = other.m_data;
 			this->m_offset = other.m_offset;
 			this->m_dims = other.m_dims;
+			return *this;
 		}
 
+		/**
+		 * Move assigment operator.
+		 *
+		 * Required since destructor defined and mutex is non-movable.
+		 *
+		 * @param other
+		 */
+		ThisType& operator=(ThisType&& other)
+		{
+			m_a_pos = std::move(other.m_a_pos);
+			this->m_data = std::move(other.m_data);
+			this->m_offset = std::move(other.m_offset);
+			this->m_dims = std::move(other.m_dims);
+			return *this;
+		}
 
+		/**
+		 * Construct a lookup grid with given dims and offset.
+		 *
+		 * @param dims
+		 * @param offset
+		 */
 		LookupGridBase(const VecDu& dims, const VecDi& offset)
 		: Base()
 		{
 			this->init(dims, offset);
 		}
 
+		/**
+		 * Get mutex.
+		 *
+		 * @return
+		 */
 		std::mutex& mutex ()
 		{
 			return m_mutex;
@@ -316,8 +362,6 @@ namespace felt
 	public:
 		typedef typename Eigen::Matrix<UINT, N, 1>	Val_t;
 
-		virtual ~LookupGrid() {}
-
 		LookupGrid() : Base_t()
 		{}
 
@@ -363,14 +407,13 @@ namespace felt
 	: public LookupGridBase<D, N, Eigen::Matrix<UINT, 1, 1>, UINT>
 	{
 	public:
+		typedef SharedLookupGrid<D, N>						ThisType;
 		typedef Eigen::Matrix<UINT, 1, 1>					Idx_t;
 		typedef UINT										Val_t;
-	protected:
 		typedef LookupGridBase<D, N, Idx_t, Val_t>			Base;
 		typedef typename Base::VecDu						VecDu;
 		typedef typename Base::VecDi						VecDi;
 	public:
-		virtual ~SharedLookupGrid() {}
 
 		SharedLookupGrid() : Base()
 		{}

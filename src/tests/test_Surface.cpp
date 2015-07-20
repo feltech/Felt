@@ -847,4 +847,77 @@ BOOST_AUTO_TEST_CASE(local_update)
 	}
 }
 
+BOOST_AUTO_TEST_CASE(walk)
+{
+	{
+		// ==== Setup ====
+		Surface<3, 2> surface(Vec3u(9, 9, 9));
+
+		// Create seed point and expand the narrow band.
+		surface.seed(Vec3i(0, 0, 0));
+
+		// ==== Action ====
+		SharedLookupGrid<3, surface.NUM_LAYERS> lookup = surface.walk_band(
+			Vec3i(0,0,0), 1
+		);
+
+		// ==== Contirm ====
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(-2)).size(), 0);
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(-1)).size(), 0);
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(0)).size(), 1);
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(1)).size(), 6);
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(2)).size(), 0);
+	}
+
+	{
+		// ==== Setup ====
+		Surface<3, 2> surface(Vec3u(16, 16, 16));
+
+		// Create seed point and expand the narrow band.
+		surface.seed(Vec3i(0, 0, 0));
+		surface.update([](auto& pos, auto& phi) {
+			return -1.0f;
+		});
+		surface.update([](auto& pos, auto& phi) {
+			return -1.0f;
+		});
+		surface.update([](auto& pos, auto& phi) {
+			return -1.0f;
+		});
+
+		// ==== Action ====
+		SharedLookupGrid<3, surface.NUM_LAYERS> lookup = surface.walk_band(
+			Vec3i(0,0,0), 1
+		);
+
+		// ==== Contirm ====
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(-2)).size(), 0);
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(-1)).size(), 0);
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(0)).size(), 0);
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(1)).size(), 0);
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(2)).size(), 0);
+
+		// ==== Action ====
+		lookup = surface.walk_band(
+			Vec3i(-5,0,0), 2
+		);
+
+		// ==== Contirm ====
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(-2)).size(), 0);
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(-1)).size(), 0);
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(0)).size(), 1);
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(1)).size(), 1);
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(2)).size(), 5);
+
+		BOOST_CHECK_EQUAL(lookup(Vec3i(-4, 0, 0)), 0);
+		BOOST_CHECK_EQUAL(lookup(Vec3i(-3, 0, 0)), 0);
+		BOOST_CHECK_PREDICATE(
+			[](const UINT& idx) {
+				return 0 <= idx <= 4;
+			}, (lookup(Vec3i(-5, 0, 0)))
+		);
+		BOOST_CHECK_EQUAL(lookup(Vec3i(-6, 0, 0)), lookup.NULL_IDX);
+
+	}
+}
 BOOST_AUTO_TEST_SUITE_END()
