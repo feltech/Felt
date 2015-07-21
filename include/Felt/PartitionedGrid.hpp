@@ -553,7 +553,6 @@ namespace felt
 			).matrix() + this->branch().offset();
 		}
 
-
 		/**
 		 * Fill with a single value.
 		 *
@@ -1146,6 +1145,7 @@ namespace felt
 			Base::add_child(pos_child, arr_idx);
 			return this->child(pos_child).add(pos, val, arr_idx);
 		}
+
 
 		/**
 		 * Add a position to the lookup grid.

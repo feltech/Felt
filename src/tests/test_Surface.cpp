@@ -206,8 +206,8 @@ BOOST_AUTO_TEST_CASE(delta_phi)
 		Vec3i pos = Vec3i(0, 0, 0);
 		// Apply a delta to the surface.
 		surface.dphi(pos, -2);
-		// Check delta was stored in underlying grid.
-		BOOST_CHECK_EQUAL(surface.dphi(pos), -2);
+		// Check delta was stored in underlying grid - will be clamped to -1.
+		BOOST_CHECK_EQUAL(surface.dphi(pos), -1);
 		// Check position vector of point in surface grid that delta was
 		// applied to is stored in a corresponding list to be iterated over.
 		BOOST_CHECK_EQUAL(surface.dphi().leafs(surface.layer_idx(0)).size(), 1);
@@ -851,6 +851,38 @@ BOOST_AUTO_TEST_CASE(walk)
 {
 	{
 		// ==== Setup ====
+		Surface<2, 2> surface(Vec2u(16, 16));
+
+		// Create seed point and expand the narrow band.
+		surface.seed(Vec2i(0, 0));
+		surface.update([](auto& pos, auto& phi) {
+			return -1.0f;
+		});
+		surface.update([](auto& pos, auto& phi) {
+			return -1.0f;
+		});
+		surface.update([](auto& pos, auto& phi) {
+			return -1.0f;
+		});
+
+		// ==== Action ====
+		SharedLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band(
+			Vec2i(-3,0), 2
+		);
+
+		// ==== Contirm ====
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(-2)).size(), 1);
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(-1)).size(), 1);
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(0)).size(), 3);
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(1)).size(), 3);
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(2)).size(), 5);
+
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(0))[0], Vec2i(-3, 0));
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(0))[1], Vec2i(-2, -1));
+		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(0))[2], Vec2i(-2, 1));
+	}
+	{
+		// ==== Setup ====
 		Surface<3, 2> surface(Vec3u(9, 9, 9));
 
 		// Create seed point and expand the narrow band.
@@ -939,21 +971,34 @@ BOOST_AUTO_TEST_CASE(gaussian)
 		return -1.0f;
 	});
 
-	// ==== Action ====
 	SharedLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band(
 		Vec2i(-3,0), 2
 	);
 
-	// ==== Contirm ====
-	BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(-2)).size(), 1);
-	BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(-1)).size(), 1);
-	BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(0)).size(), 3);
-	BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(1)).size(), 3);
-	BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(2)).size(), 5);
-	
-	BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(0))[0], Vec2i(-3, 0));
-	BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(0))[1], Vec2i(-2, -1));
-	BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(0))[2], Vec2i(-2, 1));
+	// ==== Action ====
+	surface.update_start();
+	surface.dphi_gauss(
+		lookup.list(surface.layer_idx(0)), Vec2f(-3.5f, 0), 0.5f, 0.2f
+	);
+	surface.update_end();
+	// === Confirm ===
+
+	BOOST_CHECK_CLOSE(
+		surface.dphi().get(Vec2i(-3, 0))
+		+ surface.dphi().get(Vec2i(-2, 1))
+		+ surface.dphi().get(Vec2i(-2, -1)),
+		0.5f, 0.0000001f
+	);
+
+	BOOST_CHECK_CLOSE_FRACTION(
+		surface.dphi().get(Vec2i(-3, 0)), 0.3457f, 0.0001f
+	);
+	BOOST_CHECK_CLOSE_FRACTION(
+		surface.dphi().get(Vec2i(-2, -1)), 0.0771f, 0.0001f
+	);
+	BOOST_CHECK_CLOSE_FRACTION(
+		surface.dphi().get(Vec2i(-2, 1)), 0.0771f, 0.001f
+	);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

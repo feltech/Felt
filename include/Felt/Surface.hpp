@@ -4,6 +4,7 @@
 #include <vector>
 #include <functional>
 #include <limits>
+#include <set>
 #include <boost/math/special_functions/round.hpp>
 #include <eigen3/Eigen/Dense>
 #include <omp.h>
@@ -508,35 +509,106 @@ public:
 	 * @param pos
 	 * @param val
 	 */
-	void dphi (
-		const VecDi& pos, FLOAT val, const INT& layer_id = 0
-	) {
-		// If this is the zero-layer, then ensure we cannot leave the grid
-		// boundary.
+	void dphi (const VecDi& pos, FLOAT val, const INT& layer_id = 0)
+	{
 		if (layer_id == 0)
-		{
-			const VecDi& pos_min = this->pos_min();
-			const VecDi& pos_max = this->pos_max();
-			// Cycle each axis.
-			for (UINT d = 0; d < D; d++)
-				// Check if pos lies at the max bound of this axis.
-				if (pos_min(d) == pos(d) || pos_max(d) == pos(d))
-				{
-					// Get phi at this point.
-					const FLOAT fphi = this->phi(pos);
-					// Max value that will not be rounded and thus trigger
-					// a layer_move.
-					const FLOAT val_max = -0.5 +
-						(std::numeric_limits<FLOAT>::epsilon() * 2);
-					// Clamp the value of delta phi.
-					val = std::max(val_max - fphi, val);
-					break;
-				}
-		}
-
+			val = clamp(pos, val);
 		this->dphi().add(pos, val, this->layer_idx(layer_id));
 	}
 
+
+	FLOAT clamp (const VecDi& pos, FLOAT val)
+	{
+		const VecDi& pos_min = this->pos_min();
+		const VecDi& pos_max = this->pos_max();
+
+		if (abs(val) > 1.0f)
+			val = sgn(val);
+
+		// Cycle each axis.
+		for (UINT d = 0; d < D; d++)
+			// Check if pos lies at the max bound of this axis.
+			if (pos_min(d) == pos(d) || pos_max(d) == pos(d))
+			{
+				// Get phi at this point.
+				const FLOAT& fphi = this->phi(pos);
+				// Max value that will not be rounded and thus trigger
+				// a layer_move.
+				const FLOAT& val_max = -0.5 +
+					(std::numeric_limits<FLOAT>::epsilon() * 2);
+				// Clamp the value of delta phi.
+				val = std::max(val_max - fphi, val);
+				break;
+			}
+		return val;
+	}
+
+
+	/**
+	 * Update delta phi grid at given points with amount determined by Gaussian
+	 * distribution about (real-valued) central point.
+	 *
+	 * Will be normalised so that the total amount distributed over the points
+	 * sums to val. Locks mutexes of affected spatial partitions so thread safe.
+	 *
+	 * TODO: better handling of overlapping Gaussians - current just clamps,
+	 * so can lose mass.
+	 *
+	 * @param list the points to spread the amount over.
+	 * @param pos_centre centre of the Gaussian distribution.
+	 * @param val amount to spread over the points.
+	 * @param stddev standard deviation of Gaussian.
+	 */
+	void dphi_gauss (
+		const typename DeltaPhiGrid::PosArray& list, const VecDf& pos_centre,
+		const FLOAT& val, const FLOAT& stddev
+	) {
+		constexpr FLOAT sqrt2piDinv = 1.0f/sqrt(pow(2*M_PI, D));
+
+		Eigen::VectorXf weights(list.size());
+		std::set<std::mutex*> locks;
+		for (const VecDi& pos : list)
+			locks.insert(
+				&m_grid_dphi.child(m_grid_dphi.pos_child(pos)).lookup().mutex()
+			);
+
+		for (std::mutex* lock : locks)
+			lock->lock();
+
+		// Calculate Gaussian weights.
+		for (UINT idx = 0; idx < list.size(); idx++)
+		{
+			const VecDf& pos = list[idx].template cast<FLOAT>();
+			if (this->dphi(list[idx]) != 0)
+			{
+				weights(idx) = 0;
+				continue;
+			}
+
+			const FLOAT& dist_sq = (pos - pos_centre).squaredNorm();
+			const FLOAT& weight = sqrt2piDinv * exp(-0.5f *dist_sq);
+			weights(idx) = weight;
+		}
+
+		const FLOAT& weights_sum = weights.sum();
+		if (weights_sum > 0)
+		{
+			// Normalise weights
+			weights *= val / weights.sum();
+
+			for (UINT idx = 0; idx < list.size(); idx++)
+			{
+				const VecDi& pos = list[idx];
+				const FLOAT& amount = this->clamp(
+					pos, weights(idx) + this->dphi(pos)
+				);
+
+				this->dphi().add(pos, amount, this->layer_idx(0));
+			}
+		}
+		for (std::mutex* lock : locks)
+			lock->unlock();
+	}
 
 	/**
 	 * Get reference to the active partitions of a given layer of the narrow
