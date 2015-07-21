@@ -920,4 +920,40 @@ BOOST_AUTO_TEST_CASE(walk)
 
 	}
 }
+	
+	
+BOOST_AUTO_TEST_CASE(gaussian)
+{
+	// ==== Setup ====
+	Surface<2, 2> surface(Vec2u(16, 16));
+
+	// Create seed point and expand the narrow band.
+	surface.seed(Vec2i(0, 0));
+	surface.update([](auto& pos, auto& phi) {
+		return -1.0f;
+	});
+	surface.update([](auto& pos, auto& phi) {
+		return -1.0f;
+	});
+	surface.update([](auto& pos, auto& phi) {
+		return -1.0f;
+	});
+
+	// ==== Action ====
+	SharedLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band(
+		Vec2i(-3,0), 2
+	);
+
+	// ==== Contirm ====
+	BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(-2)).size(), 1);
+	BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(-1)).size(), 1);
+	BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(0)).size(), 3);
+	BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(1)).size(), 3);
+	BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(2)).size(), 5);
+	
+	BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(0))[0], Vec2i(-3, 0));
+	BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(0))[1], Vec2i(-2, -1));
+	BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(0))[2], Vec2i(-2, 1));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
