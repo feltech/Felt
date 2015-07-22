@@ -954,7 +954,7 @@ BOOST_AUTO_TEST_CASE(walk)
 }
 	
 	
-BOOST_AUTO_TEST_CASE(gaussian)
+BOOST_AUTO_TEST_CASE(gaussian_from_list)
 {
 	// ==== Setup ====
 	Surface<2, 2> surface(Vec2u(16, 16));
@@ -981,6 +981,8 @@ BOOST_AUTO_TEST_CASE(gaussian)
 		lookup.list(surface.layer_idx(0)), Vec2f(-3.5f, 0), 0.5f, 0.2f
 	);
 	surface.update_end();
+		
+	
 	// === Confirm ===
 
 	BOOST_CHECK_CLOSE(
@@ -994,10 +996,83 @@ BOOST_AUTO_TEST_CASE(gaussian)
 		surface.dphi().get(Vec2i(-3, 0)), 0.3457f, 0.0001f
 	);
 	BOOST_CHECK_CLOSE_FRACTION(
-		surface.dphi().get(Vec2i(-2, -1)), 0.0771f, 0.0001f
+		surface.dphi().get(Vec2i(-2, -1)), 0.07714f, 0.0001f
 	);
 	BOOST_CHECK_CLOSE_FRACTION(
-		surface.dphi().get(Vec2i(-2, 1)), 0.0771f, 0.001f
+		surface.dphi().get(Vec2i(-2, 1)), 0.07714f, 0.0001f
+	);
+}
+
+
+BOOST_AUTO_TEST_CASE(gaussian_from_dist)
+{
+	// ==== Setup ====
+	Surface<2, 2> surface(Vec2u(16, 16));
+
+	// Create seed point and expand the narrow band.
+	surface.seed(Vec2i(0, 0));
+	surface.update([](auto& pos, auto& phi) {
+		return -1.0f;
+	});
+	surface.update([](auto& pos, auto& phi) {
+		return -1.0f;
+	});
+	surface.update([](auto& pos, auto& phi) {
+		return -1.0f;
+	});
+
+
+	// ==== Action ====
+	surface.update_start();
+	surface.dphi_gauss(
+		2, Vec2f(-3.5f, 0), 0.5f, 0.2f
+	);
+	surface.update_end();
+		
+	
+	// === Confirm ===
+
+	BOOST_CHECK_CLOSE(
+		surface.dphi().get(Vec2i(-3, 0))
+		+ surface.dphi().get(Vec2i(-2, 1))
+		+ surface.dphi().get(Vec2i(-2, -1)),
+		0.5f, 0.0000001f
+	);
+
+	BOOST_CHECK_CLOSE_FRACTION(
+		surface.dphi().get(Vec2i(-3, 0)), 0.3457f, 0.0001f
+	);
+	BOOST_CHECK_CLOSE_FRACTION(
+		surface.dphi().get(Vec2i(-2, -1)), 0.07714f, 0.0001f
+	);
+	BOOST_CHECK_CLOSE_FRACTION(
+		surface.dphi().get(Vec2i(-2, 1)), 0.07714f, 0.0001f
+	);
+}
+
+BOOST_AUTO_TEST_CASE(gaussian_from_dist)
+{
+	// ==== Setup ====
+	Surface<3, 2> surface(Vec3u(16, 16, 16));
+
+	// Create seed point and expand the narrow band.
+	surface.seed(Vec3i(0, 0, 0));
+	surface.update([](auto& pos, auto& phi) {
+		return -1.0f;
+	});
+	surface.update([](auto& pos, auto& phi) {
+		return -1.0f;
+	});
+	surface.update([](auto& pos, auto& phi) {
+		return -1.0f;
+	});
+
+	const Vec3f& pos_hit = surface.ray(
+		Vec3f(-17.0f, 0, 0), Vec3f(1, 0, 0)
+	);
+	
+	BOOST_CHECK_CLOSE_FRACTION(
+		pos_hit, Vec3f(-16.0f, 0, 0), 0.00001f
 	);
 }
 

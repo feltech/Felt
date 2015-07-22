@@ -11,7 +11,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_ROOT}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_ROOT}/bin)
 
 include_directories(
-    ${PROJECT_ROOT}/include
+    ${PROJECT_ROOT}/include /usr/include/eigen3
 )
 
 add_definitions(-std=c++14 -fopenmp)

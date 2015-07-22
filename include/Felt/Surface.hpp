@@ -543,6 +543,30 @@ public:
 		return val;
 	}
 
+	/**
+	 * Update delta phi grid surrounding a given point with amount determined
+	 * by Gaussian distribution about (real-valued) central point.
+	 *
+	 * Will be normalised so that the total amount distributed over the points
+	 * sums to val. Locks mutexes of affected spatial partitions so thread safe.
+	 *
+	 *
+	 * @param dist distance from central point to spread over.
+	 * @param pos_centre centre of the Gaussian distribution.
+	 * @param val amount to spread over the points.
+	 * @param stddev standard deviation of Gaussian.
+	 */	
+	void dphi_gauss (
+		const UINT& dist, const VecDf& pos_centre,
+		const FLOAT& val, const FLOAT& stddev
+	) {
+		SharedLookupGrid<D, NUM_LAYERS> lookup = this->walk_band(
+			Vec2i(-3,0), 2
+		);
+		this->dphi_gauss(
+			lookup.list(this->layer_idx(0)), pos_centre, val, stddev
+		);
+	}
 
 	/**
 	 * Update delta phi grid at given points with amount determined by Gaussian
@@ -1074,7 +1098,7 @@ public:
 	 * @return SharedLookupGrid with tracking lists for visited points, one list
 	 * for each layer.
 	 */
-	SharedLookupGrid<D, 2*L+1> walk_band (
+	SharedLookupGrid<D, NUM_LAYERS> walk_band (
 		const VecDi& pos_, const UINT& distance_
 	) {
 		typedef SharedLookupGrid<D, 2*L+1>	Lookup;
@@ -1352,6 +1376,56 @@ public:
 				this->dphi(pos, fn_(pos, m_grid_phi));
 		}
 		this->update_end();
+	}
+	
+	const VecDf ray(const VecDf& pos_start, const VecDf& pos_dir)
+	{
+		static const VecDf NULL_POS = VecDf::Constant(
+			std::numeric_limits<FLOAT>::max()
+		);
+		
+		// Cast to phi grid bounds.
+		if (!this->phi().inside(pos_start))
+		{
+			// Componentwise multiply of start and direction must have at 
+			// least one negative component.
+			VecDf dirs = pos_start.array() * pos_dir.array();
+			if (!(dirs.array() < 0).any())
+				return NULL_POS;
+			
+			bool found_side = false;
+			
+			// Check ray passes through a grid boundary.
+			for (UINT dim = 0; dim < dirs.size() && !found_side; dim++)
+			{
+				if (dirs(dim) >= 0)
+					continue;
+				// Parametric.
+				const FLOAT& t = (
+					(this->pos_min(dim) - pos_start(dim)) / pos_dir(dim)
+				);
+				// Loop other dims to check bounds.
+				for (
+					UINT dim_other = (dim + 1) % D; dim_other != dim; 
+					dim_other = (dim_other + 1) % D
+				) {
+					const FLOAT intersect = (
+						(pos_start(dim_other) + pos_dir(dim_other)) * t
+					);
+					if (
+						this->pos_min(dim_other) <= intersect 
+						&& intersect <= this->pos_max(dim_other)
+					) 
+						found_side = true;
+				}
+			}
+			if (!found_side)
+				return NULL_POS;
+		}
+		
+		// Cast through spatial partitions.
+		
+		// Cast to zero layer.
 	}
 
 #ifndef _TESTING
