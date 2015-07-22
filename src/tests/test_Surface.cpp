@@ -1050,7 +1050,7 @@ BOOST_AUTO_TEST_CASE(gaussian_from_dist)
 	);
 }
 
-BOOST_AUTO_TEST_CASE(gaussian_from_dist)
+BOOST_AUTO_TEST_CASE(ray)
 {
 	// ==== Setup ====
 	Surface<3, 2> surface(Vec3u(16, 16, 16));
@@ -1071,8 +1071,8 @@ BOOST_AUTO_TEST_CASE(gaussian_from_dist)
 		Vec3f(-17.0f, 0, 0), Vec3f(1, 0, 0)
 	);
 	
-	BOOST_CHECK_CLOSE_FRACTION(
-		pos_hit, Vec3f(-16.0f, 0, 0), 0.00001f
+	BOOST_CHECK_LE(
+		(pos_hit - Vec3f(-3.0f, 0, 0)).squaredNorm(), 0.00001f
 	);
 }
 

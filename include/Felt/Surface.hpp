@@ -40,11 +40,6 @@ public:
 	 * band) tracked.
 	 */
 	typedef SharedTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>	PhiGrid;
-
-
-
-protected:
-
 	/**
 	 * A resizable array of D-dimensional grid positions.
 	 */
@@ -64,7 +59,6 @@ protected:
 
 	typedef LookupPartitionedGrid<D, 2*L+1>				AffectedLookupGrid;
 
-public:
 	/**
 	 * Storage class for flagging a point in the grid to be moved from one
 	 * narrow band layer to another.
@@ -88,6 +82,8 @@ public:
 		VecDi pos;
 		INT from_layer;
 	};
+
+	static const VecDf NULL_POS;
 
 	/**
 	 * A spatially partitioned array of StatusChange objects.
@@ -516,7 +512,14 @@ public:
 		this->dphi().add(pos, val, this->layer_idx(layer_id));
 	}
 
-
+	/**
+	 * Clamp delta phi value such that it doesn't breach the grid or cause
+	 * instability.
+	 *
+	 * @param pos
+	 * @param val
+	 * @return clamped val
+	 */
 	FLOAT clamp (const VecDi& pos, FLOAT val)
 	{
 		const VecDi& pos_min = this->pos_min();
@@ -549,7 +552,6 @@ public:
 	 *
 	 * Will be normalised so that the total amount distributed over the points
 	 * sums to val. Locks mutexes of affected spatial partitions so thread safe.
-	 *
 	 *
 	 * @param dist distance from central point to spread over.
 	 * @param pos_centre centre of the Gaussian distribution.
@@ -1378,54 +1380,164 @@ public:
 		this->update_end();
 	}
 	
-	const VecDf ray(const VecDf& pos_start, const VecDf& pos_dir)
-	{
-		static const VecDf NULL_POS = VecDf::Constant(
-			std::numeric_limits<FLOAT>::max()
-		);
-		
-		// Cast to phi grid bounds.
-		if (!this->phi().inside(pos_start))
+
+	constexpr std::array<VecDi, 1 << D> corners () const {
+		std::array<VecDi, 1 << D> acorner;
+		for (UINT mask = 0; mask < acorner.size(); mask++)
+			for (UINT dim = 0; dim < D; dim++)
+				if (mask & (1 << dim))
+					acorner[mask](dim) = 0;
+				else
+					acorner[mask](dim) = -1;
+		return acorner;
+	}
+
+
+	const VecDf box_intersect(
+		const VecDi& pos_min, const VecDi& pos_max,
+		Eigen::ParametrizedLine<FLOAT, D>& line
+	) const {
+		constexpr FLOAT tiny = std::numeric_limits<FLOAT>::epsilon() * 10;
+
+		Eigen::Hyperplane<FLOAT, D> plane;
+		FLOAT distance;
+		for (UINT dim = 0; dim < D; dim++)
 		{
-			// Componentwise multiply of start and direction must have at 
-			// least one negative component.
-			VecDf dirs = pos_start.array() * pos_dir.array();
-			if (!(dirs.array() < 0).any())
-				return NULL_POS;
-			
-			bool found_side = false;
-			
-			// Check ray passes through a grid boundary.
-			for (UINT dim = 0; dim < dirs.size() && !found_side; dim++)
-			{
-				if (dirs(dim) >= 0)
-					continue;
-				// Parametric.
-				const FLOAT& t = (
-					(this->pos_min(dim) - pos_start(dim)) / pos_dir(dim)
-				);
-				// Loop other dims to check bounds.
-				for (
-					UINT dim_other = (dim + 1) % D; dim_other != dim; 
-					dim_other = (dim_other + 1) % D
-				) {
-					const FLOAT intersect = (
-						(pos_start(dim_other) + pos_dir(dim_other)) * t
-					);
-					if (
-						this->pos_min(dim_other) <= intersect 
-						&& intersect <= this->pos_max(dim_other)
-					) 
-						found_side = true;
-				}
-			}
-			if (!found_side)
+			if (abs(line.direction()(dim)) < tiny)
+				continue;
+			VecDf plane_norm = VecDf::Constant(0);
+			plane_norm(dim) = -1;
+			plane = Eigen::Hyperplane<FLOAT, D>(plane_norm, pos_min(dim));
+			distance = line.intersection(plane);
+			if (distance > 0)
+				break;
+			plane_norm(dim) = 1;
+			plane = Eigen::Hyperplane<FLOAT, D>(plane_norm, pos_max(dim));
+			distance = line.intersection(plane);
+			if (distance > 0)
+				break;
+		}
+
+		if (distance < 0)
+			return NULL_POS;
+
+		const VecDf& pos_intersect = line.pointAt(distance + tiny);
+		for (UINT dim = 0; dim < D; dim++)
+		{
+			if (
+				(FLOAT)pos_min(dim) > pos_intersect(dim)
+				|| pos_intersect(dim) > (FLOAT)pos_max(dim)
+			)
 				return NULL_POS;
 		}
-		
-		// Cast through spatial partitions.
-		
-		// Cast to zero layer.
+
+		return pos_intersect;
+	}
+
+
+	static VecDi round(const VecDf& pos)
+	{
+		VecDi pos_rounded;
+		for (UINT dim = 0; dim < pos.size(); dim++)
+			pos_rounded(dim) = (INT)(pos(dim) + sgn(pos(dim))*0.5f);
+		return pos_rounded;
+	}
+
+	const VecDf ray(VecDf pos_origin, const VecDf& pos_dir) const
+	{
+		constexpr FLOAT tiny = std::numeric_limits<FLOAT>::epsilon() * 10;
+
+		Eigen::ParametrizedLine<FLOAT, D> line(pos_origin, pos_dir);
+
+		if (!this->phi().inside(round(pos_origin)))
+		{
+			pos_origin = this->box_intersect(
+				m_pos_min, m_pos_max, line
+			);
+			if (&pos_origin == &NULL_POS)
+				return NULL_POS;
+			line = Eigen::ParametrizedLine<FLOAT, D>(pos_origin, pos_dir);
+		}
+
+		FLOAT t_child = 0;
+		VecDf pos_sample_child = pos_origin;
+		VecDi pos_sample_child_rounded = round(pos_sample_child);
+		FLOAT child_size = (FLOAT)this->phi().child_dims().array().minCoeff();
+		VecDi pos_child_last = VecDi::Constant(
+			std::numeric_limits<INT>::max()
+		);
+
+		while (this->phi().inside(pos_sample_child_rounded))
+		{
+			const VecDi& pos_child = this->phi().pos_child(
+				pos_sample_child_rounded
+			);
+			if (pos_child != pos_child_last) {
+				pos_child_last = pos_child;
+
+				for (const VecDi& pos_corner : corners())
+				{
+					const VecDi& pos_child_corner = pos_child + pos_corner;
+					if (!this->phi().branch().inside(pos_child_corner))
+						continue;
+					if (this->layer(pos_child_corner).size() == 0)
+						continue;
+
+					const typename PhiGrid::ChildGrid& child = (
+						this->phi().child(pos_child_corner)
+					);
+
+					const VecDf& pos_intersect = this->box_intersect(
+						child.offset(),
+						child.offset() + child.dims().template cast<INT>(),
+						line
+					);
+
+					if (&pos_intersect == &NULL_POS)
+						continue;
+
+					line = Eigen::ParametrizedLine<FLOAT, D>(
+						pos_intersect, pos_dir
+					);
+
+					t_child = 0;
+					FLOAT t = 0;
+					VecDf pos_sample = pos_sample_child;
+					VecDi pos_sample_rounded = round(pos_sample);
+
+					while (child.inside(pos_sample_rounded))
+					{
+						if (this->layer_id(pos_sample_rounded) == 0)
+						{
+							VecDf normal = this->phi().grad(pos_sample);
+							normal.normalize();
+
+							if (normal.dot(line.direction()) < 0)
+							{
+								const FLOAT& dist = this->phi().get(
+									pos_sample_rounded
+								);
+
+								Eigen::Hyperplane<FLOAT, D> plane(normal, dist);
+
+								return line.intersectionPoint(plane);
+							}
+						}
+
+						pos_sample = line.pointAt(t);
+						pos_sample_rounded = round(pos_sample);
+						t += 1.0f;
+					} // End while inside child grid.
+				} // End for child grid corners.
+			} // End if on next child.
+
+			t_child += child_size;
+			pos_sample_child = line.pointAt(t_child);
+			pos_sample_child_rounded = round(pos_sample_child);
+
+		} // End while inside phi grid.
+
+		return NULL_POS;
 	}
 
 #ifndef _TESTING
@@ -1433,5 +1545,11 @@ protected:
 #endif
 
 };
+
+template <UINT D, UINT L>
+const typename Surface<D, L>::VecDf Surface<D, L>::NULL_POS = (
+	VecDf::Constant(std::numeric_limits<FLOAT>::max())
+);
+
 }
 #endif

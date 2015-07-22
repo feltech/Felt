@@ -521,7 +521,8 @@ namespace felt
 		 * @param pos
 		 * @return
 		 */
-		bool inside (const VecDi& pos) const
+		template <typename PosType>
+		bool inside (const Eigen::Matrix<PosType, D, 1>& pos) const
 		{
 			const VecDu& dims = this->dims();
 			const VecDi& offset = this->offset();
@@ -578,29 +579,6 @@ namespace felt
 				vec_dir(axis) -= 1;
 			}
 		}
-
-//		void neighs (const VecDi& pos, std::unordered_set<VecDi, UINT (*) (const VecDi& a)>& vout) const
-//		{
-//			// Reference to GridBase dimensions.
-//			const VecDu& dims = this->dims();
-//			// Position for look-around.
-//			VecDi vec_dir(pos);
-//			for (INT axis = 0; axis < dims.size(); axis++) {
-//				// Check if backward value is within GridBase.
-//				vec_dir(axis) -= 1;
-//				if (this->inside(vec_dir))
-//				{
-//					vout.insert(vec_dir);
-//				}
-//				// Check if forward value is within GridBase.
-//				vec_dir(axis) += 2;
-//				if (this->inside(vec_dir))
-//				{
-//					vout.insert(vec_dir);
-//				}
-//				vec_dir(axis) -= 1;
-//			}
-//		}
 
 		/**
 		 * Get the neighbouring positions in the cardinal directions.
@@ -731,14 +709,16 @@ namespace felt
 		 * @param pos
 		 * @return
 		 */
-		VecDT grad (const VecDi& pos) const
+		template <typename PosType>
+		VecDT grad (const Eigen::Matrix<PosType, D, 1>& pos) const
 		{
+			typedef Eigen::Matrix<PosType, D, 1>	VecDR;
 			// Reference to GridBase dimensions.
 			const VecDu& dims = this->dims();
 			// Vector to store gradient calculation.
 			VecDT vec_grad(dims.size());
 			// Position for look-around.
-			VecDi pos_test(pos);
+			VecDR pos_test(pos);
 
 			// Central value.
 			const T centre = (*this)(pos);
