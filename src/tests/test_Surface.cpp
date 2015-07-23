@@ -1053,7 +1053,8 @@ BOOST_AUTO_TEST_CASE(gaussian_from_dist)
 BOOST_AUTO_TEST_CASE(ray)
 {
 	// ==== Setup ====
-	Surface<3, 2> surface(Vec3u(16, 16, 16));
+	Surface<3, 2> surface(Vec3u(16, 16, 16), Vec3u(4, 4, 4));
+	Vec3f pos_hit;
 
 	// Create seed point and expand the narrow band.
 	surface.seed(Vec3i(0, 0, 0));
@@ -1067,12 +1068,25 @@ BOOST_AUTO_TEST_CASE(ray)
 		return -1.0f;
 	});
 
-	const Vec3f& pos_hit = surface.ray(
-		Vec3f(-17.0f, 0, 0), Vec3f(1, 0, 0)
-	);
+	// ==== Action ====
+	pos_hit = surface.ray(Vec3f(-17.0f, 0, 0), Vec3f(1, 0, 0));
 	
+	// ==== Confirm ====
 	BOOST_CHECK_LE(
 		(pos_hit - Vec3f(-3.0f, 0, 0)).squaredNorm(), 0.00001f
+	);
+
+	// ==== Setup ====
+	surface.update([](auto& pos, auto& phi) {
+		return -0.3f;
+	});
+
+	// ==== Action ====
+	pos_hit = surface.ray(Vec3f(-17.0f, 0, 0), Vec3f(1, 0, 0));
+
+	// ==== Confirm ====
+	BOOST_CHECK_LE(
+		(pos_hit - Vec3f(-3.3f, 0, 0)).squaredNorm(), 0.00001f
 	);
 }
 

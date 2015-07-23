@@ -83,8 +83,6 @@ public:
 		INT from_layer;
 	};
 
-	static const VecDf NULL_POS;
-
 	/**
 	 * A spatially partitioned array of StatusChange objects.
 	 *
@@ -182,6 +180,20 @@ public:
 	) {
 		this->dims(dims_, dims_partition_);
 	}
+
+	/**
+	 * Get null position vector for given template typename.
+	 *
+	 * TODO: c++14 should support variable templates, which is a better
+	 * solution, but gcc doesn't yet.
+	 *
+	 * @return
+	 */
+	template <typename T>
+	constexpr const Eigen::Matrix<T, D, 1> NULL_POS() const
+	{
+		return Eigen::Matrix<T, D, 1>::Constant(std::numeric_limits<T>::max());
+	};
 
 	/**
 	 * Shorthand for accessing the phi (level set) grid at a given position.
@@ -1395,7 +1407,7 @@ public:
 
 	const VecDf box_intersect(
 		const VecDi& pos_min, const VecDi& pos_max,
-		Eigen::ParametrizedLine<FLOAT, D>& line
+		const Eigen::ParametrizedLine<FLOAT, D>& line
 	) const {
 		constexpr FLOAT tiny = std::numeric_limits<FLOAT>::epsilon() * 10;
 
@@ -1403,7 +1415,7 @@ public:
 		FLOAT distance;
 		for (UINT dim = 0; dim < D; dim++)
 		{
-			if (abs(line.direction()(dim)) < tiny)
+			if (std::abs(line.direction()(dim)) < tiny)
 				continue;
 			VecDf plane_norm = VecDf::Constant(0);
 			plane_norm(dim) = -1;
@@ -1419,7 +1431,7 @@ public:
 		}
 
 		if (distance < 0)
-			return NULL_POS;
+			return NULL_POS<FLOAT>();
 
 		const VecDf& pos_intersect = line.pointAt(distance + tiny);
 		for (UINT dim = 0; dim < D; dim++)
@@ -1428,7 +1440,7 @@ public:
 				(FLOAT)pos_min(dim) > pos_intersect(dim)
 				|| pos_intersect(dim) > (FLOAT)pos_max(dim)
 			)
-				return NULL_POS;
+				return NULL_POS<FLOAT>();
 		}
 
 		return pos_intersect;
@@ -1454,8 +1466,9 @@ public:
 			pos_origin = this->box_intersect(
 				m_pos_min, m_pos_max, line
 			);
-			if (&pos_origin == &NULL_POS)
-				return NULL_POS;
+			if (pos_origin == NULL_POS<FLOAT>())
+				return NULL_POS<FLOAT>();
+
 			line = Eigen::ParametrizedLine<FLOAT, D>(pos_origin, pos_dir);
 		}
 
@@ -1463,9 +1476,7 @@ public:
 		VecDf pos_sample_child = pos_origin;
 		VecDi pos_sample_child_rounded = round(pos_sample_child);
 		FLOAT child_size = (FLOAT)this->phi().child_dims().array().minCoeff();
-		VecDi pos_child_last = VecDi::Constant(
-			std::numeric_limits<INT>::max()
-		);
+		VecDi pos_child_last = NULL_POS<INT>();
 
 		while (this->phi().inside(pos_sample_child_rounded))
 		{
@@ -1493,16 +1504,15 @@ public:
 						line
 					);
 
-					if (&pos_intersect == &NULL_POS)
+					if (pos_intersect == NULL_POS<FLOAT>())
 						continue;
 
-					line = Eigen::ParametrizedLine<FLOAT, D>(
+					Eigen::ParametrizedLine<FLOAT, D> line_leaf(
 						pos_intersect, pos_dir
 					);
 
-					t_child = 0;
-					FLOAT t = 0;
-					VecDf pos_sample = pos_sample_child;
+					FLOAT t_leaf = 0;
+					VecDf pos_sample = pos_intersect;
 					VecDi pos_sample_rounded = round(pos_sample);
 
 					while (child.inside(pos_sample_rounded))
@@ -1512,21 +1522,23 @@ public:
 							VecDf normal = this->phi().grad(pos_sample);
 							normal.normalize();
 
-							if (normal.dot(line.direction()) < 0)
+							if (normal.dot(pos_dir) < 0)
 							{
-								const FLOAT& dist = this->phi().get(
-									pos_sample_rounded
+								const FLOAT dist = this->phi().interp(
+									pos_sample
 								);
 
-								Eigen::Hyperplane<FLOAT, D> plane(normal, dist);
+								if (std::abs(dist) < tiny)
+									return pos_sample;
 
-								return line.intersectionPoint(plane);
+								const VecDf& hit = pos_sample - normal*dist;
+								return hit;
 							}
 						}
 
-						pos_sample = line.pointAt(t);
+						t_leaf += 1.0f;
+						pos_sample = line_leaf.pointAt(t_leaf);
 						pos_sample_rounded = round(pos_sample);
-						t += 1.0f;
 					} // End while inside child grid.
 				} // End for child grid corners.
 			} // End if on next child.
@@ -1537,7 +1549,7 @@ public:
 
 		} // End while inside phi grid.
 
-		return NULL_POS;
+		return NULL_POS<FLOAT>();
 	}
 
 #ifndef _TESTING
@@ -1545,11 +1557,5 @@ protected:
 #endif
 
 };
-
-template <UINT D, UINT L>
-const typename Surface<D, L>::VecDf Surface<D, L>::NULL_POS = (
-	VecDf::Constant(std::numeric_limits<FLOAT>::max())
-);
-
 }
 #endif

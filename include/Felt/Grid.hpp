@@ -303,6 +303,34 @@ namespace felt
 		}
 
 		/**
+		 * Get interpolated grid value.
+		 *
+		 * Passing a floating point position vector will initiate a linear
+		 * interpolation of the grid at that real-valued location.
+		 *
+		 * @param pos
+		 * @return
+		 */
+		const T operator() (const VecDf& pos) const
+		{
+			return this->interp(pos);
+		}
+
+		/**
+		 * Get interpolated grid value.
+		 *
+		 * Convenience operator to return linearly interpolated value given
+		 * a real-valued location.
+		 *
+		 * @param pos
+		 * @return
+		 */
+		T operator() (const VecDf& pos)
+		{
+			return this->interp(pos);
+		}
+
+		/**
 		 * Abstract getter to be overriden by subclasses.
 		 *
 		 * This allows the subclass to mutate the value stored in the grid
@@ -417,33 +445,7 @@ namespace felt
 			return pos;
 		}
 
-		/**
-		 * Get interpolated grid value.
-		 *
-		 * Passing a floating point position vector will initiate a linear
-		 * interpolation of the grid at that real-valued location.
-		 *
-		 * @param pos
-		 * @return
-		 */
-		const T operator() (const VecDf& pos) const
-		{
-			return this->interp(pos);
-		}
 
-		/**
-		 * Get interpolated grid value.
-		 *
-		 * Convenience operator to return linearly interpolated value given
-		 * a real-valued location.
-		 *
-		 * @param pos
-		 * @return
-		 */
-		T operator() (const VecDf& pos)
-		{
-			return this->interp(pos);
-		}
 
 		/**
 		 * Retrieve a reference to the raw grid data array.
