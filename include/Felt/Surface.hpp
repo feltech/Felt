@@ -1498,11 +1498,20 @@ public:
 						this->phi().child(pos_child_corner)
 					);
 
-					const VecDf& pos_intersect = this->box_intersect(
-						child.offset(),
-						child.offset() + child.dims().template cast<INT>(),
-						line
-					);
+					VecDf pos_intersect;
+					if (child.inside(pos_sample_child_rounded))
+					{
+						pos_intersect = pos_sample_child;
+					}
+					else
+					{
+						pos_intersect = this->box_intersect(
+							child.offset(),
+							child.offset() 
+							+ child.dims().template cast<INT>(),
+							line
+						);
+					}
 
 					if (pos_intersect == NULL_POS<FLOAT>())
 						continue;

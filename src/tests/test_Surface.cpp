@@ -1069,25 +1069,69 @@ BOOST_AUTO_TEST_CASE(ray)
 	});
 
 	// ==== Action ====
-	pos_hit = surface.ray(Vec3f(-17.0f, 0, 0), Vec3f(1, 0, 0));
+	// Simplest "dead on" case - from outside grid.
+	pos_hit = surface.ray(Vec3f(-100.0f, 0, 0), Vec3f(1, 0, 0));
 	
 	// ==== Confirm ====
 	BOOST_CHECK_LE(
 		(pos_hit - Vec3f(-3.0f, 0, 0)).squaredNorm(), 0.00001f
 	);
 
+	// ==== Action ====
+	// Simplest "dead on" case - from inside grid.
+	pos_hit = surface.ray(Vec3f(-6.0f, 0, 0), Vec3f(1, 0, 0));
+	
+	// ==== Confirm ====
+	BOOST_CHECK_LE(
+		(pos_hit - Vec3f(-3.0f, 0, 0)).squaredNorm(), 0.00001f
+	);
+
+	// ==== Action ====
+	// Simplest "dead on" case - from inside surface.
+	pos_hit = surface.ray(Vec3f(0.0f, 0, 0), Vec3f(1, 0, 0));
+	
+	// ==== Confirm ====
+	BOOST_CHECK_EQUAL(pos_hit, surface.NULL_POS<FLOAT>());
+	
+	// ==== Action ====
+	// Simplest "dead on" case - from zero layer.
+	pos_hit = surface.ray(Vec3f(-3.0f, 0, 0), Vec3f(1, 0, 0));
+	
+	// ==== Confirm ====
+	BOOST_CHECK_LE(
+		(pos_hit - Vec3f(-3.0f, 0, 0)).squaredNorm(), 0.00001f
+	);
+	
 	// ==== Setup ====
 	surface.update([](auto& pos, auto& phi) {
 		return -0.3f;
 	});
 
 	// ==== Action ====
-	pos_hit = surface.ray(Vec3f(-17.0f, 0, 0), Vec3f(1, 0, 0));
+	// Ray  interpolate to zero curve.
+	pos_hit = surface.ray(Vec3f(-10.0f, 0, 0), Vec3f(1, 0, 0));
 
 	// ==== Confirm ====
 	BOOST_CHECK_LE(
 		(pos_hit - Vec3f(-3.3f, 0, 0)).squaredNorm(), 0.00001f
 	);
+	
+	// ==== Setup ====
+	surface.update([](auto& pos, auto& phi) {
+		return 0.3f;
+	});
+
+	// ==== Action ====
+	// Ray at an angle.
+	pos_hit = surface.ray(
+		Vec3f(-10.0f, -10.0f, -10.0f), Vec3f(1, 1, 1).normalized()
+	);
+
+	// ==== Confirm ====
+	BOOST_CHECK_LE(
+		(pos_hit - Vec3f(-sqrt(2), -sqrt(2), -sqrt(2))).squaredNorm(), 
+		0.00001f
+	);	
 }
 
 BOOST_AUTO_TEST_SUITE_END()
