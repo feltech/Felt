@@ -5,13 +5,14 @@ project(Felt)
 set(PROJECT_ROOT ${PROJECT_SOURCE_DIR})
 set(SRC_ROOT ${PROJECT_SOURCE_DIR}/src)
 set(TESTS_ROOT ${SRC_ROOT}/tests)
+set(EIGEN3_INCLUDE_DIR CACHE PATH /usr/include/eigen3)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_ROOT}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_ROOT}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_ROOT}/bin)
 
 include_directories(
-    ${PROJECT_ROOT}/include /usr/include/eigen3
+    ${PROJECT_ROOT}/include ${EIGEN3_INCLUDE_DIR}
 )
 
 add_definitions(-std=c++14 -fopenmp)

@@ -29,6 +29,7 @@ public:
 	static const INT LAYER_MIN	= (INT)-L;
 	static const INT LAYER_MAX	= (INT)L;
 	static const UINT NUM_LAYERS = 2*L+1;
+	static constexpr FLOAT TINY = 0.00001f;
 
 	typedef Surface<D, L>	Surface_t;
 	/**
@@ -771,9 +772,10 @@ public:
 	 * @param pos
 	 * @return
 	 */
-	INT layer_id(const VecDi& pos) const
+	template <class PosType>
+	INT layer_id(const PosType& pos) const
 	{
-		return this->layer_id(this->phi(pos));
+		return this->layer_id(this->phi()(pos));
 	}
 
 	/**
@@ -1409,13 +1411,12 @@ public:
 		const VecDi& pos_min, const VecDi& pos_max,
 		const Eigen::ParametrizedLine<FLOAT, D>& line
 	) const {
-		constexpr FLOAT tiny = std::numeric_limits<FLOAT>::epsilon() * 10;
 
 		Eigen::Hyperplane<FLOAT, D> plane;
 		FLOAT distance;
 		for (UINT dim = 0; dim < D; dim++)
 		{
-			if (std::abs(line.direction()(dim)) < tiny)
+			if (std::abs(line.direction()(dim)) < TINY)
 				continue;
 			VecDf plane_norm = VecDf::Constant(0);
 			plane_norm(dim) = -1;
@@ -1433,7 +1434,7 @@ public:
 		if (distance < 0)
 			return NULL_POS<FLOAT>();
 
-		const VecDf& pos_intersect = line.pointAt(distance + tiny);
+		const VecDf& pos_intersect = line.pointAt(distance + TINY);
 		for (UINT dim = 0; dim < D; dim++)
 		{
 			if (
@@ -1457,8 +1458,6 @@ public:
 
 	const VecDf ray(VecDf pos_origin, const VecDf& pos_dir) const
 	{
-		constexpr FLOAT tiny = std::numeric_limits<FLOAT>::epsilon() * 10;
-
 		Eigen::ParametrizedLine<FLOAT, D> line(pos_origin, pos_dir);
 
 		if (!this->phi().inside(round(pos_origin)))
@@ -1521,33 +1520,35 @@ public:
 					);
 
 					FLOAT t_leaf = 0;
-					VecDf pos_sample = pos_intersect;
-					VecDi pos_sample_rounded = round(pos_sample);
+					VecDf pos_sample_leaf = pos_intersect;
+					VecDi pos_sample_leaf_rounded = round(pos_sample_leaf);
 
-					while (child.inside(pos_sample_rounded))
+					while (child.inside(pos_sample_leaf_rounded))
 					{
-						if (this->layer_id(pos_sample_rounded) == 0)
+						if (this->layer_id(pos_sample_leaf) == 0)
 						{
-							VecDf normal = this->phi().grad(pos_sample);
+							VecDf normal = this->phi().grad(pos_sample_leaf);
 							normal.normalize();
 
 							if (normal.dot(pos_dir) < 0)
 							{
-								const FLOAT dist = this->phi().interp(
-									pos_sample
+								FLOAT dist = this->phi().interp(
+									pos_sample_leaf
 								);
 
-								if (std::abs(dist) < tiny)
-									return pos_sample;
-
-								const VecDf& hit = pos_sample - normal*dist;
-								return hit;
+								while (std::abs(dist) > TINY) {
+									pos_sample_leaf -= normal*dist;
+									dist = this->phi().interp(
+										pos_sample_leaf
+									);
+								}
+								return pos_sample_leaf;
 							}
 						}
 
 						t_leaf += 1.0f;
-						pos_sample = line_leaf.pointAt(t_leaf);
-						pos_sample_rounded = round(pos_sample);
+						pos_sample_leaf = line_leaf.pointAt(t_leaf);
+						pos_sample_leaf_rounded = round(pos_sample_leaf);
 					} // End while inside child grid.
 				} // End for child grid corners.
 			} // End if on next child.
