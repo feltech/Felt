@@ -22,31 +22,32 @@ namespace felt
 	class LookupGridBase : public GridBase<I, D, V>
 	{
 	public:
-		typedef I								Idx_t;
-		typedef V								Val_t;
-		typedef LookupGridBase<D, N, I, V>		ThisType;
-		typedef GridBase<Idx_t, D, Val_t>		Base;
-		typedef typename Base::VecDu			VecDu;
-		typedef typename Base::VecDi			VecDi;
-		typedef typename Base::PosArray			PosArray;
+		using Idx_t = I;
+		using Val_t = V;
+		using ThisType = LookupGridBase<D, N, I, V>;
+		using Base = GridBase<Idx_t, D, Val_t>;
+		using typename Base::VecDu;
+		using typename Base::VecDi;
+		using typename Base::PosArray;
+
 	protected:
 		std::array<PosArray, N>	m_a_pos;
 		std::mutex				m_mutex;
 	public:
 
-		static const Idx_t				 			NULL_IDX_TUPLE;
-		static const UINT				 			NULL_IDX;
-
-		static inline const UINT num_lists()
-		{
-			return N;
-		}
+		static const Idx_t		NULL_IDX_TUPLE;
+		static const UINT		NULL_IDX;
 
 		virtual ~LookupGridBase() {}
 
-		LookupGridBase() : Base()
-		{}
+		LookupGridBase () = default;
 
+		LookupGridBase (
+			const VecDu& dims, const VecDi& offset = VecDi::Zero()
+		) : Base()
+		{
+			this->init(dims, offset);
+		}
 		/**
 		 * Copy constructor.
 		 *
@@ -110,18 +111,6 @@ namespace felt
 		}
 
 		/**
-		 * Construct a lookup grid with given dims and offset.
-		 *
-		 * @param dims
-		 * @param offset
-		 */
-		LookupGridBase(const VecDu& dims, const VecDi& offset)
-		: Base()
-		{
-			this->init(dims, offset);
-		}
-
-		/**
 		 * Get mutex.
 		 *
 		 * @return
@@ -136,16 +125,13 @@ namespace felt
 		 *
 		 * @param dims_new
 		 */
-		virtual void dims (const VecDu& dims_new)
+		virtual void dims (const VecDu& dims_new) override
 		{
 			Base::dims(dims_new);
 			this->fill(NULL_IDX_TUPLE);
 		}
 
-		VecDu dims ()
-		{
-			return Base::dims();
-		}
+		using Base::dims;
 
 		/**
 		 * Get tracking list by id.
@@ -353,23 +339,16 @@ namespace felt
 	>
 	{
 	protected:
-		typedef LookupGridBase<
+		using Base = LookupGridBase<
 			D, N, Eigen::Matrix<UINT, N, 1>, Eigen::Matrix<UINT, N, 1>
-		> Base_t;
-		typedef typename Base_t::VecDu			VecDu;
-		typedef typename Base_t::VecDi			VecDi;
+		>;
+		using typename Base::VecDu;
+		using typename Base::VecDi;
 
 	public:
-		typedef typename Eigen::Matrix<UINT, N, 1>	Val_t;
+		using Val_t = typename Eigen::Matrix<UINT, N, 1>;
 
-		LookupGrid() : Base_t()
-		{}
-
-
-		LookupGrid(const VecDu& dims, const VecDi& offset)
-		: Base_t(dims, offset)
-		{}
-
+		using Base::LookupGridBase;
 
 		/**
 		 * Return tuple of indices stored at given position in grid.
@@ -379,12 +358,12 @@ namespace felt
 		 * @param pos
 		 * @return
 		 */
-		Val_t& get (const VecDi& pos)
+		Val_t& get (const VecDi& pos) override
 		{
 			const UINT& idx = this->index(pos);
 			return this->data()(idx);
 		}
-		const Val_t& get (const VecDi& pos) const
+		const Val_t& get (const VecDi& pos) const override
 		{
 			const UINT& idx = this->index(pos);
 			return this->data()(idx);
@@ -407,21 +386,14 @@ namespace felt
 	: public LookupGridBase<D, N, Eigen::Matrix<UINT, 1, 1>, UINT>
 	{
 	public:
-		typedef SharedLookupGrid<D, N>						ThisType;
-		typedef Eigen::Matrix<UINT, 1, 1>					Idx_t;
-		typedef UINT										Val_t;
-		typedef LookupGridBase<D, N, Idx_t, Val_t>			Base;
-		typedef typename Base::VecDu						VecDu;
-		typedef typename Base::VecDi						VecDi;
-	public:
+		using ThisType = SharedLookupGrid<D, N>;
+		using Idx_t = Eigen::Matrix<UINT, 1, 1>;
+		using Val_t = UINT;
+		using Base = LookupGridBase<D, N, Idx_t, Val_t>	;
+		using typename Base::VecDu;
+		using typename Base::VecDi;
 
-		SharedLookupGrid() : Base()
-		{}
-
-
-		SharedLookupGrid(const VecDu& dims, const VecDi& offset)
-		: Base(dims, offset)
-		{}
+		using Base::LookupGridBase;
 
 		/**
 		 * Return index in associated list of grid node.
@@ -432,12 +404,12 @@ namespace felt
 		 * @param pos
 		 * @return
 		 */
-		Val_t& get (const VecDi& pos)
+		Val_t& get (const VecDi& pos) override
 		{
 			const UINT& idx = this->index(pos);
 			return this->data()(idx)[0];
 		}
-		const Val_t& get (const VecDi& pos) const
+		const Val_t& get (const VecDi& pos) const override
 		{
 			const UINT& idx = this->index(pos);
 			return this->data()(idx)[0];
@@ -533,20 +505,17 @@ namespace felt
 	class TrackedGridBase : public Grid<T, D>
 	{
 	public:
-		typedef G								Lookup;
+		using Lookup = G;
+		using Base = Grid<T, D>;
+		using PosArray = typename Lookup::PosArray;
+		using typename Base::VecDu;
+		using typename Base::VecDi;
 	protected:
-		typedef	Grid<T, D>						Base;
-		typedef typename Lookup::PosArray		PosArray;
-
-		Lookup									m_grid_lookup;
+		Lookup	m_grid_lookup;
 	public:
-		typedef typename Base::VecDu			VecDu;
-		typedef typename Base::VecDi			VecDi;
 
-
-		TrackedGridBase() : Base(), m_grid_lookup()
-		{}
-
+		TrackedGridBase() = default;
+		using Base::Grid;
 
 		TrackedGridBase(const VecDu& dims, const VecDi& offset)
 		: Base(), m_grid_lookup()

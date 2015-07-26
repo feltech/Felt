@@ -848,6 +848,9 @@ BOOST_AUTO_TEST_CASE(local_update)
 	}
 }
 
+/**
+ * Test walking the zero layer out to a give distance.
+ */
 BOOST_AUTO_TEST_CASE(walk)
 {
 	{
@@ -954,7 +957,10 @@ BOOST_AUTO_TEST_CASE(walk)
 	}
 }
 	
-	
+/**
+ * Test delta phi update spread using Gaussian distribution given a list of
+ * positions to update.
+ */
 BOOST_AUTO_TEST_CASE(gaussian_from_list)
 {
 	// ==== Setup ====
@@ -1004,7 +1010,10 @@ BOOST_AUTO_TEST_CASE(gaussian_from_list)
 	);
 }
 
-
+/**
+ * Test delta phi update spread using Gaussian distribution given point and
+ * radius.
+ */
 BOOST_AUTO_TEST_CASE(gaussian_from_dist)
 {
 	// ==== Setup ====
@@ -1026,14 +1035,14 @@ BOOST_AUTO_TEST_CASE(gaussian_from_dist)
 	// ==== Action ====
 	surface.update_start();
 	surface.dphi_gauss(
-		2, Vec2f(-3.5f, 0), 0.5f, 0.2f
+		2, Vec2f(-3.0f, 0), 0.5f, 0.2f
 	);
 	surface.update_end();
 		
 	
 	// === Confirm ===
 
-	BOOST_CHECK_CLOSE(
+	BOOST_CHECK_CLOSE_FRACTION(
 		surface.dphi().get(Vec2i(-3, 0))
 		+ surface.dphi().get(Vec2i(-2, 1))
 		+ surface.dphi().get(Vec2i(-2, -1)),
@@ -1041,16 +1050,19 @@ BOOST_AUTO_TEST_CASE(gaussian_from_dist)
 	);
 
 	BOOST_CHECK_CLOSE_FRACTION(
-		surface.dphi().get(Vec2i(-3, 0)), 0.3457f, 0.0001f
+		surface.dphi().get(Vec2i(-3, 0)), 0.28805843f, 0.0001f
 	);
 	BOOST_CHECK_CLOSE_FRACTION(
-		surface.dphi().get(Vec2i(-2, -1)), 0.07714f, 0.0001f
+		surface.dphi().get(Vec2i(-2, -1)), 0.105970778f, 0.0001f
 	);
 	BOOST_CHECK_CLOSE_FRACTION(
-		surface.dphi().get(Vec2i(-2, 1)), 0.07714f, 0.0001f
+		surface.dphi().get(Vec2i(-2, 1)), 0.105970778f, 0.0001f
 	);
 }
 
+/**
+ * Test raycasting to zero curve.
+ */
 BOOST_AUTO_TEST_CASE(ray)
 {
 	// ==== Setup ====
@@ -1153,6 +1165,77 @@ BOOST_AUTO_TEST_CASE(ray)
 		(pos_hit - Vec3f(-1.5, -1.5, 0)).squaredNorm(),
 		0.00001f
 	);	
+}
+
+
+BOOST_AUTO_TEST_CASE(gaussian_from_ray)
+{
+	// ==== Setup ====
+	Surface<2, 2> surface(Vec2u(16, 16));
+
+	// Create seed point and expand the narrow band.
+	surface.seed(Vec2i(0, 0));
+	surface.update([](auto& pos, auto& phi) {
+		return -1.0f;
+	});
+	surface.update([](auto& pos, auto& phi) {
+		return -1.0f;
+	});
+	surface.update([](auto& pos, auto& phi) {
+		return -1.0f;
+	});
+
+
+	// ==== Action ====
+	surface.update_start();
+	surface.dphi_gauss(
+		Vec2f(-2.4f, -10.0f), Vec2f(0, 1), 2, 0.5f, 0.2f
+	);
+	surface.update_end();
+
+
+	// === Confirm ===
+//	BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+/*
+/home/dave/Dropbox/Workspace/Felt/src/tests/test_Surface.cpp(1,198): Message:
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -3 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+
+*/
+	BOOST_CHECK_CLOSE_FRACTION(
+		surface.dphi().get(Vec2i(-3, 0))
+		+ surface.dphi().get(Vec2i(-2, 1))
+		+ surface.dphi().get(Vec2i(-2, -1))
+		+ surface.dphi().get(Vec2i(-1, -2)),
+		0.5f, 0.0000001f
+	);
+
+	BOOST_CHECK_CLOSE_FRACTION(
+		surface.dphi().get(Vec2i(-3, 0)), 0.137388021f, 0.0001f
+	);
+	BOOST_CHECK_CLOSE_FRACTION(
+		surface.dphi().get(Vec2i(-2, -1)), 0.250337183, 0.0001f
+	);
+	BOOST_CHECK_CLOSE_FRACTION(
+		surface.dphi().get(Vec2i(-2, 1)), 0.0505424365f, 0.0001f
+	);
+	BOOST_CHECK_CLOSE_FRACTION(
+		surface.dphi().get(Vec2i(-1, -2)), 0.061732355f, 0.0001f
+	);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

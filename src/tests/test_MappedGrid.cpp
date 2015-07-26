@@ -159,9 +159,6 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		typedef LookupGrid<3, 3> Grid_t;
 		Grid_t grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
 
-		BOOST_CHECK_EQUAL(Grid_t::num_lists(), 3);
-
-
 		const Vec3i pos1(1, 0, -1);
 		const Vec3i pos2(2, 1, 0);
 		const Vec3i pos3(3, -1, 0);

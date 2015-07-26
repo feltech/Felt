@@ -30,6 +30,7 @@ public:
 	static const INT LAYER_MAX	= (INT)L;
 	static const UINT NUM_LAYERS = 2*L+1;
 	static constexpr FLOAT TINY = 0.00001f;
+	static constexpr FLOAT REALLYTINY = std::numeric_limits<FLOAT>::epsilon();
 
 	typedef Surface<D, L>	Surface_t;
 	/**
@@ -576,7 +577,7 @@ public:
 		const FLOAT& val, const FLOAT& stddev
 	) {
 		SharedLookupGrid<D, NUM_LAYERS> lookup = this->walk_band(
-			Vec2i(-3,0), 2
+			round(pos_centre), 2
 		);
 		this->dphi_gauss(
 			lookup.list(this->layer_idx(0)), pos_centre, val, stddev
@@ -1367,9 +1368,6 @@ public:
 
 	} // End calc_affected.
 
-
-
-
 	/**
 	 * Perform a a full (parallelised) update of the narrow band.
 	 *
@@ -1394,7 +1392,11 @@ public:
 		this->update_end();
 	}
 	
-
+	/**
+	 * Get array of offsets to corners of a cube (e.g. 8 for 3D, 4 for 2D).
+	 *
+	 * @return
+	 */
 	constexpr std::array<VecDi, 1 << D> corners () const {
 		std::array<VecDi, 1 << D> acorner;
 		for (UINT mask = 0; mask < acorner.size(); mask++)
@@ -1406,7 +1408,14 @@ public:
 		return acorner;
 	}
 
-
+	/**
+	 * AABB ray intersection.
+	 *
+	 * @param pos_min
+	 * @param pos_max
+	 * @param line
+	 * @return
+	 */
 	const VecDf box_intersect(
 		const VecDi& pos_min, const VecDi& pos_max,
 		const Eigen::ParametrizedLine<FLOAT, D>& line
@@ -1434,7 +1443,7 @@ public:
 		if (distance < 0)
 			return NULL_POS<FLOAT>();
 
-		const VecDf& pos_intersect = line.pointAt(distance + TINY);
+		const VecDf& pos_intersect = line.pointAt(distance + REALLYTINY);
 		for (UINT dim = 0; dim < D; dim++)
 		{
 			if (
@@ -1447,20 +1456,21 @@ public:
 		return pos_intersect;
 	}
 
-
-	static VecDi round(const VecDf& pos)
+	/**
+	 * Cast a ray to the zero layer.
+	 *
+	 * @param pos_origin
+	 * @param dir
+	 * @return NULL_POS if no hit, otherwise interpolated position on zero
+	 * curve.
+	 */
+	const VecDf ray(VecDf pos_origin, const VecDf& dir) const
 	{
-		VecDi pos_rounded;
-		for (UINT dim = 0; dim < pos.size(); dim++)
-			pos_rounded(dim) = (INT)(pos(dim) + sgn(pos(dim))*0.5f);
-		return pos_rounded;
-	}
+		Eigen::ParametrizedLine<FLOAT, D> line(pos_origin, dir);
 
-	const VecDf ray(VecDf pos_origin, const VecDf& pos_dir) const
-	{
-		Eigen::ParametrizedLine<FLOAT, D> line(pos_origin, pos_dir);
-
-		if (!this->phi().inside(round(pos_origin)))
+		// If ray originates from outside the grid, then transform origin onto
+		// grid face.
+		if (!this->phi().inside(round<D>(pos_origin)))
 		{
 			pos_origin = this->box_intersect(
 				m_pos_min, m_pos_max, line
@@ -1468,7 +1478,7 @@ public:
 			if (pos_origin == NULL_POS<FLOAT>())
 				return NULL_POS<FLOAT>();
 
-			line = Eigen::ParametrizedLine<FLOAT, D>(pos_origin, pos_dir);
+			line = Eigen::ParametrizedLine<FLOAT, D>(pos_origin, dir);
 		}
 
 		FLOAT t_child = 0;
@@ -1493,7 +1503,7 @@ public:
 					if (this->layer(pos_child_corner).size() == 0)
 						continue;
 
-					const typename PhiGrid::ChildGrid& child = (
+					const typename PhiGrid::Child& child = (
 						this->phi().child(pos_child_corner)
 					);
 
@@ -1516,7 +1526,7 @@ public:
 						continue;
 
 					Eigen::ParametrizedLine<FLOAT, D> line_leaf(
-						pos_intersect, pos_dir
+						pos_intersect, dir
 					);
 
 					FLOAT t_leaf = 0;
@@ -1530,7 +1540,7 @@ public:
 							VecDf normal = this->phi().grad(pos_sample_leaf);
 							normal.normalize();
 
-							if (normal.dot(pos_dir) < 0)
+							if (normal.dot(dir) < 0)
 							{
 								FLOAT dist = this->phi().interp(
 									pos_sample_leaf
@@ -1560,6 +1570,26 @@ public:
 		} // End while inside phi grid.
 
 		return NULL_POS<FLOAT>();
+	}
+
+	/**
+	 * Update delta phi grid surrounding a zero layer point found via a
+	 * raycast by amount spread using Gaussian distribution.
+	 *
+	 * @param pos_origin
+	 * @param dir
+	 * @param dist
+	 * @param amount
+	 * @param stddev
+	 */
+	void dphi_gauss (
+		const VecDf& pos_origin, const VecDf& dir, const UINT& dist,
+		const FLOAT& val, const float& stddev
+	) {
+		const VecDf& pos_hit = this->ray(pos_origin, dir);
+		if (pos_hit == NULL_POS<FLOAT>())
+			return;
+		this->dphi_gauss(dist, pos_hit, val, stddev);
 	}
 
 #ifndef _TESTING

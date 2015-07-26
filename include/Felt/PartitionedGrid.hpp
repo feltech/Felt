@@ -24,19 +24,18 @@ namespace felt
 	{
 	public:
 		/// Child object to store in each partition.
-		typedef G							Child;
+		using Child = G;
 		/// Grid of partitions with tracking list(s) of active grid points.
-		typedef TrackedGrid<Child, D, N>	BranchGrid;
+		using BranchGrid = TrackedGrid<Child, D, N>;
+		/// D-dimensional unsigned int vector.
+		using VecDu = typename BranchGrid::VecDu;
+		/// D-dimensional signed int vector.
+		using VecDi = typename BranchGrid::VecDi;
 
 		/// Width of the narrow band = number of tracking lists of points.
 		static const UINT NUM_LISTS = N;
 
 	protected:
-		/// D-dimensional unsigned int vector.
-		typedef typename BranchGrid::VecDu	VecDu;
-		/// D-dimensional signed int vector.
-		typedef typename BranchGrid::VecDi	VecDi;
-
 		/// Grid of partitions with tracking list(s) of active grid points.
 		BranchGrid	m_grid_branch;
 
@@ -51,9 +50,7 @@ namespace felt
 		virtual ~PartitionBase ()
 		{}
 
-		PartitionBase () : m_grid_branch()
-		{}
-
+		PartitionBase () = default;
 
 		PartitionBase (
 			const VecDu& dims, const VecDi& offset, const VecDu& dims_partition
@@ -239,20 +236,20 @@ namespace felt
 		}
 	};
 
+	/**
+	 * Base class for common features of PartitionedArray template
+	 * specialisations.
+	 */
 	template <typename T, UINT D, UINT N, typename A>
 	class PartitionedArrayBase : public PartitionBase<D, A, N>
 	{
-	protected:
-		typedef PartitionBase<D, A, N> Base;
-		typedef typename Base::VecDu	VecDu;
-		typedef typename Base::VecDi	VecDi;
-
-		VecDi	m_offset;
-
 	public:
-		PartitionedArrayBase () : Base()
-		{}
-
+		using Base = PartitionBase<D, A, N>;
+		using typename Base::VecDu;
+		using typename Base::VecDi;
+	protected:
+		VecDi	m_offset;
+	public:
 		/**
 		 * Set offset of 'imaginary' grid containing the list.
 		 *
@@ -300,17 +297,15 @@ namespace felt
 	{
 		static_assert(N > 0, "Number of arrays N must be greater than 0.");
 	protected:
-		typedef PartitionedArrayBase<
+		using Base = PartitionedArrayBase<
 			T, D, N, std::array<std::vector<T, Eigen::aligned_allocator<T> >, N>
-		> Base;
+		>;
 
-		typedef typename Base::VecDu	VecDu;
-		typedef typename Base::VecDi	VecDi;
+		using typename Base::VecDu;
+		using typename Base::VecDi;
 
 	public:
-		PartitionedArray () : Base()
-		{}
-
+		PartitionedArray () = default;
 
 		PartitionedArray (
 			const VecDu& dims, const VecDi& offset,
@@ -319,7 +314,6 @@ namespace felt
 		{
 			this->init(dims, offset, dims_partition);
 		}
-
 
 		/**
 		 * Add val to list, placing in partition found from pos.
@@ -360,16 +354,15 @@ namespace felt
 	>
 	{
 	protected:
-		typedef PartitionedArrayBase<
+		using Base = PartitionedArrayBase<
 			T, D, 1, std::vector<T, Eigen::aligned_allocator<T> >
-		> Base;
+		>;
 
-		typedef typename Base::VecDu	VecDu;
-		typedef typename Base::VecDi	VecDi;
+		using typename Base::VecDu;
+		using typename Base::VecDi;
 
 	public:
-		PartitionedArray () : Base()
-		{}
+		PartitionedArray () = default;
 
 		PartitionedArray (
 			const VecDu& dims, const VecDi& offset,
@@ -378,7 +371,6 @@ namespace felt
 		{
 			this->init(dims, offset, dims_partition);
 		}
-
 
 		/**
 		 * Add val to list, placing in partition found from pos.
@@ -421,22 +413,23 @@ namespace felt
 	class PartitionedGrid : public G, public PartitionBase<D, G, N>
 	{
 	public:
-		typedef PartitionBase<D, G, N>			Base;
-		typedef typename Base::Child			ChildGrid;
-		typedef TrackedGrid<ChildGrid, D, N>	BranchGrid;
-	protected:
-		typedef typename ChildGrid::VecDu	VecDu;
-		typedef typename ChildGrid::VecDi	VecDi;
+		using Base = PartitionBase<D, G, N>;
+		using typename Base::Child;
+		using BranchGrid = TrackedGrid<Child, D, N>;
+		using VecDu = typename Child::VecDu;
+		using VecDi = typename Child::VecDi;
 
+	protected:
 		Grid<T, D>*	m_pgrid_snapshot;
+
 	public:
 		virtual ~PartitionedGrid ()
 		{
 			delete m_pgrid_snapshot;
 		}
 
-		PartitionedGrid () : Base(), ChildGrid(), m_pgrid_snapshot(NULL)
-		{}
+		PartitionedGrid () : Base(), m_pgrid_snapshot(NULL)
+		{};
 
 		/**
 		 * Constructor
@@ -449,7 +442,7 @@ namespace felt
 			const VecDu& dims, const VecDi& offset,
 			const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION),
 			const FLOAT& delta = 1
-		) : Base(), ChildGrid(), m_pgrid_snapshot(NULL)
+		) : Base(), Child(), m_pgrid_snapshot(NULL)
 		{
 			this->init(dims, offset, dims_partition, delta);
 		}
@@ -469,7 +462,7 @@ namespace felt
 			const FLOAT& delta = 1.0f
 		) {
 			Base::init(dims_partition);
-			ChildGrid::init(dims, offset, delta);
+			Child::init(dims, offset, delta);
 		}
 
 
@@ -480,7 +473,7 @@ namespace felt
 		 */
 		const VecDu& dims () const
 		{
-			return ChildGrid::dims();
+			return Child::dims();
 		}
 
 		/**
@@ -489,7 +482,7 @@ namespace felt
 		 * @param vec_NewDims
 		 * @return
 		 */
-		void dims (const VecDu& dims_grid)
+		void dims (const VecDu& dims_grid) override
 		{
 			Base::dims(dims_grid);
 
@@ -497,7 +490,7 @@ namespace felt
 
 			for (UINT idx = 0; idx < this->branch().data().size(); idx++)
 			{
-				ChildGrid& child = this->branch().data()(idx);
+				Child& child = this->branch().data()(idx);
 				child.dims(this->m_udims_child);
 			}
 		}
@@ -508,14 +501,14 @@ namespace felt
 		 *
 		 * @param offset_grid
 		 */
-		void offset (const VecDi& offset_grid)
+		void offset (const VecDi& offset_grid) override
 		{
 			Base::offset(offset_grid);
-			ChildGrid::offset(offset_grid);
+			Child::offset(offset_grid);
 
 			for (UINT idx = 0; idx < this->branch().data().size(); idx++)
 			{
-				ChildGrid& child = this->branch().data()(idx);
+				Child& child = this->branch().data()(idx);
 				const VecDi& pos_child = this->branch().index(idx);
 				const VecDi& offset_child = (
 					(
@@ -535,7 +528,7 @@ namespace felt
 		 */
 		const VecDi offset () const
 		{
-			return ChildGrid::offset();
+			return Child::offset();
 		}
 
 
@@ -562,7 +555,7 @@ namespace felt
 		{
 			for (UINT idx = 0; idx < this->branch().data().size(); idx++)
 			{
-				ChildGrid& child = this->branch().data()(idx);
+				Child& child = this->branch().data()(idx);
 				child.fill(val);
 			}
 		}
@@ -575,15 +568,15 @@ namespace felt
 		 * @param pos
 		 * @return value stored at grid point pos.
 		 */
-		T& get (const VecDi& pos)
+		T& get (const VecDi& pos) override
 		{
-			ChildGrid& child = this->branch()(pos_child(pos));
+			Child& child = this->branch()(pos_child(pos));
 			return child.get(pos);
 		}
 
-		const T& get (const VecDi& pos) const
+		const T& get (const VecDi& pos) const override
 		{
-			const ChildGrid& leaf = this->branch()(pos_child(pos));
+			const Child& leaf = this->branch()(pos_child(pos));
 			return leaf.get(pos);
 		}
 
@@ -616,7 +609,7 @@ namespace felt
 				UINT branch_idx = 0; branch_idx < this->branch().data().size();
 				branch_idx++
 			) {
-				const ChildGrid& child = this->branch().data()[branch_idx];
+				const Child& child = this->branch().data()[branch_idx];
 				for (
 					UINT leaf_idx = 0; leaf_idx < child.data().size();
 					leaf_idx++
@@ -645,7 +638,7 @@ namespace felt
 				UINT branch_idx = 0; branch_idx < this->branch().data().size();
 				branch_idx++
 			) {
-				ChildGrid& child = this->branch().data()[branch_idx];
+				Child& child = this->branch().data()[branch_idx];
 				for (
 					UINT leaf_idx = 0; leaf_idx < child.data().size();
 					leaf_idx++
@@ -849,36 +842,23 @@ namespace felt
 	class TrackingPartitionedGridBase : public PartitionedGrid<T, D, G, N>
 	{
 	public:
-		typedef PartitionedGrid<T, D, G, N> 				Base;
-		typedef TrackingPartitionedGridBase<T, D, N, G>		ThisType;
+		using Base = PartitionedGrid<T, D, G, N>;
+		using ThisType = TrackingPartitionedGridBase<T, D, N, G>;
+
 		friend class LeafsContainer<ThisType>;
-		typedef typename Base::ChildGrid				ChildGrid;
-		typedef typename ChildGrid::VecDu				VecDu;
-		typedef typename ChildGrid::VecDi				VecDi;
-		typedef typename Base::BranchGrid				BranchGrid;
-		typedef typename ChildGrid::PosArray			PosArray;
+
+		using typename Base::Child;
+		using typename Base::VecDu;
+		using typename Base::VecDi;
+		using typename Base::BranchGrid;
+
+		using PosArray = typename Child::PosArray;
 
 	public:
 		virtual ~TrackingPartitionedGridBase()
 		{}
 
-		TrackingPartitionedGridBase () : Base()
-		{}
-
-		/**
-		 * Constructor
-		 * @param dims the dimensions of the whole grid.
-		 * @param offset the offset of the whole grid.
-		 * @param dims_partition the dimensions of each spatial partition.
-		 * @param delta the grid delta value used for spatial derivatives (dx).
-		 */
-		TrackingPartitionedGridBase (
-			const VecDu& dims, const VecDi& offset,
-			const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION),
-			const FLOAT& delta = 1
-		) : Base(dims, offset, dims_partition, delta)
-		{}
-
+		using Base::PartitionedGrid;
 
 		/**
 		 * Reset the grid nodes referenced in tracking list.
@@ -933,7 +913,7 @@ namespace felt
 		{
 			const VecDi& pos_child = this->pos_child(pos);
 			Base::add_child(pos_child, arr_idx);
-			ChildGrid& child = this->child(pos_child);
+			Child& child = this->child(pos_child);
 			if (child.is_active(pos))
 				return false;
 			std::lock_guard<std::mutex> lock(child.mutex());
@@ -950,7 +930,7 @@ namespace felt
 		void remove(const VecDi& pos, const UINT& arr_idx = 0)
 		{
 			const VecDi& pos_child = this->pos_child(pos);
-			ChildGrid& child = this->child(pos_child);
+			Child& child = this->child(pos_child);
 			child.remove(pos, arr_idx);
 			if (child.list(arr_idx).size() == 0)
 				this->remove_child(pos_child, arr_idx);
@@ -966,7 +946,7 @@ namespace felt
 		 */
 		PosArray& list(const UINT& arr_idx = 0)
 		{
-			return ChildGrid::list(arr_idx);
+			return Child::list(arr_idx);
 		}
 	};
 
@@ -983,38 +963,22 @@ namespace felt
 		T, D, N, TrackedGrid<T, D, N>
 	>
 	{
-	protected:
-		typedef TrackingPartitionedGridBase<
+	public:
+		using Base = TrackingPartitionedGridBase<
 			T, D, N, TrackedGrid<T, D, N>
-		> Base;
-		typedef TrackedPartitionedGrid<T, D, N>			ThisType;
+		>;
+		using ThisType = TrackedPartitionedGrid<T, D, N>;
+
 		friend class LeafsContainer<ThisType>;
-	public:
-		typedef typename Base::ChildGrid				ChildGrid;
-	protected:
-		typedef typename ChildGrid::VecDu				VecDu;
-		typedef typename ChildGrid::VecDi				VecDi;
-	public:
-		typedef typename Base::BranchGrid				BranchGrid;
-		typedef typename ChildGrid::PosArray			PosArray;
 
-	public:
-		TrackedPartitionedGrid () : Base()
-		{}
+		using typename Base::Child;
+		using typename Base::VecDu;
+		using typename Base::VecDi;
+		using typename Base::BranchGrid;
 
-		/**
-		 * Constructor
-		 * @param dims the dimensions of the whole grid.
-		 * @param offset the offset of the whole grid.
-		 * @param dims_partition the dimensions of each spatial partition.
-		 * @param delta the grid delta value used for spatial derivatives (dx).
-		 */
-		TrackedPartitionedGrid (
-			const VecDu& dims, const VecDi& offset,
-			const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION),
-			const FLOAT& delta = 1
-		) : Base(dims, offset, dims_partition, delta)
-		{}
+		using PosArray = typename Child::PosArray;
+	public:
+		using Base::TrackingPartitionedGridBase;
 
 		/**
 		 * Return structure for range based for loops over leaf nodes.
@@ -1082,36 +1046,23 @@ namespace felt
 		T, D, N, SharedTrackedGrid<T, D, N>
 	>
 	{
-	protected:
-		typedef TrackingPartitionedGridBase<
-			T, D, N, SharedTrackedGrid<T, D, N>
-		> Base;
-		typedef SharedTrackedPartitionedGrid<T, D, N>	ThisType;
-		friend class LeafsContainer<ThisType>;
 	public:
-		typedef typename Base::ChildGrid				ChildGrid;
-		typedef typename ChildGrid::VecDu				VecDu;
-		typedef typename ChildGrid::VecDi				VecDi;
-		typedef typename Base::BranchGrid				BranchGrid;
-		typedef typename ChildGrid::PosArray			PosArray;
+		using Base = TrackingPartitionedGridBase<
+			T, D, N, SharedTrackedGrid<T, D, N>
+		>;
+		using ThisType = SharedTrackedPartitionedGrid<T, D, N>;
 
+		friend class LeafsContainer<ThisType>;
 
-		SharedTrackedPartitionedGrid () : Base()
-		{}
+		using typename Base::Child;
+		using typename Base::VecDu;
+		using typename Base::VecDi;
+		using typename Base::BranchGrid;
+		using PosArray = typename Child::PosArray;
 
-		/**
-		 * Constructor
-		 * @param dims the dimensions of the whole grid.
-		 * @param offset the offset of the whole grid.
-		 * @param dims_partition the dimensions of each spatial partition.
-		 * @param delta the grid delta value used for spatial derivatives (dx).
-		 */
-		SharedTrackedPartitionedGrid (
-			const VecDu& dims, const VecDi& offset,
-			const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION),
-			const FLOAT& delta = 1
-		) : Base(dims, offset, dims_partition, delta)
-		{}
+	public:
+		using Base::TrackingPartitionedGridBase;
+
 
 		/**
 		 * Return structure for range based for loops over leaf nodes.
@@ -1194,27 +1145,12 @@ namespace felt
 	>
 	{
 	protected:
-		typedef LookupPartitionedGrid<D, N>				ThisType;
-		typedef TrackingPartitionedGridBase<
+		using ThisType = LookupPartitionedGrid<D, N>;
+		using Base = TrackingPartitionedGridBase<
 			Eigen::Matrix<UINT, N, 1>, D, N, LookupGrid<D, N>
-		> Base;
+		>;
 	public:
-		typedef typename Base::ChildGrid				ChildGrid;
-		typedef typename ChildGrid::VecDu				VecDu;
-		typedef typename ChildGrid::VecDi				VecDi;
-		typedef typename Base::BranchGrid				BranchGrid;
-
-	public:
-		LookupPartitionedGrid () : Base()
-		{}
-
-
-		LookupPartitionedGrid (
-			const VecDu& dims, const VecDi& offset,
-			const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION),
-			const FLOAT& delta = 1
-		) : Base(dims, offset, dims_partition, delta)
-		{}
+		using Base::TrackingPartitionedGridBase;
 
 		/**
 		 * Return structure for range based for loops over leaf nodes.
@@ -1239,28 +1175,13 @@ namespace felt
 		UINT, D, N, SharedLookupGrid<D, N>
 	>
 	{
-	protected:
-		typedef SharedLookupPartitionedGrid<D, N>		ThisType;
-		typedef TrackingPartitionedGridBase<
+	public:
+		using ThisType = SharedLookupPartitionedGrid<D, N>;
+		using Base = TrackingPartitionedGridBase<
 			UINT, D, N, SharedLookupGrid<D, N>
-		> Base;
-		typedef typename Base::ChildGrid				ChildGrid;
-		typedef typename ChildGrid::VecDu				VecDu;
-		typedef typename ChildGrid::VecDi				VecDi;
+		>;
 	public:
-		typedef typename Base::BranchGrid				BranchGrid;
-
-	public:
-		SharedLookupPartitionedGrid () : Base()
-		{}
-
-
-		SharedLookupPartitionedGrid (
-			const VecDu& dims, const VecDi& offset,
-			const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION),
-			const FLOAT& delta = 1
-		) : Base(dims, offset, dims_partition, delta)
-		{}
+		using Base::TrackingPartitionedGridBase;
 
 		/**
 		 * Return structure for range based for loops over leaf nodes.

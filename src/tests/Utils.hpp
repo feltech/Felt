@@ -30,15 +30,18 @@ namespace felt
 
 	/// Utility: take a slice of a 3D grid and return a tabulated string.
 	// Utility: take a slice of a 3D grid and return a tabulated string.
-	template <typename T>
+	template <typename T, UINT D>
 	std::string stringifyGridSlice(
-		const Grid<T,3>& grid, UINT axis_plane = 2, INT axis_plane_offset = 0
+		const Grid<T, D>& grid, UINT axis_plane = 2, INT axis_plane_offset = 0
 	) {
-		const Vec3u& dims = grid.dims();
-		const Vec3i& offset = grid.offset();
+		typedef typename Grid<T, D>::VecDu VecDu;
+		typedef typename Grid<T, D>::VecDi VecDi;
+
+		const VecDu& dims = grid.dims();
+		const VecDi& offset = grid.offset();
 		std::stringstream strGrid;
-		UINT axis_1 = (axis_plane+1)%3;
-		UINT axis_2 = (axis_plane+2)%3;
+		UINT axis_1 = (axis_plane+1)%D;
+		UINT axis_2 = (axis_plane+2)%D;
 		INT z = axis_plane_offset;
 		for (INT x = offset(axis_1); x < (INT)dims(axis_1) + offset(axis_1);
 			x++)
@@ -47,8 +50,9 @@ namespace felt
 			for (INT y = offset(axis_2); y < (INT)dims(axis_2) + offset(axis_2);
 				y++)
 			{
-				Vec3i pos;
-				pos(axis_plane) = axis_plane_offset;
+				VecDi pos;
+				if (axis_plane < pos.size())
+					pos(axis_plane) = axis_plane_offset;
 				pos(axis_1) = x;
 				pos(axis_2) = y;
 				strGrid << std::setw(5) << (FLOAT)grid(pos) << " |";

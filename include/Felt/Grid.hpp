@@ -56,25 +56,25 @@ namespace felt
 	 * @param val
 	 * @return
 	 */
-	template <typename T> int sgn(T val)
+	template <typename T> INT sgn(T val)
 	{
 		return (T(0) < val) - (val < T(0));
 	}
 
 	/**
-	 * ASM optimised logarithm to base 2.
+	 * Round float accuracy position to integer accuracy.
 	 *
-	 * @param x
+	 * @param pos
 	 * @return
 	 */
-	static inline uint32_t log2(const uint32_t x)
-	{
-	  uint32_t y;
-	  asm ( "\tbsr %1, %0\n"
-		  : "=r"(y)
-		  : "r" (x)
-	  );
-	  return y;
+	template <INT D>
+	Eigen::Matrix<INT, D, 1> round(
+		const Eigen::Matrix<FLOAT, D, 1>& pos
+	) {
+		Eigen::Matrix<INT, D, 1> pos_rounded;
+		for (UINT dim = 0; dim < pos.size(); dim++)
+			pos_rounded(dim) = (INT)(pos(dim) + sgn(pos(dim))*0.5f);
+		return pos_rounded;
 	}
 
 
@@ -99,7 +99,7 @@ namespace felt
 		/**
 		 * D-dimensional unsigned integer vector.
 		 */
-		typedef Eigen::Matrix<UINT, D, 1> VecDu;
+		using VecDu = Eigen::Matrix<UINT, D, 1>;
 		/**
 		 * D-dimensional integer vector.
 		 */
@@ -1074,35 +1074,14 @@ namespace felt
 	template <typename T, UINT D>
 	class Grid : public GridBase<T, D, T>
 	{
-	protected:
-		typedef GridBase<T, D, T>	Base;
-
 	public:
-		typedef typename Base::VecDu	VecDu;
-		typedef typename Base::VecDi	VecDi;
-		typedef typename Base::VecDf	VecDf;
-
+		using Base = GridBase<T, D, T>;
+		using typename Base::VecDu;
+		using typename Base::VecDi;
+		using typename Base::VecDf;
+		using Base::GridBase;
 
 		virtual ~Grid ()
-		{}
-
-		/**
-		 * Initialise a zero-dimensional GridBase.
-		 */
-		Grid () : Base()
-		{}
-
-		/**
-		 * Delegates to GridBase's constructor.
-		 *
-		 * @param dims
-		 * @param offset
-		 * @param delta
-		 */
-		Grid (
-			const VecDu& dims, const VecDi& offset = VecDi::Zero(),
-			const FLOAT& delta = 1
-		) : Base(dims, offset, delta)
 		{}
 
 		/**

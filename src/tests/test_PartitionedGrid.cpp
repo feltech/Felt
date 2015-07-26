@@ -517,7 +517,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		typedef GridType::BranchGrid BranchGrid;
 		typedef BranchGrid::Lookup LookupGrid;
 		const Vec3u& BRANCH_NULL_IDX = LookupGrid::NULL_IDX_TUPLE;
-		const UINT& CHILD_NULL_IDX = GridType::ChildGrid::Lookup::NULL_IDX;
+		const UINT& CHILD_NULL_IDX = GridType::Child::Lookup::NULL_IDX;
 
 		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
 		BranchGrid& branch = grid.branch();
