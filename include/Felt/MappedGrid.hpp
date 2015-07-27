@@ -271,7 +271,6 @@ namespace felt
 			this->list(arr_idx).clear();
 		}
 
-
 		/**
 		 * Remove pos at index idx in the array and set lookup at pos to NULL
 		 * index.
@@ -309,7 +308,6 @@ namespace felt
 			this->list(arr_idx).pop_back();
 		}
 	};
-
 
 	template <UINT D, UINT N, typename V, typename I>
 	const typename LookupGridBase<D, N, V, I>::Idx_t
@@ -513,26 +511,18 @@ namespace felt
 	protected:
 		Lookup	m_grid_lookup;
 	public:
+		using Base::Grid;
+		using Base::dims;
+		using Base::offset;
 
 		TrackedGridBase() = default;
-		using Base::Grid;
 
 		TrackedGridBase(const VecDu& dims, const VecDi& offset)
 		: Base(), m_grid_lookup()
 		{
 			this->init(dims, offset);
 		}
-
-		/**
-		 * Get size of grid.
-		 *
-		 * @return
-		 */
-		const VecDu& dims () const
-		{
-			return Base::dims();
-		}
-
+	
 		/**
 		 * Reshape both grid of values and lookup grid.
 		 *
@@ -542,16 +532,6 @@ namespace felt
 		{
 			Base::dims(dims_new);
 			m_grid_lookup.dims(dims_new);
-		}
-
-		/**
-		 * Get grid's spatial offset.
-		 *
-		 * @return
-		 */
-		const VecDi offset () const
-		{
-			return Base::offset();
 		}
 
 		/**
@@ -692,14 +672,12 @@ namespace felt
 		}
 	};
 
-
 	/**
 	 * Standard TrackedGridBase with multiple lookup indices per grid node, one
 	 * for each tracking list.
 	 */
 	template <typename T, UINT D, UINT N=1>
 	using TrackedGrid = TrackedGridBase<T, D, N, LookupGrid<D, N> >;
-
 
 	/**
 	 * TrackedGridBase where each node of the lookup grid stores only a single

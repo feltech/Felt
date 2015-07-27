@@ -5,7 +5,7 @@ project(Felt)
 set(PROJECT_ROOT ${PROJECT_SOURCE_DIR})
 set(SRC_ROOT ${PROJECT_SOURCE_DIR}/src)
 set(TESTS_ROOT ${SRC_ROOT}/tests)
-set(EIGEN3_INCLUDE_DIR CACHE PATH /usr/include/eigen3)
+set(EIGEN3_INCLUDE_DIR /usr/include/eigen3 CACHE PATH "Eigen include directory")
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_ROOT}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_ROOT}/lib)

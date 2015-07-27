@@ -414,22 +414,20 @@ namespace felt
 	{
 	public:
 		using Base = PartitionBase<D, G, N>;
-		using typename Base::Child;
+		using typename Base::Child; // = G
 		using BranchGrid = TrackedGrid<Child, D, N>;
 		using VecDu = typename Child::VecDu;
 		using VecDi = typename Child::VecDi;
 
 	protected:
-		Grid<T, D>*	m_pgrid_snapshot;
+		std::unique_ptr<Grid<T, D> >	m_pgrid_snapshot;
 
 	public:
-		virtual ~PartitionedGrid ()
-		{
-			delete m_pgrid_snapshot;
-		}
+/* 		using Child::dims;
+		using Child::offset;
+		 */
 
-		PartitionedGrid () : Base(), m_pgrid_snapshot(NULL)
-		{};
+		PartitionedGrid () = default;
 
 		/**
 		 * Constructor
@@ -442,7 +440,7 @@ namespace felt
 			const VecDu& dims, const VecDi& offset,
 			const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION),
 			const FLOAT& delta = 1
-		) : Base(), Child(), m_pgrid_snapshot(NULL)
+		) : Base(), Child(), m_pgrid_snapshot()
 		{
 			this->init(dims, offset, dims_partition, delta);
 		}
@@ -464,8 +462,7 @@ namespace felt
 			Base::init(dims_partition);
 			Child::init(dims, offset, delta);
 		}
-
-
+		
 		/**
 		 * Get grid dimensions.
 		 *
@@ -475,7 +472,17 @@ namespace felt
 		{
 			return Child::dims();
 		}
-
+		
+		/**
+		 * Get the offset of the whole grid.
+		 *
+		 * @return
+		 */
+		const VecDi offset () const
+		{
+			return Child::offset();
+		}
+		
 		/**
 		 * Reshape grid.
 		 *
@@ -520,17 +527,6 @@ namespace felt
 				child.offset(offset_child);
 			}
 		}
-
-		/**
-		 * Get the offset of the whole grid.
-		 *
-		 * @return
-		 */
-		const VecDi offset () const
-		{
-			return Child::offset();
-		}
-
 
 		/**
 		 * Calculate the position of a child grid (i.e. partition) given the
@@ -602,8 +598,7 @@ namespace felt
 		 */
 		typename Grid<T, D>::ArrayData& data()
 		{
-			delete m_pgrid_snapshot;
-			m_pgrid_snapshot = new Grid<T, D>(this->dims(), this->offset());
+			m_pgrid_snapshot.reset(new Grid<T, D>(this->dims(), this->offset()));
 
 			for (
 				UINT branch_idx = 0; branch_idx < this->branch().data().size();
@@ -631,7 +626,7 @@ namespace felt
 		 */
 		void flush_snapshot()
 		{
-			if (m_pgrid_snapshot == NULL)
+			if (m_pgrid_snapshot.get() == NULL)
 				return;
 
 			for (

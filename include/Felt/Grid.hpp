@@ -77,10 +77,7 @@ namespace felt
 		return pos_rounded;
 	}
 
-
-	template <UINT D, UINT N>
-	class LookupGrid;
-
+	
 	/**
 	 * Abstract base class for n-dimensional grid.
 	 *
