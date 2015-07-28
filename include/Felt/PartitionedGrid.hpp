@@ -280,6 +280,7 @@ namespace felt
 		}
 	};
 
+
 	/**
 	 * Spatially partitioned expandable lists.
 	 *
@@ -338,6 +339,7 @@ namespace felt
 			Base::reset(arr_idx);
 		}
 	};
+
 
 	/**
 	 * Spatially partitioned expandable list - 1D array specialisation.
@@ -400,7 +402,9 @@ namespace felt
 	/**
 	 * A general spatially partitioned grid storing arbitrary values.
 	 *
-	 * Inherits directly from child grid G class, spoofing the signature.
+	 * Inherits directly from child grid G class, spoofing the signature, but
+	 * storage is in a (single level) tree hierarchy, i.e.
+	 * PartitionedGrid -> Child -> leaf.
 	 *
 	 * @tparam T type of value stored in leaf grid nodes.
 	 * @tparam D dimension of the grid.
@@ -415,6 +419,7 @@ namespace felt
 	public:
 		using Base = PartitionBase<D, G, N>;
 		using typename Base::Child; // = G
+		using typename Base::Child::TLeafType;
 		using BranchGrid = TrackedGrid<Child, D, N>;
 		using VecDu = typename Child::VecDu;
 		using VecDi = typename Child::VecDi;
@@ -423,9 +428,8 @@ namespace felt
 		std::unique_ptr<Grid<T, D> >	m_pgrid_snapshot;
 
 	public:
-/* 		using Child::dims;
+ 		using Child::dims;
 		using Child::offset;
-		 */
 
 		PartitionedGrid () = default;
 
@@ -462,27 +466,7 @@ namespace felt
 			Base::init(dims_partition);
 			Child::init(dims, offset, delta);
 		}
-		
-		/**
-		 * Get grid dimensions.
-		 *
-		 * @return
-		 */
-		const VecDu& dims () const
-		{
-			return Child::dims();
-		}
-		
-		/**
-		 * Get the offset of the whole grid.
-		 *
-		 * @return
-		 */
-		const VecDi offset () const
-		{
-			return Child::offset();
-		}
-		
+
 		/**
 		 * Reshape grid.
 		 *
@@ -559,18 +543,26 @@ namespace felt
 		/**
 		 * Get the leaf grid node at pos by navigating to the correct partition.
 		 *
-		 * Overrides base G grid class's get method (and thus operator()).
+		 * Overrides base Grid class's get method (and thus operator()).
 		 *
 		 * @param pos
 		 * @return value stored at grid point pos.
 		 */
-		T& get (const VecDi& pos) override
+		TLeafType& get (const VecDi& pos) override
 		{
 			Child& child = this->branch()(pos_child(pos));
 			return child.get(pos);
 		}
 
-		const T& get (const VecDi& pos) const override
+		/**
+		 * Get the leaf grid node at pos by navigating to the correct partition.
+		 *
+		 * Overrides base Grid class's get method (and thus operator()).
+		 *
+		 * @param pos
+		 * @return value stored at grid point pos.
+		 */
+		const TLeafType& get (const VecDi& pos) const override
 		{
 			const Child& leaf = this->branch()(pos_child(pos));
 			return leaf.get(pos);
@@ -657,9 +649,9 @@ namespace felt
 	class LeafsContainer
 	{
 	private:
-		typedef G							GridTree;
-		typedef typename GridTree::VecDi	VecDi;
-		typedef typename GridTree::PosArray	PosArray;
+		using GridTree = G;
+		using VecDi = typename GridTree::VecDi;
+		using PosArray = typename GridTree::PosArray;
 
 		const GridTree* m_pgrid;
 		const UINT	m_listIdx;
@@ -675,7 +667,7 @@ namespace felt
 		>
 		{
 		private:
-			typedef typename PosArray::const_iterator	Iter;
+			using Iter = typename PosArray::const_iterator;
 		public:
 			iterator() : m_pgrid(NULL), m_it_child_end()
 			{}
@@ -824,6 +816,13 @@ namespace felt
 		}
 	};
 
+	/**
+	 * Base traits for spatially partitioned wrapper for lookup and tracked
+	 * grid.
+	 */
+	template <class TDerived>
+	struct TrackingPartitionedGridTraits
+	{};
 
 	/**
 	 * Base class for spatially partitioned wrapper for lookup and tracked grid.
@@ -833,12 +832,22 @@ namespace felt
 	 * @tparam N number of tracking lists to use.
 	 * @tparam G lookup or tracked grid class used for child grids.
 	 */
-	template <typename T, UINT D, UINT N, class G>
-	class TrackingPartitionedGridBase : public PartitionedGrid<T, D, G, N>
+	template <class TDerived>
+	class TrackingPartitionedGridBase : public PartitionedGrid <
+		typename TrackingPartitionedGridTraits<TDerived>::TLeafType,
+		TrackingPartitionedGridTraits<TDerived>::TDims,
+		typename TrackingPartitionedGridTraits<TDerived>::TChildType,
+		TrackingPartitionedGridTraits<TDerived>::TNumLists
+	>
 	{
 	public:
-		using Base = PartitionedGrid<T, D, G, N>;
-		using ThisType = TrackingPartitionedGridBase<T, D, N, G>;
+		using Base = PartitionedGrid <
+			typename TrackingPartitionedGridTraits<TDerived>::TLeafType,
+			TrackingPartitionedGridTraits<TDerived>::TDims,
+			typename TrackingPartitionedGridTraits<TDerived>::TChildType,
+			TrackingPartitionedGridTraits<TDerived>::TNumLists
+		>;
+		using ThisType = TrackingPartitionedGridBase<TDerived>;
 
 		friend class LeafsContainer<ThisType>;
 
@@ -850,8 +859,6 @@ namespace felt
 		using PosArray = typename Child::PosArray;
 
 	public:
-		virtual ~TrackingPartitionedGridBase()
-		{}
 
 		using Base::PartitionedGrid;
 
@@ -931,6 +938,19 @@ namespace felt
 				this->remove_child(pos_child, arr_idx);
 		}
 
+		/**
+		 * Return structure for range based for loops over leaf nodes.
+		 *
+		 * @param listIdx tracking list id.
+		 * @return
+		 */
+		const LeafsContainer<TDerived> leafs(const UINT& listIdx = 0) const
+		{
+			return LeafsContainer<TDerived>(
+				static_cast<const TDerived*>(this), listIdx
+			);
+		}
+
 	private:
 		/**
 		 * Override spoofed (non-partitioned) base class's list method to make
@@ -954,17 +974,13 @@ namespace felt
 	 * @tparam N number of tracking lists to use.
 	 */
 	template <typename T, UINT D, UINT N>
-	class TrackedPartitionedGrid : public TrackingPartitionedGridBase<
-		T, D, N, TrackedGrid<T, D, N>
+	class TrackedPartitionedGrid : public TrackingPartitionedGridBase <
+		TrackedPartitionedGrid<T, D, N>
 	>
 	{
 	public:
-		using Base = TrackingPartitionedGridBase<
-			T, D, N, TrackedGrid<T, D, N>
-		>;
 		using ThisType = TrackedPartitionedGrid<T, D, N>;
-
-		friend class LeafsContainer<ThisType>;
+		using Base = TrackingPartitionedGridBase<ThisType>;
 
 		using typename Base::Child;
 		using typename Base::VecDu;
@@ -974,17 +990,6 @@ namespace felt
 		using PosArray = typename Child::PosArray;
 	public:
 		using Base::TrackingPartitionedGridBase;
-
-		/**
-		 * Return structure for range based for loops over leaf nodes.
-		 *
-		 * @param listIdx tracking list id.
-		 * @return
-		 */
-		const LeafsContainer<ThisType> leafs(const UINT& listIdx) const
-		{
-			return LeafsContainer<ThisType>(this, listIdx);
-		}
 
 		/**
 		 * Set value in grid at given position and add position to lookup grid.
@@ -1028,6 +1033,21 @@ namespace felt
 		}
 	};
 
+	/**
+	 * Traits class for spatially partitioned wrapper for TrackedGrid.
+	 *
+	 * @tparam T type of value stored in leaf grid nodes.
+	 * @tparam D dimension of the grid.
+	 * @tparam N number of tracking lists to use.
+	 */
+	template <typename T, UINT D, UINT N>
+	struct TrackingPartitionedGridTraits<TrackedPartitionedGrid<T, D, N> >
+	{
+		using TLeafType = T;
+		using TChildType = TrackedGrid<T, D, N>;
+		static constexpr UINT TDims = D;
+		static constexpr UINT TNumLists = N;
+	};
 
 	/**
 	 * Spatially partitioned wrapper for SharedTrackedGrid.
@@ -1037,18 +1057,13 @@ namespace felt
 	 * @tparam N number of tracking lists to use.
 	 */
 	template <typename T, UINT D, UINT N>
-	class SharedTrackedPartitionedGrid : public TrackingPartitionedGridBase<
-		T, D, N, SharedTrackedGrid<T, D, N>
+	class SharedTrackedPartitionedGrid : public TrackingPartitionedGridBase <
+		SharedTrackedPartitionedGrid<T, D, N>
 	>
 	{
 	public:
-		using Base = TrackingPartitionedGridBase<
-			T, D, N, SharedTrackedGrid<T, D, N>
-		>;
 		using ThisType = SharedTrackedPartitionedGrid<T, D, N>;
-
-		friend class LeafsContainer<ThisType>;
-
+		using Base = TrackingPartitionedGridBase<ThisType>;
 		using typename Base::Child;
 		using typename Base::VecDu;
 		using typename Base::VecDi;
@@ -1057,18 +1072,6 @@ namespace felt
 
 	public:
 		using Base::TrackingPartitionedGridBase;
-
-
-		/**
-		 * Return structure for range based for loops over leaf nodes.
-		 *
-		 * @param listIdx tracking list id.
-		 * @return
-		 */
-		const LeafsContainer<ThisType> leafs(const UINT& listIdx) const
-		{
-			return LeafsContainer<ThisType>(this, listIdx);
-		}
 
 		/**
 		 * Set value in grid at given position and add position to lookup grid.
@@ -1127,6 +1130,21 @@ namespace felt
 		}
 	};
 
+	/**
+	 * Traits class for spatially partitioned wrapper for SharedTrackedGrid.
+	 *
+	 * @tparam T type of value stored in leaf grid nodes.
+	 * @tparam D dimension of the grid.
+	 * @tparam N number of tracking lists to use.
+	 */
+	template <typename T, UINT D, UINT N>
+	struct TrackingPartitionedGridTraits<SharedTrackedPartitionedGrid<T, D, N> >
+	{
+		using TLeafType = T;
+		using TChildType = SharedTrackedGrid<T, D, N>;
+		static constexpr UINT TDims = D;
+		static constexpr UINT TNumLists = N;
+	};
 
 	/**
 	 * Spatially partitioned wrapper for LookupGrid.
@@ -1135,29 +1153,31 @@ namespace felt
 	 * @tparam N number of tracking lists to use.
 	 */
 	template <UINT D, UINT N=1>
-	class LookupPartitionedGrid : public TrackingPartitionedGridBase<
-		Eigen::Matrix<UINT, N, 1>, D, N, LookupGrid<D, N>
+	class LookupPartitionedGrid : public TrackingPartitionedGridBase <
+		LookupPartitionedGrid<D, N>
 	>
 	{
-	protected:
-		using ThisType = LookupPartitionedGrid<D, N>;
-		using Base = TrackingPartitionedGridBase<
-			Eigen::Matrix<UINT, N, 1>, D, N, LookupGrid<D, N>
-		>;
 	public:
+		using ThisType = LookupPartitionedGrid<D, N>;
+		using Base = TrackingPartitionedGridBase<ThisType>;
 		using Base::TrackingPartitionedGridBase;
-
-		/**
-		 * Return structure for range based for loops over leaf nodes.
-		 *
-		 * @param listIdx tracking list id.
-		 * @return
-		 */
-		const LeafsContainer<ThisType> leafs(const UINT& listIdx = 0) const
-		{
-			return LeafsContainer<ThisType>(this, listIdx);
-		}
 	};
+
+	/**
+	 * Traits class for spatially partitioned wrapper for LookupGrid.
+	 *
+	 * @tparam D dimension of the grid.
+	 * @tparam N number of tracking lists to use.
+	 */
+	template <UINT D, UINT N>
+	struct TrackingPartitionedGridTraits<LookupPartitionedGrid<D, N> >
+	{
+		using TLeafType = Eigen::Matrix<UINT, N, 1>;
+		using TChildType = LookupGrid<D, N>;
+		static constexpr UINT TDims = D;
+		static constexpr UINT TNumLists = N;
+	};
+
 
 	/**
 	 * Spatially partitioned wrapper for SharedLookupGrid.
@@ -1166,29 +1186,29 @@ namespace felt
 	 * @tparam N number of tracking lists to use.
 	 */
 	template <UINT D, UINT N>
-	class SharedLookupPartitionedGrid : public TrackingPartitionedGridBase<
-		UINT, D, N, SharedLookupGrid<D, N>
+	class SharedLookupPartitionedGrid : public TrackingPartitionedGridBase <
+		SharedLookupPartitionedGrid<D, N>
 	>
 	{
 	public:
 		using ThisType = SharedLookupPartitionedGrid<D, N>;
-		using Base = TrackingPartitionedGridBase<
-			UINT, D, N, SharedLookupGrid<D, N>
-		>;
-	public:
+		using Base = TrackingPartitionedGridBase<ThisType>;
 		using Base::TrackingPartitionedGridBase;
-
-		/**
-		 * Return structure for range based for loops over leaf nodes.
-		 *
-		 * @param listIdx tracking list id.
-		 * @return
-		 */
-		const LeafsContainer<ThisType> leafs(const UINT& listIdx = 0) const
-		{
-			return LeafsContainer<ThisType>(this, listIdx);
-		}
 	};
 
+	/**
+	 * Traits class for spatially partitioned wrapper for SharedLookupGrid.
+	 *
+	 * @tparam D dimension of the grid.
+	 * @tparam N number of tracking lists to use.
+	 */
+	template <UINT D, UINT N>
+	struct TrackingPartitionedGridTraits<SharedLookupPartitionedGrid<D, N> >
+	{
+		using TLeafType = UINT;
+		using TChildType = SharedLookupGrid<D, N>;
+		static constexpr UINT TDims = D;
+		static constexpr UINT TNumLists = N;
+	};
 }
 #endif /* PARTITIONEDGRID_HPP_ */

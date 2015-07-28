@@ -100,31 +100,36 @@ namespace felt
 		/**
 		 * D-dimensional integer vector.
 		 */
-		typedef Eigen::Matrix<INT, D, 1> VecDi;
+		using VecDi = Eigen::Matrix<INT, D, 1>;
 		/**
 		 * D-dimensional float vector.
 		 */
-		typedef Eigen::Matrix<FLOAT, D, 1> VecDf;
+		using VecDf = Eigen::Matrix<FLOAT, D, 1>;
 		/**
 		 * D-dimensional vector of type T.
 		 */
-		typedef Eigen::Matrix<T, D, 1> VecDT;
+		using VecDT = Eigen::Matrix<T, D, 1>;
 		/**
 		 * Dynamic 1D vector (i.e. a resizeable array of data) of
 		 * type T.
 		 */
-		typedef Eigen::Array<T, 1, Eigen::Dynamic> ArrayData;
+		using ArrayData = Eigen::Array<T, 1, Eigen::Dynamic>;
 		/**
 		 * Resizeable array of VecDi (i.e. grid locations).
 		 *
 		 * Uses Eigen::aligned_allocator for optimal address alignment.
 		 */
-		typedef std::vector<
+		using PosArray = std::vector<
 			VecDi, Eigen::aligned_allocator<VecDi>
-		> PosArray;
+		>;
+		/**
+		 * Access template parameter to the leaf return type.
+		 */
+		using TLeafType = R;
 
-		typedef GridBase<T, D, R>	GridBase_t;
-
+		/**
+		 * Iterator for contiguous cycling over entire grid.
+		 */
 		class iterator : public boost::iterator_facade<
 			GridBase::iterator, const VecDi&, boost::forward_traversal_tag
 		> {
