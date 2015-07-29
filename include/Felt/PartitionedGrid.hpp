@@ -161,7 +161,7 @@ namespace felt
 		 * @param dims_grid
 		 * @return
 		 */
-		virtual void dims (const VecDu& dims_grid)
+		void dims (const VecDu& dims_grid)
 		{
 			VecDu dims_branch = (
 				dims_grid.array() / m_udims_child.array()
@@ -255,15 +255,10 @@ namespace felt
 		 *
 		 * @param offset_grid
 		 */
-		void offset (const VecDi& offset_grid)
+		void offset (const VecDi& offset_grid) override
 		{
 			m_offset = offset_grid;
 			Base::offset(offset_grid);
-		}
-
-		void dims (const VecDu& dims_grid)
-		{
-			Base::dims(dims_grid);
 		}
 
 		/**
