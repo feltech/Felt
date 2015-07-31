@@ -497,4 +497,53 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		BOOST_CHECK_EQUAL(total_spx, poly.spx().size());
 	}
+
+
+	BOOST_AUTO_TEST_CASE(poly_cubes_3)
+	{
+		// ==== Setup ====
+
+		typedef PolyGrid<3> PolyGrid_t;
+		typedef Surface<3, 2> Surface_t;
+		// Initialise a surface.
+		Surface<3, 2> surface(Vec3u(20,20,20), Vec3u(5, 5, 5));
+		PolyGrid<3> polys(surface);
+
+		// Initialise a seed.
+		surface.seed(Vec3i(-3,-5,0));
+		surface.seed(Vec3i(-1,0,0));
+		
+		surface.update([](const auto& pos, const auto& grid) {
+			return -1.0f;
+		});
+
+		polys.notify(surface);
+		polys.poly_cubes(surface);
+
+		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+
+		UINT num_spxs_before = 0;
+		for (const Vec3i& pos_child : polys)
+			num_spxs_before += polys.get(pos_child).spx().size();
+				
+		// ==== Action ====
+
+		surface.update_start();
+		surface.dphi(Vec3i(-1,-1,0), -1.0f);
+		surface.update_end();
+		polys.notify(surface);
+		surface.dphi(Vec3i(-1,0,0), 1.0f);
+		surface.update_end();
+		polys.notify(surface);		
+		polys.poly_cubes(surface);
+
+		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+
+		// ==== Confirm ====
+		UINT num_spxs_after = 0;
+		for (const Vec3i& pos_child : polys)
+			num_spxs_after += polys.get(pos_child).spx().size();
+
+		BOOST_CHECK_EQUAL(num_spxs_after, num_spxs_before);
+	}
 BOOST_AUTO_TEST_SUITE_END()
