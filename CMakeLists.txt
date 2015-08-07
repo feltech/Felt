@@ -22,7 +22,6 @@ add_definitions(-std=c++14 -fopenmp)
 
 add_executable(
 	tests 
-	${SRC_ROOT}/Poly.cpp
 	${TESTS_ROOT}/test_all.cpp ${TESTS_ROOT}/test_Grid.cpp 
 	${TESTS_ROOT}/test_MappedGrid.cpp ${TESTS_ROOT}/test_PartitionedGrid.cpp 
 	${TESTS_ROOT}/test_Poly.cpp ${TESTS_ROOT}/test_Surface.cpp
@@ -31,6 +30,5 @@ add_executable(
 target_link_libraries(tests boost_unit_test_framework gomp)
 
 # Main Felt library
-add_library(Felt SHARED ${SRC_ROOT}/Poly.cpp)
 target_link_libraries(Felt gomp)
 
