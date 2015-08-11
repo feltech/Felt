@@ -28,7 +28,3 @@ add_executable(
 	${TESTS_ROOT}/test_PolyGrid.cpp ${TESTS_ROOT}/Utils.cpp 
 )
 target_link_libraries(tests boost_unit_test_framework gomp)
-
-# Main Felt library
-target_link_libraries(Felt gomp)
-

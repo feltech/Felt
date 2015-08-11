@@ -19,48 +19,39 @@ namespace felt
 	template <UINT D>
 	class Poly : public PolyBase<D, void> {
 	public:
-		// Create typedefs of Eigen types for this D-dimensional polygonisation.
-		typedef Eigen::Matrix<UINT, D, 1> VecDu;
-		typedef Eigen::Matrix<INT, D, 1> VecDi;
-		typedef Eigen::Matrix<FLOAT, D, 1> VecDf;
-
 		/// Signed distance grid type.
-		typedef Grid<FLOAT, D>	PhiGrid;
+		using PhiGrid = Grid<FLOAT, D>;
 
-		// Handy typedefs for storying vertices and references to them.
+		// Create typedefs of Eigen types for this D-dimensional polygonisation.
+		using VecDu = typename PhiGrid::VecDu;
+		using VecDi = typename PhiGrid::VecDi;
+		using VecDf = typename PhiGrid::VecDf;
 
 		/// D-dimensional vertex type.
 		using typename PolyBase<D, void>::Vertex;
 		/// Vertex tuple type (for spatial lookup grid).
-		typedef VecDu VtxTuple;
+		using VtxTuple = VecDu;
 		/// Vertex array type for primary vertex storage.
-		typedef std::vector<Vertex> VtxArray;
+		using VtxArray = std::vector<Vertex>;
 		/// Vertex spatial look type.
-		typedef TrackedGrid<VtxTuple, D> VtxGrid;
+		using VtxGrid = TrackedGrid<VtxTuple, D>;
 		/// Simplex type (line or triangle).
 		using typename PolyBase<D, void>::Simplex;
 		/// Simplex array type for primary simplex (line or triangle) storage.
-		typedef std::vector<Simplex>
-			SpxArray;
+		using SpxArray = std::vector<Simplex>;
 
-		/**
-		 * A lookup of offsets from start position to corners of a cube.
-		 */
+		/// A lookup of offsets from start position to corners of a cube.
 		using PolyBase<D, void>::corners;
-
-		/**
-		 * A lookup of cube edges defined by offset and axis
-		 */
+		/// A lookup of cube edges defined by offset and axis
 		using PolyBase<D, void>::edges;
-
-		using PolyBase<D, void>::vtx_order;
-		
+		/// Defines simplices of cubes as D-tuples of vertex indices.
+		using PolyBase<D, void>::vtx_order;		
 		/**
 		 * A lookup from corner inside/outside status bitmask to cut edge status
 		 * bitmask.
 		 */
-		using PolyBase<D, void>::vtx_mask;
-		
+		using PolyBase<D, void>::vtx_mask;		
+		/// Offset to transform corners to more standard configuration.
 		using PolyBase<D, void>::SpxGridPosOffset;
 		
 		/// Null index for flagging lack of reference into an array.
@@ -68,9 +59,9 @@ namespace felt
 		/// Null vertex tuple value for flagging no vertices at a grid position.
 		static const VtxTuple NULL_VTX_TUPLE;
 
-
 	protected:
-		typedef LookupGrid<D>	LookupGrid_t;
+		/// Lookup grid type used for avoiding duplicates.
+		using LookupGrid_t = LookupGrid<D>;
 
 		/**
 		 * List of interpolated vertices.
