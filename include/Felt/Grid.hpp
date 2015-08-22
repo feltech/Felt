@@ -528,14 +528,29 @@ namespace felt
 		template <typename PosType>
 		bool inside (const Eigen::Matrix<PosType, D, 1>& pos) const
 		{
-			const VecDu& dims = this->dims();
-			const VecDi& offset = this->offset();
+			return inside(
+				pos, this->offset(),
+				this->offset() + this->dims().template cast<INT>()
+			);
+		}
+
+		/**
+		 * Test if a position is inside the grid bounds.
+		 *
+		 * @param pos
+		 * @return
+		 */
+		template <typename PosType>
+		static bool inside (
+			const Eigen::Matrix<PosType, D, 1>& pos,
+			const VecDi& pos_min, const VecDi& pos_max
+		) {
 
 			for (INT i = 0; i < pos.size(); i++)
 			{
-				if (pos(i) >= (INT)dims(i) + offset(i))
+				if (pos(i) >= (PosType)pos_max(i))
 					return false;
-				if (pos(i) < offset(i))
+				if (pos(i) < (PosType)pos_min(i))
 					return false;
 			}
 			return true;

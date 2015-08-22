@@ -473,6 +473,12 @@ namespace felt {
 			UINT vtx_idxs[PolyBase<D>::num_edges];
 			// Lookup the edges that are crossed from the corner mask.
 			unsigned short vtx_mask = Poly<D>::vtx_mask[mask];
+			const short* vtx_order = PolyBase<D>::vtx_order[mask];
+
+			// Cube corners are all inside or all outside.
+			if (vtx_order[0] == -1)
+				return;
+
 			// Loop over each crossed edge in the cube, looking up
 			// (or calculating, if unavailable) the vertices at the
 			// zero-crossing.
@@ -526,7 +532,6 @@ namespace felt {
 			// vertex ordering. We take D elements at a time from the lookup,
 			// with each successive subset of D elements forming the next
 			// simplex.
-			const short* vtx_order = PolyBase<D>::vtx_order[mask];
 			for (UINT order_idx = 0; vtx_order[order_idx] != -1;
 				order_idx += D
 			) {
@@ -558,10 +563,10 @@ namespace felt {
 		{
 			LookupGrid_t grid_dupe(m_grid_vtx.dims(), m_grid_vtx.offset());
 			for (VecDi pos_centre : surface.layer(0))
-				for (UINT idx = 0; idx < corners.size(); idx++)
+				for (const VecDi& pos_offset : corners)
 				{
 					const VecDi pos_corner = (
-						pos_centre - (corners[idx] - SpxGridPosOffset)
+						pos_centre - (pos_offset - SpxGridPosOffset)
 					);
 					if (grid_dupe.add(pos_corner))
 					{

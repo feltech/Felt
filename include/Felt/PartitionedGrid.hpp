@@ -1,16 +1,17 @@
 #ifndef PARTITIONEDGRID_HPP_
 #define PARTITIONEDGRID_HPP_
 
-#include <boost/iterator/iterator_facade.hpp>
+#include <memory>
 #include <array>
 #include <mutex>
+#include <boost/iterator/iterator_facade.hpp>
 
 #include "MappedGrid.hpp"
 
 namespace felt
 {
 	/// Default size of a spatial partition (in each dimension).
-	#define DEFAULT_PARTITION 4
+	constexpr UINT DEFAULT_PARTITION = 4;
 
 	/**
 	 * Base class for spatially partitioned structures.
@@ -439,7 +440,7 @@ namespace felt
 			const VecDu& dims, const VecDi& offset,
 			const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION),
 			const FLOAT& delta = 1
-		) : Base(), Child(), m_pgrid_snapshot()
+		) : Base(), Child()
 		{
 			this->init(dims, offset, dims_partition, delta);
 		}

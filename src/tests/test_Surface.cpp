@@ -849,7 +849,7 @@ BOOST_AUTO_TEST_CASE(local_update)
 }
 
 /**
- * Test walking the zero layer out to a give distance.
+ * Test walking the zero layer out to a given distance.
  */
 BOOST_AUTO_TEST_CASE(walk)
 {
@@ -870,8 +870,8 @@ BOOST_AUTO_TEST_CASE(walk)
 		});
 
 		// ==== Action ====
-		SharedLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band(
-			Vec2i(-3,0), 2
+		SharedLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band<2>(
+			Vec2i(-3,0)
 		);
 
 		// ==== Contirm ====
@@ -888,21 +888,34 @@ BOOST_AUTO_TEST_CASE(walk)
 	{
 		// ==== Setup ====
 		Surface<3, 2> surface(Vec3u(9, 9, 9));
+		using Lookup = SharedLookupGrid<3, surface.NUM_LAYERS>;
 
 		// Create seed point and expand the narrow band.
 		surface.seed(Vec3i(0, 0, 0));
 
 		// ==== Action ====
-		SharedLookupGrid<3, surface.NUM_LAYERS> lookup = surface.walk_band(
-			Vec3i(0,0,0), 1
-		);
+		Lookup& lookup1 = surface.walk_band<1>(Vec3i(0,0,0));
 
 		// ==== Contirm ====
-		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(-2)).size(), 0);
-		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(-1)).size(), 0);
-		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(0)).size(), 1);
-		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(1)).size(), 6);
-		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(2)).size(), 0);
+		BOOST_CHECK_EQUAL(lookup1.list(surface.layer_idx(-2)).size(), 0);
+		BOOST_CHECK_EQUAL(lookup1.list(surface.layer_idx(-1)).size(), 0);
+		BOOST_CHECK_EQUAL(lookup1.list(surface.layer_idx(0)).size(), 1);
+		BOOST_CHECK_EQUAL(lookup1.list(surface.layer_idx(1)).size(), 6);
+		BOOST_CHECK_EQUAL(lookup1.list(surface.layer_idx(2)).size(), 0);
+
+		// ==== Action ====
+		Lookup& lookup2 = surface.walk_band<1>(Vec3i(0,0,0));
+
+		// ==== Contirm ====
+		BOOST_CHECK_EQUAL(&lookup1, &lookup2);
+
+		// ==== Action ====
+		Lookup& lookup3 = surface.walk_band<2>(Vec3i(0,0,0));
+
+		// ==== Contirm ====
+		BOOST_CHECK_EQUAL(&lookup1, &lookup2);
+		BOOST_CHECK_NE(&lookup1, &lookup3);
+		BOOST_CHECK_NE(&lookup2, &lookup3);
 	}
 
 	{
@@ -921,9 +934,29 @@ BOOST_AUTO_TEST_CASE(walk)
 			return -1.0f;
 		});
 
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+/*
+/home/dave/Dropbox/Workspace/Felt/src/tests/test_Surface.cpp(924): Message:
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -3 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+*/
 		// ==== Action ====
-		SharedLookupGrid<3, surface.NUM_LAYERS> lookup = surface.walk_band(
-			Vec3i(0,0,0), 1
+		SharedLookupGrid<3, surface.NUM_LAYERS> lookup = surface.walk_band<1>(
+			Vec3i(0,0,0)
 		);
 
 		// ==== Contirm ====
@@ -934,9 +967,7 @@ BOOST_AUTO_TEST_CASE(walk)
 		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(2)).size(), 0);
 
 		// ==== Action ====
-		lookup = surface.walk_band(
-			Vec3i(-5,0,0), 2
-		);
+		lookup = surface.walk_band<2>(Vec3i(-5,0,0));
 
 		// ==== Contirm ====
 		BOOST_CHECK_EQUAL(lookup.list(surface.layer_idx(-2)).size(), 0);
@@ -978,8 +1009,8 @@ BOOST_AUTO_TEST_CASE(gaussian_from_list)
 		return -1.0f;
 	});
 
-	SharedLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band(
-		Vec2i(-3,0), 2
+	SharedLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band<2>(
+		Vec2i(-3,0)
 	);
 
 	// ==== Action ====
@@ -1140,6 +1171,52 @@ BOOST_AUTO_TEST_CASE(ray)
 		Vec3f(-10.0f, -10.0f, 0.0f), Vec3f(1, 1, 0).normalized()
 	);
 
+	BOOST_CHECK_LE(
+		(pos_hit - Vec3f(-1.5, -1.5, 0)).squaredNorm(),
+		0.00001f
+	);
+
+	// ==== Action ====
+	// Rotating ray.
+
+	pos_hit = surface.ray(Vec3f(-5.88, 0, -8.09), Vec3f(0.588, 0, 0.809));
+
+	BOOST_CHECK_NE(pos_hit, surface.NULL_POS<FLOAT>());
+
+	for (FLOAT rot_mult = 0; rot_mult < 2.0f; rot_mult += 0.1f)
+	{
+		Eigen::Matrix3f mat_rot = Eigen::AngleAxisf(
+			rot_mult * M_PI, Vec3f::UnitY()
+		).matrix();
+		const Vec3f origin = mat_rot*Vec3f(0, 0, -10.0f);
+		const Vec3f dir = (mat_rot*Vec3f(0, 0, 1)).normalized();
+
+		pos_hit = surface.ray(origin, dir);
+
+		BOOST_CHECK_MESSAGE(
+			pos_hit != surface.NULL_POS<FLOAT>(),
+			"Ray hit from " + stringifyVector(origin) + " in direction "
+			+ stringifyVector(dir) + " should not be NULL_POS"
+		);
+	}
+
+	for (FLOAT rot_mult = 0; rot_mult < 2.0f; rot_mult += 0.1f)
+	{
+		Eigen::Matrix3f mat_rot = Eigen::AngleAxisf(
+			rot_mult * M_PI, Vec3f(1, 1, 1).normalized()
+		).matrix();
+		const Vec3f origin = mat_rot*Vec3f(0, 0, -10);
+		const Vec3f dir = (mat_rot*Vec3f(0, 0, 1)).normalized();
+
+		pos_hit = surface.ray(origin, dir);
+
+		BOOST_CHECK_MESSAGE(
+			pos_hit != surface.NULL_POS<FLOAT>(),
+			"Ray hit from " + stringifyVector(origin) + " in direction "
+			+ stringifyVector(dir) + " should not be NULL_POS"
+		);
+	}
+
 	// ==== Confirm ====
 //	BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
 /*
@@ -1161,10 +1238,6 @@ BOOST_AUTO_TEST_CASE(ray)
 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
 
 */
-	BOOST_CHECK_LE(
-		(pos_hit - Vec3f(-1.5, -1.5, 0)).squaredNorm(),
-		0.00001f
-	);	
 }
 
 

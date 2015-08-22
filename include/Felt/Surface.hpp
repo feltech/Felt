@@ -26,11 +26,12 @@ template <UINT D, UINT L=2>
 class Surface
 {
 public:
-	static const INT LAYER_MIN	= (INT)-L;
-	static const INT LAYER_MAX	= (INT)L;
-	static const UINT NUM_LAYERS = 2*L+1;
+	static constexpr INT LAYER_MIN	= (INT)-L;
+	static constexpr INT LAYER_MAX	= (INT)L;
+	static constexpr UINT NUM_LAYERS = 2*L+1;
 	static constexpr FLOAT TINY = 0.00001f;
 	static constexpr FLOAT REALLYTINY = std::numeric_limits<FLOAT>::epsilon();
+	static constexpr FLOAT NULL_INTERSECT = std::numeric_limits<FLOAT>::max();
 
 	typedef Surface<D, L>	Surface_t;
 	/**
@@ -142,14 +143,8 @@ protected:
 
 
 public:
-	/**
-	 * Default constructor initialising a zero-dimensional embedding.
-	 */
-	Surface ()
-	:	m_grid_phi(),
-		m_grid_status_change(),
-		m_grid_dphi()
-	{}
+
+	Surface () = default;
 
 	/**
 	 * Construct a level set embedding of size dims.
@@ -160,14 +155,14 @@ public:
 	 * @param uborder
 	 */
 	Surface (
-		const VecDu& dims,
-		const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION)
+		const VecDu& dims_,
+		const VecDu& dims_partition_ = VecDu::Constant(DEFAULT_PARTITION)
 	)
 	:	m_grid_phi(),
 		m_grid_status_change(),
 		m_grid_dphi()
 	{
-		this->init(dims, dims_partition);
+		this->init(dims_, dims_partition_);
 	}
 
 	/**
@@ -349,7 +344,7 @@ public:
 	 * @return
 	 */
 	template <typename ValType>
-	bool inside_band (const ValType& val)
+	bool inside_band (const ValType& val) const
 	{
 		return (UINT)std::abs(val) <= L;
 	}
@@ -572,14 +567,14 @@ public:
 	 * @param val amount to spread over the points.
 	 * @param stddev standard deviation of Gaussian.
 	 */	
-	void dphi_gauss (
+	FLOAT dphi_gauss (
 		const UINT& dist, const VecDf& pos_centre,
 		const FLOAT& val, const FLOAT& stddev
 	) {
-		SharedLookupGrid<D, NUM_LAYERS> lookup = this->walk_band(
-			round(pos_centre), 2
+		SharedLookupGrid<D, NUM_LAYERS>& lookup = this->walk_band<2>(
+			round(pos_centre)
 		);
-		this->dphi_gauss(
+		return this->dphi_gauss(
 			lookup.list(this->layer_idx(0)), pos_centre, val, stddev
 		);
 	}
@@ -599,7 +594,7 @@ public:
 	 * @param val amount to spread over the points.
 	 * @param stddev standard deviation of Gaussian.
 	 */
-	void dphi_gauss (
+	FLOAT dphi_gauss (
 		const typename DeltaPhiGrid::PosArray& list, const VecDf& pos_centre,
 		const FLOAT& val, const FLOAT& stddev
 	) {
@@ -642,12 +637,15 @@ public:
 				const FLOAT& amount = this->clamp(
 					pos, weights(idx) + this->dphi(pos)
 				);
+				weights(idx) -= (weights(idx) - amount);
 
 				this->dphi().add(pos, amount, this->layer_idx(0));
 			}
 		}
 		for (std::mutex* lock : locks)
 			lock->unlock();
+
+		return val - weights.sum();
 	}
 
 	/**
@@ -1106,6 +1104,24 @@ public:
 		return dist;
 	}
 
+	struct SortablePos
+	{
+		VecDi pos;
+		UINT hash;
+		SortablePos(const VecDi& pos_, const UINT& distance_)
+		: pos(pos_), hash(0)
+		{
+			hash = Grid<UINT, D>::index(
+				pos,
+				VecDu::Constant(distance_ * 2 + 1),
+				pos - VecDi::Constant(distance_)
+			);
+		}
+		bool operator<(const SortablePos& other)
+		{
+			return this->hash < other.hash;
+		}
+	};
 
 	/**
 	 * Walk the narrow band from given position out to given distance.
@@ -1115,16 +1131,16 @@ public:
 	 * @return SharedLookupGrid with tracking lists for visited points, one list
 	 * for each layer.
 	 */
-	SharedLookupGrid<D, NUM_LAYERS> walk_band (
-		const VecDi& pos_, const UINT& distance_
-	) {
-		typedef SharedLookupGrid<D, 2*L+1>	Lookup;
-		typedef typename Lookup::PosArray 	PosArray;
+	template <UINT Distance>
+	SharedLookupGrid<D, NUM_LAYERS>& walk_band (const VecDi& pos_)
+	{
+		using Lookup = SharedLookupGrid<D, 2*L+1>;
+		using PosArray = typename Lookup::PosArray;
 
-		Lookup lookup(
-			VecDu::Constant(distance_ * 2 + 1),
-			pos_ - VecDi::Constant(distance_)
-		);
+		// Box size is: (Distance * 2 directions) + 1 central.
+		static Lookup lookup(VecDu::Constant(Distance * 2 + 1));
+		lookup.reset_all();
+		lookup.offset(pos_ - VecDi::Constant(Distance));
 
 		const INT& layer_id = this->layer_id(pos_);
 		if (!this->inside_band(layer_id))
@@ -1139,7 +1155,7 @@ public:
 		aidx_first_neigh.fill(0);
 
 		// Loop round searching outward for zero layer grid nodes.
-		for (UINT udist = 1; udist <= distance_; udist++)
+		for (UINT udist = 1; udist <= Distance; udist++)
 		{
 			// Copy number of active grid nodes for this partition
 			// into relevant index in the list.
@@ -1165,7 +1181,7 @@ public:
 
 					this->phi().neighs(
 						pos_centre,
-						[this, &lookup](const VecDi& pos_neigh) {
+						[this](const VecDi& pos_neigh) {
 							// Calculate layer of this neighbouring
 							// point from the phi grid.
 							const INT& layer_id = this->layer_id(pos_neigh);
@@ -1429,31 +1445,36 @@ public:
 				continue;
 			VecDf plane_norm = VecDf::Constant(0);
 			plane_norm(dim) = -1;
-			plane = Eigen::Hyperplane<FLOAT, D>(plane_norm, pos_min(dim));
-			distance = line.intersection(plane);
-			if (distance > 0)
-				break;
+			if (plane_norm.dot(line.direction()) < 0)
+			{
+				plane = Eigen::Hyperplane<FLOAT, D>(plane_norm, pos_min(dim));
+				distance = line.intersectionParameter(plane) + TINY;
+				if (distance >= 0)
+				{
+					const VecDf& pos_intersect = line.pointAt(
+						distance
+					);
+					if (PhiGrid::inside(pos_intersect, pos_min, pos_max))
+						return pos_intersect;
+				}
+			}
 			plane_norm(dim) = 1;
-			plane = Eigen::Hyperplane<FLOAT, D>(plane_norm, pos_max(dim));
-			distance = line.intersection(plane);
-			if (distance > 0)
-				break;
+			if (plane_norm.dot(line.direction()) < 0)
+			{
+				plane = Eigen::Hyperplane<FLOAT, D>(plane_norm, -pos_max(dim));
+				distance = line.intersectionParameter(plane) + TINY;
+				if (distance >= 0)
+				{
+					const VecDf& pos_intersect = line.pointAt(
+						distance
+					);
+					if (PhiGrid::inside(pos_intersect, pos_min, pos_max))
+						return pos_intersect;
+				}
+			}
 		}
 
-		if (distance < 0)
-			return NULL_POS<FLOAT>();
-
-		const VecDf& pos_intersect = line.pointAt(distance + REALLYTINY);
-		for (UINT dim = 0; dim < D; dim++)
-		{
-			if (
-				(FLOAT)pos_min(dim) > pos_intersect(dim)
-				|| pos_intersect(dim) > (FLOAT)pos_max(dim)
-			)
-				return NULL_POS<FLOAT>();
-		}
-
-		return pos_intersect;
+		return NULL_POS<FLOAT>();
 	}
 
 	/**
@@ -1470,10 +1491,12 @@ public:
 
 		// If ray originates from outside the grid, then transform origin onto
 		// grid face.
-		if (!this->phi().inside(round<D>(pos_origin)))
+		if (!this->phi().inside(pos_origin))
 		{
 			pos_origin = this->box_intersect(
-				m_pos_min, m_pos_max, line
+				this->phi().offset(),
+				this->phi().offset() + this->phi().dims().template cast<INT>(),
+				line
 			);
 			if (pos_origin == NULL_POS<FLOAT>())
 				return NULL_POS<FLOAT>();
@@ -1481,16 +1504,17 @@ public:
 			line = Eigen::ParametrizedLine<FLOAT, D>(pos_origin, dir);
 		}
 
-		FLOAT t_child = 0;
-		VecDf pos_sample_child = pos_origin;
-		VecDi pos_sample_child_rounded = round(pos_sample_child);
-		FLOAT child_size = (FLOAT)this->phi().child_dims().array().minCoeff();
+		const FLOAT& child_size = (
+			(FLOAT)this->phi().child_dims().array().minCoeff() / 2
+		);
+		FLOAT t_child = TINY;
+		VecDf pos_sample_child = line.pointAt(t_child);
 		VecDi pos_child_last = NULL_POS<INT>();
 
-		while (this->phi().inside(pos_sample_child_rounded))
+		while (this->phi().inside(pos_sample_child))
 		{
 			const VecDi& pos_child = this->phi().pos_child(
-				pos_sample_child_rounded
+				pos_sample_child.template cast<INT>()
 			);
 			if (pos_child != pos_child_last) {
 				pos_child_last = pos_child;
@@ -1508,7 +1532,7 @@ public:
 					);
 
 					VecDf pos_intersect;
-					if (child.inside(pos_sample_child_rounded))
+					if (child.inside(pos_sample_child))
 					{
 						pos_intersect = pos_sample_child;
 					}
@@ -1529,13 +1553,12 @@ public:
 						pos_intersect, dir
 					);
 
-					FLOAT t_leaf = 0;
-					VecDf pos_sample_leaf = pos_intersect;
-					VecDi pos_sample_leaf_rounded = round(pos_sample_leaf);
+					FLOAT t_leaf = TINY;
+					VecDf pos_sample_leaf = line_leaf.pointAt(t_leaf);
 
-					while (child.inside(pos_sample_leaf_rounded))
+					while (child.inside(pos_sample_leaf))
 					{
-						if (this->layer_id(pos_sample_leaf) == 0)
+						if (abs(this->layer_id(pos_sample_leaf)) == 0)
 						{
 							VecDf normal = this->phi().grad(pos_sample_leaf);
 							normal.normalize();
@@ -1556,16 +1579,14 @@ public:
 							}
 						}
 
-						t_leaf += 1.0f;
+						t_leaf += 0.5f;
 						pos_sample_leaf = line_leaf.pointAt(t_leaf);
-						pos_sample_leaf_rounded = round(pos_sample_leaf);
 					} // End while inside child grid.
 				} // End for child grid corners.
 			} // End if on next child.
 
 			t_child += child_size;
 			pos_sample_child = line.pointAt(t_child);
-			pos_sample_child_rounded = round(pos_sample_child);
 
 		} // End while inside phi grid.
 
@@ -1582,14 +1603,14 @@ public:
 	 * @param amount
 	 * @param stddev
 	 */
-	void dphi_gauss (
+	FLOAT dphi_gauss (
 		const VecDf& pos_origin, const VecDf& dir, const UINT& dist,
 		const FLOAT& val, const float& stddev
 	) {
 		const VecDf& pos_hit = this->ray(pos_origin, dir);
 		if (pos_hit == NULL_POS<FLOAT>())
-			return;
-		this->dphi_gauss(dist, pos_hit, val, stddev);
+			return val;
+		return this->dphi_gauss(dist, pos_hit, val, stddev);
 	}
 
 #ifndef _TESTING

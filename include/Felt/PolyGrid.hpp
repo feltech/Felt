@@ -33,10 +33,10 @@ namespace felt
 		typedef Grid<PolyLeaf, D>	Base;
 
 		/// Standard 2-layer signed-distance surface (either 2D or 3D).
-		typedef Surface<D>	PolySurface;
+		typedef Surface<D, 3>	PolySurface;
 
 		/// Lookup grid to track partitions containing zero-layer points.
-		typedef LookupPartitionedGrid<D>		PolyChanges;
+		typedef LookupGrid<D>		PolyChanges;
 	protected:
 		/// Lookup grid to track partitions containing zero-layer points.
 		PolyChanges		m_grid_changes;
@@ -72,8 +72,7 @@ namespace felt
 				surface.phi().branch().dims(), surface.phi().branch().offset()
 			);
 			m_grid_changes.init(
-				surface.phi().dims(), surface.phi().offset(),
-				surface.phi().child_dims()
+				surface.phi().dims(), surface.phi().offset()
 			);
 			for (const VecDi& pos_child : surface.phi().branch())
 				this->init_child(
@@ -120,59 +119,57 @@ namespace felt
 		 */
 		void notify(const PolySurface& surface)
 		{
-			// Loop over partitions containing active delta phi grid nodes for
-			// zero-layer.
 			for (
-				const VecDi& pos_child
-				: surface.dphi().branch().list(surface.layer_idx(0))
+				INT layer_id = surface.LAYER_MIN;
+				layer_id <= surface.LAYER_MAX; layer_id++
 			) {
-				this->notify(surface, pos_child);
-			}
+				for (
+					const VecDi& pos_child
+					: surface.dphi().branch().list(surface.layer_idx(layer_id))
+				) {
+					this->notify(surface, pos_child);
+				}
 
-			for (
-				const VecDi& pos_child
-				: surface.status_change().branch().list(
-					PolySurface::StatusChange::layer_idx(0)
-				)
-			) {
-				this->notify(surface, pos_child);
+				for (
+					const VecDi& pos_child
+					: surface.status_change().branch().list(
+						PolySurface::StatusChange::layer_idx(layer_id)
+					)
+				) {
+					m_grid_changes.add(pos_child);
+				}
 			}
 		}
 
 		/**
 		 * Notify that a given spatial partition has been updated.
 		 *
-		 * If there are zero-layer points in the partition then it will be added
-		 * to the tracking list for eventual re-polygonisation. If there are no
-		 * zero-layer points then the partition will either be added to the
-		 * tracking list for eventual deletion, or removed from the tracking
-		 * list, as appropriate.
-		 *
 		 * @param surface
 		 * @param pos_child
 		 */
 		void notify(const PolySurface& surface, const VecDi& pos_child)
 		{
-			const UINT& zero_layer_idx = surface.layer_idx(0);
-			// Zero-layer cuts through spatial partition.
-			if (
-				surface.phi().branch().lookup().is_active(
-					pos_child, zero_layer_idx
-				)
-			) {
-				m_grid_changes.branch().add(pos_child);
-			}
-			// Zero-layer no longer cuts through spatial partition.
-			else if (this->get(pos_child).spx().size())
+			bool is_active = this->get(pos_child).spx().size() > 0;
+
+			if (!is_active)
 			{
-				m_grid_changes.branch().add(pos_child);
+				for (
+					INT layer_id = surface.LAYER_MIN;
+					layer_id <= surface.LAYER_MAX && !is_active; layer_id++
+				) {
+					is_active = surface.status_change().branch().is_active(
+						pos_child,
+						PolySurface::StatusChange::layer_idx(layer_id)
+					) || surface.phi().branch().is_active(
+						pos_child, surface.layer_idx(layer_id)
+					);
+				}
 			}
-			// Zero-layer doesn't cut through spatial partition and didn't
-			// in the previous polygonisation either.
+
+			if (is_active)
+				m_grid_changes.add(pos_child);
 			else
-			{
-				m_grid_changes.branch().remove(pos_child);
-			}
+				m_grid_changes.remove(pos_child);
 		}
 
 
@@ -183,56 +180,28 @@ namespace felt
 		 */
 		void poly_cubes(const PolySurface& surface)
 		{
-			const UINT& zero_layer_idx = surface.layer_idx(0);
-			const UINT branch_size = m_grid_changes.branch().list().size();
-			// NOTE: cannot use range-based loop since spatial partition
-			// tracking list can be resized in this loop.
-			#pragma omp parallel for
-			for (UINT child_idx = 0; child_idx < branch_size; child_idx++)
-			{
-				// pos_child is not a reference since reallocation can occur.
-				VecDi pos_child = m_grid_changes.branch().list()[child_idx];
-				for (
-					const VecDi& pos_centre
-					: surface.phi().child(pos_child).list(zero_layer_idx)
-				) {
-					// Must flag cubes (4x for 2D, 8x for 3D) surrounding the
-					// zero-layer point.
-					for (const VecDi& pos_offset : PolyLeaf::corners)
-					{
-						const VecDi& pos_corner = pos_centre - (
-							pos_offset - PolyLeaf::SpxGridPosOffset
-						);
-						if (!m_grid_changes.inside(pos_corner))
-							continue;
-						m_grid_changes.add_safe(pos_corner);
-					}
-				}
-			}
-
-			// Second pass, since lookaround search above may have added extra
-			// spatial partitions.
 
 			#pragma omp parallel for
 			for (
 				UINT child_idx = 0;
-				child_idx < m_grid_changes.branch().list().size(); child_idx++
+				child_idx < m_grid_changes.list().size(); child_idx++
 			) {
 				const VecDi& pos_child = (
-					m_grid_changes.branch().list()[child_idx]
+					m_grid_changes.list()[child_idx]
 				);
-
-				// TODO: not thread-safe, but maybe not even needed? Does this
-				// really have to be a TrackedGrid?
-//				this->add(pos_child);
 
 				PolyLeaf& leaf = this->get(pos_child);
 				leaf.reset();
+
 				for (
-					const VecDi& pos_cube
-					: m_grid_changes.child(pos_child).list()
+					INT layer_id = surface.LAYER_MIN;
+					layer_id <= surface.LAYER_MAX; layer_id++
 				) {
-					leaf.spx(pos_cube, surface.phi());
+					for (
+						const VecDi& pos : surface.layer(pos_child, layer_id)
+					) {
+						leaf.spx(pos, surface.phi());
+					}
 				}
 			}
 		}

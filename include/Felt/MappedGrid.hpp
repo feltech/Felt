@@ -38,6 +38,8 @@ namespace felt
 		static const Idx_t		NULL_IDX_TUPLE;
 		static const UINT		NULL_IDX;
 
+		static const UINT NUM_LISTS = N;
+
 		virtual ~LookupGridBase() {}
 
 		LookupGridBase () = default;
@@ -149,7 +151,7 @@ namespace felt
 		 * @param arr_idx
 		 * @return
 		 */
-		virtual inline const PosArray& list (const UINT& arr_idx = 0) const
+		inline const PosArray& list (const UINT& arr_idx = 0) const
 		{
 			return m_a_pos[arr_idx];
 		}
@@ -182,17 +184,6 @@ namespace felt
 		{
 			return add(pos, arr_idx, arr_idx);
 		}
-
-		/**
-		 * Clear tracking list and reset every grid point to NULL index.
-		 *
-		 * @param arr_idx
-		 */
-		virtual void reset (const UINT& arr_idx = 0)
-		{
-			reset(arr_idx, arr_idx);
-		}
-
 
 		/**
 		 * Remove an element from a tracking list by index and set it's
@@ -257,6 +248,27 @@ namespace felt
 		}
 
 		/**
+		 * Clear tracking list and reset every grid point to NULL index.
+		 *
+		 * @param arr_idx
+		 */
+		void reset (const UINT& arr_idx = 0)
+		{
+			reset(arr_idx, arr_idx);
+		}
+
+		/**
+		 * Set all lookup grid nodes to NULL index and clear all lists.
+		 *
+		 * @param arr_idx tracking list id.
+		 */
+		void reset_all ()
+		{
+			for (UINT idx = 0; idx < m_a_pos.size(); idx++)
+				reset(idx, idx);
+		}
+
+		/**
 		 * For given tracking list, set all lookup grid nodes to NULL index and
 		 * clear the list.
 		 *
@@ -266,7 +278,7 @@ namespace felt
 		void reset(
 			const UINT& arr_idx, const UINT& lookup_idx
 		) {
-			for (VecDi pos : this->list(arr_idx))
+			for (VecDi pos : m_a_pos[arr_idx])
 				this->get_internal(pos)[lookup_idx] = NULL_IDX;
 			this->list(arr_idx).clear();
 		}
@@ -348,6 +360,10 @@ namespace felt
 
 		using Base::LookupGridBase;
 
+		using Base::reset;
+
+		using Base::reset_all;
+
 		/**
 		 * Return tuple of indices stored at given position in grid.
 		 *
@@ -390,7 +406,9 @@ namespace felt
 		using Base = LookupGridBase<D, N, Idx_t, Val_t>	;
 		using typename Base::VecDu;
 		using typename Base::VecDi;
-
+	protected:
+		using Base::m_a_pos;
+	public:
 		using Base::LookupGridBase;
 
 		/**
@@ -453,6 +471,17 @@ namespace felt
 		void reset (const UINT& arr_idx = 0)
 		{
 			Base::reset(arr_idx, 0u);
+		}
+
+		/**
+		 * Set all lookup grid nodes to NULL index and clear all lists.
+		 *
+		 * @param arr_idx tracking list id.
+		 */
+		void reset_all ()
+		{
+			for (UINT idx = 0; idx < m_a_pos.size(); idx++)
+				Base::reset(idx, 0u);
 		}
 
 		/**
