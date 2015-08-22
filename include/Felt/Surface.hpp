@@ -33,34 +33,36 @@ public:
 	static constexpr FLOAT REALLYTINY = std::numeric_limits<FLOAT>::epsilon();
 	static constexpr FLOAT NULL_INTERSECT = std::numeric_limits<FLOAT>::max();
 
-	typedef Surface<D, L>	Surface_t;
+	using Surface_t = Surface<D, L>;
 	/**
 	 * A delta phi update grid with active (non-zero) grid points tracked.
 	 */
-	typedef TrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>		DeltaPhiGrid;
+	using DeltaPhiGrid = TrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
 	/**
 	 * A level set embedding phi grid, with active grid points (the narrow
 	 * band) tracked.
 	 */
-	typedef SharedTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>	PhiGrid;
+	using PhiGrid = SharedTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
 	/**
 	 * A resizable array of D-dimensional grid positions.
 	 */
-	typedef typename PhiGrid::PosArray	PosArray;
+	using PosArray = typename PhiGrid::PosArray;
 	/**
 	 * D-dimensional unsigned int vector.
 	 */
-	typedef typename PhiGrid::VecDu	VecDu;
+	using VecDu = typename PhiGrid::VecDu;
 	/**
 	 * D-dimensional integer vector.
 	 */
-	typedef typename PhiGrid::VecDi VecDi;
+	using VecDi = typename PhiGrid::VecDi;
 	/**
 	 * D-dimensional float vector.
 	 */
-	typedef typename PhiGrid::VecDf VecDf;
-
-	typedef LookupPartitionedGrid<D, 2*L+1>				AffectedLookupGrid;
+	using VecDf = typename PhiGrid::VecDf;
+	/**
+	 * Grid to track positions that require an update.
+	 */
+	using AffectedLookupGrid = LookupPartitionedGrid<D, 2*L+1>;
 
 	/**
 	 * Storage class for flagging a point in the grid to be moved from one
