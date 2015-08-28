@@ -13,42 +13,42 @@ namespace felt
 	/**
 	 * Use 32 bit float by default.
 	 */
-	typedef float FLOAT;
+	using FLOAT = float;
 
 	/**
 	 * Use 32 bit int by default.
 	 */
-	typedef int INT;
+	using INT = int;
 
 	/**
 	 * Use 32 bit unsigned int by default.
 	 */
-	typedef size_t UINT;
+	using UINT = size_t;
 
 	/**
 	 * Shorthand for 2D float vector.
 	 */
-	typedef Eigen::Matrix<FLOAT, 2, 1> Vec2f;
+	using Vec2f = Eigen::Matrix<FLOAT, 2, 1>;
 	/**
 	 * Shorthand for 2D unsigned integer vector.
 	 */
-	typedef Eigen::Matrix<UINT, 2, 1> Vec2u;
+	using Vec2u = Eigen::Matrix<UINT, 2, 1>;
 	/**
 	 * Shorthand for 2D integer vector.
 	 */
-	typedef Eigen::Matrix<INT, 2, 1> Vec2i;
+	using Vec2i = Eigen::Matrix<INT, 2, 1>;
 	/**
 	 * Shorthand for 3D float vector.
 	 */
-	typedef Eigen::Matrix<FLOAT, 3, 1> Vec3f;
+	using Vec3f = Eigen::Matrix<FLOAT, 3, 1>;
 	/**
 	 * Shorthand for 3D unsigned integer vector.
 	 */
-	typedef Eigen::Matrix<UINT, 3, 1> Vec3u;
+	using Vec3u = Eigen::Matrix<UINT, 3, 1>;
 	/**
 	 * Shorthand for 3D integer vector.
 	 */
-	typedef Eigen::Matrix<INT, 3, 1> Vec3i;
+	using Vec3i = Eigen::Matrix<INT, 3, 1>;
 
 	/**
 	 * Get the sign of a value (+/-1).
@@ -447,8 +447,6 @@ namespace felt
 			return pos;
 		}
 
-
-
 		/**
 		 * Retrieve a reference to the raw grid data array.
 		 *
@@ -469,11 +467,18 @@ namespace felt
 			return m_data;
 		}
 
+		/**
+		 * Get an iterator wrapping a position at 0 in data index.
+		 */
 		const iterator begin () const
 		{
 			return iterator(*this, 0);
 		}
-
+		
+		/**
+		 * Get an iterator wrapping a position at one greater than 
+		 * the size of the data.
+		 */
 		const iterator end () const
 		{
 			return iterator(*this, this->data().size());
@@ -600,16 +605,10 @@ namespace felt
 		}
 
 		/**
-		 * Get the neighbouring positions in the cardinal directions.
+		 * Call a lambda passing neighbours of pos in the cardinal directions.
 		 *
-		 * Neighbour positions will be added to vout.
-		 *
-		 * grid_check will be used as a lookup to ensure no duplicates are
-		 * added to apos_out.
-		 *
-		 * @param pos
-		 * @param apos_out
-		 * @param grid_check
+		 * @param pos position to search around
+		 * @param fn lambda function
 		 */
 		void neighs (
 			const VecDi& pos, const std::function<void(const VecDi&)>& fn
@@ -1028,12 +1027,11 @@ namespace felt
 			}
 		}
 
-	public:
-
 	#ifndef _TESTING
 	protected:
+	#else
+	public:
 	#endif
-
 
 		/**
 		 * Interpolate down one dimension.
