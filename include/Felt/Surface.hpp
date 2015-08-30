@@ -8,9 +8,9 @@
 #include <boost/math/special_functions/round.hpp>
 #include <eigen3/Eigen/Dense>
 #include <omp.h>
+#include <iostream>
 
 #include "PartitionedGrid.hpp"
-
 
 namespace felt {
 
@@ -64,6 +64,11 @@ public:
 	 */
 	using AffectedLookupGrid = LookupPartitionedGrid<D, 2*L+1>;
 
+
+	using Plane = Eigen::Hyperplane<FLOAT, D>;
+	using Line = Eigen::ParametrizedLine<FLOAT, D>;
+
+
 	/**
 	 * Storage class for flagging a point in the grid to be moved from one
 	 * narrow band layer to another.
@@ -86,6 +91,16 @@ public:
 
 		VecDi pos;
 		INT from_layer;
+	};
+
+protected:
+	struct ChildHit
+	{
+		ChildHit(const VecDf& pos_intersect_, const VecDi& pos_child_)
+		: pos_intersect(pos_intersect_), pos_child(pos_child_)
+		{}
+		VecDf pos_intersect;
+		VecDi pos_child;
 	};
 
 	/**
@@ -434,6 +449,10 @@ public:
 	void status_change (
 		const VecDi& pos, const INT& from_layer_id, const INT& to_layer_id
 	) {
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		m_grid_phi.assert_pos_bounds(pos, "status_change: ");
+		#endif
+
 		m_grid_status_change.add(
 			pos, StatusChange(pos, from_layer_id),
 			StatusChange::layer_idx(to_layer_id)
@@ -569,11 +588,11 @@ public:
 	 * @param val amount to spread over the points.
 	 * @param stddev standard deviation of Gaussian.
 	 */	
+	template <UINT Distance>
 	FLOAT dphi_gauss (
-		const UINT& dist, const VecDf& pos_centre,
-		const FLOAT& val, const FLOAT& stddev
+		const VecDf& pos_centre, const FLOAT& val, const FLOAT& stddev
 	) {
-		SharedLookupGrid<D, NUM_LAYERS>& lookup = this->walk_band<2>(
+		SharedLookupGrid<D, NUM_LAYERS>& lookup = this->walk_band<Distance>(
 			round(pos_centre)
 		);
 		return this->dphi_gauss(
@@ -648,6 +667,31 @@ public:
 			lock->unlock();
 
 		return val - weights.sum();
+	}
+
+	/**
+	 * Update delta phi grid surrounding a zero layer point found via a
+	 * raycast by amount spread using Gaussian distribution.
+	 *
+	 * @param pos_origin
+	 * @param dir
+	 * @param dist
+	 * @param amount
+	 * @param stddev
+	 */
+	template <UINT Distance>
+	FLOAT dphi_gauss (
+		const VecDf& pos_origin, const VecDf& dir,
+		const FLOAT& val, const float& stddev
+	) {
+		const VecDf& pos_hit = this->ray(pos_origin, dir);
+
+		if (pos_hit == NULL_POS<FLOAT>())
+		{
+			std::cout << "MISS" << std::endl;
+			return val;
+		}
+		return this->dphi_gauss<Distance>(pos_hit, val, stddev);
 	}
 
 	/**
@@ -1427,59 +1471,6 @@ public:
 	}
 
 	/**
-	 * AABB ray intersection.
-	 *
-	 * @param pos_min
-	 * @param pos_max
-	 * @param line
-	 * @return
-	 */
-	const VecDf box_intersect(
-		const VecDi& pos_min, const VecDi& pos_max,
-		const Eigen::ParametrizedLine<FLOAT, D>& line
-	) const {
-
-		Eigen::Hyperplane<FLOAT, D> plane;
-		FLOAT distance;
-		for (UINT dim = 0; dim < D; dim++)
-		{
-			if (std::abs(line.direction()(dim)) < TINY)
-				continue;
-			VecDf plane_norm = VecDf::Constant(0);
-			plane_norm(dim) = -1;
-			if (plane_norm.dot(line.direction()) < 0)
-			{
-				plane = Eigen::Hyperplane<FLOAT, D>(plane_norm, pos_min(dim));
-				distance = line.intersectionParameter(plane) + TINY;
-				if (distance >= 0)
-				{
-					const VecDf& pos_intersect = line.pointAt(
-						distance
-					);
-					if (PhiGrid::inside(pos_intersect, pos_min, pos_max))
-						return pos_intersect;
-				}
-			}
-			plane_norm(dim) = 1;
-			if (plane_norm.dot(line.direction()) < 0)
-			{
-				plane = Eigen::Hyperplane<FLOAT, D>(plane_norm, -pos_max(dim));
-				distance = line.intersectionParameter(plane) + TINY;
-				if (distance >= 0)
-				{
-					const VecDf& pos_intersect = line.pointAt(
-						distance
-					);
-					if (PhiGrid::inside(pos_intersect, pos_min, pos_max))
-						return pos_intersect;
-				}
-			}
-		}
-
-		return NULL_POS<FLOAT>();
-	}
-
-	/**
 	 * Cast a ray to the zero layer.
 	 *
 	 * @param pos_origin
@@ -1487,138 +1478,240 @@ public:
 	 * @return NULL_POS if no hit, otherwise interpolated position on zero
 	 * curve.
 	 */
-	const VecDf ray(VecDf pos_origin, const VecDf& dir) const
+	const VecDf ray(const VecDf& pos_origin, const VecDf& dir) const
 	{
-		Eigen::ParametrizedLine<FLOAT, D> line(pos_origin, dir);
 
-		// If ray originates from outside the grid, then transform origin onto
-		// grid face.
-		if (!this->phi().inside(pos_origin))
+		using ChildHits = std::vector<ChildHit>;
+
+		// If ray is cast from within phi grid, first check child grid containing origin point.
+		if (m_grid_phi.inside(pos_origin))
 		{
-			pos_origin = this->box_intersect(
-				this->phi().offset(),
-				this->phi().offset() + this->phi().dims().template cast<INT>(),
-				line
+			const VecDf& pos_hit = ray(
+				pos_origin, dir,
+				m_grid_phi.child(
+					m_grid_phi.pos_child(pos_origin.template cast<INT>())
+				)
 			);
-			if (pos_origin == NULL_POS<FLOAT>())
-				return NULL_POS<FLOAT>();
-
-			line = Eigen::ParametrizedLine<FLOAT, D>(pos_origin, dir);
+			if (pos_hit != NULL_POS<FLOAT>())
+				return pos_hit;
 		}
 
-		const FLOAT& child_size = (
-			(FLOAT)this->phi().child_dims().array().minCoeff() / 2
-		);
-		FLOAT t_child = TINY;
-		VecDf pos_sample_child = line.pointAt(t_child);
-		VecDi pos_child_last = NULL_POS<INT>();
+		// Ray to test against.
+		Line line(pos_origin, dir);
 
-		while (this->phi().inside(pos_sample_child))
+		// Tracking list for child grids that are hit.
+		ChildHits child_hits;
+
+		// Cycle each axis, casting ray to child grid planes marching away from origin.
+		for (UINT dim = 0; dim < dir.size(); dim++)
 		{
-			const VecDi& pos_child = this->phi().pos_child(
-				pos_sample_child.template cast<INT>()
-			);
-			if (pos_child != pos_child_last) {
-				pos_child_last = pos_child;
+			// Direction +/-1 along this axis.
+			FLOAT dir_dim = sgn(dir(dim));
+			if (dir_dim == 0)
+				continue;
 
-				for (const VecDi& pos_corner : corners())
+			// Get next child plane along this axis.
+			FLOAT pos_plane_dim = round_to_next_child(dim, dir_dim, pos_origin(dim));
+
+			// Construct vector with elements not on this axis at zero.
+			VecDf pos_plane = VecDf::Constant(0);
+			pos_plane(dim) = pos_plane_dim;
+
+			// If the zero point on this plane is not within the grid, then jump to max/min point
+			// on phi grid.
+			if (!m_grid_phi.inside(pos_plane))
+			{
+				FLOAT pos_grid_dim;
+				// If casting in -'ve direction, get maximum extent.
+				if (dir_dim == -1)
 				{
-					const VecDi& pos_child_corner = pos_child + pos_corner;
-					if (!this->phi().branch().inside(pos_child_corner))
+					pos_grid_dim = m_grid_phi.offset()(dim) + m_grid_phi.dims()(dim);
+					if (pos_plane_dim < pos_grid_dim)
 						continue;
-					if (this->layer(pos_child_corner).size() == 0)
+				// Else if casting in +'ve direction, get minimum extent.
+				} else {
+					pos_grid_dim = m_grid_phi.offset()(dim);
+					if (pos_plane_dim > pos_grid_dim)
 						continue;
+				}
+				// Reset plane position to max/min extent as calculated above.
+				pos_plane(dim) = pos_grid_dim;
+			}
 
-					const typename PhiGrid::Child& child = (
-						this->phi().child(pos_child_corner)
-					);
+			// Plane normal is opposite to ray direction.
+			VecDf normal = VecDf::Constant(0);
+			normal(dim) = -dir_dim;
 
-					VecDf pos_intersect;
-					if (child.inside(pos_sample_child))
-					{
-						pos_intersect = pos_sample_child;
-					}
-					else
-					{
-						pos_intersect = this->box_intersect(
-							child.offset(),
-							child.offset() 
-							+ child.dims().template cast<INT>(),
-							line
-						);
-					}
+			// Cast ray to plane and add any child grids hit on the way to tracking list.
+			if (!ray_check_add_child(child_hits, line, Plane(normal, pos_plane(dim) * dir_dim)))
+				continue;
 
-					if (pos_intersect == NULL_POS<FLOAT>())
-						continue;
+			// Round up/down to next child, in case we started at inexact modulo of child grid size
+			// (i.e. when phi grid size is not integer multiple of child grid size).
+			pos_plane_dim = round_to_next_child(dim, dir_dim, pos_plane(dim));
+			// If rounding produced a different plane, then cast to that plane, and potentially add
+			// child grid to tracking list.
+			if (pos_plane_dim != pos_plane(dim))
+			{
+				pos_plane(dim) = pos_plane_dim;
+				if (!ray_check_add_child(child_hits, line, Plane(normal, pos_plane(dim) * dir_dim)))
+					continue;
+			}
 
-					Eigen::ParametrizedLine<FLOAT, D> line_leaf(
-						pos_intersect, dir
-					);
+			// Keep marching along planes, casting ray to each and adding any candidate child
+			// grids to the tracking list.
+			const FLOAT child_size_dim = m_grid_phi.child_dims()(dim);
+			while (true)
+			{
+				pos_plane(dim) += dir_dim * child_size_dim;
+				if (!ray_check_add_child(child_hits, line, Plane(normal, pos_plane(dim) * dir_dim)))
+					break;
+			}
+		}
+		// Sort candidate child grids in distance order from front to back.
+		std::sort(
+			child_hits.begin(), child_hits.end(),
+			[&pos_origin](const ChildHit& a, const ChildHit& b) -> bool {
+				const VecDf& dist_a = (a.pos_intersect - pos_origin);
+				const VecDf& dist_b = (b.pos_intersect - pos_origin);
+				return dist_a.squaredNorm() < dist_b.squaredNorm();
+			}
+		);
+		// Remove any duplicate child grids from the sorted list (i.e. where ray intersects
+		// precisely at the interesction of two or more planes).
+		child_hits.erase(std::unique(
+			child_hits.begin(), child_hits.end(),
+			[&pos_origin](const ChildHit& a, const ChildHit& b) -> bool {
+				return a.pos_child == b.pos_child;
+			}
+		), child_hits.end());
 
-					FLOAT t_leaf = TINY;
-					VecDf pos_sample_leaf = line_leaf.pointAt(t_leaf);
+		// For each candidate child, cast ray through until the zero-curve is hit.
+		for (const ChildHit& child_hit : child_hits)
+		{
+			const VecDf& pos_hit = this->ray(
+				child_hit.pos_intersect, dir,
+				this->phi().child(child_hit.pos_child)
+			);
 
-					while (child.inside(pos_sample_leaf))
-					{
-						if (abs(this->layer_id(pos_sample_leaf)) == 0)
-						{
-							VecDf normal = this->phi().grad(pos_sample_leaf);
-							normal.normalize();
-
-							if (normal.dot(dir) < 0)
-							{
-								FLOAT dist = this->phi().interp(
-									pos_sample_leaf
-								);
-
-								while (std::abs(dist) > TINY) {
-									pos_sample_leaf -= normal*dist;
-									dist = this->phi().interp(
-										pos_sample_leaf
-									);
-								}
-								return pos_sample_leaf;
-							}
-						}
-
-						t_leaf += 0.5f;
-						pos_sample_leaf = line_leaf.pointAt(t_leaf);
-					} // End while inside child grid.
-				} // End for child grid corners.
-			} // End if on next child.
-
-			t_child += child_size;
-			pos_sample_child = line.pointAt(t_child);
-
-		} // End while inside phi grid.
+			if (pos_hit != NULL_POS<FLOAT>())
+				return pos_hit;
+		}
 
 		return NULL_POS<FLOAT>();
-	}
-
-	/**
-	 * Update delta phi grid surrounding a zero layer point found via a
-	 * raycast by amount spread using Gaussian distribution.
-	 *
-	 * @param pos_origin
-	 * @param dir
-	 * @param dist
-	 * @param amount
-	 * @param stddev
-	 */
-	FLOAT dphi_gauss (
-		const VecDf& pos_origin, const VecDf& dir, const UINT& dist,
-		const FLOAT& val, const float& stddev
-	) {
-		const VecDf& pos_hit = this->ray(pos_origin, dir);
-		if (pos_hit == NULL_POS<FLOAT>())
-			return val;
-		return this->dphi_gauss(dist, pos_hit, val, stddev);
 	}
 
 #ifndef _TESTING
 protected:
 #endif
 
+	/**
+	 * Cast a ray to the zero layer within a given child grid.
+	 *
+	 * @param pos_origin
+	 * @param dir
+	 * @return NULL_POS if no hit, otherwise interpolated position on zero
+	 * curve.
+	 */
+	const VecDf ray(
+		VecDf pos_sample, const VecDf& dir, const typename PhiGrid::Child& child
+	) const {
+		using Line = Eigen::ParametrizedLine<FLOAT, D>;
+
+		const Line line_leaf(pos_sample, dir);
+		FLOAT t_leaf = 0;
+
+		while (child.inside(pos_sample))
+		{
+			const INT& layer_id = this->layer_id(pos_sample);
+
+			if (abs(layer_id) == 0)
+			{
+				VecDf normal = this->phi().grad(pos_sample);
+				normal.normalize();
+
+				if (normal.dot(dir) < 0)
+				{
+					do
+					{
+						const FLOAT& dist = this->phi().interp(pos_sample);
+
+						pos_sample -= normal*dist;
+
+
+						if (std::abs(dist) <= TINY)
+							break;
+
+						normal = this->phi().grad(pos_sample);
+						normal.normalize();
+
+					} while (normal.dot(dir) < 0);
+
+					return pos_sample;
+				}
+			}
+
+			t_leaf += 0.5f;
+			pos_sample = line_leaf.pointAt(t_leaf);
+		} // End while inside child grid.
+
+		return NULL_POS<FLOAT>();
+	}
+
+	/**
+	 * Cast ray to plane, get child at that point, and add to list if it contains zero-curve.
+	 *
+	 * @param child_hits
+	 * @param line
+	 * @param plane
+	 * @return
+	 */
+	bool ray_check_add_child(
+		std::vector<ChildHit>& child_hits, const Line& line, const Plane& plane
+	) const {
+		const VecDf& pos_intersect = (
+			line.intersectionPoint(plane) + line.direction() * FLOAT(TINY)
+		);
+
+		if (!this->m_grid_phi.inside(pos_intersect))
+			return false;
+
+		const VecDi& pos_floor = floor(pos_intersect);
+		const VecDi& pos_child = this->m_grid_phi.pos_child(pos_floor);
+
+		if (
+			this->layer(pos_child, 0).size()
+			|| this->layer(pos_child, -1).size() || this->layer(pos_child, 1).size()
+		) {
+			child_hits.push_back(ChildHit(pos_intersect, pos_child));
+		}
+		return true;
+	}
+
+	/**
+	 * Along a given dimension at given position, round up or down to border of next child grid.
+	 *
+	 * @param dim
+	 * @param dir
+	 * @param pos
+	 * @return
+	 */
+	FLOAT round_to_next_child(const UINT& dim, const FLOAT& dir, const FLOAT& pos) const
+	{
+		// Real-valued child pos translated to [0, 2*childsize) space.
+		FLOAT pos_plane_dim = (
+			FLOAT(pos - m_grid_phi.offset()(dim)) / m_grid_phi.child_dims()(dim)
+		);
+		// Round to next child en route in [0, 2*childsize) space.
+		pos_plane_dim = (dir == -1) ?
+			std::floor(pos_plane_dim) : std::ceil(pos_plane_dim);
+		// Scale back to phi grid in [0, 2*fullsize) space.
+		pos_plane_dim *= m_grid_phi.child_dims()(dim);
+		// Translate back to phi grid in [-fullsize, fullsize) space.
+		pos_plane_dim += m_grid_phi.offset()(dim);
+
+		return pos_plane_dim;
+	}
 };
 }
 #endif

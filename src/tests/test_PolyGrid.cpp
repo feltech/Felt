@@ -30,46 +30,15 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		PolyGrid<3> poly(surface);
 
 		BOOST_CHECK_EQUAL((UINT)poly.data().size(), 27);
-//		BOOST_CHECK_EQUAL(poly.lookup().data().size(), 27);
-
-//		BOOST_CHECK_EQUAL((UINT)poly.changes().branch().data().size(), 27);
 	}
 
-
 	/**
-	 * Utility function to assert tracked changes are as expected.
+	 * Utility: assert PolyGrid matches simple Poly polygonisation.
 	 *
+	 * @param polys
 	 * @param poly
-	 * @param apos_expected
+	 * @return
 	 */
-//	template <UINT N>
-//	void assert_expected_changes_tracked (
-//		const PolyGrid<3>& poly, const std::array<Vec3i, N>& apos_expected
-//	) {
-//		typedef PolyGrid<3> PolyGrid_t;
-//
-//		BOOST_CHECK_EQUAL(poly.changes().branch().list().size(), N);
-//
-//		{
-//			auto begin_iter = poly.changes().branch().list().begin();
-//			auto end_iter = poly.changes().branch().list().end();
-//			for (auto pos : apos_expected)
-//				BOOST_CHECK_MESSAGE(
-//					std::find(begin_iter, end_iter, pos) != end_iter,
-//					stringifyVector(pos) << " was expected but not found."
-//				);
-//		}
-//		{
-//			auto begin_iter = apos_expected.begin();
-//			auto end_iter = apos_expected.end();
-//			for (auto pos : poly.changes().branch().list())
-//				BOOST_CHECK_MESSAGE(
-//					std::find(begin_iter, end_iter, pos) != end_iter,
-//					stringifyVector(pos) << " was found but unexpected."
-//				);
-//		}
-//	}
-
 	template <UINT D>
 	UINT assert_partitioned_matches_baseline (
 		const PolyGrid<D>& polys, const Poly<D>& poly
@@ -190,146 +159,6 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		return total_vtx;
 	}
-
-	/**
-	 * Test that changes to the underlying surface are tracked as expected.
-	 */
-//	BOOST_AUTO_TEST_CASE(changes_expand)
-//	{
-//		// ==== Setup ====
-//
-//		typedef PolyGrid<3> PolyGrid_t;
-//		typedef Surface<3, 3> Surface_t;
-//		// Initialise a surface.
-//		Surface_t surface(Vec3u(15,15,15), Vec3u(5, 5, 5));
-//		PolyGrid<3> poly(surface);
-//
-//		// Initialise a seed.
-//		surface.seed(Vec3i(0,0,0));
-//		// TODO: dummy zero-layer update require to initialise dphi grid.
-//		surface.update_start();
-//		surface.dphi(Vec3i(0,0,0), 0);
-//		surface.update_end();
-///*
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//
-//*/
-//		// ==== Action ====
-//
-//		poly.notify(surface);
-//
-//
-//		// ==== Confirm ====
-//
-//		assert_expected_changes_tracked(
-//			poly, std::array<Vec3i, 1>{ Vec3i(0,0,0) }
-//		);
-//
-//
-//		// ==== Action ====
-//
-//		// Expand the surface outward.
-//		surface.update_start();
-//		for (auto pos : surface.layer(0))
-//			surface.dphi(pos, -1);
-//		surface.update_end();
-//		poly.notify(surface);
-//		surface.update_start();
-//		for (auto pos : surface.layer(0))
-//			surface.dphi(pos, -1);
-//		surface.update_end();
-//		poly.notify(surface);
-//		surface.update_start();
-//		for (auto pos : surface.layer(0))
-//			surface.dphi(pos, -1);
-//		surface.update_end();
-//		// Notify will add new tracking points using status change list rather
-//		// than delta phi tracking list (delta phi is still within central
-//		// partition).
-//		poly.notify(surface);
-//
-//
-////		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
-//
-///*
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|  * 3 |    3 |    3 |    3 |    3 |  * 2 |    1 |    0 |    1 |    2 |  * 3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |
-//|    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -3 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |
-//|    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |
-//|  * 3 |    3 |    3 |    3 |    2 |  * 1 |    0 |   -1 |    0 |    1 |  * 2 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|  * 3 |    3 |    3 |    3 |    3 |  * 3 |    3 |    3 |    3 |    3 |  * 3 |    3 |    3 |    3 |    3 |
-//
-//*/
-//		// ==== Confirm ====
-//
-//		assert_expected_changes_tracked(
-//			poly, std::array<Vec3i, 7>{
-//				Vec3i(0,0,0), Vec3i(0,0,-1), Vec3i(0,0,1), Vec3i(0,-1,0),
-//				Vec3i(0,1,0), Vec3i(-1,0,0), Vec3i(1,0,0)
-//			}
-//		);
-//
-//
-//		// ==== Action ====
-//
-//		surface.update_start();
-//		surface.dphi(Vec3i(0,-3,0), 1);
-//		surface.update_end();
-//		poly.notify(surface);
-//
-///*
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |
-//|    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-//
-//*/
-//
-//		// ==== Confirm ====
-//
-////		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
-//
-//		assert_expected_changes_tracked(
-//			poly, std::array<Vec3i, 6>{
-//				Vec3i(0,0,0), Vec3i(0,0,-1), Vec3i(0,0,1),
-//				Vec3i(0,1,0), Vec3i(-1,0,0), Vec3i(1,0,0)
-//			}
-//		);
-//	}
 
 
 	/**
@@ -458,7 +287,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 */
 		// ==== Confirm ====
 
-		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
 		poly_single.reset();
 		poly_single.surf(surface);
 
@@ -519,7 +348,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
 
 		// ==== Confirm ====
 
@@ -584,11 +413,11 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
 
 		// ==== Confirm ====
 
-		BOOST_CHECK_EQUAL(surface.phi().branch().data().size(), 1);
+		BOOST_CHECK_EQUAL(surface.phi().branch().data().size(), 1u);
 
 		UINT num_spxs_after = 0;
 		UINT num_vtxs_after = 0;
@@ -623,7 +452,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
 
 		UINT num_spxs_before = 0;
 		UINT num_vtxs_before = 0;
@@ -643,7 +472,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
 
 		// Contract
 		surface.update_start();
@@ -657,7 +486,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
 
 		// ==== Confirm ====
 
@@ -719,7 +548,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
 
 		// Contract.
 		surface.update_start();
@@ -733,7 +562,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
 
 		// ==== Confirm ====
 
@@ -809,7 +638,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		surface.dphi(Vec3i(0,5,0), 0.0f);
 		surface.update_end();
 
-		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
 
 		// ==== Confirm ====
 
@@ -834,4 +663,58 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		BOOST_CHECK_EQUAL(num_spxs_after, num_spxs_before);
 	}
+
+
+	/**
+	 * Test polygonisation of entire grid.
+	 *
+	 */
+	BOOST_AUTO_TEST_CASE(poly_all)
+	{
+		// ==== Setup ====
+		Surface<3, 3> surface(Vec3u(13,13,13), Vec3u(4,4,4));
+		PolyGrid<3> polys(surface);
+		Poly<3> poly(surface.phi().dims(), surface.phi().offset());
+
+		surface.seed(Vec3i(0,0,0));
+
+		// ==== Action ====
+
+		surface.update_start();
+		for (auto pos : surface.layer(0))
+			surface.dphi(pos, -1.0);
+		surface.update_end();
+
+
+		surface.update_start();
+		for (auto pos : surface.layer(0))
+			surface.dphi(pos, -1.0);
+		surface.update_end();
+
+		polys.surf(surface);
+
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+
+		// ==== Confirm ====
+
+/*
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    2 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    2 |    1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    2 |    1 |    0 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |
+|    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |
+|    3 |    3 |    3 |    2 |    1 |    0 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    2 |    1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    2 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+*/
+
+		poly.surf(surface);
+		assert_partitioned_matches_baseline(polys, poly);
+	}
+
 BOOST_AUTO_TEST_SUITE_END()

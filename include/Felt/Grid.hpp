@@ -2,7 +2,7 @@
 #define Grid_hpp
 
 #include <inttypes.h>
-#include <math.h>
+#include <cmath>
 #include <vector>
 #include <functional>
 #include <eigen3/Eigen/Dense>
@@ -77,6 +77,17 @@ namespace felt
 		return pos_rounded;
 	}
 
+	template <INT D>
+	Eigen::Matrix<INT, D, 1> floor(
+		const Eigen::Matrix<FLOAT, D, 1>& pos
+	) {
+		Eigen::Matrix<INT, D, 1> pos_rounded;
+		for (UINT dim = 0; dim < pos.size(); dim++)
+			pos_rounded(dim) = std::floor(pos(dim));
+		return pos_rounded;
+	}
+
+
 	
 	/**
 	 * Abstract base class for n-dimensional grid.
@@ -89,7 +100,7 @@ namespace felt
 	 * @tparam D the number of dimensions of the grid.
 	 * @tparam R the data type return by get().
 	 */
-	template <typename T, UINT D, typename R=T>
+	template <typename T, INT D, typename R=T>
 	class GridBase
 	{
 	public:
@@ -180,6 +191,12 @@ namespace felt
 		 * The dimensions (size) of the grid.
 		 */
 		VecDu m_dims;
+
+		/// Minimum position stored in grid (equal to m_offset).
+		VecDi m_pos_min;
+		/// One more than maximum position stored in grid (equal to m_offset + m_dims).
+		VecDi m_pos_max;
+
 		/**
 		 * The physical size of a grid node (used for spatial derivatives).
 		 */
@@ -253,6 +270,8 @@ namespace felt
 		virtual void offset (const VecDi& offset_new)
 		{
 			m_offset = offset_new;
+			m_pos_min = offset_new;
+			m_pos_max = m_offset + m_dims.template cast<INT>();
 		}
 
 		/**
@@ -828,9 +847,14 @@ namespace felt
 				VecDi pos_corner(dims.size());
 				for (INT dim = 0; dim < pos_corner.size(); dim++)
 				{
-					INT pos = (INT)floor(vec_fpos(dim));
+					INT pos = (INT)std::floor(vec_fpos(dim));
 					const INT dir = (i >> dim) & 1;
-					pos += dir;
+					if (dir)
+					{
+						pos += dir;
+						if (m_pos_min(dim) > pos || pos >= m_pos_max(dim))
+							pos -= dir;
+					}
 					pos_corner(dim) = pos;
 				}
 
@@ -842,7 +866,7 @@ namespace felt
 			VecDf vec_dir(vec_fpos);
 			for (INT dim = 0; dim < vec_dir.size(); dim++)
 			{
-				vec_dir(dim) = vec_dir(dim) - floor(vec_dir(dim));
+				vec_dir(dim) = vec_dir(dim) - std::floor(vec_dir(dim));
 			}
 
 			// Repeatedly reduce along axes,
@@ -1001,7 +1025,6 @@ namespace felt
 			return this->data()(idx);
 		}
 
-	protected:
 		void assert_pos_bounds (
 			const VecDi& pos, std::string title
 		) const {

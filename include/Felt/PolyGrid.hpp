@@ -178,7 +178,7 @@ namespace felt
 		 *
 		 * @param surface
 		 */
-		void poly_cubes(const PolySurface& surface)
+		void poly_cubes (const PolySurface& surface)
 		{
 
 			#pragma omp parallel for
@@ -225,6 +225,29 @@ namespace felt
 			for (const VecDi& pos_child : *this)
 				this->get(pos_child).reset();
 			m_grid_changes.reset();
+		}
+
+		/**
+		 * Reset and polygonise the whole surface.
+		 *
+		 * @param surface
+		 */
+		void surf (const PolySurface& surface)
+		{
+			reset();
+
+			for (
+				UINT layer_idx = 0; layer_idx < surface.NUM_LAYERS; layer_idx++
+			) {
+				for (
+					const VecDi& pos_child
+					: surface.phi().branch().list(layer_idx)
+				) {
+					m_grid_changes.add(pos_child);
+				}
+			}
+
+			poly_cubes(surface);
 		}
 	};
 
