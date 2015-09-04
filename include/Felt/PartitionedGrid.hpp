@@ -13,6 +13,12 @@ namespace felt
 	/// Default size of a spatial partition (in each dimension).
 	constexpr UINT DEFAULT_PARTITION = 4;
 
+
+	template <class TDerived>
+	struct PartitionBaseTraits
+	{};
+
+
 	/**
 	 * Base class for spatially partitioned structures.
 	 *
@@ -20,21 +26,25 @@ namespace felt
 	 * @tparam G type of object to store in a partition.
 	 * @tparam N number of tracking lists to use (see TrackedGrid).
 	 */
-	template <UINT D, class G, UINT N=1>
+	template <class TDerived>
 	class PartitionBase
 	{
 	public:
 		/// Child object to store in each partition.
-		using Child = G;
+		using Child = typename PartitionBaseTraits<TDerived>::TChildType;
+
+		/// Width of the narrow band = number of tracking lists of points.
+		static const UINT NUM_LISTS = PartitionBaseTraits<TDerived>::TNumLists;
+
 		/// Grid of partitions with tracking list(s) of active grid points.
-		using BranchGrid = TrackedGrid<Child, D, N>;
+		using BranchGrid = TrackedGrid<
+			Child, PartitionBaseTraits<TDerived>::TDims, NUM_LISTS
+		>;
 		/// D-dimensional unsigned int vector.
 		using VecDu = typename BranchGrid::VecDu;
 		/// D-dimensional signed int vector.
 		using VecDi = typename BranchGrid::VecDi;
 
-		/// Width of the narrow band = number of tracking lists of points.
-		static const UINT NUM_LISTS = N;
 
 	protected:
 		/// Grid of partitions with tracking list(s) of active grid points.
@@ -76,9 +86,11 @@ namespace felt
 			const VecDu& dims, const VecDi& offset,
 			const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION)
 		) {
-			this->init(dims_partition);
-			this->dims(dims);
-			this->offset(offset);
+			TDerived* self = static_cast<TDerived*>(this);
+
+			self->init(dims_partition);
+			self->dims(dims);
+			self->offset(offset);
 		}
 
 		/**
@@ -242,10 +254,11 @@ namespace felt
 	 * specialisations.
 	 */
 	template <typename T, UINT D, UINT N, typename A>
-	class PartitionedArrayBase : public PartitionBase<D, A, N>
+	class PartitionedArrayBase : public PartitionBase<PartitionedArrayBase<T, D, N, A> >
 	{
 	public:
-		using Base = PartitionBase<D, A, N>;
+		using ThisType = PartitionedArrayBase<T, D, N, A>;
+		using Base = PartitionBase<ThisType>;
 		using typename Base::VecDu;
 		using typename Base::VecDi;
 	protected:
@@ -274,6 +287,16 @@ namespace felt
 				(pos_leaf - m_offset).array() / this->m_idims_child.array()
 			).matrix() + this->branch().offset();
 		}
+	};
+
+
+	template <typename T, UINT D, UINT N, typename A>
+	struct PartitionBaseTraits<PartitionedArrayBase<T, D, N, A> >
+	{
+		using TLeafType = T;
+		using TChildType = A;
+		static constexpr UINT TDims = D;
+		static constexpr UINT TNumLists = N;
 	};
 
 
@@ -410,10 +433,11 @@ namespace felt
 	template <
 		typename T, UINT D, class G=Grid<T, D>, UINT N=1
 	>
-	class PartitionedGrid : public G, public PartitionBase<D, G, N>
+	class PartitionedGrid : public G, public PartitionBase<PartitionedGrid<T, D, G, N> >
 	{
 	public:
-		using Base = PartitionBase<D, G, N>;
+		using ThisType = PartitionedGrid<T, D, G, N>;
+		using Base = PartitionBase<ThisType>;
 		using typename Base::Child; // = G
 		using typename Base::Child::TLeafType;
 		using BranchGrid = TrackedGrid<Child, D, N>;
@@ -633,6 +657,16 @@ namespace felt
 				}
 			}
 		}
+	};
+
+
+	template <typename T, UINT D, class G, UINT N>
+	struct PartitionBaseTraits<PartitionedGrid<T, D, G, N> >
+	{
+		using TLeafType = T;
+		using TChildType = G;
+		static constexpr UINT TDims = D;
+		static constexpr UINT TNumLists = N;
 	};
 
 
