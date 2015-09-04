@@ -48,7 +48,7 @@ namespace felt
 		VecDi 	m_idims_child;
 
 	public:
-		virtual ~PartitionBase ()
+		~PartitionBase ()
 		{}
 
 		PartitionBase () = default;
@@ -185,7 +185,7 @@ namespace felt
 		 *
 		 * @param offset_grid
 		 */
-		virtual void offset (const VecDi& offset_grid)
+		void offset (const VecDi& offset_grid)
 		{
 			const VecDi& offset_branch = (
 				offset_grid.array() / m_idims_child.array()
@@ -256,7 +256,7 @@ namespace felt
 		 *
 		 * @param offset_grid
 		 */
-		void offset (const VecDi& offset_grid) override
+		void offset (const VecDi& offset_grid)
 		{
 			m_offset = offset_grid;
 			Base::offset(offset_grid);
@@ -469,7 +469,7 @@ namespace felt
 		 * @param vec_NewDims
 		 * @return
 		 */
-		void dims (const VecDu& dims_grid) override
+		void dims (const VecDu& dims_grid)
 		{
 			Base::dims(dims_grid);
 
@@ -488,7 +488,7 @@ namespace felt
 		 *
 		 * @param offset_grid
 		 */
-		void offset (const VecDi& offset_grid) override
+		void offset (const VecDi& offset_grid)
 		{
 			Base::offset(offset_grid);
 			Child::offset(offset_grid);
@@ -544,7 +544,7 @@ namespace felt
 		 * @param pos
 		 * @return value stored at grid point pos.
 		 */
-		TLeafType& get (const VecDi& pos) override
+		TLeafType& get (const VecDi& pos)
 		{
 			Child& child = this->branch()(pos_child(pos));
 			return child.get(pos);
@@ -558,7 +558,7 @@ namespace felt
 		 * @param pos
 		 * @return value stored at grid point pos.
 		 */
-		const TLeafType& get (const VecDi& pos) const override
+		const TLeafType& get (const VecDi& pos) const
 		{
 			const Child& leaf = this->branch()(pos_child(pos));
 			return leaf.get(pos);

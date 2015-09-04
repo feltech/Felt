@@ -8,8 +8,6 @@
 
 namespace felt
 {
-
-
 	/**
 	 * Container for a grid of Poly objects polygonising a spatially partitioned
 	 * signed distance grid.
@@ -25,24 +23,25 @@ namespace felt
 	{
 	public:
 		/// Polygonisation of a single surface spatial partition.
-		typedef P							PolyLeaf;
+		using PolyLeaf = P;
 
-		typedef typename PolyLeaf::VecDu	VecDu;
-		typedef typename PolyLeaf::VecDi	VecDi;
+		using VecDu = typename PolyLeaf::VecDu;
+		using VecDi = typename PolyLeaf::VecDi;
 
-		typedef Grid<PolyLeaf, D>	Base;
+		using Base = Grid<PolyLeaf, D>;
 
 		/// Standard 2-layer signed-distance surface (either 2D or 3D).
-		typedef Surface<D, 3>	PolySurface;
+		using PolySurface = Surface<D, 3>;
 
 		/// Lookup grid to track partitions containing zero-layer points.
-		typedef LookupGrid<D>		PolyChanges;
+		using PolyChanges = LookupGrid<D>;
+		
 	protected:
 		/// Lookup grid to track partitions containing zero-layer points.
 		PolyChanges		m_grid_changes;
 
 	public:
-		virtual ~PolyGrid ()
+		~PolyGrid ()
 		{}
 		
 		/**
@@ -88,7 +87,7 @@ namespace felt
 		 *
 		 * @param pos_child
 		 */
-		virtual void init_child(
+		void init_child(
 			const VecDi& pos_child_, const VecDu& dims_, const VecDi& offset_
 		) {
 			// Add a one-element border to account for partition overlap.

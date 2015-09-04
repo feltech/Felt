@@ -10,7 +10,6 @@
 
 using namespace felt;
 
-
 /*
  * Test the Poly library.
  */
