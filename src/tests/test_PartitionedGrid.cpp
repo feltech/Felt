@@ -3,12 +3,12 @@
 
 #define _TESTING
 
-#include "Felt/PartitionedGrid.hpp"
+#include <Felt/PartitionedGrid.hpp>
 
 using namespace felt;
 
 /*
- * Test the Grid library.
+ * Test spatially partitioned grid structures.
  */
 BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 

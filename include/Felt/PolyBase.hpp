@@ -1,4 +1,4 @@
-#include "Grid.hpp"
+#include "Surface.hpp"
 
 namespace felt {
 
@@ -32,8 +32,8 @@ protected:
 		 * @param <unused>
 		 * @param pos
 		 */
-		template <typename PosType>
-		Vertex(const Grid<FLOAT, 2>&, const PosType& pos)
+		template <typename PosType, class TDerived>
+		Vertex(const GridBase<TDerived>& grid, const PosType& pos)
 		{
 			this->pos = pos.template cast<FLOAT>();
 		}
@@ -127,13 +127,12 @@ protected:
 		 * @param grid
 		 * @param pos
 		 */
-		template <typename PosType>
-		Vertex(const Grid<FLOAT, 3>& grid, const PosType& pos)
+		template <typename PosType, class TDerived>
+		Vertex(const GridBase<TDerived>& grid, const PosType& pos)
 		{
 			this->pos = pos.template cast<FLOAT>();
 			this->norm = grid.gradC(pos);
 			this->norm.normalize();
-
 		}
 
 		/**

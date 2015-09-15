@@ -30,18 +30,19 @@ namespace felt
 
 	/// Utility: take a slice of a 3D grid and return a tabulated string.
 	// Utility: take a slice of a 3D grid and return a tabulated string.
-	template <typename T, UINT D>
+	template <class TDerived>
 	std::string stringifyGridSlice(
-		const Grid<T, D>& grid, UINT axis_plane = 2, INT axis_plane_offset = 0
+		const GridBase<TDerived>& grid, UINT axis_plane = 2, INT axis_plane_offset = 0
 	) {
-		typedef typename Grid<T, D>::VecDu VecDu;
-		typedef typename Grid<T, D>::VecDi VecDi;
+		using GridType = GridBase<TDerived>;
+		using VecDu = typename GridBase<TDerived>::VecDu;
+		using VecDi = typename GridBase<TDerived>::VecDi;
 
 		const VecDu& dims = grid.dims();
 		const VecDi& offset = grid.offset();
 		std::stringstream strGrid;
-		UINT axis_1 = (axis_plane+1)%D;
-		UINT axis_2 = (axis_plane+2)%D;
+		UINT axis_1 = (axis_plane+1) % GridType::Dims;
+		UINT axis_2 = (axis_plane+2) % GridType::Dims;
 		INT z = axis_plane_offset;
 		for (INT x = offset(axis_1); x < (INT)dims(axis_1) + offset(axis_1);
 			x++)

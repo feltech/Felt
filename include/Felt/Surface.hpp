@@ -592,12 +592,25 @@ public:
 	FLOAT dphi_gauss (
 		const VecDf& pos_centre, const FLOAT& val, const FLOAT& stddev
 	) {
-		SharedLookupGrid<D, NUM_LAYERS>& lookup = this->walk_band<Distance>(
+		const SharedLookupGrid<D, NUM_LAYERS>& lookup = this->walk_band<Distance>(
 			round(pos_centre)
 		);
-		return this->dphi_gauss(
-			lookup.list(this->layer_idx(0)), pos_centre, val, stddev
-		);
+		return this->dphi_gauss(lookup.list(this->layer_idx(0)), pos_centre, val, stddev);
+
+//		PosArray list;
+//		const INT w = Distance;
+//		const VecDi offset = VecDi::Constant(-w/2);
+//		const VecDu dims = VecDu::Constant(w);
+//		const VecDi pos_centre_rounded = round(pos_centre);
+//		for (UINT i = 0; i < std::pow(w, D); i++)
+//		{
+//			const VecDi& pos_offset = Grid<UINT, D>::index(i, dims, offset);
+//			const VecDi& pos_neigh = pos_offset + pos_centre_rounded;
+//			if (this->layer_id(pos_neigh) == 0)
+//				list.push_back(pos_neigh);
+//		}
+//
+//		return this->dphi_gauss(list, pos_centre, val, stddev);
 	}
 
 	/**
@@ -655,9 +668,7 @@ public:
 			for (UINT idx = 0; idx < list.size(); idx++)
 			{
 				const VecDi& pos = list[idx];
-				const FLOAT& amount = this->clamp(
-					pos, weights(idx) + this->dphi(pos)
-				);
+				const FLOAT amount = this->clamp(pos, weights(idx) + m_grid_dphi(pos));
 				weights(idx) -= (weights(idx) - amount);
 
 				this->dphi().add(pos, amount, this->layer_idx(0));
@@ -966,7 +977,7 @@ public:
 	 */
 	VecDi next_closest (const VecDi& pos) const
 	{
-		const Grid<FLOAT,D>& phi = this->phi();
+		const PhiGrid& phi = this->phi();
 		const FLOAT val_centre = phi(pos);
 		// Direction multiplier for gradient toward zero-curve.
 		const FLOAT side = sgn(val_centre);
@@ -1679,10 +1690,8 @@ protected:
 		const VecDi& pos_floor = floor(pos_intersect);
 		const VecDi& pos_child = this->m_grid_phi.pos_child(pos_floor);
 
-		if (
-			this->layer(pos_child, 0).size()
-			|| this->layer(pos_child, -1).size() || this->layer(pos_child, 1).size()
-		) {
+		if (this->layer(pos_child, 0).size())
+		{
 			child_hits.push_back(ChildHit(pos_intersect, pos_child));
 		}
 		return true;

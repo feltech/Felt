@@ -15,7 +15,7 @@ include_directories(
     ${PROJECT_ROOT}/include ${EIGEN3_INCLUDE_DIR}
 )
 
-add_definitions(-std=c++14 -fopenmp)
+add_definitions(-std=c++14 -fopenmp -Wfatal-errors)
 
 
 # C++ unit tests

@@ -8,6 +8,8 @@
 
 namespace felt
 {
+	template <class TDerived> struct PolyGridBaseTraits {};
+
 	/**
 	 * Container for a grid of Poly objects polygonising a spatially partitioned
 	 * signed distance grid.
@@ -18,36 +20,41 @@ namespace felt
 	 * @tparam P Poly compatible class for storing the polygonisations of
 	 * spatial partitions.
 	 */
-	template <UINT D, class P=Poly<D> >
-	class PolyGrid : public Grid<P, D>
+	template <class TDerived>
+	class PolyGridBase
+		: public Grid <
+		  typename PolyGridBaseTraits<TDerived>::TLeafType, PolyGridBaseTraits<TDerived>::TDims
+		>
 	{
 	public:
 		/// Polygonisation of a single surface spatial partition.
-		using PolyLeaf = P;
+		using DerivedType = typename PolyGridBaseTraits<TDerived>::TThisType;
+		using PolyLeaf = typename PolyGridBaseTraits<TDerived>::TLeafType;
+		static const UINT Dims = PolyGridBaseTraits<TDerived>::TDims;
 
 		using VecDu = typename PolyLeaf::VecDu;
 		using VecDi = typename PolyLeaf::VecDi;
 
-		using Base = Grid<PolyLeaf, D>;
+		using Base = Grid<PolyLeaf, Dims>;
 
-		/// Standard 2-layer signed-distance surface (either 2D or 3D).
-		using PolySurface = Surface<D, 3>;
+		/// Standard 3-layer signed-distance surface (either 2D or 3D).
+		using PolySurface = Surface<Dims, 3>;
 
 		/// Lookup grid to track partitions containing zero-layer points.
-		using PolyChanges = LookupGrid<D>;
+		using PolyChanges = LookupGrid<Dims>;
 		
 	protected:
 		/// Lookup grid to track partitions containing zero-layer points.
 		PolyChanges		m_grid_changes;
 
 	public:
-		~PolyGrid ()
+		~PolyGridBase ()
 		{}
 		
 		/**
 		 * Initialise an empty grid of Poly objects.
 		 */
-		PolyGrid () : Base(), m_grid_changes()
+		PolyGridBase () : Base(), m_grid_changes()
 		{}
 
 		/**
@@ -55,7 +62,7 @@ namespace felt
 		 * 
 		 * @param surface
 		 */
-		PolyGrid (const PolySurface& surface) : Base(), m_grid_changes()
+		PolyGridBase (const PolySurface& surface) : Base(), m_grid_changes()
 		{
 			this->init(surface);
 		}
@@ -67,6 +74,7 @@ namespace felt
 		 */
 		void init(const PolySurface& surface)
 		{
+			DerivedType* self = static_cast<DerivedType*>(this);
 			Base::init(
 				surface.phi().branch().dims(), surface.phi().branch().offset()
 			);
@@ -74,7 +82,7 @@ namespace felt
 				surface.phi().dims(), surface.phi().offset()
 			);
 			for (const VecDi& pos_child : surface.phi().branch())
-				this->init_child(
+				self->init_child(
 					pos_child, surface.phi().child(pos_child).dims(),
 					surface.phi().child(pos_child).offset()
 				);
@@ -248,6 +256,24 @@ namespace felt
 
 			poly_cubes(surface);
 		}
+	};
+
+
+	template <UINT D>
+	class PolyGrid : public PolyGridBase<PolyGrid<D> >
+	{
+	public:
+		using Base = PolyGridBase<PolyGrid<D> >;
+		using Base::PolyGridBase;
+
+	};
+
+
+	template <UINT D> struct PolyGridBaseTraits<PolyGrid<D> >
+	{
+		using TThisType = PolyGrid<D>;
+		using TLeafType = Poly<D>;
+		static const UINT TDims = D;
 	};
 
 }

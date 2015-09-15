@@ -88,7 +88,9 @@ namespace felt
 	}
 
 
+	template <class TDerived> struct GridBaseTraits {};
 	
+
 	/**
 	 * Abstract base class for n-dimensional grid.
 	 *
@@ -100,31 +102,38 @@ namespace felt
 	 * @tparam D the number of dimensions of the grid.
 	 * @tparam R the data type return by get().
 	 */
-	template <typename T, INT D, typename R=T>
+	template <class TDerived>
 	class GridBase
 	{
 	public:
+		using ThisType = GridBase<TDerived>;
+		using DerivedType = typename GridBaseTraits<TDerived>::TThisType;
+		static const UINT Dims = GridBaseTraits<TDerived>::TDims;
+		using LeafType = typename GridBaseTraits<TDerived>::TLeafType;
+		/// Access template parameter to the leaf return type.
+		using RetType = typename GridBaseTraits<TDerived>::TRetType;
+
 		/**
 		 * D-dimensional unsigned integer vector.
 		 */
-		using VecDu = Eigen::Matrix<UINT, D, 1>;
+		using VecDu = Eigen::Matrix<UINT, Dims, 1>;
 		/**
 		 * D-dimensional integer vector.
 		 */
-		using VecDi = Eigen::Matrix<INT, D, 1>;
+		using VecDi = Eigen::Matrix<INT, Dims, 1>;
 		/**
 		 * D-dimensional float vector.
 		 */
-		using VecDf = Eigen::Matrix<FLOAT, D, 1>;
+		using VecDf = Eigen::Matrix<FLOAT, Dims, 1>;
 		/**
-		 * D-dimensional vector of type T.
+		 * D-dimensional vector of type TDataType.
 		 */
-		using VecDT = Eigen::Matrix<T, D, 1>;
+		using VecDT = Eigen::Matrix<LeafType, Dims, 1>;
 		/**
 		 * Dynamic 1D vector (i.e. a resizeable array of data) of
-		 * type T.
+		 * type TDataType.
 		 */
-		using ArrayData = Eigen::Array<T, 1, Eigen::Dynamic>;
+		using ArrayData = Eigen::Array<LeafType, 1, Eigen::Dynamic>;
 		/**
 		 * Resizeable array of VecDi (i.e. grid locations).
 		 *
@@ -133,10 +142,7 @@ namespace felt
 		using PosArray = std::vector<
 			VecDi, Eigen::aligned_allocator<VecDi>
 		>;
-		/**
-		 * Access template parameter to the leaf return type.
-		 */
-		using TLeafType = R;
+
 
 		/**
 		 * Iterator for contiguous cycling over entire grid.
@@ -161,24 +167,24 @@ namespace felt
 			: m_idx(startIdx), m_num_elems(grid.data().size()),
 			  m_dims(grid.dims()), m_offset(grid.offset()),
 			  m_pos(
-				GridBase<T, D, R>::index(startIdx, grid.dims(), grid.offset())
+				ThisType::index(startIdx, grid.dims(), grid.offset())
 			  )
 			{}
 		 private:
 
-		    void increment() {
-		    	m_idx++;
-		    	m_pos = GridBase<T, D, R>::index(m_idx, m_dims, m_offset);
-		    }
+			void increment() {
+				m_idx++;
+				m_pos = ThisType::index(m_idx, m_dims, m_offset);
+			}
 
-		    bool equal(iterator const& other) const
-		    {
-		        return this->m_idx == other.m_idx;
-		    }
+			bool equal(iterator const& other) const
+			{
+				return this->m_idx == other.m_idx;
+			}
 
-		    const VecDi& dereference() const {
-		    	return m_pos;
-		    }
+			const VecDi& dereference() const {
+				return m_pos;
+			}
 		};
 
 
@@ -210,7 +216,7 @@ namespace felt
 		/**
 		 * Trivial destructor.
 		 */
-		virtual ~GridBase ()
+		~GridBase ()
 		{}
 
 		/**
@@ -249,13 +255,15 @@ namespace felt
 		 * @param offset
 		 * @param delta
 		 */
-		virtual void init (
+		void init (
 			const VecDu& dims, const VecDi& offset = VecDi::Zero(),
 			const FLOAT& delta = 1
 		) {
-			this->dx(delta);
-			this->dims(dims);
-			this->offset(offset);
+			DerivedType* self = static_cast<DerivedType*>(this);
+
+			self->dx(delta);
+			self->dims(dims);
+			self->offset(offset);
 		}
 
 		/**
@@ -267,7 +275,7 @@ namespace felt
 		 *
 		 * @param offset_new
 		 */
-		virtual void offset (const VecDi& offset_new)
+		void offset (const VecDi& offset_new)
 		{
 			m_offset = offset_new;
 			m_pos_min = offset_new;
@@ -308,7 +316,7 @@ namespace felt
 		 * @param pos
 		 * @return
 		 */
-		R& operator() (const VecDi& pos)
+		RetType& operator() (const VecDi& pos)
 		{
 			return this->get(pos);
 		}
@@ -318,7 +326,7 @@ namespace felt
 		 * @param pos
 		 * @return
 		 */
-		const R& operator() (const VecDi& pos) const
+		const RetType& operator() (const VecDi& pos) const
 		{
 			return this->get(pos);
 		}
@@ -332,7 +340,7 @@ namespace felt
 		 * @param pos
 		 * @return
 		 */
-		const T operator() (const VecDf& pos) const
+		const LeafType operator() (const VecDf& pos) const
 		{
 			return this->interp(pos);
 		}
@@ -346,7 +354,7 @@ namespace felt
 		 * @param pos
 		 * @return
 		 */
-		T operator() (const VecDf& pos)
+		LeafType operator() (const VecDf& pos)
 		{
 			return this->interp(pos);
 		}
@@ -360,8 +368,10 @@ namespace felt
 		 * @param pos
 		 * @return
 		 */
-		virtual R& get (const VecDi& pos) = 0;
-
+		RetType& get (const VecDi& pos)
+		{
+			return static_cast<DerivedType*>(this)->get(pos);
+		}
 
 		/**
 		 * Abstract getter to be overriden by subclasses (const version).
@@ -369,8 +379,10 @@ namespace felt
 		 * @param pos
 		 * @return
 		 */
-		virtual const R& get (const VecDi& pos) const = 0;
-
+		const RetType& get (const VecDi& pos) const
+		{
+			return static_cast<const DerivedType*>(this)->get(pos);
+		}
 
 		/**
 		 * Get index in data array of position vector.
@@ -383,7 +395,7 @@ namespace felt
 		 */
 		UINT index (const VecDi& pos) const
 		{
-			return GridBase<T,D,R>::index(pos, this->dims(), this->offset());
+			return ThisType::index(pos, this->dims(), this->offset());
 		}
 
 		/**
@@ -426,7 +438,7 @@ namespace felt
 		 */
 		VecDi index (const UINT& idx) const
 		{
-			return GridBase<T,D,R>::index(idx, this->dims(), this->offset());
+			return ThisType::index(idx, this->dims(), this->offset());
 		}
 
 		/**
@@ -455,7 +467,7 @@ namespace felt
 	y = (idx/Dz) % Dy
 	x = (idx/Dz)/Dy % Dx
 */
-			VecDi pos(D);
+			VecDi pos;
 
 			for (INT axis = dims.size()-1; axis >= 0; axis--)
 			{
@@ -511,7 +523,7 @@ namespace felt
 		 * @param vec_NewDims
 		 * @return
 		 */
-		virtual void dims (const VecDu& dims_new)
+		void dims (const VecDu& dims_new)
 		{
 			m_dims = dims_new;
 
@@ -538,7 +550,7 @@ namespace felt
 		 *
 		 * @param val
 		 */
-		virtual void fill (const T& val)
+		void fill (const LeafType& val)
 		{
 			this->data().fill(val);
 		}
@@ -550,7 +562,7 @@ namespace felt
 		 * @return
 		 */
 		template <typename PosType>
-		bool inside (const Eigen::Matrix<PosType, D, 1>& pos) const
+		bool inside (const Eigen::Matrix<PosType, Dims, 1>& pos) const
 		{
 			return inside(
 				pos, this->offset(),
@@ -566,7 +578,7 @@ namespace felt
 		 */
 		template <typename PosType>
 		static bool inside (
-			const Eigen::Matrix<PosType, D, 1>& pos,
+			const Eigen::Matrix<PosType, Dims, 1>& pos,
 			const VecDi& pos_min, const VecDi& pos_max
 		) {
 
@@ -599,7 +611,7 @@ namespace felt
 			// Reference to GridBase dimensions.
 			const VecDu& dims = this->dims();
 			// Most likely all neighbours are valid.
-			vout.reserve(2*D);
+			vout.reserve(2*Dims);
 			// Position for look-around.
 			VecDi vec_dir(pos);
 			for (INT axis = 0; axis < dims.size(); axis++) {
@@ -658,16 +670,16 @@ namespace felt
 		 * @return
 		 */
 		template <typename PosType>
-		VecDT gradF (const Eigen::Matrix<PosType, D, 1>& pos) const
+		VecDT gradF (const Eigen::Matrix<PosType, Dims, 1>& pos) const
 		{
 			// Value at this point.
-			const T val_centre = (*this)(pos);
+			const LeafType val_centre = (*this)(pos);
 			// Reference to GridBase dimensions.
 			const VecDu& dims = this->dims();
 			// Vector to store gradient calculation.
 			VecDT vec_grad(dims.size());
 			// Position for look-ahead.
-			Eigen::Matrix<PosType, D, 1> vec_dir(pos);
+			Eigen::Matrix<PosType, Dims, 1> vec_dir(pos);
 
 			for (INT axis = 0; axis < dims.size(); axis++)
 			{
@@ -686,16 +698,16 @@ namespace felt
 		 * @return
 		 */
 		template <typename PosType>
-		VecDT gradB (const Eigen::Matrix<PosType, D, 1>& pos) const
+		VecDT gradB (const Eigen::Matrix<PosType, Dims, 1>& pos) const
 		{
 			// Value at this point.
-			const T val_centre = (*this)(pos);
+			const LeafType val_centre = (*this)(pos);
 			// Reference to GridBase dimensions.
 			const VecDu& dims = this->dims();
 			// Vector to store gradient calculation.
 			VecDT vec_grad(dims.size());
 			// Position for look-behind.
-			Eigen::Matrix<PosType, D, 1> vec_dir(pos);
+			Eigen::Matrix<PosType, Dims, 1> vec_dir(pos);
 
 			for (INT axis = 0; axis < dims.size(); axis++) {
 				vec_dir(axis) -= 1;
@@ -713,20 +725,20 @@ namespace felt
 		 * @return
 		 */
 		template <typename PosType>
-		VecDT gradC (const Eigen::Matrix<PosType, D, 1>& pos) const
+		VecDT gradC (const Eigen::Matrix<PosType, Dims, 1>& pos) const
 		{
 			// Reference to GridBase dimensions.
 			const VecDu& dims = this->dims();
 			// Vector to store gradient calculation.
 			VecDT vec_grad(dims.size());
 			// Position for look-around.
-			Eigen::Matrix<PosType, D, 1> vec_dir(pos);
+			Eigen::Matrix<PosType, Dims, 1> vec_dir(pos);
 
 			for (INT axis = 0; axis < dims.size(); axis++) {
 				vec_dir(axis) -= 1;
-				const T back = (*this)(vec_dir);
+				const LeafType back = (*this)(vec_dir);
 				vec_dir(axis) += 2;
-				const T forward = (*this)(vec_dir);
+				const LeafType forward = (*this)(vec_dir);
 				vec_dir(axis) -= 1;
 
 				vec_grad(axis) = (forward - back) /  2;
@@ -747,9 +759,9 @@ namespace felt
 		 * @return
 		 */
 		template <typename PosType>
-		VecDT grad (const Eigen::Matrix<PosType, D, 1>& pos) const
+		VecDT grad (const Eigen::Matrix<PosType, Dims, 1>& pos) const
 		{
-			typedef Eigen::Matrix<PosType, D, 1>	VecDR;
+			typedef Eigen::Matrix<PosType, Dims, 1>	VecDR;
 			// Reference to GridBase dimensions.
 			const VecDu& dims = this->dims();
 			// Vector to store gradient calculation.
@@ -758,11 +770,11 @@ namespace felt
 			VecDR pos_test(pos);
 
 			// Central value.
-			const T centre = (*this)(pos);
+			const LeafType centre = (*this)(pos);
 
 			for (INT axis = 0; axis < dims.size(); axis++) {
-				T back = centre;
-				T forward = centre;
+				LeafType back = centre;
+				LeafType forward = centre;
 				UINT order = 0;
 				// Check if backward value is within GridBase.
 				pos_test(axis) -= 1;
@@ -795,11 +807,11 @@ namespace felt
 		 * @return
 		 */
 		template <typename PosType>
-		VecDT gradE (const Eigen::Matrix<PosType, D, 1>& pos) const
+		VecDT gradE (const Eigen::Matrix<PosType, Dims, 1>& pos) const
 		{
-			typedef Eigen::Matrix<PosType, D, 1> VecDp;
+			typedef Eigen::Matrix<PosType, Dims, 1> VecDp;
 			// Value at this point.
-			const T centre = (*this)(pos);
+			const LeafType centre = (*this)(pos);
 			// Reference to GridBase dimensions.
 			const VecDu& dims = this->dims();
 			// Vector to store gradient calculation.
@@ -809,9 +821,9 @@ namespace felt
 
 			for (INT axis = 0; axis < dims.size(); axis++) {
 				pos_test(axis) -= 1;
-				T back = (*this)(pos_test);
+				LeafType back = (*this)(pos_test);
 				pos_test(axis) += 2;
-				T forward = (*this)(pos_test);
+				LeafType forward = (*this)(pos_test);
 				pos_test(axis) -= 1;
 
 				back = std::min((centre - back), 0.0f);
@@ -829,12 +841,12 @@ namespace felt
 		 * @param vec_fpos
 		 * @return
 		 */
-		T interp (const VecDf& vec_fpos) const
+		LeafType interp (const VecDf& vec_fpos) const
 		{
 			const VecDu& dims = this->dims();
 
 			// Store all 2^d corners.
-			std::vector< T > val_corners(1 << dims.size());
+			std::vector< LeafType > val_corners(1 << dims.size());
 
 			// Get all corners of containing cell.
 			for (UINT i = 0; i < val_corners.size(); i++)
@@ -886,23 +898,23 @@ namespace felt
 		 * @return
 		 */
 		template <typename PosType>
-		T curv (const Eigen::Matrix<PosType, D, 1>& pos) const
+		LeafType curv (const Eigen::Matrix<PosType, Dims, 1>& pos) const
 		{
-			typedef Eigen::Matrix<PosType, D, 1> VecDp;
+			typedef Eigen::Matrix<PosType, Dims, 1> VecDp;
 
-			const T val_centre = (*this)(pos);
+			const LeafType val_centre = (*this)(pos);
 			const VecDu& dims = this->dims();
 			VecDp vec_dir(pos);
 
 			// Forward directed principal normal.
-			VecDT n_forward(D);
+			VecDT n_forward;
 
 			for (INT axis = 0; axis < dims.size(); axis++)
 			{
 				vec_dir(axis) += 1;
 
-				const T val_axis = (*this)(vec_dir) - val_centre;
-				T val_neighs_sq = 0;
+				const LeafType val_axis = (*this)(vec_dir) - val_centre;
+				LeafType val_neighs_sq = 0;
 
 				// Loop other dimensions to get central difference across them.
 				for (
@@ -913,11 +925,11 @@ namespace felt
 						// Central difference across this forward point.
 						VecDp vec_dir_neigh(vec_dir);
 						vec_dir_neigh(axis_neigh) -= 1;
-						const T val_low = (*this)(vec_dir_neigh);
+						const LeafType val_low = (*this)(vec_dir_neigh);
 						vec_dir_neigh(axis_neigh) += 2;
-						const T val_high = (*this)(vec_dir_neigh);
+						const LeafType val_high = (*this)(vec_dir_neigh);
 
-						const T val_neigh = (val_high - val_low) / 2;
+						const LeafType val_neigh = (val_high - val_low) / 2;
 						val_neighs_sq += val_neigh*val_neigh;
 					}
 				}
@@ -930,15 +942,15 @@ namespace felt
 
 
 			// Backward directed principal normal.
-			VecDT n_backward(D);
+			VecDT n_backward(Dims);
 
 			for (INT axis = 0; axis < dims.size(); axis++)
 			{
 				vec_dir(axis) -= 1;
-				VecDT vec_vals(D);
+				VecDT vec_vals(Dims);
 
-				const T val_axis = val_centre - (*this)(vec_dir);
-				T val_neighs_sq = 0;
+				const LeafType val_axis = val_centre - (*this)(vec_dir);
+				LeafType val_neighs_sq = 0;
 
 				// Loop other dimensions to get central difference across them.
 				for (
@@ -949,11 +961,11 @@ namespace felt
 						// Central difference across this backward point.
 						VecDp vec_dir_neigh(vec_dir);
 						vec_dir_neigh(axis_neigh) -= 1;
-						const T val_low = (*this)(vec_dir_neigh);
+						const LeafType val_low = (*this)(vec_dir_neigh);
 						vec_dir_neigh(axis_neigh) += 2;
-						const T val_high = (*this)(vec_dir_neigh);
+						const LeafType val_high = (*this)(vec_dir_neigh);
 
-						const T val_neigh = (val_high - val_low) / 2;
+						const LeafType val_neigh = (val_high - val_low) / 2;
 						val_neighs_sq += val_neigh*val_neigh;
 					}
 				}
@@ -966,7 +978,7 @@ namespace felt
 
 			const VecDT dn_by_dx = (n_forward - n_backward);
 
-			T curvature = 0;
+			LeafType curvature = 0;
 			for (INT axis = 0; axis < dims.size(); axis++)
 			{
 				curvature += dn_by_dx(axis);
@@ -983,14 +995,14 @@ namespace felt
 		 * @return
 		 */
 		template <typename PosType>
-		T divergence (const Eigen::Matrix<PosType, D, 1>& pos) const
+		LeafType divergence (const Eigen::Matrix<PosType, Dims, 1>& pos) const
 		{
 			const VecDT vec_grad_f = this->gradF(pos);
 			const VecDT vec_grad_b = this->gradB(pos);
 			const VecDT vec_grad_diff = vec_grad_b - vec_grad_f;
 
 			// Component-wise sum.
-			const T val = vec_grad_diff.sum();
+			const LeafType val = vec_grad_diff.sum();
 
 			return val / (this->dx()*this->dx());
 		}
@@ -1001,7 +1013,7 @@ namespace felt
 		 * @param pos
 		 * @return
 		 */
-		T& get_internal (const VecDi& pos) {
+		LeafType& get_internal (const VecDi& pos) {
 			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 			assert_pos_bounds(pos, "get_internal: ");
 			#endif
@@ -1016,7 +1028,7 @@ namespace felt
 		 * @param pos
 		 * @return
 		 */
-		const T& get_internal (const VecDi& pos) const
+		const LeafType& get_internal (const VecDi& pos) const
 		{
 			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 			assert_pos_bounds(pos, "get_internal: ");
@@ -1028,16 +1040,18 @@ namespace felt
 		void assert_pos_bounds (
 			const VecDi& pos, std::string title
 		) const {
-			if (!this->inside(pos))
+			const DerivedType* self = static_cast<const DerivedType*>(this);
+
+			if (!self->inside(pos))
 			{
 				using namespace Eigen;
 				IOFormat fmt(
 					StreamPrecision, DontAlignCols, ", ", ", ",
 					"", "", "(", ")"
 				);
-				const VecDi& pos_min = this->offset();
+				const VecDi& pos_min = self->offset();
 				const VecDi& pos_max = (
-					this->dims().template cast<INT>() + pos_min
+					self->dims().template cast<INT>() + pos_min
 					- VecDi::Constant(1)
 				);
 				std::stringstream err;
@@ -1067,8 +1081,8 @@ namespace felt
 		 * @param vec_fpos
 		 * @return
 		 */
-		std::vector<T> interp (
-			const std::vector<T>& val_corners_in, const VecDf& vec_fpos
+		std::vector<LeafType> interp (
+			const std::vector<LeafType>& val_corners_in, const VecDf& vec_fpos
 		) const
 		{
 			const size_t num_corners = val_corners_in.size();
@@ -1087,13 +1101,13 @@ namespace felt
 			// This is the position along the axis of interpolation.
 			const FLOAT axis_pos = vec_fpos(axis_idx);
 
-			std::vector<T> val_corners_out(num_out);
+			std::vector<LeafType> val_corners_out(num_out);
 
 			for (size_t i = 0; i < num_out; i++)
 			{
-				const T low = val_corners_in[(i << 1)];
-				const T high = val_corners_in[(i << 1) + 1];
-				const T val = axis_pos*high + (1.0f-axis_pos)*low;
+				const LeafType low = val_corners_in[(i << 1)];
+				const LeafType high = val_corners_in[(i << 1) + 1];
+				const LeafType val = axis_pos*high + (1.0f-axis_pos)*low;
 				val_corners_out[i] = val;
 			}
 
@@ -1110,16 +1124,17 @@ namespace felt
 	 * @tparam D the number of dimensions of the grid.
 	 */
 	template <typename T, UINT D>
-	class Grid : public GridBase<T, D, T>
+	class Grid : public GridBase<Grid<T, D> >
 	{
 	public:
-		using Base = GridBase<T, D, T>;
+		using ThisType = Grid<T, D>;
+		using Base = GridBase<ThisType>;
 		using typename Base::VecDu;
 		using typename Base::VecDi;
 		using typename Base::VecDf;
 		using Base::GridBase;
 
-		virtual ~Grid ()
+		~Grid ()
 		{}
 
 		/**
@@ -1128,7 +1143,7 @@ namespace felt
 		 * @param pos
 		 * @return
 		 */
-		virtual T& get (const VecDi& pos)
+		T& get (const VecDi& pos)
 		{
 			return this->get_internal(pos);
 		}
@@ -1140,10 +1155,19 @@ namespace felt
 		 * @param pos
 		 * @return
 		 */
-		virtual const T& get (const VecDi& pos) const
+		const T& get (const VecDi& pos) const
 		{
 			return this->get_internal(pos);
 		}
+	};
+
+	template <typename T, UINT D>
+	struct GridBaseTraits<Grid<T, D> >
+	{
+		static const UINT TDims = D;
+		using TLeafType = T;
+		using TRetType = T;
+		using TThisType = Grid<T, D>;
 	};
 
 }// End namespace felt.

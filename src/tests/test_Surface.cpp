@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(init)
 
 		// But actual phi isogrid should have size equal to dims.
 
-		Grid<FLOAT, 2>& phi = surface.phi();
+		Surface<2, 2>::PhiGrid& phi = surface.phi();
 
 		const Vec2u phi_dims = phi.dims();
 		BOOST_CHECK_EQUAL(phi_dims, Vec2u(7, 7));
@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE(next_closest_grid_point)
 	// Create seed point, as above, and navigate to centre.
 
 	Surface<2, 2> surface(Vec2u(5, 5));
-	Grid<FLOAT, 2>& phi = surface.phi();
+	Surface<2, 2>::PhiGrid& phi = surface.phi();
 
 	surface.seed(Vec2i(0, 0));
 

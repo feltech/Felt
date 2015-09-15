@@ -20,12 +20,21 @@ namespace felt
 	class Poly : public PolyBase<D, void> {
 	public:
 		/// Signed distance grid type.
-		using PhiGrid = Grid<FLOAT, D>;
+		template <class TDerived> using PhiGrid = GridBase<TDerived>;
 
 		// Create typedefs of Eigen types for this D-dimensional polygonisation.
-		using VecDu = typename PhiGrid::VecDu;
-		using VecDi = typename PhiGrid::VecDi;
-		using VecDf = typename PhiGrid::VecDf;
+		/**
+		 * D-dimensional unsigned integer vector.
+		 */
+		using VecDu = Eigen::Matrix<UINT, D, 1>;
+		/**
+		 * D-dimensional integer vector.
+		 */
+		using VecDi = Eigen::Matrix<INT, D, 1>;
+		/**
+		 * D-dimensional float vector.
+		 */
+		using VecDf = Eigen::Matrix<FLOAT, D, 1>;
 
 		/// D-dimensional vertex type.
 		using typename PolyBase<D, void>::Vertex;
@@ -97,7 +106,8 @@ namespace felt
          * @param pos
          * @return
          */
-		static unsigned short mask (const PhiGrid& phi, const VecDi& pos)
+		template <class TDerived>
+		static unsigned short mask (const PhiGrid<TDerived>& phi, const VecDi& pos)
 		{
 			// Num corners == 2^D.  That is, 4 for 2D, 8 for 3D.
 			unsigned short mask = 0;
@@ -177,8 +187,9 @@ namespace felt
 		 *
          * @return
          */
+		template <class TDerived>
 		UINT idx(
-			const VecDi& pos_a, const UINT& axis, const PhiGrid& grid_phi
+			const VecDi& pos_a, const UINT& axis, const PhiGrid<TDerived>& grid_phi
 		)
 		{
 			// Check lookup to see if vertex has already been calculated.
@@ -276,7 +287,8 @@ namespace felt
          * @param mask
          * @param spxs
          */
-		void spx(const VecDi& pos, const PhiGrid& grid_phi)
+		template <class TDerived>
+		void spx(const VecDi& pos, const PhiGrid<TDerived>& grid_phi)
 		{
 			// TODO: this is here for consistency only, since the marching
 			// cubes implementation marches in the negative z-axis, but
