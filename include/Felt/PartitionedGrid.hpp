@@ -14,7 +14,7 @@ namespace felt
 	constexpr UINT DEFAULT_PARTITION = 4;
 
 
-	template <class TDerived>
+	template <class Derived>
 	struct PartitionBaseTraits
 	{};
 
@@ -26,21 +26,21 @@ namespace felt
 	 * @tparam G type of object to store in a partition.
 	 * @tparam N number of tracking lists to use (see TrackedGrid).
 	 */
-	template <class TDerived>
+	template <class Derived>
 	class PartitionBase
 	{
 	public:
-		using DerivedType = TDerived;
+		using DerivedType = Derived;
 
 		/// Child object to store in each partition.
-		using Child = typename PartitionBaseTraits<TDerived>::TChildType;
+		using Child = typename PartitionBaseTraits<Derived>::ChildType;
 
 		/// Number of tracking lists of points.
-		static const UINT NUM_LISTS = PartitionBaseTraits<TDerived>::TNumLists;
+		static const UINT NUM_LISTS = PartitionBaseTraits<Derived>::NumLists;
 
 		/// Grid of partitions with tracking list(s) of active grid points.
 		using BranchGrid = TrackedGrid<
-			Child, PartitionBaseTraits<TDerived>::TDims, NUM_LISTS
+			Child, PartitionBaseTraits<Derived>::Dims, NUM_LISTS
 		>;
 		/// D-dimensional unsigned int vector.
 		using VecDu = typename BranchGrid::VecDu;
@@ -254,18 +254,18 @@ namespace felt
 	};
 
 
-	template <class TDerived> struct PartitionedArrayBaseTraits {};
+	template <class Derived> struct PartitionedArrayBaseTraits {};
 
 
 	/**
 	 * Base class for common features of PartitionedArray template
 	 * specialisations.
 	 */
-	template <class TDerived>
-	class PartitionedArrayBase : public PartitionBase<PartitionedArrayBase<TDerived> >
+	template <class Derived>
+	class PartitionedArrayBase : public PartitionBase<PartitionedArrayBase<Derived> >
 	{
 	public:
-		using ThisType = PartitionedArrayBase<TDerived>;
+		using ThisType = PartitionedArrayBase<Derived>;
 		using Base = PartitionBase<ThisType>;
 		using typename Base::VecDu;
 		using typename Base::VecDi;
@@ -298,13 +298,13 @@ namespace felt
 	};
 
 
-	template <class TDerived>
-	struct PartitionBaseTraits<PartitionedArrayBase<TDerived> >
+	template <class Derived>
+	struct PartitionBaseTraits<PartitionedArrayBase<Derived> >
 	{
-		using TThisType = typename PartitionedArrayBaseTraits<TDerived>::TThisType;
-		using TChildType = typename PartitionedArrayBaseTraits<TDerived>::TChildType;
-		static const UINT TDims = PartitionedArrayBaseTraits<TDerived>::TDims;
-		static const UINT TNumLists = PartitionedArrayBaseTraits<TDerived>::TNumLists;
+		using ThisType = typename PartitionedArrayBaseTraits<Derived>::ThisType;
+		using ChildType = typename PartitionedArrayBaseTraits<Derived>::ChildType;
+		static const UINT Dims = PartitionedArrayBaseTraits<Derived>::Dims;
+		static const UINT NumLists = PartitionedArrayBaseTraits<Derived>::NumLists;
 	};
 
 
@@ -369,10 +369,10 @@ namespace felt
 	template <typename T, UINT D, UINT N>
 	struct PartitionedArrayBaseTraits<PartitionedArray<T, D, N> >
 	{
-		using TThisType = PartitionedArray<T, D, N>;
-		using TChildType = std::array<std::vector<T, Eigen::aligned_allocator<T> >, N>;
-		static const UINT TDims = D;
-		static const UINT TNumLists = N;
+		using ThisType = PartitionedArray<T, D, N>;
+		using ChildType = std::array<std::vector<T, Eigen::aligned_allocator<T> >, N>;
+		static const UINT Dims = D;
+		static const UINT NumLists = N;
 	};
 
 
@@ -435,14 +435,14 @@ namespace felt
 	template <typename T, UINT D>
 	struct PartitionedArrayBaseTraits<PartitionedArray<T, D, 0> >
 	{
-		using TThisType = PartitionedArray<T, D, 0>;
-		using TChildType = std::vector<T, Eigen::aligned_allocator<T> >;
-		static const UINT TDims = D;
-		static const UINT TNumLists = 1;
+		using ThisType = PartitionedArray<T, D, 0>;
+		using ChildType = std::vector<T, Eigen::aligned_allocator<T> >;
+		static const UINT Dims = D;
+		static const UINT NumLists = 1;
 	};
 
 
-	template <class TDerived> struct PartitionedGridBaseTraits {};
+	template <class Derived> struct PartitionedGridBaseTraits {};
 
 
 	/**
@@ -457,22 +457,22 @@ namespace felt
 	 * @tparam G GridBase subclass used for child grids.
 	 * @tparam N number of tracking lists to use.
 	 */
-	template <class TDerived>
+	template <class Derived>
 	class PartitionedGridBase
-		: public PartitionedGridBaseTraits<TDerived>::TMixinType,
-		  public PartitionBase<PartitionedGridBase<TDerived> >
+		: public PartitionedGridBaseTraits<Derived>::MixinType,
+		  public PartitionBase<PartitionedGridBase<Derived> >
 	{
 	public:
-		using DerivedType = TDerived;
+		using DerivedType = Derived;
 		using ThisType = PartitionedGridBase<DerivedType>;
 		using Base = PartitionBase<ThisType>;
-		using MixinType = typename PartitionedGridBaseTraits<TDerived>::TMixinType;
+		using MixinType = typename PartitionedGridBaseTraits<Derived>::MixinType;
 		using Traits = PartitionedGridBaseTraits<DerivedType>;
-		using Child = typename Traits::TChildType;
-		using RetType = typename Traits::TRetType;
-		using LeafType = typename Traits::TLeafType;
-		static const UINT Dims = Traits::TDims;
-		using BranchGrid = TrackedGrid<Child, Dims, Traits::TNumLists>;
+		using Child = typename Traits::ChildType;
+		using RetType = typename Traits::RetType;
+		using LeafType = typename Traits::LeafType;
+		static const UINT Dims = Traits::Dims;
+		using BranchGrid = TrackedGrid<Child, Dims, Traits::NumLists>;
 		using VecDu = typename MixinType::VecDu;
 		using VecDi = typename MixinType::VecDi;
 		using SnapshotGrid = Grid<LeafType, Dims>;
@@ -684,13 +684,13 @@ namespace felt
 	};
 
 
-	template <class TDerived>
-	struct PartitionBaseTraits<PartitionedGridBase<TDerived> >
+	template <class Derived>
+	struct PartitionBaseTraits<PartitionedGridBase<Derived> >
 	{
-		using TThisType = typename PartitionedGridBaseTraits<TDerived>::TThisType;
-		using TChildType = typename PartitionedGridBaseTraits<TDerived>::TChildType;
-		static const UINT TDims = PartitionedGridBaseTraits<TDerived>::TDims;
-		static const UINT TNumLists = PartitionedGridBaseTraits<TDerived>::TNumLists;
+		using ThisType = typename PartitionedGridBaseTraits<Derived>::ThisType;
+		using ChildType = typename PartitionedGridBaseTraits<Derived>::ChildType;
+		static const UINT Dims = PartitionedGridBaseTraits<Derived>::Dims;
+		static const UINT NumLists = PartitionedGridBaseTraits<Derived>::NumLists;
 	};
 
 
@@ -707,23 +707,23 @@ namespace felt
 	template <typename T, UINT D>
 	struct GridBaseTraits<PartitionedGrid<T, D> >
 	{
-		using TThisType = PartitionedGrid<T, D>;
-		static const UINT TDims = D;
-		using TLeafType = T;
-		using TRetType = T;
+		using ThisType = PartitionedGrid<T, D>;
+		static const UINT Dims = D;
+		using LeafType = T;
+		using RetType = T;
 	};
 
 
 	template <typename T, UINT D>
 	struct PartitionedGridBaseTraits<PartitionedGrid<T, D> >
 	{
-		using TThisType = PartitionedGrid<T, D>;
-		using TLeafType = typename GridBaseTraits<TThisType>::TLeafType;
-		using TRetType = typename GridBaseTraits<TThisType>::TRetType;
-		using TChildType = Grid<T, D>;
-		using TMixinType = GridBase<TThisType>;
-		static const UINT TDims = D;
-		static const UINT TNumLists = 1;
+		using ThisType = PartitionedGrid<T, D>;
+		using LeafType = typename GridBaseTraits<ThisType>::LeafType;
+		using RetType = typename GridBaseTraits<ThisType>::RetType;
+		using ChildType = Grid<T, D>;
+		using MixinType = GridBase<ThisType>;
+		static const UINT Dims = D;
+		static const UINT NumLists = 1;
 	};
 
 
@@ -908,7 +908,7 @@ namespace felt
 	 * Base traits for spatially partitioned wrapper for lookup and tracked
 	 * grid.
 	 */
-	template <class TDerived> struct TrackingPartitionedGridTraits {};
+	template <class Derived> struct TrackingPartitionedGridTraits {};
 
 	/**
 	 * Base class for spatially partitioned wrapper for lookup and tracked grid.
@@ -918,12 +918,12 @@ namespace felt
 	 * @tparam N number of tracking lists to use.
 	 * @tparam G lookup or tracked grid class used for child grids.
 	 */
-	template <class TDerived>
+	template <class Derived>
 	class TrackingPartitionedGridBase
-		: public PartitionedGridBase<TrackingPartitionedGridBase<TDerived> >
+		: public PartitionedGridBase<TrackingPartitionedGridBase<Derived> >
 	{
 	public:
-		using ThisType = TrackingPartitionedGridBase<TDerived>;
+		using ThisType = TrackingPartitionedGridBase<Derived>;
 		using Base = PartitionedGridBase<ThisType>;
 
 		friend class LeafsContainer<ThisType>;
@@ -1021,10 +1021,10 @@ namespace felt
 		 * @param listIdx tracking list id.
 		 * @return
 		 */
-		const LeafsContainer<TDerived> leafs(const UINT& listIdx = 0) const
+		const LeafsContainer<Derived> leafs(const UINT& listIdx = 0) const
 		{
-			return LeafsContainer<TDerived>(
-				static_cast<const TDerived*>(this), listIdx
+			return LeafsContainer<Derived>(
+				static_cast<const Derived*>(this), listIdx
 			);
 		}
 
@@ -1043,16 +1043,16 @@ namespace felt
 	};
 
 
-	template <class TDerived>
-	struct PartitionedGridBaseTraits<TrackingPartitionedGridBase<TDerived> >
+	template <class Derived>
+	struct PartitionedGridBaseTraits<TrackingPartitionedGridBase<Derived> >
 	{
-		using TThisType = typename TrackingPartitionedGridTraits<TDerived>::TThisType;
-		using TLeafType = typename TrackingPartitionedGridTraits<TThisType>::TLeafType;
-		using TRetType = typename TrackingPartitionedGridTraits<TThisType>::TRetType;
-		using TChildType = typename TrackingPartitionedGridTraits<TThisType>::TChildType;
-		using TMixinType = typename TrackingPartitionedGridTraits<TThisType>::TMixinType;
-		static const UINT TDims = TrackingPartitionedGridTraits<TThisType>::TDims;
-		static const UINT TNumLists = TrackingPartitionedGridTraits<TThisType>::TNumLists;
+		using ThisType = typename TrackingPartitionedGridTraits<Derived>::ThisType;
+		using LeafType = typename TrackingPartitionedGridTraits<ThisType>::LeafType;
+		using RetType = typename TrackingPartitionedGridTraits<ThisType>::RetType;
+		using ChildType = typename TrackingPartitionedGridTraits<ThisType>::ChildType;
+		using MixinType = typename TrackingPartitionedGridTraits<ThisType>::MixinType;
+		static const UINT Dims = TrackingPartitionedGridTraits<ThisType>::Dims;
+		static const UINT NumLists = TrackingPartitionedGridTraits<ThisType>::NumLists;
 	};
 
 
@@ -1126,10 +1126,10 @@ namespace felt
 	template <typename T, UINT D, UINT N>
 	struct TrackedGridBaseTraits<TrackedPartitionedGrid<T, D, N> >
 	{
-		using TThisType = TrackedPartitionedGrid<T, D, N>;
-		using TLeafType = T;
-		using TLookupType = LookupGrid<D, N>;
-		static const UINT TDims = D;
+		using ThisType = TrackedPartitionedGrid<T, D, N>;
+		using LeafType = T;
+		using LookupType = LookupGrid<D, N>;
+		static const UINT Dims = D;
 	};
 
 	/**
@@ -1142,13 +1142,13 @@ namespace felt
 	template <typename T, UINT D, UINT N>
 	struct TrackingPartitionedGridTraits<TrackedPartitionedGrid<T, D, N> >
 	{
-		using TThisType = TrackedPartitionedGrid<T, D, N>;
-		using TChildType = TrackedGrid<T, D, N>;
-		using TMixinType = TrackedGridBase<TThisType>;
-		using TLeafType = typename TrackedGridBaseTraits<TThisType>::TLeafType;
-		using TRetType = TLeafType;
-		static const UINT TDims = TrackedGridBaseTraits<TThisType>::TDims;
-		static const UINT TNumLists = N;
+		using ThisType = TrackedPartitionedGrid<T, D, N>;
+		using ChildType = TrackedGrid<T, D, N>;
+		using MixinType = TrackedGridBase<ThisType>;
+		using LeafType = typename TrackedGridBaseTraits<ThisType>::LeafType;
+		using RetType = LeafType;
+		static const UINT Dims = TrackedGridBaseTraits<ThisType>::Dims;
+		static const UINT NumLists = N;
 	};
 
 	/**
@@ -1235,10 +1235,10 @@ namespace felt
 	template <typename T, UINT D, UINT N>
 	struct TrackedGridBaseTraits<SharedTrackedPartitionedGrid<T, D, N> >
 	{
-		using TThisType = SharedTrackedPartitionedGrid<T, D, N>;
-		using TLeafType = T;
-		using TLookupType = SharedLookupGrid<D, N>;
-		static const UINT TDims = D;
+		using ThisType = SharedTrackedPartitionedGrid<T, D, N>;
+		using LeafType = T;
+		using LookupType = SharedLookupGrid<D, N>;
+		static const UINT Dims = D;
 	};
 
 
@@ -1252,13 +1252,13 @@ namespace felt
 	template <typename T, UINT D, UINT N>
 	struct TrackingPartitionedGridTraits<SharedTrackedPartitionedGrid<T, D, N> >
 	{
-		using TThisType = SharedTrackedPartitionedGrid<T, D, N>;
-		using TChildType = SharedTrackedGrid<T, D, N>;
-		using TMixinType = TrackedGridBase<TThisType>;
-		using TLeafType = typename TrackedGridBaseTraits<TThisType>::TLeafType;
-		using TRetType = TLeafType;
-		static const UINT TDims = TrackedGridBaseTraits<TThisType>::TDims;
-		static const UINT TNumLists = N;
+		using ThisType = SharedTrackedPartitionedGrid<T, D, N>;
+		using ChildType = SharedTrackedGrid<T, D, N>;
+		using MixinType = TrackedGridBase<ThisType>;
+		using LeafType = typename TrackedGridBaseTraits<ThisType>::LeafType;
+		using RetType = LeafType;
+		static const UINT Dims = TrackedGridBaseTraits<ThisType>::Dims;
+		static const UINT NumLists = N;
 	};
 
 
@@ -1287,24 +1287,24 @@ namespace felt
 	template <UINT D, UINT N>
 	struct TrackingPartitionedGridTraits<LookupPartitionedGrid<D, N> >
 	{
-		using TThisType = LookupPartitionedGrid<D, N>;
-		using TLeafType = Eigen::Matrix<UINT, N, 1>;
-		using TRetType = TLeafType;
-		using TChildType = LookupGrid<D, N>;
-		using TMixinType = LookupGridBase<TThisType>;
-		static const UINT TDims = D;
-		static const UINT TNumLists = N;
+		using ThisType = LookupPartitionedGrid<D, N>;
+		using LeafType = Eigen::Matrix<UINT, N, 1>;
+		using RetType = LeafType;
+		using ChildType = LookupGrid<D, N>;
+		using MixinType = LookupGridBase<ThisType>;
+		static const UINT Dims = D;
+		static const UINT NumLists = N;
 	};
 
 
 	template <UINT D, UINT N>
 	struct LookupGridBaseTraits<LookupPartitionedGrid<D, N> >
 	{
-		using TThisType = LookupPartitionedGrid<D, N>;
-		using TLeafType = typename TrackingPartitionedGridTraits<TThisType>::TLeafType;
-		using TRetType = typename TrackingPartitionedGridTraits<TThisType>::TRetType;
-		static const UINT TDims = TrackingPartitionedGridTraits<TThisType>::TDims;
-		static const UINT TNumLists = TrackingPartitionedGridTraits<TThisType>::TNumLists;
+		using ThisType = LookupPartitionedGrid<D, N>;
+		using LeafType = typename TrackingPartitionedGridTraits<ThisType>::LeafType;
+		using RetType = typename TrackingPartitionedGridTraits<ThisType>::RetType;
+		static const UINT Dims = TrackingPartitionedGridTraits<ThisType>::Dims;
+		static const UINT NumLists = TrackingPartitionedGridTraits<ThisType>::NumLists;
 	};
 
 
@@ -1333,24 +1333,24 @@ namespace felt
 	template <UINT D, UINT N>
 	struct TrackingPartitionedGridTraits<SharedLookupPartitionedGrid<D, N> >
 	{
-		using TThisType = SharedLookupPartitionedGrid<D, N>;
-		using TLeafType = Eigen::Matrix<UINT, N, 1>;
-		using TRetType = UINT;
-		using TChildType = SharedLookupGrid<D, N>;
-		using TMixinType = SharedLookupGridBase<TThisType>;
-		static const UINT TDims = D;
-		static const UINT TNumLists = N;
+		using ThisType = SharedLookupPartitionedGrid<D, N>;
+		using LeafType = Eigen::Matrix<UINT, N, 1>;
+		using RetType = UINT;
+		using ChildType = SharedLookupGrid<D, N>;
+		using MixinType = SharedLookupGridBase<ThisType>;
+		static const UINT Dims = D;
+		static const UINT NumLists = N;
 	};
 
 
 	template <UINT D, UINT N>
 	struct SharedLookupGridBaseTraits<SharedLookupPartitionedGrid<D, N> >
 	{
-		using TThisType = SharedLookupPartitionedGrid<D, N>;
-		using TLeafType = typename TrackingPartitionedGridTraits<TThisType>::TLeafType;
-		using TRetType = typename TrackingPartitionedGridTraits<TThisType>::TRetType;
-		static const UINT TDims = TrackingPartitionedGridTraits<TThisType>::TDims;
-		static const UINT TNumLists = TrackingPartitionedGridTraits<TThisType>::TNumLists;
+		using ThisType = SharedLookupPartitionedGrid<D, N>;
+		using LeafType = typename TrackingPartitionedGridTraits<ThisType>::LeafType;
+		using RetType = typename TrackingPartitionedGridTraits<ThisType>::RetType;
+		static const UINT Dims = TrackingPartitionedGridTraits<ThisType>::Dims;
+		static const UINT NumLists = TrackingPartitionedGridTraits<ThisType>::NumLists;
 	};
 }
 #endif /* PARTITIONEDGRID_HPP_ */

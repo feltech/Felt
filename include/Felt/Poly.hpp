@@ -20,7 +20,7 @@ namespace felt
 	class Poly : public PolyBase<D, void> {
 	public:
 		/// Signed distance grid type.
-		template <class TDerived> using PhiGrid = GridBase<TDerived>;
+		template <class Derived> using PhiGrid = GridBase<Derived>;
 
 		// Create typedefs of Eigen types for this D-dimensional polygonisation.
 		/**
@@ -106,8 +106,8 @@ namespace felt
          * @param pos
          * @return
          */
-		template <class TDerived>
-		static unsigned short mask (const PhiGrid<TDerived>& phi, const VecDi& pos)
+		template <class Derived>
+		static unsigned short mask (const PhiGrid<Derived>& phi, const VecDi& pos)
 		{
 			// Num corners == 2^D.  That is, 4 for 2D, 8 for 3D.
 			unsigned short mask = 0;
@@ -187,9 +187,9 @@ namespace felt
 		 *
          * @return
          */
-		template <class TDerived>
+		template <class Derived>
 		UINT idx(
-			const VecDi& pos_a, const UINT& axis, const PhiGrid<TDerived>& grid_phi
+			const VecDi& pos_a, const UINT& axis, const PhiGrid<Derived>& grid_phi
 		)
 		{
 			// Check lookup to see if vertex has already been calculated.
@@ -287,8 +287,8 @@ namespace felt
          * @param mask
          * @param spxs
          */
-		template <class TDerived>
-		void spx(const VecDi& pos, const PhiGrid<TDerived>& grid_phi)
+		template <class Derived>
+		void spx(const VecDi& pos, const PhiGrid<Derived>& grid_phi)
 		{
 			// TODO: this is here for consistency only, since the marching
 			// cubes implementation marches in the negative z-axis, but

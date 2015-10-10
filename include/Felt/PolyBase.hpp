@@ -32,8 +32,8 @@ protected:
 		 * @param <unused>
 		 * @param pos
 		 */
-		template <typename PosType, class TDerived>
-		Vertex(const GridBase<TDerived>& grid, const PosType& pos)
+		template <typename PosType, class Derived>
+		Vertex(const GridBase<Derived>& grid, const PosType& pos)
 		{
 			this->pos = pos.template cast<FLOAT>();
 		}
@@ -127,8 +127,8 @@ protected:
 		 * @param grid
 		 * @param pos
 		 */
-		template <typename PosType, class TDerived>
-		Vertex(const GridBase<TDerived>& grid, const PosType& pos)
+		template <typename PosType, class Derived>
+		Vertex(const GridBase<Derived>& grid, const PosType& pos)
 		{
 			this->pos = pos.template cast<FLOAT>();
 			this->norm = grid.gradC(pos);

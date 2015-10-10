@@ -8,7 +8,7 @@
 
 namespace felt
 {
-	template <class TDerived> struct PolyGridBaseTraits {};
+	template <class Derived> struct PolyGridBaseTraits {};
 
 	/**
 	 * Container for a grid of Poly objects polygonising a spatially partitioned
@@ -20,17 +20,17 @@ namespace felt
 	 * @tparam P Poly compatible class for storing the polygonisations of
 	 * spatial partitions.
 	 */
-	template <class TDerived>
+	template <class Derived>
 	class PolyGridBase
 		: public Grid <
-		  typename PolyGridBaseTraits<TDerived>::TLeafType, PolyGridBaseTraits<TDerived>::TDims
+		  typename PolyGridBaseTraits<Derived>::LeafType, PolyGridBaseTraits<Derived>::Dims
 		>
 	{
 	public:
 		/// Polygonisation of a single surface spatial partition.
-		using DerivedType = typename PolyGridBaseTraits<TDerived>::TThisType;
-		using PolyLeaf = typename PolyGridBaseTraits<TDerived>::TLeafType;
-		static const UINT Dims = PolyGridBaseTraits<TDerived>::TDims;
+		using DerivedType = typename PolyGridBaseTraits<Derived>::ThisType;
+		using PolyLeaf = typename PolyGridBaseTraits<Derived>::LeafType;
+		static const UINT Dims = PolyGridBaseTraits<Derived>::Dims;
 
 		using VecDu = typename PolyLeaf::VecDu;
 		using VecDi = typename PolyLeaf::VecDi;
@@ -271,9 +271,9 @@ namespace felt
 
 	template <UINT D> struct PolyGridBaseTraits<PolyGrid<D> >
 	{
-		using TThisType = PolyGrid<D>;
-		using TLeafType = Poly<D>;
-		static const UINT TDims = D;
+		using ThisType = PolyGrid<D>;
+		using LeafType = Poly<D>;
+		static const UINT Dims = D;
 	};
 
 }
