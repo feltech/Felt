@@ -29,7 +29,6 @@ namespace felt
 	std::string stringifyBitmask(long mask, short length = 8);
 
 	/// Utility: take a slice of a 3D grid and return a tabulated string.
-	// Utility: take a slice of a 3D grid and return a tabulated string.
 	template <class Derived>
 	std::string stringifyGridSlice(
 		const GridBase<Derived>& grid, UINT axis_plane = 2, INT axis_plane_offset = 0

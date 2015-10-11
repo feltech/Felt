@@ -926,8 +926,8 @@ x = (idx/Dz)/Dy % Dx
 			LeafType forward = this->get(pos_test);
 			pos_test(axis) -= 1;
 
-			back = std::min((centre - back), 0.0f);
-			forward = std::max(forward - centre, 0.0f);
+			back = std::max((centre - back), 0.0f);
+			forward = std::min(forward - centre, 0.0f);
 
 			vec_grad(axis) = forward + back;
 		}

@@ -6,6 +6,7 @@
 
 #include "Felt/Felt.hpp"
 #include "Felt/Grid.hpp"
+#include "Utils.hpp"
 
 using namespace felt;
 
@@ -540,50 +541,85 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 	 */
 	BOOST_AUTO_TEST_CASE(grad_entropy_satisfying)
 	{
+		// ==== Setup ====
+		/*
+			Row major order: (x,y) =>
+			(-1,-1),(-1,0),	(-1,1)
+			(0,-1),	(0,0),	(0,1)
+			(1,-1),	(1,0),	(1,1)
+
+		*/
 		Grid <FLOAT,2> grid(Vec2u(3, 3), Vec2i(-1,-1));
-		grid.fill(0);
-		grid(Vec2i(0,0)) = 1.0f;
-
-		grid(Vec2i(-1,0)) = 0.0f;
-		grid(Vec2i(1,0)) = 2.0f;
-
-		grid(Vec2i(0,-1)) = 0.5f;
-		grid(Vec2i(0,1)) = 0.7f;
-
-
 		Vec2i pos(0, 0);
-		Vec2f vec_grad_y_entropy = grid.gradE(pos);
+		Vec2f vec_grad;
 
-		BOOST_CHECK_CLOSE((FLOAT)vec_grad_y_entropy(0), 1.0f, 0.00001f);
-		BOOST_CHECK_CLOSE((FLOAT)vec_grad_y_entropy(1), 0.0f, 0.00001f);
+		// grad +'ve
+		grid.data() <<	0,	0,	0,
+						0,	1,	3,
+						0,	3,	0;
 
-		grid(Vec2i(-1,0)) = 0.9f;
-		grid(Vec2i(1,0)) = 0.8f;
+		// ==== Action ====
 
-		grid(Vec2i(0,-1)) = 2.0f;
-		grid(Vec2i(0,1)) = 0.0f;
-
-		Vec2f vec_grad_x_entropy = grid.gradE(pos);
-
-		BOOST_CHECK_CLOSE((FLOAT)vec_grad_x_entropy(0), 0, 0.00001f);
-		BOOST_CHECK_CLOSE((FLOAT)vec_grad_x_entropy(1), -1.0f, 0.00001f);
+		vec_grad = grid.gradE(pos);
 
 
-/*
-	Row major order: (x,y) =>
-	(-1,-1),(-1,0),	(-1,1)
-	(0,-1),	(0,0),	(0,1)
-	(1,-1),	(1,0),	(1,1)
+		// ==== Confirm ====
 
-*/
-		grid.data() <<	0,	1,		0,
-						2,	1,		0,
-						0,	1.5,	0;
+		BOOST_CHECK_CLOSE((FLOAT)vec_grad(0), 1.0f, 0.00001f);
+		BOOST_CHECK_CLOSE((FLOAT)vec_grad(1), 1.0f, 0.00001f);
 
-		Vec2f vec_grad_no_entropy = grid.gradE(pos);
 
-		BOOST_CHECK_CLOSE((FLOAT)vec_grad_no_entropy(0), 0.5f, 0.00001f);
-		BOOST_CHECK_CLOSE((FLOAT)vec_grad_no_entropy(1), -1.0f, 0.00001f);
+		// ==== Setup ====
+
+		// grad -'ve
+		grid.data() <<	0,	3,	0,
+						3,	1,	0,
+						0,	0,	0;
+
+		// ==== Action ====
+
+		vec_grad = grid.gradE(pos);
+
+
+		// ==== Confirm ====
+
+		BOOST_CHECK_CLOSE((FLOAT)vec_grad(0), -1.0f, 0.00001f);
+		BOOST_CHECK_CLOSE((FLOAT)vec_grad(1), -1.0f, 0.00001f);
+
+
+		// ==== Setup ====
+
+		// div -'ve
+		grid.data() <<	0,	2,	0,
+						3,	1,	2,
+						0,	3,	0;
+
+		// ==== Action ====
+
+		vec_grad = grid.gradE(pos);
+
+
+		// ==== Confirm ====
+
+		BOOST_CHECK_CLOSE((FLOAT)vec_grad(0), 0.0f, 0.00001f);
+		BOOST_CHECK_CLOSE((FLOAT)vec_grad(1), 0.0f, 0.00001f);
+
+		// ==== Setup ====
+
+		// div +'ve
+		grid.data() <<	0,	6,	0,
+						6,	9,	1,
+						0,	1,	0;
+
+		// ==== Action ====
+
+		vec_grad = grid.gradE(pos);
+
+
+		// ==== Confirm ====
+
+		BOOST_CHECK_CLOSE((FLOAT)vec_grad(0), -5.0f, 0.00001f);
+		BOOST_CHECK_CLOSE((FLOAT)vec_grad(1), -5.0f, 0.00001f);
 	}
 
 	BOOST_AUTO_TEST_CASE(curvature)
