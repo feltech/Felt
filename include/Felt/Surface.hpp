@@ -20,7 +20,6 @@ namespace felt {
  * @tparam D the number of dimensions of the surface.
  * @tparam L the number of narrow band layers surrounding the zero-level
  * surface.
- * @tparam P the size of a spatial partition.
  */
 template <UINT D, UINT L=2>
 class Surface
@@ -31,7 +30,6 @@ public:
 	static constexpr UINT NUM_LAYERS = 2*L+1;
 	static constexpr FLOAT TINY = 0.00001f;
 	static constexpr FLOAT REALLYTINY = std::numeric_limits<FLOAT>::epsilon();
-	static constexpr FLOAT NULL_INTERSECT = std::numeric_limits<FLOAT>::max();
 
 	using Surface_t = Surface<D, L>;
 	/**
@@ -109,7 +107,7 @@ protected:
 	 * There is one extra 'layer' for status change lists, one either side
 	 * of the narrow band, for those points that are going out of scope.
 	 */
-	typedef PartitionedArray<StatusChange, D, 3*L+1>	StatusChangeGrid;
+	using StatusChangeGrid = TrackedPartitionedGrid<INT, D, 2*L+3>;
 
 protected:
 
@@ -387,46 +385,93 @@ public:
 	 * @param val
 	 * @param layer_id
 	 */
-	void phi (const VecDi& pos, const FLOAT& val, const INT& layer_id = 0)
+	void phi (const VecDi& pos_, const FLOAT& val_, const INT& layer_id_ = 0)
 	{
 		PhiGrid& phi = this->phi();
-		const INT newlayer_id = this->layer_id(val);
-		phi(pos) = val;
 
-		if (newlayer_id == layer_id)
-			return;
+		const INT newlayer_id = this->layer_id(val_);
 
-		this->status_change(pos, layer_id, newlayer_id);
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		
+		if (
+			std::abs(this->layer_id(val_)) != std::abs(layer_id_)
+			&& std::abs(this->layer_id(val_)) != std::abs(layer_id_) + 1
+			&& std::abs(this->layer_id(val_)) != std::abs(layer_id_) - 1
+		) {
+			std::stringstream strs;
+			strs << "Phi update value out of bounds at layer "
+				<< layer_id_ << " " << felt::format(pos_) << ": " << val_;
+			std::string str = strs.str();
+			throw std::domain_error(str);
+		}
+		
+		#endif
 
-		// If outside point moving inward, must create new outside
-		// points.
-		if (!(std::abs(layer_id) == L && std::abs(newlayer_id) == L-1))
-			return;
+		phi(pos_) = val_;
 
+		this->status_change(pos_, layer_id_, newlayer_id);
+	}
+
+
+	void add_neighs(const VecDi& pos, const INT& side)
+	{
 		// Get neighbouring points.
 		PosArray neighs;
-		phi.neighs(pos, neighs);
-		// Get which side of the zero-layer this point lies on.
-		const INT side = sgn(newlayer_id);
+		m_grid_phi.neighs(pos, neighs);
 
-		for (
-			UINT neighIdx = 0; neighIdx < neighs.size(); neighIdx++
-		) {
+		for (UINT neighIdx = 0; neighIdx < neighs.size(); neighIdx++)
+		{
 			const VecDi& pos_neigh = neighs[neighIdx];
-			const INT fromlayer_id = this->layer_id(pos_neigh);
+			typename PhiGrid::Child& child = m_grid_phi.child(m_grid_phi.pos_child(pos_neigh));
+			// Lock the spatial partition.
+			std::lock_guard<std::mutex> lock(child.mutex());
+			
+			const INT from_layer_id = this->layer_id(pos_neigh);
 			// If neighbouring point is not already within the
 			// narrow band.
-			if (!this->inside_band(fromlayer_id))
+			if (!this->inside_band(from_layer_id))
 			{
 				// Get distance of this new point to the zero layer.
-				const FLOAT dist_neigh = this->distance(
-					pos_neigh, side
+				const FLOAT dist_neigh = this->distance(pos_neigh, side);
+				const INT& to_layer_id = side*INT(L);
+				const INT& to_layer_idx = StatusChange::layer_idx(to_layer_id);
+				// Add to status change list to be added to the outer layer.
+				
+				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+
+				const VecDi& pos_child = m_grid_status_change.pos_child(pos_neigh);
+				const typename StatusChangeGrid::Child::Lookup::LeafType layer_idxs = (
+					m_grid_status_change.child(pos_child).lookup().get(pos_neigh)
 				);
+
+				for (UINT idx = 0; idx < layer_idxs.size(); idx++)
+				{
+					if (layer_idxs[idx] != StatusChangeGrid::Child::Lookup::NULL_IDX)
+					{
+						std::stringstream strs;
+						strs << "Expanding outer layer to a point already marked in status change list"
+							<< felt::format(pos) << ": is " << m_grid_status_change.get(pos_neigh) 
+							<< " -> " << StatusChange::layer_id(idx) 
+							<< ", but attempting " << from_layer_id << "-> " << to_layer_id;
+						std::string str = strs.str();
+						throw std::domain_error(str);
+					}
+				}
+				
+				if (std::abs(this->layer_id(dist_neigh)) != L)
+				{
+					std::stringstream strs;
+					strs << "Expanding outer layer distance out of bounds " << felt::format(pos)
+						<< ": " << dist_neigh;
+					std::string str = strs.str();
+					throw std::domain_error(str);
+				}
+				#endif
+				
+				
+				m_grid_status_change.add_safe(pos_neigh, from_layer_id, to_layer_idx);
 				// Set distance in phi grid.
-				phi(pos_neigh) = dist_neigh;
-				// Add to status change list to be added to the
-				// outer layer.
-				this->status_change(pos_neigh, fromlayer_id, side*L);
+				child(pos_neigh) = dist_neigh;
 			}
 		}
 	}
@@ -446,17 +491,39 @@ public:
 	 * @param fromlayer_id
 	 * @param tolayer_id
 	 */
-	void status_change (
-		const VecDi& pos, const INT& from_layer_id, const INT& to_layer_id
-	) {
+	bool status_change (const VecDi& pos_, const INT& from_layer_id_, const INT& to_layer_id_)
+	{
+		if (from_layer_id_ == to_layer_id_)
+			return false;
+
+		const INT& to_layer_idx = StatusChange::layer_idx(to_layer_id_);
+
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		m_grid_phi.assert_pos_bounds(pos, "status_change: ");
+		{
+			m_grid_phi.assert_pos_bounds(pos_, "status_change: ");
+
+			const VecDi& pos_child = m_grid_status_change.pos_child(pos_);
+			using Child = typename StatusChangeGrid::Child;
+			const Child& child = m_grid_status_change.child(pos_child);
+			const typename Child::Lookup::LeafType layer_idxs = child.lookup().get(pos_);
+
+			for (UINT idx = 0; idx < layer_idxs.size(); idx++)
+			{
+				if (layer_idxs[idx] != StatusChangeGrid::Child::Lookup::NULL_IDX)
+					throw std::domain_error(std::string("Bad status_change"));
+			}
+
+			if (
+				std::abs(from_layer_id_) != std::abs(to_layer_id_) + 1
+				&& std::abs(from_layer_id_) != std::abs(to_layer_id_) - 1
+			)
+				throw std::domain_error(std::string("Bad status_change"));
+		}
 		#endif
 
-		m_grid_status_change.add(
-			pos, StatusChange(pos, from_layer_id),
-			StatusChange::layer_idx(to_layer_id)
-		);
+		m_grid_status_change.add(pos_, from_layer_id_, to_layer_idx);
+
+		return true;
 	}
 
 	/**
@@ -465,22 +532,34 @@ public:
 	 */
 	void flush_status_change ()
 	{
-		for (
-			UINT layer_idx = 0; layer_idx < StatusChangeGrid::NUM_LISTS;
-			layer_idx++
-		) {
-			const INT& layer_id = StatusChange::layer_id(layer_idx);
-			for (
-				const VecDi& pos_child
-				: m_grid_status_change.branch().list(layer_idx)
-			) {
-				for (
-					const StatusChange& change
-					: m_grid_status_change.child(pos_child)[layer_idx]
-				) {
-					this->layer_move(
-						change.pos, change.from_layer, layer_id
-					);
+		for (UINT layer_idx = 0; layer_idx < StatusChangeGrid::NUM_LISTS; layer_idx++)
+		{
+			const INT& layer_id_to = StatusChange::layer_id(layer_idx);
+			for (const VecDi& pos_child : m_grid_status_change.branch().list(layer_idx))
+			{
+				typename StatusChangeGrid::Child& child_grid = m_grid_status_change.child(pos_child);
+
+				for (const VecDi& pos_leaf : child_grid.lookup().list(layer_idx))
+				{
+					const INT& layer_id_from = child_grid.get(pos_leaf);
+
+					#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+
+					if (
+						std::abs(layer_id_from) != std::abs(layer_id_to) + 1
+						&& std::abs(layer_id_from) != std::abs(layer_id_to) - 1
+					) {
+						std::stringstream strs;
+						strs << "flush_status_change layer move invalid "
+							<< felt::format(pos_leaf) << ": " << layer_id_from
+							<< " -> " << layer_id_to;
+						std::string str = strs.str();
+						throw std::domain_error(str);
+					}
+
+					#endif
+
+					this->layer_move(pos_leaf, layer_id_from, layer_id_to);
 				}
 			}
 		}
@@ -535,11 +614,28 @@ public:
 	 * @param pos
 	 * @param val
 	 */
-	void dphi (const VecDi& pos, FLOAT val, const INT& layer_id = 0)
+	void dphi (const VecDi& pos_, FLOAT val_, const INT& layer_id_ = 0)
 	{
-		if (layer_id == 0)
-			val = clamp(pos, val);
-		this->dphi().add(pos, val, this->layer_idx(layer_id));
+		if (layer_id_ == 0)
+			val_ = clamp(pos_, val_);
+
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+
+		if (
+			std::abs(this->layer_id(val_)) != std::abs(layer_id_)
+			&& std::abs(this->layer_id(val_)) != std::abs(layer_id_) + 1
+			&& std::abs(this->layer_id(val_)) != std::abs(layer_id_) - 1
+		) {
+			std::stringstream strs;
+			strs << "Outer layer distance update value out of bounds at layer "
+				<< layer_id_ << " " << felt::format(pos_) << ": " << val_;
+			std::string str = strs.str();
+			throw std::domain_error(str);
+		}
+
+		#endif
+		
+		this->dphi().add(pos_, val_, this->layer_idx(layer_id_));
 	}
 
 	/**
@@ -555,7 +651,7 @@ public:
 		const VecDi& pos_min = this->pos_min();
 		const VecDi& pos_max = this->pos_max();
 
-		if (abs(val) > 1.0f)
+		if (std::abs(val) > 1.0f)
 			val = sgn(val);
 
 		// Cycle each axis.
@@ -655,7 +751,7 @@ public:
 			}
 
 			const FLOAT& dist_sq = (pos - pos_centre).squaredNorm();
-			const FLOAT& weight = sqrt2piDinv * exp(-0.5f *dist_sq);
+			const FLOAT& weight = sqrt2piDinv * exp(-0.5f * dist_sq);
 			weights(idx) = weight;
 		}
 
@@ -663,12 +759,34 @@ public:
 		if (weights_sum > 0)
 		{
 			// Normalise weights
-			weights *= val / weights.sum();
+			weights *= val / weights_sum;
 
 			for (UINT idx = 0; idx < list.size(); idx++)
 			{
 				const VecDi& pos = list[idx];
 				const FLOAT amount = this->clamp(pos, weights(idx) + m_grid_dphi(pos));
+
+				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+
+				if (std::abs(amount) > 1)
+				{
+					std::stringstream strs;
+					strs << "Delta phi value out of bounds at " << felt::format(pos)
+						<< ": " << amount;
+					std::string str = strs.str();
+					throw std::domain_error(str);
+				}
+				if (this->layer_id(pos) != 0)
+				{
+					std::stringstream strs;
+					strs << "Attempting to Gaussian update non-zero layer " << felt::format(pos)
+						<< ": " << m_grid_phi(pos) << " += " << amount;
+					std::string str = strs.str();
+					throw std::domain_error(str);
+				}
+				
+				#endif
+				
 				weights(idx) -= (weights(idx) - amount);
 
 				this->dphi().add(pos, amount, this->layer_idx(0));
@@ -992,12 +1110,24 @@ public:
 	{
 		for (UINT layer_idx = 0; layer_idx < 2*L+1; layer_idx++)
 		{
-			this->dphi().reset(0, layer_idx);
+			m_grid_dphi.reset(0, layer_idx);
 			m_grid_affected.reset(layer_idx);
 		}
 
-		for (UINT layer_idx = 0; layer_idx < 3*L+1; layer_idx++)
+		for (UINT layer_idx = 0; layer_idx < 2*L+3; layer_idx++)
 			m_grid_status_change.reset(layer_idx);
+		
+		#if false
+		
+		for (const VecDi& pos_child : m_grid_dphi.branch())
+			for (const VecDi& pos : m_grid_dphi.child(pos_child))
+			{
+				if (m_grid_dphi(pos) != 0)
+				{
+					throw std::domain_error(std::string("Delta phi not reset!"));
+				}
+			}
+		#endif
 	}
 
 
@@ -1011,7 +1141,7 @@ public:
 
 		const UINT& layer_idx = this->layer_idx(0);
 
-//			#pragma omp parallel for
+		#pragma omp parallel for
 		for (
 			UINT idx_child = 0; idx_child < branch.list(layer_idx).size();
 			idx_child++
@@ -1022,6 +1152,27 @@ public:
 				const FLOAT& fphi = this->phi(pos);
 				const FLOAT& fdphi = this->dphi(pos);
 				const FLOAT& fval = fphi + fdphi;
+
+				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+
+				if (this->layer_id(fphi) != 0)
+				{
+					std::stringstream strs;
+					strs << "Zero layer updated attempted at non-zero layer point "
+						<< felt::format(pos) << ": " << fphi << " + " << fdphi << " = " << fval;
+					std::string str = strs.str();
+					throw std::domain_error(str);
+				}
+				if (std::abs(this->layer_id(fval)) > 1)
+				{
+					std::stringstream strs;
+					strs << "Zero layer phi value out of bounds at " << felt::format(pos)
+						<< ": " << fphi << " + " << fdphi << " = " << fval;
+					std::string str = strs.str();
+					throw std::domain_error(str);
+				}
+				#endif
+
 				this->phi(pos, fval);
 			}
 		}
@@ -1035,19 +1186,13 @@ public:
 	{
 		this->update_zero_layer();
 
-		// Update distance transform for inner layers of the narrow band.
-		for (INT layer_id = -1; layer_id >= -(INT)L; layer_id--)
-			this->update_distance(layer_id, -1);
-		// Update distance transform for outer layers of the narrow band.
-		for (INT layer_id = 1; layer_id <= (INT)L; layer_id++)
-			this->update_distance(layer_id, 1);
+		this->update_distance(m_grid_phi);
 
 		this->flush_status_change();
 	}
 
 	/**
-	 * Update zero layer then update distance transform for affected
-	 * points in each layer.
+	 * Update zero layer then update distance transform for affected points in each layer.
 	 */
 	void update_end_local ()
 	{
@@ -1058,24 +1203,21 @@ public:
 		// Update the zero layer, applying delta to phi.
 		this->update_zero_layer();
 
+		this->update_distance(m_grid_affected);
+
+		this->flush_status_change();
+	}
+
+	template <typename GridType>
+	void update_distance(const GridType& lookup_)
+	{
 		// Update distance transform for inner layers of the narrow band.
-		for (INT layer_id = -1; layer_id >= -(INT)L; layer_id--)
-		{
-			const UINT& layer_idx = this->layer_idx(layer_id);
-			this->update_distance(
-				layer_id, -1, m_grid_affected.leafs(layer_idx)
-			);
-		}
+		for (INT layer_id = -1; layer_id >= LAYER_MIN; layer_id--)
+			this->update_distance(layer_id, -1, lookup_);
 
 		// Update distance transform for outer layers of the narrow band.
-		for (INT layer_id = 1; layer_id <= (INT)L; layer_id++)
-		{
-			const UINT& layer_idx = this->layer_idx(layer_id);
-			this->update_distance(
-				layer_id, 1, m_grid_affected.leafs(layer_idx)
-			);
-		}
-		this->flush_status_change();
+		for (INT layer_id = 1; layer_id <= LAYER_MAX; layer_id++)
+			this->update_distance(layer_id, 1, lookup_);
 	}
 
 	/**
@@ -1084,60 +1226,92 @@ public:
 	 * @param layer_id
 	 * @param side
 	 */
-	void update_distance(const INT& layer_id, const INT& side)
+	template <typename GridType>
+	void update_distance(const INT& layer_id_, const INT& side_, const GridType& lookup_)
 	{
-		const UINT& layer_idx = this->layer_idx(layer_id);
-		for (
-			const VecDi& pos_child
-			: m_grid_phi.branch().list(layer_idx)
-		) {
-			this->update_distance(
-				layer_id, side,
-				m_grid_phi.child(pos_child).list(layer_idx)
-			);
-		}
-	}
-
-	/**
-	 * Update distance transform for affected points in given layer.
-	 *
-	 * @param layer_id
-	 * @param side
-	 * @param alayer
-	 */
-	template <typename ListType>
-	void update_distance(
-		const INT& layer_id, const INT& side, const ListType& list
-	) {
-		// Calculate distance of every point in this layer to the zero
-		// layer, and store in delta phi grid.
-		// Delta phi grid is used to allow for asynchronous updates, that
-		// is, to prevent neighbouring points affecting the distance
-		// transform.
-//#pragma omp parallel for
-		for (const VecDi& pos : list)
+		using DeltaPhiChild = typename DeltaPhiGrid::Child;
+		using PhiChild = typename PhiGrid::Child;
+		const UINT& layer_idx = this->layer_idx(layer_id_);
+		// NOTE: parallelising is tricky when outer-layer points are added to the same child by
+		// multiple threads.
+		#pragma omp parallel for
+		for (UINT pos_idx = 0; pos_idx < lookup_.branch().list(layer_idx).size(); pos_idx++)
 		{
-			// Distance from this position to zero layer.
-			const FLOAT dist = this->distance(pos, side);
-			// Update delta phi grid.
-			this->dphi(pos, dist, layer_id);
+			const VecDi& pos_child = lookup_.branch().list(layer_idx)[pos_idx];
+
+			m_grid_dphi.add_child(pos_child, layer_idx);
+
+			PhiChild& grid_phi_child = m_grid_phi.branch().get(pos_child);
+			DeltaPhiChild& grid_dphi_child = m_grid_dphi.branch().get(pos_child);
+
+			const PosArray& apos_leafs = lookup_.child(pos_child).list(layer_idx);
+
+			// Calculate distance of every point in this layer to the zero
+			// layer, and store in delta phi grid.
+			// Delta phi grid is used to allow for asynchronous updates, that
+			// is, to prevent neighbouring points affecting the distance
+			// transform.
+			for (const VecDi& pos : apos_leafs)
+			{
+				// Distance from this position to zero layer.
+				const FLOAT dist = this->distance(pos, side_);
+
+				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+
+				if (
+					std::abs(this->layer_id(dist)) != std::abs(layer_id_)
+					&& std::abs(this->layer_id(dist)) != std::abs(layer_id_) + 1
+					&& std::abs(this->layer_id(dist)) != std::abs(layer_id_) - 1
+				) {
+					std::stringstream strs;
+					strs << "Outer layer distance update value out of bounds at layer "
+						<< layer_id_ << " " << felt::format(pos) << ": " << dist;
+					std::string str = strs.str();
+					throw std::domain_error(str);
+				}
+
+				#endif
+
+				// Update delta phi grid.
+				grid_dphi_child.add(pos, dist, layer_idx);
+			}
 		}
-
-		// Update distance in phi from delta phi and append any points that
-		// move out of their layer to a status change list.
-// TODO: cannot parallelise, since phi() can create new layer items for outer
-// layers.
-// Should split outer layer expansion to separate process.
-//#pragma omp parallel for
-		for (const VecDi& pos : list)
+		
+		#pragma omp parallel for
+		for (UINT pos_idx = 0; pos_idx < lookup_.branch().list(layer_idx).size(); pos_idx++)
 		{
-			// Distance calculated above.
-			const FLOAT& dist = this->dphi(pos);
-			// Update phi grid. Note that '=' is used here, rather than
-			// '+=' as with the zero layer.
-			this->phi(pos, dist, layer_id);
-		} // End for pos_idx.
+			const VecDi& pos_child = lookup_.branch().list(layer_idx)[pos_idx];
 
+			PhiChild& grid_phi_child = m_grid_phi.branch().get(pos_child);
+			DeltaPhiChild& grid_dphi_child = m_grid_dphi.branch().get(pos_child);
+
+			const PosArray& apos_leafs = lookup_.child(pos_child).list(layer_idx);
+
+			// Update distance in phi from delta phi and append any points that
+			// move out of their layer to a status change list.
+			// TODO: cannot parallelise, since phi() can create new layer items for outer layers.
+			// Should split outer layer expansion to separate process.
+			for (const VecDi& pos : apos_leafs)
+			{
+				// Distance calculated above.
+				const FLOAT& dist = grid_dphi_child(pos);
+
+				grid_phi_child(pos) = dist;
+
+				const INT& newlayer_id = this->layer_id(dist);
+
+				if (this->status_change(pos, layer_id_, newlayer_id))
+				{
+					// If outside point moving inward, must create new outside points.
+					if (std::abs(layer_id_) == L && std::abs(newlayer_id) == L-1)
+					{
+						// Get which side of the zero-layer this point lies on.
+						const INT& side = sgn(newlayer_id);
+						this->add_neighs(pos, side);
+					}
+				}
+			} // End for pos_idx.
+		}
 	}
 
 
@@ -1148,16 +1322,16 @@ public:
 	 * @param side
 	 * @return
 	 */
-	FLOAT distance (const VecDi& pos, const FLOAT& side) const
+	FLOAT distance (const VecDi& pos_, const FLOAT& side_) const
 	{
 		const PhiGrid& phi = this->phi();
 		// Get neighbouring point that is next closest to the zero-layer.
-		const VecDi pos_closest = this->next_closest(pos, side);
+		const VecDi pos_closest = this->next_closest(pos_, side_);
 		const FLOAT val_closest = phi(pos_closest);
 		// This point's distance is then the distance of the closest
 		// neighbour +/-1, depending which side of the band we are looking
 		// at.
-		const FLOAT dist = val_closest + side;
+		const FLOAT dist = val_closest + side_;
 		return dist;
 	}
 
@@ -1334,14 +1508,11 @@ public:
 				) {
 					// Get position of this spatial partition in parent
 					// lookup grid.
-					const VecDi& pos_child = (
-						m_grid_affected.branch().list(layer_idx)[idx_child]
-					);
+					const VecDi& pos_child = m_grid_affected.branch().list(layer_idx)[idx_child];
 					// Copy number of active grid nodes for this partition
 					// into relevant index in the list.
 					aidx_last_neigh[layer_idx][idx_child] = (
-						m_grid_affected.child(pos_child)
-							.list(layer_idx).size()
+						m_grid_affected.child(pos_child).list(layer_idx).size()
 					);
 				}
 			}
@@ -1362,9 +1533,9 @@ public:
 					idx_child < aidx_first_neigh[layer_idx].size();
 					idx_child++
 				) {
-					// Get position of this spatial partition in this
-					// layer.
-					const VecDi& pos_child = (
+					// Get position of this spatial partition in this layer (not by-reference since
+					// list will be modified).
+					const VecDi pos_child = (
 						m_grid_affected.branch().list(layer_idx)[idx_child]
 					);
 
@@ -1372,9 +1543,7 @@ public:
 					// partition, using the cached start and end indices,
 					// so that newly added points are skipped.
 					for (
-						UINT idx_neigh = (
-							aidx_first_neigh[layer_idx][idx_child]
-						);
+						UINT idx_neigh = aidx_first_neigh[layer_idx][idx_child];
 						idx_neigh < aidx_last_neigh[layer_idx][idx_child];
 						idx_neigh++
 					) {
@@ -1396,9 +1565,7 @@ public:
 							[this](const VecDi& pos_neigh) {
 								// Calculate layer of this neighbouring
 								// point from the phi grid.
-								const INT& layer_id = (
-									this->layer_id(pos_neigh)
-								);
+								const INT& layer_id = this->layer_id(pos_neigh);
 								// If the calculated layer lies within the
 								// narrow band, then we want to track it.
 								if (this->inside_band(layer_id))
@@ -1406,11 +1573,8 @@ public:
 									// Add the neighbour point to the
 									// tracking grid. Will reject
 									// duplicates.
-									this->m_grid_affected.add(
-										pos_neigh, this->layer_idx(layer_id)
-									);
+									this->m_grid_affected.add(pos_neigh, this->layer_idx(layer_id));
 								}
-
 							}
 						); // End neighbourhood query.
 					} // End for leaf grid node.
@@ -1426,16 +1590,11 @@ public:
 			{
 				const UINT& layer_idx = this->layer_idx(layer_id);
 				// Loop over spatial partitions.
-				for (
-					UINT idx = 0; idx < aidx_first_neigh[layer_idx].size();
-					idx++
-				)
+				for (UINT idx = 0; idx < aidx_first_neigh[layer_idx].size(); idx++)
 					// Set first index in spatial partition's tracking list
 					// to be the previous last index, so we start there on
 					// next loop around.
-					aidx_first_neigh[layer_idx][idx] = (
-						aidx_last_neigh[layer_idx][idx]
-					);
+					aidx_first_neigh[layer_idx][idx] = aidx_last_neigh[layer_idx][idx];
 			}
 		}
 
@@ -1454,12 +1613,10 @@ public:
 	{
 		this->update_start();
 		#pragma omp parallel for
-		for (
-			UINT part_idx = 0; part_idx < parts().size();
-			part_idx++
-		) {
-			const VecDi& pos_part = parts()[part_idx];
-			for (const VecDi& pos : layer(pos_part))
+		for (UINT part_idx = 0; part_idx < parts().size(); part_idx++)
+		{
+			const VecDi& pos_part = this->parts()[part_idx];
+			for (const VecDi& pos : this->layer(pos_part))
 				this->dphi(pos, fn_(pos, m_grid_phi));
 		}
 		this->update_end();
@@ -1470,7 +1627,8 @@ public:
 	 *
 	 * @return
 	 */
-	constexpr std::array<VecDi, 1 << D> corners () const {
+	constexpr std::array<VecDi, 1 << D> corners () const
+	{
 		std::array<VecDi, 1 << D> acorner;
 		for (UINT mask = 0; mask < acorner.size(); mask++)
 			for (UINT dim = 0; dim < D; dim++)
@@ -1539,8 +1697,10 @@ public:
 					pos_grid_dim = m_grid_phi.offset()(dim) + m_grid_phi.dims()(dim);
 					if (pos_plane_dim < pos_grid_dim)
 						continue;
+				}
 				// Else if casting in +'ve direction, get minimum extent.
-				} else {
+				else
+				{
 					pos_grid_dim = m_grid_phi.offset()(dim);
 					if (pos_plane_dim > pos_grid_dim)
 						continue;
@@ -1571,7 +1731,7 @@ public:
 
 			// Keep marching along planes, casting ray to each and adding any candidate child
 			// grids to the tracking list.
-			const FLOAT child_size_dim = m_grid_phi.child_dims()(dim);
+			const FLOAT& child_size_dim = m_grid_phi.child_dims()(dim);
 			while (true)
 			{
 				pos_plane(dim) += dir_dim * child_size_dim;
@@ -1643,20 +1803,33 @@ protected:
 
 				if (normal.dot(dir) < 0)
 				{
-					do
+					static const UINT MAX_CONVERGE_STEPS = 100;
+					UINT num_converge_steps = 0;
+					FLOAT dist = 0;
+					for (; num_converge_steps < MAX_CONVERGE_STEPS; num_converge_steps++)
 					{
-						const FLOAT& dist = this->phi().interp(pos_sample);
+						dist = this->phi().interp(pos_sample);
 
 						pos_sample -= normal*dist;
 
-
-						if (std::abs(dist) <= TINY)
+						if (std::abs(dist) <= TINY || normal.dot(dir) >= 0)
 							break;
 
 						normal = this->phi().grad(pos_sample);
 						normal.normalize();
+					}
 
-					} while (normal.dot(dir) < 0);
+					#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+					if (num_converge_steps == MAX_CONVERGE_STEPS)
+					{
+						std::cerr << "WARNING: raycast failed to get to distance < "
+							<< TINY << ".\n"
+							<< "dir(" << felt::format(dir) << ");"
+							<< " normal(" << felt::format(normal) << ");"
+							<< " sample(" << felt::format(pos_sample) << ")"
+							<< " at dist " << dist;
+					}
+					#endif
 
 					return pos_sample;
 				}

@@ -21,10 +21,9 @@ namespace felt
 	 * spatial partitions.
 	 */
 	template <class Derived>
-	class PolyGridBase
-		: public Grid <
-		  typename PolyGridBaseTraits<Derived>::LeafType, PolyGridBaseTraits<Derived>::Dims
-		>
+	class PolyGridBase : public Grid <
+		typename PolyGridBaseTraits<Derived>::LeafType, PolyGridBaseTraits<Derived>::Dims
+	>
 	{
 	public:
 		/// Polygonisation of a single surface spatial partition.

@@ -73,6 +73,26 @@ using Vec3i = VecDi<3>;
 
 
 /**
+ * String format a vector (useful for logging).
+ *
+ * @param vec_ vector to stringify.
+ * @return formatted vector.
+ */
+template<class VecType>
+std::string format(const VecType& vec_)
+{
+	using namespace Eigen;
+	IOFormat fmt(
+		StreamPrecision, DontAlignCols, ", ", ", ",
+		"", "", "(", ")"
+	);
+	std::stringstream str;
+	str << vec_.format(fmt);
+	return str.str();
+}
+
+
+/**
  * Get the sign of a value (+/-1).
  *
  * @param val_
@@ -179,11 +199,11 @@ public:
 	 */
 	using VecDT = felt::VecDT<LeafType, Dims>;
 	/**
-	 * Dynamic 1D vector (i.e. a resizeable array of data) for storage of grid data.
+	 * Dynamic 1D vector (a resizeable array of data) for storage of grid data.
 	 */
 	using ArrayData = Eigen::Array<LeafType, 1, Eigen::Dynamic>;
 	/**
-	 * Resizeable array of VecDi (i.e. grid locations).
+	 * Resizeable array of VecDi (grid locations).
 	 *
 	 * Uses Eigen::aligned_allocator for optimal address alignment.
 	 */
@@ -1137,26 +1157,20 @@ x = (idx/Dz)/Dy % Dx
 	 * @param pos_ position in grid to query.
 	 * @param title_ message to include in generated exception.
 	 */
-	void assert_pos_bounds (
-		const VecDi& pos_, std::string title_
-	) const {
+	void assert_pos_bounds (const VecDi& pos_, std::string title_) const
+	{
 		const DerivedType* self = static_cast<const DerivedType*>(this);
 
 		if (!self->inside(pos_))
 		{
-			using namespace Eigen;
-			IOFormat fmt(
-				StreamPrecision, DontAlignCols, ", ", ", ",
-				"", "", "(", ")"
-			);
 			const VecDi& pos_min = self->offset();
 			const VecDi& pos_max = (
 				self->dims().template cast<INT>() + pos_min - VecDi::Constant(1)
 			);
 			std::stringstream err;
-			err << title_ << pos_.transpose().format(fmt)
+			err << title_ << format(pos_.transpose())
 				<< " is outside grid "
-				<< pos_min.format(fmt) << "-" << pos_max.format(fmt)
+				<< format(pos_min) << "-" << format(pos_max)
 				<< std::endl;
 			std::string err_str = err.str();
 			throw std::domain_error(err_str);
@@ -1216,7 +1230,7 @@ public:
 
 
 /**
- * A standard n-dimensional grid for storing arbitrary values.
+ * A standard D-dimensional grid for storing values of type T.
  *
  * @tparam T the type of data to store in the grid.
  * @tparam D the number of dimensions of the grid.

@@ -1,8 +1,4 @@
-#ifndef libFelt_H
-#define libFelt_H
-
-#include "stdio.h"
-
-extern void print_hello ();
+#ifndef Felt_H
+#define Felt_H
 
 #endif

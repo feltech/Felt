@@ -24,11 +24,11 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 
 		Grid <FLOAT,3> grid(vec_Dims);
 
-		Vec3u vec_DimsRet = grid.dims();
+		const Vec3u& dims = grid.dims();
 
-		BOOST_CHECK_EQUAL((size_t)vec_DimsRet(0), (size_t)3);
-		BOOST_CHECK_EQUAL((size_t)vec_DimsRet(1), (size_t)7);
-		BOOST_CHECK_EQUAL((size_t)vec_DimsRet(2), (size_t)11);
+		BOOST_CHECK_EQUAL((size_t)dims(0), (size_t)3);
+		BOOST_CHECK_EQUAL((size_t)dims(1), (size_t)7);
+		BOOST_CHECK_EQUAL((size_t)dims(2), (size_t)11);
 
 		BOOST_CHECK_EQUAL(grid.data().size(), (size_t)(3*7*11));
 

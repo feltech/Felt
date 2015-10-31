@@ -10,7 +10,7 @@ namespace felt
 {
 
 /**
- * Base traits class for classes CRTP derived from LookupGridBase
+ * Base traits class for classes CRTP derived from LookupGridBase.
  */
 template <class Derived> struct LookupGridBaseTraits;
 
@@ -40,15 +40,15 @@ public:
 	using typename Base::VecDi;
 	using typename Base::PosArray;
 
-	/// A tuple of array indices indicating all NULL indices (i.e. nothing pointed to).
+	/// A tuple of array indices indicating all NULL indices (nothing pointed to).
 	static const LeafType	NULL_IDX_TUPLE;
-	/// An array index indicating a NULL index (i.e. nothing pointed to).
+	/// An array index indicating a NULL index (nothing pointed to).
 	static const UINT		NULL_IDX;
 	/// Number of lists tracked in this grid.
 	static const UINT 		NUM_LISTS = LookupGridBaseTraits<Derived>::NumLists;
 
 protected:
-	/// N-tuple of lists of grid positions - i.e. the tracking lists.
+	/// N-tuple of lists of grid positions - the tracking lists.
 	std::array<PosArray, NUM_LISTS>	m_a_pos;
 	/// Mutex for use by other classes where multiple threads hold a reference to this grid.
 	std::mutex						m_mutex;
@@ -436,7 +436,7 @@ struct LookupGridBaseTraits<LookupGrid<D, N> >
 	using ThisType = LookupGrid<D, N>;
 	/// Leaf grid nodes store N-tuple of list indices.
 	using LeafType = VecDu<N>;
-	/// Grid returns the same type as is stored, i.e. N-tuple of list indices.
+	/// Grid returns the same type as is stored, N-tuple of list indices.
 	using RetType = LeafType;
 	/// Dimension of the grid taken from template parameter.
 	static const UINT Dims = D;
@@ -670,8 +670,10 @@ public:
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 protected:
+	/// Mutex for use by other classes where multiple threads hold a reference to this grid.
+	std::mutex	m_mutex;
 	/// Internal lookup grid to track active grid positions.
-	Lookup	m_grid_lookup;
+	Lookup		m_grid_lookup;
 public:
 	using Base::offset;
 	using Base::dims;
@@ -690,6 +692,19 @@ public:
 	TrackedGridBase(const VecDu& size_, const VecDi& offset_) : Base(), m_grid_lookup()
 	{
 		this->init(size_, offset_);
+	}
+
+	/**
+	 * Get mutex associated with this lookup grid - only used externally.
+	 *
+	 * Adding and removing elements from the tracking list/grid is not thread safe, so if multiple
+	 * threads use this lookup grid, this mutex must be used.
+	 *
+	 * @return mutex for use by external objects.
+	 */
+	std::mutex& mutex ()
+	{
+		return m_mutex;
 	}
 
 	/**
@@ -815,7 +830,7 @@ public:
 	}
 
 	/**
-	 * Set every active grid node (i.e. those referenced by lookup grid)
+	 * Set every active grid node (those referenced by lookup grid)
 	 * to given value and reset the lookup grid.
 	 *
 	 * Lookup grid will then be full of NULL indices and it's tracking
