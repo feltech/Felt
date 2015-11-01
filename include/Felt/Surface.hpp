@@ -74,8 +74,8 @@ public:
 	struct StatusChange
 	{
 		StatusChange(
-			const VecDi& pos_, const INT& from_layer_
-		) : pos(pos_), from_layer(from_layer_) {}
+			const VecDi& pos_, const INT& from_layer_, const INT& to_layer_
+		) : pos(pos_), from_layer(from_layer_), to_layer(to_layer_) {}
 
 		static UINT layer_idx(const INT& layer_id)
 		{
@@ -89,6 +89,7 @@ public:
 
 		VecDi pos;
 		INT from_layer;
+		INT to_layer;
 	};
 
 protected:
@@ -107,7 +108,7 @@ protected:
 	 * There is one extra 'layer' for status change lists, one either side
 	 * of the narrow band, for those points that are going out of scope.
 	 */
-	using StatusChangeGrid = TrackedPartitionedGrid<INT, D, 2*L+3>;
+	using StatusChangeGrid = PartitionedArray<StatusChange, D>;
 
 protected:
 
@@ -419,61 +420,48 @@ public:
 		PosArray neighs;
 		m_grid_phi.neighs(pos, neighs);
 
+		// Get a mutex lock on affected spatial partitions, since neighbouring points might spill
+		// over into another thread's partition.
+		std::set<std::mutex*> locks = this->lock_children(neighs);
+
 		for (UINT neighIdx = 0; neighIdx < neighs.size(); neighIdx++)
 		{
 			const VecDi& pos_neigh = neighs[neighIdx];
 			typename PhiGrid::Child& child = m_grid_phi.child(m_grid_phi.pos_child(pos_neigh));
-			// Lock the spatial partition.
-			std::lock_guard<std::mutex> lock(child.mutex());
 			
 			const INT from_layer_id = this->layer_id(pos_neigh);
-			// If neighbouring point is not already within the
-			// narrow band.
-			if (!this->inside_band(from_layer_id))
+
+			// Only add if neighbouring point is not already within the narrow band.
+			if (this->inside_band(from_layer_id))
+				continue;
+
+			// Get distance of this new point to the zero layer.
+			const FLOAT dist_neigh = this->distance(pos_neigh, side);
+			const INT& to_layer_id = side*INT(L);
+
+			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+
+			if (std::abs(this->layer_id(dist_neigh)) != L)
 			{
-				// Get distance of this new point to the zero layer.
-				const FLOAT dist_neigh = this->distance(pos_neigh, side);
-				const INT& to_layer_id = side*INT(L);
-				const INT& to_layer_idx = StatusChange::layer_idx(to_layer_id);
-				// Add to status change list to be added to the outer layer.
-				
-				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-
-				const VecDi& pos_child = m_grid_status_change.pos_child(pos_neigh);
-				const typename StatusChangeGrid::Child::Lookup::LeafType layer_idxs = (
-					m_grid_status_change.child(pos_child).lookup().get(pos_neigh)
-				);
-
-				for (UINT idx = 0; idx < layer_idxs.size(); idx++)
-				{
-					if (layer_idxs[idx] != StatusChangeGrid::Child::Lookup::NULL_IDX)
-					{
-						std::stringstream strs;
-						strs << "Expanding outer layer to a point already marked in status change list"
-							<< felt::format(pos) << ": is " << m_grid_status_change.get(pos_neigh) 
-							<< " -> " << StatusChange::layer_id(idx) 
-							<< ", but attempting " << from_layer_id << "-> " << to_layer_id;
-						std::string str = strs.str();
-						throw std::domain_error(str);
-					}
-				}
-				
-				if (std::abs(this->layer_id(dist_neigh)) != L)
-				{
-					std::stringstream strs;
-					strs << "Expanding outer layer distance out of bounds " << felt::format(pos)
-						<< ": " << dist_neigh;
-					std::string str = strs.str();
-					throw std::domain_error(str);
-				}
-				#endif
-				
-				
-				m_grid_status_change.add_safe(pos_neigh, from_layer_id, to_layer_idx);
-				// Set distance in phi grid.
-				child(pos_neigh) = dist_neigh;
+				std::stringstream strs;
+				strs << "Expanding outer layer distance out of bounds " << felt::format(pos)
+					<< ": " << dist_neigh;
+				std::string str = strs.str();
+				throw std::domain_error(str);
 			}
-		}
+
+			#endif
+
+			// Add to status change list to be added to the outer layer.
+			m_grid_status_change.add(
+				pos_neigh, StatusChange(pos_neigh, from_layer_id, to_layer_id)
+			);
+			// Set distance in phi grid.
+			child(pos_neigh) = dist_neigh;
+		} // End for neighbouring points.
+
+		for (std::mutex* lock : locks)
+			lock->unlock();
 	}
 
 
@@ -491,37 +479,24 @@ public:
 	 * @param fromlayer_id
 	 * @param tolayer_id
 	 */
-	bool status_change (const VecDi& pos_, const INT& from_layer_id_, const INT& to_layer_id_)
+	bool status_change (const VecDi& pos_, const INT& layer_id_from_, const INT& layer_id_to_)
 	{
-		if (from_layer_id_ == to_layer_id_)
+		if (layer_id_from_ == layer_id_to_)
 			return false;
-
-		const INT& to_layer_idx = StatusChange::layer_idx(to_layer_id_);
 
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		{
 			m_grid_phi.assert_pos_bounds(pos_, "status_change: ");
 
-			const VecDi& pos_child = m_grid_status_change.pos_child(pos_);
-			using Child = typename StatusChangeGrid::Child;
-			const Child& child = m_grid_status_change.child(pos_child);
-			const typename Child::Lookup::LeafType layer_idxs = child.lookup().get(pos_);
-
-			for (UINT idx = 0; idx < layer_idxs.size(); idx++)
-			{
-				if (layer_idxs[idx] != StatusChangeGrid::Child::Lookup::NULL_IDX)
-					throw std::domain_error(std::string("Bad status_change"));
-			}
-
 			if (
-				std::abs(from_layer_id_) != std::abs(to_layer_id_) + 1
-				&& std::abs(from_layer_id_) != std::abs(to_layer_id_) - 1
+				std::abs(layer_id_from_) != std::abs(layer_id_to_) + 1
+				&& std::abs(layer_id_from_) != std::abs(layer_id_to_) - 1
 			)
 				throw std::domain_error(std::string("Bad status_change"));
 		}
 		#endif
 
-		m_grid_status_change.add(pos_, from_layer_id_, to_layer_idx);
+		m_grid_status_change.add(pos_, StatusChange(pos_, layer_id_from_, layer_id_to_));
 
 		return true;
 	}
@@ -532,37 +507,31 @@ public:
 	 */
 	void flush_status_change ()
 	{
-		for (UINT layer_idx = 0; layer_idx < StatusChangeGrid::NUM_LISTS; layer_idx++)
-		{
-			const INT& layer_id_to = StatusChange::layer_id(layer_idx);
-			for (const VecDi& pos_child : m_grid_status_change.branch().list(layer_idx))
+		for (const VecDi& pos_child : m_grid_status_change.branch().list())
+			for (const StatusChange& status : m_grid_status_change.child(pos_child))
 			{
-				typename StatusChangeGrid::Child& child_grid = m_grid_status_change.child(pos_child);
+				const INT& layer_id_to = status.to_layer;
+				const INT& layer_id_from = status.from_layer;
+				const VecDi& pos_leaf = status.pos;
 
-				for (const VecDi& pos_leaf : child_grid.lookup().list(layer_idx))
-				{
-					const INT& layer_id_from = child_grid.get(pos_leaf);
+				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
-					#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-
-					if (
-						std::abs(layer_id_from) != std::abs(layer_id_to) + 1
-						&& std::abs(layer_id_from) != std::abs(layer_id_to) - 1
-					) {
-						std::stringstream strs;
-						strs << "flush_status_change layer move invalid "
-							<< felt::format(pos_leaf) << ": " << layer_id_from
-							<< " -> " << layer_id_to;
-						std::string str = strs.str();
-						throw std::domain_error(str);
-					}
-
-					#endif
-
-					this->layer_move(pos_leaf, layer_id_from, layer_id_to);
+				if (
+					std::abs(layer_id_from) != std::abs(layer_id_to) + 1
+					&& std::abs(layer_id_from) != std::abs(layer_id_to) - 1
+				) {
+					std::stringstream strs;
+					strs << "flush_status_change layer move invalid "
+						<< felt::format(pos_leaf) << ": " << layer_id_from
+						<< " -> " << layer_id_to;
+					std::string str = strs.str();
+					throw std::domain_error(str);
 				}
+
+				#endif
+
+				this->layer_move(pos_leaf, layer_id_from, layer_id_to);
 			}
-		}
 	}
 
 	/**
@@ -709,6 +678,18 @@ public:
 //		return this->dphi_gauss(list, pos_centre, val, stddev);
 	}
 
+	std::set<std::mutex*> lock_children(const PosArray& list_pos_leafs_)
+	{
+		std::set<std::mutex*> locks;
+		for (const VecDi& pos : list_pos_leafs_)
+			locks.insert(&m_grid_dphi.child(m_grid_dphi.pos_child(pos)).lookup().mutex());
+
+		for (std::mutex* lock : locks)
+			lock->lock();
+
+		return locks;
+	}
+
 	/**
 	 * Update delta phi grid at given points with amount determined by Gaussian
 	 * distribution about (real-valued) central point.
@@ -731,14 +712,7 @@ public:
 		constexpr FLOAT sqrt2piDinv = 1.0f/sqrt(pow(2*M_PI, D));
 
 		Eigen::VectorXf weights(list.size());
-		std::set<std::mutex*> locks;
-		for (const VecDi& pos : list)
-			locks.insert(
-				&m_grid_dphi.child(m_grid_dphi.pos_child(pos)).lookup().mutex()
-			);
-
-		for (std::mutex* lock : locks)
-			lock->lock();
+		std::set<std::mutex*> locks = this->lock_children(list);
 
 		// Calculate Gaussian weights.
 		for (UINT idx = 0; idx < list.size(); idx++)
@@ -1114,8 +1088,7 @@ public:
 			m_grid_affected.reset(layer_idx);
 		}
 
-		for (UINT layer_idx = 0; layer_idx < 2*L+3; layer_idx++)
-			m_grid_status_change.reset(layer_idx);
+		m_grid_status_change.reset();
 		
 		#if false
 		
@@ -1289,8 +1262,6 @@ public:
 
 			// Update distance in phi from delta phi and append any points that
 			// move out of their layer to a status change list.
-			// TODO: cannot parallelise, since phi() can create new layer items for outer layers.
-			// Should split outer layer expansion to separate process.
 			for (const VecDi& pos : apos_leafs)
 			{
 				// Distance calculated above.

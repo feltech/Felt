@@ -125,25 +125,19 @@ namespace felt
 		 */
 		void notify(const PolySurface& surface)
 		{
-			for (
-				INT layer_id = surface.LAYER_MIN;
-				layer_id <= surface.LAYER_MAX; layer_id++
-			) {
+			for (INT layer_id = surface.LAYER_MIN; layer_id <= surface.LAYER_MAX; layer_id++)
+			{
 				for (
 					const VecDi& pos_child
 					: surface.dphi().branch().list(surface.layer_idx(layer_id))
 				) {
 					this->notify(surface, pos_child);
 				}
+			}
 
-				for (
-					const VecDi& pos_child
-					: surface.status_change().branch().list(
-						PolySurface::StatusChange::layer_idx(layer_id)
-					)
-				) {
-					m_grid_changes.add(pos_child);
-				}
+			for (const VecDi& pos_child : surface.status_change().branch().list())
+			{
+				m_grid_changes.add(pos_child);
 			}
 		}
 
@@ -159,16 +153,13 @@ namespace felt
 
 			if (!is_active)
 			{
+				is_active = surface.status_change().branch().is_active(pos_child);
+
 				for (
-					INT layer_id = surface.LAYER_MIN;
-					layer_id <= surface.LAYER_MAX && !is_active; layer_id++
+					UINT layer_idx = 0; layer_idx < surface.phi().NUM_LISTS && !is_active;
+					layer_idx++
 				) {
-					is_active = surface.status_change().branch().is_active(
-						pos_child,
-						PolySurface::StatusChange::layer_idx(layer_id)
-					) || surface.phi().branch().is_active(
-						pos_child, surface.layer_idx(layer_id)
-					);
+					is_active = surface.phi().branch().is_active(pos_child, layer_idx);
 				}
 			}
 
