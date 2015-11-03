@@ -9,6 +9,13 @@
 namespace felt
 {
 
+/** @defgroup LookupGrids
+ *
+ *  Bi-directional lookup between tracking list and grid locations - grids index lists and lists
+ *  index grids.
+ *  @{
+ */
+
 /**
  * Base traits class for classes CRTP derived from LookupGridBase.
  */
@@ -34,7 +41,7 @@ public:
 	using LeafType = typename LookupGridBaseTraits<Derived>::LeafType;
 	/// Type of data to return when grid nodes are queried.  Either array index or indices.
 	using RetType = typename LookupGridBaseTraits<Derived>::RetType;
-	/// GridBase base type.
+	/// GridBase base class.
 	using Base = GridBase<ThisType>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
@@ -393,6 +400,7 @@ LookupGridBase<Derived>::NULL_IDX = std::numeric_limits<UINT>::max();
 template <class Derived>
 struct GridBaseTraits<LookupGridBase<Derived> >
 {
+	/// Dimension of grid.
 	static const UINT Dims = LookupGridBaseTraits<Derived>::Dims;
 	using LeafType = typename LookupGridBaseTraits<Derived>::LeafType;
 	using RetType = typename LookupGridBaseTraits<Derived>::RetType;
@@ -624,8 +632,8 @@ public:
 /**
  * Traits of SharedLookupGrid for CRTP inheritance from SharedLookupGridBase.
  *
- * @tparam D the dimension of the grid.
- * @tparam N the number of tracking lists to use.
+ * @tparam D dimension of the grid.
+ * @tparam N number of tracking lists to use.
  */
 template <UINT D, UINT N>
 struct SharedLookupGridBaseTraits<SharedLookupGrid<D, N> >
@@ -642,10 +650,21 @@ struct SharedLookupGridBaseTraits<SharedLookupGrid<D, N> >
 
 };
 
+/** @} */ // End group LookupGrid.
+
+/** @defgroup TrackedGrids
+ *
+ *  Grids storing arbitrary data, using paired lookup grids to track active points.
+ *
+ *  @{
+ */
+
+
 /**
  * Base traits class for classes CRTP derived from TrackedGridBase.
  */
 template <class Derived> struct TrackedGridBaseTraits {};
+
 
 
 /**
@@ -994,5 +1013,8 @@ struct TrackedGridBaseTraits<SharedTrackedGrid<T, D, N> >
 	/// Type of lookup grid to use.  This is what differentiates this from TrackedGrid.
 	using LookupType = SharedLookupGrid<D, N>;
 };
+
+/** @} */ // End group LookupGrid.
+
 }
 #endif /* MAPPEDGRID_HPP_ */

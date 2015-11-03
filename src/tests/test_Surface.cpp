@@ -4,7 +4,6 @@
 
 #define _TESTING
 
-#include "Felt/Felt.hpp"
 #include "Felt/Surface.hpp"
 #include "Utils.hpp"
 

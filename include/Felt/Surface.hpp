@@ -12,7 +12,8 @@
 
 #include "PartitionedGrid.hpp"
 
-namespace felt {
+namespace felt
+{
 
 /**
  * A n-dimensional sparse-field spatially partitioned level set.
@@ -188,8 +189,7 @@ public:
 	 * @param dims_partition
 	 */
 	void init (
-		const VecDu& dims_,
-		const VecDu& dims_partition_ = VecDu::Constant(DEFAULT_PARTITION)
+		const VecDu& dims_, const VecDu& dims_partition_ = VecDu::Constant(DEFAULT_PARTITION)
 	) {
 		this->dims(dims_, dims_partition_);
 	}
@@ -197,8 +197,8 @@ public:
 	/**
 	 * Get null position vector for given template typename.
 	 *
-	 * TODO: c++14 should support variable templates, which is a better
-	 * solution, but gcc doesn't yet.
+	 * TODO: c++14 should support variable templates, which is a better solution,
+	 * but gcc doesn't yet.
 	 *
 	 * @return
 	 */
@@ -378,18 +378,12 @@ public:
 	 *
 	 * Also expands the outer layers as the surface expands/contracts.
 	 *
-	 * TODO: because of the outer layer expansion code, this function is
-	 * not, in general, thread safe.  Must move outer layer expansion to a
-	 * separate routine.
-	 *
 	 * @param pos
 	 * @param val
 	 * @param layer_id
 	 */
 	void phi (const VecDi& pos_, const FLOAT& val_, const INT& layer_id_ = 0)
 	{
-		PhiGrid& phi = this->phi();
-
 		const INT newlayer_id = this->layer_id(val_);
 
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
@@ -408,7 +402,7 @@ public:
 		
 		#endif
 
-		phi(pos_) = val_;
+		m_grid_phi(pos_) = val_;
 
 		this->status_change(pos_, layer_id_, newlayer_id);
 	}
@@ -419,6 +413,8 @@ public:
 		// Get neighbouring points.
 		PosArray neighs;
 		m_grid_phi.neighs(pos, neighs);
+
+		const INT& to_layer_id = side*INT(L);
 
 		// Get a mutex lock on affected spatial partitions, since neighbouring points might spill
 		// over into another thread's partition.
@@ -436,8 +432,7 @@ public:
 				continue;
 
 			// Get distance of this new point to the zero layer.
-			const FLOAT dist_neigh = this->distance(pos_neigh, side);
-			const INT& to_layer_id = side*INT(L);
+			const FLOAT& dist_neigh = this->distance(pos_neigh, side);
 
 			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
@@ -1144,6 +1139,7 @@ public:
 					std::string str = strs.str();
 					throw std::domain_error(str);
 				}
+
 				#endif
 
 				this->phi(pos, fval);
@@ -1205,8 +1201,7 @@ public:
 		using DeltaPhiChild = typename DeltaPhiGrid::Child;
 		using PhiChild = typename PhiGrid::Child;
 		const UINT& layer_idx = this->layer_idx(layer_id_);
-		// NOTE: parallelising is tricky when outer-layer points are added to the same child by
-		// multiple threads.
+
 		#pragma omp parallel for
 		for (UINT pos_idx = 0; pos_idx < lookup_.branch().list(layer_idx).size(); pos_idx++)
 		{

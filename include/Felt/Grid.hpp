@@ -95,8 +95,8 @@ std::string format(const VecType& vec_)
 /**
  * Get the sign of a value (+/-1).
  *
- * @param val_
- * @return
+ * @param val_ value to get signum for.
+ * @return -1 for negative, +1 for positive.
  */
 template <typename T> INT sgn(T val_)
 {
@@ -107,8 +107,8 @@ template <typename T> INT sgn(T val_)
  * Round float accuracy position to integer accuracy.
  *
  * @tparam D the dimension of the vector.
- * @param pos_
- * @return
+ * @param pos_ float vector to round
+ * @return rounded integer vector (away from zero).
  */
 template <INT D>
 VecDi<D> round(const VecDf<D>& pos_)
@@ -123,8 +123,8 @@ VecDi<D> round(const VecDf<D>& pos_)
  * Call std::floor on each element of float vector to give integer vector.
  *
  * @tparam D the dimension of the vector.
- * @param pos_
- * @return
+ * @param pos_ float vector
+ * @return floored integer vector (away from zero).
  */
 template <INT D>
 VecDi<D> floor(const VecDf<D>& pos_)
@@ -139,8 +139,8 @@ VecDi<D> floor(const VecDf<D>& pos_)
  * Call std::floor on each element of float vector to give float vector.
  *
  * @tparam D the dimension of the vector.
- * @param pos_
- * @return
+ * @param pos_ float vector
+ * @return floored float vector (away from zero).
  */
 template <INT D>
 VecDf<D> floorf(const VecDf<D>& pos_)
@@ -151,6 +151,11 @@ VecDf<D> floorf(const VecDf<D>& pos_)
 	return pos_rounded;
 }
 
+/** @defgroup Grids
+ *
+ *  Base arbitrarily dimensioned grid classes storing arbitrary data types.
+ *  @{
+ */
 
 /**
  * Traits for classes CRTP derived from GridBase
@@ -235,11 +240,14 @@ public:
 
 		/**
 		 * Construct an iterator from given grid beginning at startIdx in the data array.
+		 * @param grid_ grid to iterator over.
+		 * @param start_idx_ index in underlying data to start at.
 		 */
 		iterator(const GridBase& grid_, const UINT& start_idx_ = 0)
 		: m_idx(start_idx_), m_dims(grid_.dims()), m_offset(grid_.offset()),
 		  m_pos(ThisType::index(start_idx_, grid_.dims(), grid_.offset()))
 		{}
+
 	private:
 
 		/**
@@ -255,7 +263,7 @@ public:
 		 * Check for equality with another grid data iterator.
 		 *
 		 * @param other_ iterator to compare with.
-		 * @return
+		 * @return true if equal, false if not equal.
 		 */
 		bool equal(iterator const& other_) const
 		{
@@ -264,6 +272,8 @@ public:
 
 		/**
 		 * Get the position currently pointed to by the iterator.
+		 *
+		 * @return position currently represented by iterator.
 		 */
 		const VecDi& dereference() const
 		{
@@ -520,7 +530,7 @@ public:
 	 * @param pos_ position in grid.
 	 * @param size_ size of grid.
 	 * @param offset_ spatial offset of grid.
-	 * @return
+	 * @return index in data array of pos in grid of given size and offset.
 	 */
 	static UINT index (
 		const VecDi& pos_, const VecDu& size_, const VecDi& offset_ = VecDi::Constant(0)
@@ -1233,7 +1243,7 @@ public:
  * A standard D-dimensional grid for storing values of type T.
  *
  * @tparam T the type of data to store in the grid.
- * @tparam D the number of dimensions of the grid.
+ * @tparam D the dimensions of the grid.
  */
 template <typename T, UINT D>
 class Grid : public GridBase<Grid<T, D> >
@@ -1274,7 +1284,7 @@ public:
 };
 
 /**
- * Traits for standard grid.
+ * Traits for GridBase to understand Grid.
  *
  * @tparam T the type of data to store in the grid.
  * @tparam D the number of dimensions of the grid.
@@ -1282,11 +1292,19 @@ public:
 template <typename T, UINT D>
 struct GridBaseTraits<Grid<T, D> >
 {
-	static const UINT Dims = D;
-	using LeafType = T;
-	using RetType = T;
+	/// The class inheriting from the base.
 	using ThisType = Grid<T, D>;
+	/// Dimensions of the grid, from template parameter.
+	static const UINT Dims = D;
+	/// The data type to store at leaf grid nodes, from template parameter.
+	using LeafType = T;
+	/// The data type to return when leaf grid nodes are queried, from template parameter.
+	using RetType = T;
 };
+
+/** @} */ // End group Grid.
 
 }// End namespace felt.
 #endif
+
+

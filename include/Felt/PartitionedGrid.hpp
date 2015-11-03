@@ -10,9 +10,19 @@
 
 namespace felt
 {
+
+/// A byte-aligned array of arbitrary type.
+template <typename T> using AlignedArray = std::vector<T, Eigen::aligned_allocator<T> >;
+
+/** @defgroup PartitionedGrids
+ *
+ *  Spatially partitioned versions of Grid, AlignedArray, LookupGrid and TrackedGrid.
+ *
+ *  @{
+ */
+
 /// Default size of a spatial partition (in each dimension).
 static const UINT DEFAULT_PARTITION = 4;
-
 
 /**
  * Base traits class for classes CRTP derived from PartitionBase.
@@ -164,9 +174,9 @@ public:
 	 * @param pos position within the spatial partition grid.
 	 * @return PartitionBase::Child at given position.
 	 */
-	Child& child (const VecDi& pos)
+	Child& child (const VecDi& pos_)
 	{
-		return m_grid_branch(pos);
+		return m_grid_branch(pos_);
 	}
 
 	/**
@@ -177,9 +187,9 @@ public:
 	 * @param pos position within the spatial partition grid.
 	 * @return PartitionBase::Child at given position.
 	 */
-	const Child& child (const VecDi& pos) const
+	const Child& child (const VecDi& pos_) const
 	{
-		return m_grid_branch(pos);
+		return m_grid_branch(pos_);
 	}
 
 	/**
@@ -270,6 +280,8 @@ public:
 
 /**
  * Base traits class for classes CRTP derived from PartitionedArrayBase.
+ *
+ * @tparam Derived the CRTP derived class
  */
 template <class Derived> struct PartitionedArrayBaseTraits {};
 
@@ -282,45 +294,57 @@ template <class Derived>
 class PartitionedArrayBase : public PartitionBase<PartitionedArrayBase<Derived> >
 {
 public:
+	/// This class.
 	using ThisType = PartitionedArrayBase<Derived>;
+	/// Base class.
 	using Base = PartitionBase<ThisType>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 protected:
+	/// Spatial offset of 'imaginary' grid containing the list.
 	VecDi	m_offset;
 public:
 	/**
 	 * Set offset of 'imaginary' grid containing the list.
 	 *
-	 * @param offset_grid
+	 * @param offset_
 	 */
-	void offset (const VecDi& offset_grid)
+	void offset (const VecDi& offset_)
 	{
-		m_offset = offset_grid;
-		Base::offset(offset_grid);
+		m_offset = offset_;
+		Base::offset(offset_);
 	}
 
 	/**
 	 * Get spatial partition from leaf grid node in 'imaginary' grid.
 	 *
-	 * @param pos_leaf
-	 * @return
+	 * @param pos_leaf_
+	 * @return location of spatial partition in branch grid.
 	 */
-	const VecDi pos_child (const VecDi& pos_leaf) const
+	const VecDi pos_child (const VecDi& pos_leaf_) const
 	{
 		return (
-			(pos_leaf - m_offset).array() / this->m_idims_child.array()
+			(pos_leaf_ - m_offset).array() / this->m_idims_child.array()
 		).matrix() + this->branch().offset();
 	}
 };
 
 
+/**
+ * Traits for PartitionBase to understand PartitionedArrayBase.
+ *
+ * Just forward the traits defined for PartitionedArrayBase subclasses.
+ */
 template <class Derived>
 struct PartitionBaseTraits<PartitionedArrayBase<Derived> >
 {
+	/// The class inheriting from the base.
 	using ThisType = typename PartitionedArrayBaseTraits<Derived>::ThisType;
+	/// Child type to store in spatial partitions.
 	using ChildType = typename PartitionedArrayBaseTraits<Derived>::ChildType;
+	/// Dimensions of the grid.
 	static const UINT Dims = PartitionedArrayBaseTraits<Derived>::Dims;
+	/// Number of tracking lists.
 	static const UINT NumLists = PartitionedArrayBaseTraits<Derived>::NumLists;
 };
 
@@ -328,8 +352,7 @@ struct PartitionBaseTraits<PartitionedArrayBase<Derived> >
 /**
  * Spatially partitioned expandable lists.
  *
- * A specialised partitioned grid, where the child grids are simply
- * expandable lists.
+ * A specialised partitioned grid, where the child grids are simply expandable lists.
  *
  * @tparam T the type to store in elements of the list
  * @tparam D the dimension of the 'imaginary' grid.
@@ -339,56 +362,79 @@ template <typename T, UINT D, UINT N=0>
 class PartitionedArray
 	: public PartitionedArrayBase<PartitionedArray<T, D, N> >
 {
-	static_assert(N > 0, "Number of arrays N must be greater than 0.");
 protected:
+	/// This class.
 	using ThisType = PartitionedArray<T, D, N>;
+	/// Base class
 	using Base = PartitionedArrayBase<ThisType>;
 
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 
 public:
+	/// Explicitly defined default constructor.
 	PartitionedArray () = default;
 
+	/**
+	 * Construct multiple spatially partitioned arrays contained in an 'imaginary' grid.
+	 *
+	 * @param size_ spatial size of 'imaginary' grid.
+	 * @param offset_ spatial offset of 'imaginary' grid.
+	 * @param size_partition_ spatial size of a single partition.
+	 */
 	PartitionedArray (
-		const VecDu& dims, const VecDi& offset,
-		const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION)
+		const VecDu& size_, const VecDi& offset_,
+		const VecDu& dims_partition_ = VecDu::Constant(DEFAULT_PARTITION)
 	) : Base()
 	{
-		this->init(dims, offset, dims_partition);
+		this->init(size_, offset_, dims_partition_);
 	}
 
 	/**
 	 * Add val to list, placing in partition found from pos.
 	 *
-	 * @param pos position in 'imaginary' grid.
-	 * @param val value to insert in list.
+	 * @param pos_ position in 'imaginary' grid.
+	 * @param val_ value to insert in list.
+	 * @param arr_idx_ ID of list to insert into.
 	 */
-	void add(const VecDi& pos, const T& val, const UINT& arr_idx = 0)
+	void add(const VecDi& pos_, const T& val_, const UINT& arr_idx_)
 	{
-		const VecDi& pos_child = this->pos_child(pos);
-		this->child(pos_child)[arr_idx].push_back(val);
-		Base::add_child(pos_child, arr_idx);
+		const VecDi& pos_child = this->pos_child(pos_);
+		this->child(pos_child)[arr_idx_].push_back(val_);
+		Base::add_child(pos_child, arr_idx_);
 	}
 
 	/**
-	 * Loop all spatial partitions, resizing their lists to zero.
+	 * Loop all spatial partitions, resizing the given list to zero in each.
+	 *
+	 * @param arr_idx_ ID of list to reset.
 	 */
-	void reset(const UINT& arr_idx = 0)
+	void reset(const UINT& arr_idx_)
 	{
-		for (const VecDi& pos_child : this->branch().list(arr_idx))
-			this->child(pos_child)[arr_idx].clear();
-		Base::reset(arr_idx);
+		for (const VecDi& pos_child : this->branch().list(arr_idx_))
+			this->child(pos_child)[arr_idx_].clear();
+		Base::reset(arr_idx_);
 	}
 };
 
 
+/**
+ * Traits of PartitionedArray for CRTP inheritance from PartitionedArrayBase.
+ *
+ * @tparam T type to store in elements of the list
+ * @tparam D dimension of the 'imaginary' grid.
+ * @tparam N number of distinct arrays to partition.
+ */
 template <typename T, UINT D, UINT N>
 struct PartitionedArrayBaseTraits<PartitionedArray<T, D, N> >
 {
+	/// The class inheriting from the base.
 	using ThisType = PartitionedArray<T, D, N>;
-	using ChildType = std::array<std::vector<T, Eigen::aligned_allocator<T> >, N>;
+	/// Child type to store in spatial partitions - in this case an array of lists.
+	using ChildType = std::array<AlignedArray<T>, N>;
+	/// Dimensions of the grid, from template parameter.
 	static const UINT Dims = D;
+	/// Number of distinct arrays to partition, from template parameter.
 	static const UINT NumLists = N;
 };
 
@@ -399,29 +445,39 @@ struct PartitionedArrayBaseTraits<PartitionedArray<T, D, N> >
  * A specialised partitioned grid, where the child grids are simply
  * expandable lists.
  *
- * @tparam T the type to store in elements of the list
- * @tparam D the dimension of the 'imaginary' grid.
+ * @tparam T type to store in elements of the list
+ * @tparam D dimension of the 'imaginary' grid.
  */
 template <typename T, UINT D>
 class PartitionedArray<T, D, 0>
 	: public PartitionedArrayBase<PartitionedArray<T, D, 0> >
 {
 protected:
+	/// This class
 	using ThisType = PartitionedArray<T, D, 0>;
+	/// Base class.
 	using Base = PartitionedArrayBase<ThisType>;
 
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 
 public:
+	/// Explicitly defined default constructor.
 	PartitionedArray () = default;
 
+	/**
+	 * Construct a single (1D) spatially partitioned array contained in an 'imaginary' grid.
+	 *
+	 * @param size_ spatial size of 'imaginary' grid.
+	 * @param offset_ spatial offset of 'imaginary' grid.
+	 * @param size_partition_ spatial size of a single partition.
+	 */
 	PartitionedArray (
-		const VecDu& dims, const VecDi& offset,
-		const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION)
+		const VecDu& size_, const VecDi& offset_,
+		const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION)
 	) : Base()
 	{
-		this->init(dims, offset, dims_partition);
+		this->init(size_, offset_, size_partition_);
 	}
 
 	/**
@@ -448,31 +504,37 @@ public:
 	}
 };
 
-
+/**
+ * Traits of 1D PartitionedArray for CRTP inheritance from PartitionedArrayBase.
+ *
+ * @tparam T data type stored in array.
+ * @tparam D dimension of the grid.
+ */
 template <typename T, UINT D>
 struct PartitionedArrayBaseTraits<PartitionedArray<T, D, 0> >
 {
+	/// The class inheriting from the base.
 	using ThisType = PartitionedArray<T, D, 0>;
-	using ChildType = std::vector<T, Eigen::aligned_allocator<T> >;
+	/// Child type to store in spatial partitions - in this case a single list.
+	using ChildType = AlignedArray<T>;
+	/// Dimensions of the grid, from template parameter.
 	static const UINT Dims = D;
+	/// Number of distinct arrays to partition - in this case a single list..
 	static const UINT NumLists = 1;
 };
 
-
+/**
+ * Base traits class for classes CRTP derived from PartitionedGridBase.
+ */
 template <class Derived> struct PartitionedGridBaseTraits {};
 
 
 /**
- * A general spatially partitioned grid storing arbitrary values.
+ * Base class for spatially partitioned grid storing arbitrary values.
  *
- * Inherits directly from child grid class, spoofing the signature, but
- * storage is in a (single level) tree hierarchy, i.e.
- * PartitionedGridBase -> Child -> leaf.
- *
- * @tparam T type of value stored in leaf grid nodes.
- * @tparam D dimension of the grid.
- * @tparam G GridBase subclass used for child grids.
- * @tparam N number of tracking lists to use.
+ * Uses multiple inheritance from child grid (MixinType) class, spoofing the signature,
+ * and PartitionBase for actual storage in a (single-level) tree hierarchy,
+ * i.e. PartitionedGridBase -> Branch -> Child -> leaf.
  */
 template <class Derived>
 class PartitionedGridBase
@@ -480,21 +542,42 @@ class PartitionedGridBase
 	  public PartitionBase<PartitionedGridBase<Derived> >
 {
 public:
+	/// CRTP derived class.
 	using DerivedType = Derived;
 	using ThisType = PartitionedGridBase<DerivedType>;
+	/// PartitionBase base class.
 	using Base = PartitionBase<ThisType>;
+	/// Base grid class to partition.
 	using MixinType = typename PartitionedGridBaseTraits<Derived>::MixinType;
+	/// Traits of CRTP derived class
 	using Traits = PartitionedGridBaseTraits<DerivedType>;
+	/// Child grid class.  Each spatial partition contains one Child grid.
 	using Child = typename Traits::ChildType;
+	/// Type of data to return when leaf grid nodes are queried.
 	using RetType = typename Traits::RetType;
+	/// Type of data stored in leaf grid nodes.
 	using LeafType = typename Traits::LeafType;
+	/// Dimension of overall grid.
 	static const UINT Dims = Traits::Dims;
+	/**
+	 * TrackedGrid type storing spatial partitions.
+	 *
+	 * Each grid node stores a Child grid and tracks active nodes using one or more tracking lists.
+	 */
 	using BranchGrid = TrackedGrid<Child, Dims, Traits::NumLists>;
+	
 	using VecDu = typename MixinType::VecDu;
 	using VecDi = typename MixinType::VecDi;
+	
+	/**
+	 * Non-partitioned Grid class to store snapshots of partitioned grids. 
+	 * 
+	 * Useful for serialisation or logging.
+	 */
 	using SnapshotGrid = Grid<LeafType, Dims>;
 
 protected:
+	/// Non-partitioned snapshot to maintain for serialisation or logging.
 	std::unique_ptr<SnapshotGrid>	m_pgrid_snapshot;
 
 public:
@@ -502,23 +585,25 @@ public:
 	using MixinType::dims;
 	using MixinType::offset;
 
+	/// Explicitly defined default constructor.
 	PartitionedGridBase () = default;
 
 	/**
 	 * Constructor
-	 * @param dims the dimensions of the whole grid.
-	 * @param offset the offset of the whole grid.
-	 * @param dims_partition the dimensions of each spatial partition.
-	 * @param delta the grid delta value used for spatial derivatives (dx).
+	 *
+	 * @param size_ spatial size of the whole grid.
+	 * @param offset_ spatial offset of the whole grid.
+	 * @param size_partition_ size of each spatial partition.
+	 * @param delta_ grid delta value used for spatial derivatives (dx).
 	 */
 	PartitionedGridBase (
-		const VecDu& dims, const VecDi& offset,
-		const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION),
-		const FLOAT& delta = 1
+		const VecDu& size_, const VecDi& offset_,
+		const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION),
+		const FLOAT& delta_ = 1
 	) : Base()
 	{
 		DerivedType* self = static_cast<DerivedType*>(this);
-		self->init(dims, offset, dims_partition, delta);
+		self->init(size_, offset_, size_partition_, delta_);
 	}
 
 	/**
@@ -540,16 +625,15 @@ public:
 	}
 
 	/**
-	 * Reshape grid.
+	 * Reshape grid to given size, initialising child grids within the spatial partitions.
 	 *
-	 * @param vec_NewDims
-	 * @return
+	 * @param size_ size of the overall grid.
 	 */
-	void dims (const VecDu& dims_grid)
+	void dims (const VecDu& size_)
 	{
-		Base::dims(dims_grid);
+		Base::dims(size_);
 
-		this->m_dims = dims_grid;
+		this->m_dims = size_;
 
 		for (UINT idx = 0; idx < this->branch().data().size(); idx++)
 		{
@@ -559,15 +643,14 @@ public:
 	}
 
 	/**
-	 * Set offset of branch grid and propagate offset to children,
-	 * translating as appropriate.
+	 * Set offset of branch grid and propagate offset to children, translating as appropriate.
 	 *
-	 * @param offset_grid
+	 * @param offset_ offset of overall grid.
 	 */
-	void offset (const VecDi& offset_grid)
+	void offset (const VecDi& offset_)
 	{
-		Base::offset(offset_grid);
-		MixinType::offset(offset_grid);
+		Base::offset(offset_);
+		MixinType::offset(offset_);
 
 		for (UINT idx = 0; idx < this->branch().data().size(); idx++)
 		{
@@ -577,7 +660,7 @@ public:
 				(
 					(pos_child - this->branch().offset()).array()
 					* this->m_idims_child.array()
-				).matrix() + offset_grid
+				).matrix() + offset_
 			);
 
 			child.offset(offset_child);
@@ -585,30 +668,31 @@ public:
 	}
 
 	/**
-	 * Calculate the position of a child grid (i.e. partition) given the
-	 * position of leaf grid node.
+	 * Calculate the position of a child grid (i.e. partition) given the position of leaf grid node.
 	 *
-	 * @param pos_leaf
-	 * @return
+	 * @param pos_leaf_
+	 * @return position of spatial partition in which leaf position lies.
 	 */
-	const VecDi pos_child (const VecDi& pos_leaf) const
+	const VecDi pos_child (const VecDi& pos_leaf_) const
 	{
 		return (
-			(pos_leaf - offset()).array() / this->m_idims_child.array()
+			(pos_leaf_ - offset()).array() / this->m_idims_child.array()
 		).matrix() + this->branch().offset();
 	}
 
 	/**
 	 * Fill with a single value.
 	 *
-	 * @param val
+	 * Loop child grids calling their fill function.
+	 *
+	 * @param val_ value to fill grid with.
 	 */
-	void fill (const LeafType& val)
+	void fill (const LeafType& val_)
 	{
 		for (UINT idx = 0; idx < this->branch().data().size(); idx++)
 		{
 			Child& child = this->branch().data()(idx);
-			child.fill(val);
+			child.fill(val_);
 		}
 	}
 
@@ -617,14 +701,14 @@ public:
 	 *
 	 * Overrides base Grid class's get method (and thus operator()).
 	 *
-	 * @param pos
-	 * @return value stored at grid point pos.
+	 * @param pos_ position in grid to fetch.
+	 * @return value stored at grid point.
 	 */
-	RetType& get (const VecDi& pos)
+	RetType& get (const VecDi& pos_)
 	{
-		const VecDi& pos_child = this->pos_child(pos);
+		const VecDi& pos_child = this->pos_child(pos_);
 		Child& child = this->branch().get(pos_child);
-		return child.get(pos);
+		return child.get(pos_);
 	}
 
 	/**
@@ -632,48 +716,41 @@ public:
 	 *
 	 * Overrides base Grid class's get method (and thus operator()).
 	 *
-	 * @param pos
+	 * @param pos_ position in grid to fetch.
 	 * @return value stored at grid point pos.
 	 */
-	const RetType& get (const VecDi& pos) const
+	const RetType& get (const VecDi& pos_) const
 	{
-		const Child& child = this->branch()(pos_child(pos));
-		return child.get(pos);
+		const Child& child = this->branch()(pos_child(pos_));
+		return child.get(pos_);
 	}
 
 	/**
-	 * Get and store a snapshot of the spatially partitioned data in a
-	 * contiguous grid.
+	 * Get and store a snapshot of the spatially partitioned data in a contiguous grid.
 	 *
 	 * Useful for serialization.
 	 *
-	 * @return
+	 * @return non-partitioned contiguous grid containing a copy of the data.
 	 */
 	typename SnapshotGrid::ArrayData& data()
 	{
 		m_pgrid_snapshot.reset(new SnapshotGrid(this->dims(), this->offset()));
 
-		for (
-			UINT branch_idx = 0; branch_idx < this->branch().data().size();
-			branch_idx++
-		) {
+		for (UINT branch_idx = 0; branch_idx < this->branch().data().size(); branch_idx++)
+		{
 			const Child& child = this->branch().data()[branch_idx];
-			for (
-				UINT leaf_idx = 0; leaf_idx < child.data().size();
-				leaf_idx++
-			) {
+			for (UINT leaf_idx = 0; leaf_idx < child.data().size(); leaf_idx++)
+			{
 				const VecDi& pos = child.index(leaf_idx);
 				if (m_pgrid_snapshot->inside(pos))
-					m_pgrid_snapshot->get_internal(pos)
-						= child.get_internal(pos);
+					m_pgrid_snapshot->get_internal(pos) = child.get_internal(pos);
 			}
 		}
 		return m_pgrid_snapshot->data();
 	}
 
 	/**
-	 * Copy the snapshot of the grid data back into the partitioned
-	 * structure.
+	 * Copy the snapshot of the grid data back into the partitioned structure.
 	 *
 	 * Useful for deserialisation.
 	 */
@@ -682,71 +759,105 @@ public:
 		if (m_pgrid_snapshot.get() == NULL)
 			return;
 
-		for (
-			UINT branch_idx = 0; branch_idx < this->branch().data().size();
-			branch_idx++
-		) {
+		for (UINT branch_idx = 0; branch_idx < this->branch().data().size(); branch_idx++)
+		{
 			Child& child = this->branch().data()[branch_idx];
-			for (
-				UINT leaf_idx = 0; leaf_idx < child.data().size();
-				leaf_idx++
-			) {
+			for (UINT leaf_idx = 0; leaf_idx < child.data().size(); leaf_idx++)
+			{
 				const VecDi& pos = child.index(leaf_idx);
 				if (m_pgrid_snapshot->inside(pos))
-					child.get_internal(pos)
-						= m_pgrid_snapshot->get_internal(pos);
+					child.get_internal(pos) = m_pgrid_snapshot->get_internal(pos);
 			}
 		}
 	}
 };
 
 
+/**
+ * Traits for PartitionBase to understand PartitionedGridBase.
+ *
+ * Just forward the traits defined for PartitionedGridBase subclasses.
+ *
+ * @tparam Derived the CRTP derived class
+ */
 template <class Derived>
 struct PartitionBaseTraits<PartitionedGridBase<Derived> >
 {
+	/// The class inheriting from the base.
 	using ThisType = typename PartitionedGridBaseTraits<Derived>::ThisType;
+	/// Child type to store in spatial partitions.
 	using ChildType = typename PartitionedGridBaseTraits<Derived>::ChildType;
+	/// Dimensions of the grid.
 	static const UINT Dims = PartitionedGridBaseTraits<Derived>::Dims;
+	/// Number of distinct tracking lists to track active spatial partitions - in this case just 1.
 	static const UINT NumLists = PartitionedGridBaseTraits<Derived>::NumLists;
 };
 
 
+/**
+ * Standard spatially partitioned grid storing arbitrary data.
+ *
+ * @tparam T the type of data to store in the grid.
+ * @tparam D the dimensions of the grid.
+ */
 template <typename T, UINT D>
-class PartitionedGrid
-	: public PartitionedGridBase<PartitionedGrid<T, D> >
+class PartitionedGrid : public PartitionedGridBase<PartitionedGrid<T, D> >
 {
 public:
+	/// Base class.
 	using Base = PartitionedGridBase<PartitionedGrid<T, D> >;
+	/// Inherited constructor.
 	using Base::PartitionedGridBase;
 };
 
-
+/**
+ * Traits for GridBase to understand PartitionedGrid.
+ *
+ * @tparam T the type of data to store in the grid.
+ * @tparam D the number of dimensions of the grid.
+ */
 template <typename T, UINT D>
 struct GridBaseTraits<PartitionedGrid<T, D> >
 {
+	/// The class inheriting from the base.
 	using ThisType = PartitionedGrid<T, D>;
+	/// Dimensions of the grid, from template parameter.
 	static const UINT Dims = D;
+	/// The data type to store at leaf grid nodes, from template parameter.
 	using LeafType = T;
+	/// The data type to return when leaf grid nodes are queried, from template parameter.
 	using RetType = T;
 };
 
 
+/**
+ * Traits for PartitionedGridBase to understand PartitionedGrid.
+ *
+ * @tparam T the type of data to store in the grid.
+ * @tparam D the number of dimensions of the grid.
+ */
 template <typename T, UINT D>
 struct PartitionedGridBaseTraits<PartitionedGrid<T, D> >
 {
+	/// The class inheriting from the base.
 	using ThisType = PartitionedGrid<T, D>;
-	using LeafType = typename GridBaseTraits<ThisType>::LeafType;
-	using RetType = typename GridBaseTraits<ThisType>::RetType;
+	/// The data type to store at leaf grid nodes, from template parameter.
+	using LeafType = T;
+	/// The data type to return when leaf grid nodes are queried, from template parameter.
+	using RetType = T;
+	/// Child type to store in spatial partitions - in this case a standard Grid.
 	using ChildType = Grid<T, D>;
+	/// Mixin type whose signature to spoof - in this case a standard GridBase.
 	using MixinType = GridBase<ThisType>;
+	/// Dimensions of the grid, from template parameter.
 	static const UINT Dims = D;
+	/// Numer of tracking lists to use, in this case only
 	static const UINT NumLists = 1;
 };
 
 
-
 /**
- * Container wrapping iterator through leafs of partitioned grid tree.
+ * Container wrapping iterator through leafs of a partitioned grid.
  *
  * @tparam G grid type to iterate over.
  */
@@ -754,17 +865,20 @@ template <typename G>
 class LeafsContainer
 {
 private:
+	/// Partitioned grid type to iterate over.
 	using GridTree = G;
+
 	using VecDi = typename GridTree::VecDi;
 	using PosArray = typename GridTree::PosArray;
 
+	/// Pointer to partitioned grid to iterate over
 	const GridTree* m_pgrid;
-	const UINT	m_listIdx;
+	/// Index of tracking list of active points to iterate over.
+	const UINT	m_list_idx;
 
 public:
 	/**
-	 * Iterator class for range-based for loops across partitioned grid
-	 * leafs.
+	 * Iterator class for range-based for loops across partitioned grid leafs.
 	 */
 	class iterator : public boost::iterator_facade<
 		LeafsContainer::iterator,
@@ -778,7 +892,7 @@ public:
 		{}
 
 		/**
-		 * Constructor.
+		 * Construct an iterator over leafs of a partitioned grid.
 		 *
 		 * @param pgrid grid to iterate through
 		 * @param listIdx tracking list id within grid
@@ -786,21 +900,26 @@ public:
 		 * @param it_leaf iterator over lowest level leaf grid point.
 		 */
 		iterator(
-			const GridTree* pgrid, const UINT& listIdx,
+			const GridTree* pgrid, const UINT& list_idx,
 			const Iter& it_child, const Iter& it_leaf
 		)
-		: m_pgrid(pgrid), m_listIdx(listIdx), m_it_child(it_child),
+		: m_pgrid(pgrid), m_list_idx(list_idx), m_it_child(it_child),
 		  m_it_leaf(it_leaf),
-		  m_it_child_end(pgrid->branch().list(listIdx).end())
+		  m_it_child_end(pgrid->branch().list(list_idx).end())
 		{}
 
 	private:
 		friend class boost::iterator_core_access;
 
+		/// Pointer to partitioned grid to iterate over.
 		const GridTree* m_pgrid;
-		const UINT	m_listIdx;
+		/// Index of tracking list to iterate through.
+		const UINT	m_list_idx;
+		/// Iterator pointing to current spatial partition position.
 		Iter		m_it_child;
+		/// Iterator pointing to current leaf grid node position.
 		Iter		m_it_leaf;
+		/// Iterator pointing past end of final spatial partition grid position.
 		const Iter	m_it_child_end;
 
 		/**
@@ -815,7 +934,7 @@ public:
 			{
 				m_it_leaf = m_pgrid->child(
 					*m_it_child
-				).list(m_listIdx).begin();
+				).list(m_list_idx).begin();
 				return;
 			}
 
@@ -824,7 +943,7 @@ public:
 			if (
 				m_it_leaf == m_pgrid->child(
 					*m_it_child
-				).list(m_listIdx).end()
+				).list(m_list_idx).end()
 			) {
 				m_it_child++;
 				m_it_leaf = m_it_child;
@@ -835,19 +954,22 @@ public:
 
 		/**
 		 * Check for equality between this iterator and another.
-		 * @param other
-		 * @return
+		 *
+		 * @param other_ iterator to compare against.
+		 * @return true if equal, false if not equal.
 		 */
-		bool equal(const iterator& other) const
+		bool equal(const iterator& other_) const
 		{
 			return (
-				m_it_child == other.m_it_child
-				&& m_it_leaf == other.m_it_leaf
+				m_it_child == other_.m_it_child
+				&& m_it_leaf == other_.m_it_leaf
 			);
 		}
 
 		/**
 		 * Dereference iterator into grid position.
+		 *
+		 * @return leaf grid node position currently pointed to.
 		 */
 		const VecDi& dereference() const {
 			const VecDi& pos = *m_it_leaf;
@@ -856,26 +978,26 @@ public:
 	};
 
 	/**
-	 * Constructor.
+	 * Construct a wrapper for range-based for loops over active partitioned grid nodes.
 	 *
 	 * @param pgrid grid to iterate over
-	 * @param listIdx tracking list id identifying leafs
+	 * @param list_idx tracking list id identifying leafs
 	 */
-	LeafsContainer(const GridTree* pgrid, const UINT& listIdx)
-	: m_pgrid(pgrid), m_listIdx(listIdx)
+	LeafsContainer(const GridTree* pgrid, const UINT& list_idx)
+	: m_pgrid(pgrid), m_list_idx(list_idx)
 	{}
 
 	/**
 	 * Get first iterator for leafs identified within list.
 	 *
-	 * @return
+	 * @return an iterator to the first leaf in the tracking list.
 	 */
 	const iterator begin() const
 	{
 		const typename PosArray::const_iterator& it_child_begin
-			= m_pgrid->branch().list(m_listIdx).cbegin();
+			= m_pgrid->branch().list(m_list_idx).cbegin();
 		const typename PosArray::const_iterator& it_child_end
-			= m_pgrid->branch().list(m_listIdx).cend();
+			= m_pgrid->branch().list(m_list_idx).cend();
 
 		typename PosArray::const_iterator it_leaf_begin = it_child_end;
 
@@ -883,11 +1005,11 @@ public:
 		{
 			it_leaf_begin = m_pgrid->child(
 				*it_child_begin
-			).list(m_listIdx).begin();
+			).list(m_list_idx).begin();
 		}
 
 		return iterator(
-			m_pgrid, m_listIdx,
+			m_pgrid, m_list_idx,
 			it_child_begin,
 			it_leaf_begin
 		);
@@ -896,34 +1018,33 @@ public:
 	/**
 	 * Iterator representing one element past the end of the list of leafs.
 	 *
-	 * @return
+	 * @return an iterator pointing past the end of tracking lists.
 	 */
 	const iterator end() const
 	{
 		return iterator(
-			m_pgrid, m_listIdx,
-			m_pgrid->branch().list(m_listIdx).cend(),
-			m_pgrid->branch().list(m_listIdx).cend()
+			m_pgrid, m_list_idx,
+			m_pgrid->branch().list(m_list_idx).cend(),
+			m_pgrid->branch().list(m_list_idx).cend()
 		);
 	}
 
 	/**
 	 * Calculate length of list by summing lists in all partitions.
 	 *
-	 * @return
+	 * @return sum of size of lists in all spatial partitions.
 	 */
 	UINT size() const
 	{
 		UINT sum = 0;
-		for (const VecDi& pos_child : m_pgrid->branch().list(m_listIdx))
-			sum += m_pgrid->child(pos_child).list(m_listIdx).size();
+		for (const VecDi& pos_child : m_pgrid->branch().list(m_list_idx))
+			sum += m_pgrid->child(pos_child).list(m_list_idx).size();
 		return sum;
 	}
 };
 
 /**
- * Base traits for spatially partitioned wrapper for lookup and tracked
- * grid.
+ * Base traits for spatially partitioned wrapper for lookup and tracked grid.
  */
 template <class Derived> struct TrackingPartitionedGridTraits {};
 
@@ -1407,5 +1528,8 @@ struct SharedLookupGridBaseTraits<SharedLookupPartitionedGrid<D, N> >
 	static const UINT Dims = TrackingPartitionedGridTraits<ThisType>::Dims;
 	static const UINT NumLists = TrackingPartitionedGridTraits<ThisType>::NumLists;
 };
+
+/** @} */ // End group LookupGrid.
+
 }
 #endif /* PARTITIONEDGRID_HPP_ */
