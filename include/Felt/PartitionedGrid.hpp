@@ -11,8 +11,28 @@
 namespace felt
 {
 
-/// A byte-aligned array of arbitrary type.
-template <typename T> using AlignedArray = std::vector<T, Eigen::aligned_allocator<T> >;
+//template <typename T> using AlignedArray = std::vector<T, Eigen::aligned_allocator<T> >;
+/// A byte-aligned array of arbitrary type with a mutex member for external thread-safety.
+template <typename T>
+class AlignedArray :  public std::vector<T, Eigen::aligned_allocator<T> >
+{
+protected:
+	/// Mutex for external locking.
+	std::mutex m_mutex;
+public:
+	/// Base class.
+	using Base = std::vector<T, Eigen::aligned_allocator<T> >;
+
+	/// Use constructor of std::vector.
+	using Base::vector;
+
+	/// Get mutex member.
+	std::mutex& mutex()
+	{
+		return m_mutex;
+	}
+};
+
 
 /** @defgroup PartitionedGrids
  *
@@ -287,8 +307,7 @@ template <class Derived> struct PartitionedArrayBaseTraits {};
 
 
 /**
- * Base class for common features of PartitionedArray template
- * specialisations.
+ * Base class for common features of PartitionedArray template specialisations.
  */
 template <class Derived>
 class PartitionedArrayBase : public PartitionBase<PartitionedArrayBase<Derived> >
@@ -368,6 +387,7 @@ protected:
 	/// Base class
 	using Base = PartitionedArrayBase<ThisType>;
 
+	using typename Base::Child;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 
@@ -458,6 +478,7 @@ protected:
 	/// Base class.
 	using Base = PartitionedArrayBase<ThisType>;
 
+	using typename Base::Child;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 
@@ -491,6 +512,21 @@ public:
 		const VecDi& pos_child = this->pos_child(pos);
 		this->child(pos_child).push_back(val);
 		Base::add_child(pos_child);
+	}
+
+	/**
+	 * Thread safely add val to list, placing in partition found from pos.
+	 *
+	 * @param pos position in 'imaginary' grid.
+	 * @param val value to insert in list.
+	 */
+	void add_safe(const VecDi& pos, const T& val)
+	{
+		const VecDi& pos_child = this->pos_child(pos);
+		Child& child = this->child(pos_child);
+		Base::add_child(pos_child);
+		std::lock_guard<std::mutex> lock(child.mutex());
+		child.push_back(val);
 	}
 
 	/**

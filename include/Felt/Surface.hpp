@@ -68,6 +68,9 @@ public:
 	using Line = Eigen::ParametrizedLine<FLOAT, D>;
 
 
+	std::mutex m_mutex_child_locking;
+
+
 	/**
 	 * Storage class for flagging a point in the grid to be moved from one
 	 * narrow band layer to another.
@@ -418,8 +421,6 @@ public:
 
 		// Get a mutex lock on affected spatial partitions, since neighbouring points might spill
 		// over into another thread's partition.
-		std::set<std::mutex*> locks = this->lock_children(neighs);
-
 		for (UINT neighIdx = 0; neighIdx < neighs.size(); neighIdx++)
 		{
 			const VecDi& pos_neigh = neighs[neighIdx];
@@ -448,15 +449,12 @@ public:
 			#endif
 
 			// Add to status change list to be added to the outer layer.
-			m_grid_status_change.add(
+			m_grid_status_change.add_safe(
 				pos_neigh, StatusChange(pos_neigh, from_layer_id, to_layer_id)
 			);
 			// Set distance in phi grid.
 			child(pos_neigh) = dist_neigh;
 		} // End for neighbouring points.
-
-		for (std::mutex* lock : locks)
-			lock->unlock();
 	}
 
 
@@ -491,7 +489,7 @@ public:
 		}
 		#endif
 
-		m_grid_status_change.add(pos_, StatusChange(pos_, layer_id_from_, layer_id_to_));
+		m_grid_status_change.add_safe(pos_, StatusChange(pos_, layer_id_from_, layer_id_to_));
 
 		return true;
 	}
@@ -679,6 +677,8 @@ public:
 		for (const VecDi& pos : list_pos_leafs_)
 			locks.insert(&m_grid_dphi.child(m_grid_dphi.pos_child(pos)).lookup().mutex());
 
+		std::lock_guard<std::mutex> child_lock(m_mutex_child_locking);
+
 		for (std::mutex* lock : locks)
 			lock->lock();
 
@@ -707,7 +707,6 @@ public:
 		constexpr FLOAT sqrt2piDinv = 1.0f/sqrt(pow(2*M_PI, D));
 
 		Eigen::VectorXf weights(list.size());
-		std::set<std::mutex*> locks = this->lock_children(list);
 
 		// Calculate Gaussian weights.
 		for (UINT idx = 0; idx < list.size(); idx++)
@@ -724,15 +723,33 @@ public:
 			weights(idx) = weight;
 		}
 
+		std::mutex* pmutex_current = NULL;
 		const FLOAT& weights_sum = weights.sum();
+
 		if (weights_sum > 0)
 		{
 			// Normalise weights
 			weights *= val / weights_sum;
 
+			VecDi pos_child_current = VecDi::Constant(std::numeric_limits<INT>::max());
+
+
 			for (UINT idx = 0; idx < list.size(); idx++)
 			{
 				const VecDi& pos = list[idx];
+				const VecDi& pos_child = m_grid_dphi.pos_child(pos);
+
+				if (pos_child_current != pos_child)
+				{
+					if (pmutex_current)
+					{
+						pmutex_current->unlock();
+					}
+					pos_child_current = pos_child;
+					pmutex_current = &m_grid_dphi.child(pos_child_current).lookup().mutex();
+					pmutex_current->lock();
+				}
+
 				const FLOAT amount = this->clamp(pos, weights(idx) + m_grid_dphi(pos));
 
 				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
@@ -759,10 +776,13 @@ public:
 				weights(idx) -= (weights(idx) - amount);
 
 				this->dphi().add(pos, amount, this->layer_idx(0));
-			}
+			} // End for list of leafs.
+		} // End if weights > 0
+
+		if (pmutex_current)
+		{
+			pmutex_current->unlock();
 		}
-		for (std::mutex* lock : locks)
-			lock->unlock();
 
 		return val - weights.sum();
 	}
