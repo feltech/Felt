@@ -72,10 +72,8 @@ public:
 	/// Number of tracking lists of points.
 	static const UINT NUM_LISTS = PartitionBaseTraits<Derived>::NumLists;
 
-	/// Grid of partitions with tracking list(s) of active grid points.
-	using BranchGrid = TrackedGrid<
-		Child, PartitionBaseTraits<Derived>::Dims, NUM_LISTS
-	>;
+	/// Grid of partitions with tracking list(s) of active partitions.
+	using BranchGrid = TrackedGrid<Child, PartitionBaseTraits<Derived>::Dims, NUM_LISTS>;
 	/// D-dimensional unsigned int vector.
 	using VecDu = typename BranchGrid::VecDu;
 	/// D-dimensional signed int vector.
@@ -553,9 +551,9 @@ struct PartitionedArrayBaseTraits<PartitionedArray<T, D, 0> >
 	using ThisType = PartitionedArray<T, D, 0>;
 	/// Child type to store in spatial partitions - in this case a single list.
 	using ChildType = AlignedArray<T>;
-	/// Dimensions of the grid, from template parameter.
+	/// Size of the grid, from template parameter.
 	static const UINT Dims = D;
-	/// Number of distinct arrays to partition - in this case a single list..
+	/// Number of distinct arrays to partition - in this case a single list.
 	static const UINT NumLists = 1;
 };
 
@@ -823,9 +821,9 @@ struct PartitionBaseTraits<PartitionedGridBase<Derived> >
 	using ThisType = typename PartitionedGridBaseTraits<Derived>::ThisType;
 	/// Child type to store in spatial partitions.
 	using ChildType = typename PartitionedGridBaseTraits<Derived>::ChildType;
-	/// Dimensions of the grid.
+	/// Size of the grid.
 	static const UINT Dims = PartitionedGridBaseTraits<Derived>::Dims;
-	/// Number of distinct tracking lists to track active spatial partitions - in this case just 1.
+	/// Number of distinct tracking lists to track active spatial partitions.
 	static const UINT NumLists = PartitionedGridBaseTraits<Derived>::NumLists;
 };
 
@@ -959,7 +957,7 @@ public:
 		const Iter	m_it_child_end;
 
 		/**
-		 * Override specifying how to move on to next leaf.
+		 * Override specifying how to move on to next leaf, jumping from (active) child to child.
 		 */
 		void increment()
 		{
@@ -968,19 +966,14 @@ public:
 
 			if (m_it_leaf == m_it_child)
 			{
-				m_it_leaf = m_pgrid->child(
-					*m_it_child
-				).list(m_list_idx).begin();
+				m_it_leaf = m_pgrid->child(*m_it_child).list(m_list_idx).begin();
 				return;
 			}
 
 			m_it_leaf++;
 
-			if (
-				m_it_leaf == m_pgrid->child(
-					*m_it_child
-				).list(m_list_idx).end()
-			) {
+			if (m_it_leaf == m_pgrid->child(*m_it_child).list(m_list_idx).end())
+			{
 				m_it_child++;
 				m_it_leaf = m_it_child;
 				increment();
@@ -1079,18 +1072,19 @@ public:
 	}
 };
 
+
 /**
  * Base traits for spatially partitioned wrapper for lookup and tracked grid.
+ *
+ * @tparam Derived the CRTP derived class
  */
 template <class Derived> struct TrackingPartitionedGridTraits {};
 
+
 /**
- * Base class for spatially partitioned wrapper for lookup and tracked grid.
+ * Base class for spatially partitioned wrappers for LookupGrid and TrackedGrid.
  *
- * @tparam T type of value stored in leaf grid nodes.
- * @tparam D dimension of the grid.
- * @tparam N number of tracking lists to use.
- * @tparam G lookup or tracked grid class used for child grids.
+ * @tparam Derived the CRTP derived class.
  */
 template <class Derived>
 class TrackingPartitionedGridBase
@@ -1098,6 +1092,7 @@ class TrackingPartitionedGridBase
 {
 public:
 	using ThisType = TrackingPartitionedGridBase<Derived>;
+	/// Base class.
 	using Base = PartitionedGridBase<ThisType>;
 
 	friend class LeafsContainer<ThisType>;
@@ -1118,15 +1113,15 @@ public:
 	 *
 	 * Descend to children to reset their tracking list.
 	 *
-	 * @param arr_idx tracking list id.
+	 * @param arr_idx_ tracking list id.
 	 */
-	void reset(const UINT& arr_idx = 0)
+	void reset(const UINT& arr_idx_ = 0)
 	{
 		BranchGrid& branch = this->branch();
-		for (const VecDi& pos_child : branch.list(arr_idx))
-			branch(pos_child).reset(arr_idx);
+		for (const VecDi& pos_child : branch.list(arr_idx_))
+			branch(pos_child).reset(arr_idx_);
 
-		Base::reset(arr_idx);
+		Base::reset(arr_idx_);
 	}
 
 	/**
@@ -1134,17 +1129,17 @@ public:
 	 *
 	 * Descend to relevant child grid to add to their tracking structure.
 	 *
-	 * @param pos position to add.
-	 * @param arr_idx tracking list id.
+	 * @param pos_ position to add.
+	 * @param arr_idx_ tracking list id.
 	 * @return true if grid node set in child lookup grid and position added
 	 * to tracking list, false if child grid node was already set so
 	 * position already in a list.
 	 */
-	bool add(const VecDi& pos, const UINT& arr_idx = 0)
+	bool add(const VecDi& pos_, const UINT& arr_idx_ = 0)
 	{
-		const VecDi& pos_child = this->pos_child(pos);
-		Base::add_child(pos_child, arr_idx);
-		return this->child(pos_child).add(pos, arr_idx);
+		const VecDi& pos_child = this->pos_child(pos_);
+		Base::add_child(pos_child, arr_idx_);
+		return this->child(pos_child).add(pos_, arr_idx_);
 	}
 
 	/**
@@ -1156,49 +1151,49 @@ public:
 	 * This is a safe version that uses a mutex lock on the child grid,
 	 * which is necessary if threads can "cross over" to other partitions.
 	 *
-	 * @param pos position to add.
-	 * @param arr_idx tracking list id.
+	 * @param pos_ position to add.
+	 * @param arr_idx_ tracking list id.
 	 * @return true if grid node set in child lookup grid and position added
 	 * to tracking list, false if child grid node was already set so
 	 * position already in a list.
 	 */
-	bool add_safe(const VecDi& pos, const UINT& arr_idx = 0)
+	bool add_safe(const VecDi& pos_, const UINT& arr_idx_ = 0)
 	{
-		const VecDi& pos_child = this->pos_child(pos);
-		Base::add_child(pos_child, arr_idx);
+		const VecDi& pos_child = this->pos_child(pos_);
+		Base::add_child(pos_child, arr_idx_);
 		Child& child = this->child(pos_child);
-		if (child.is_active(pos))
+		if (child.is_active(pos_))
 			return false;
 		std::lock_guard<std::mutex> lock(child.mutex());
-		return child.add(pos, arr_idx);
+		return child.add(pos_, arr_idx_);
 	}
 
 	/**
 	 * Remove a leaf position from relevant child tracking structure and
 	 * remove child from tracking list if child's list is now empty.
 	 *
-	 * @param pos leaf position to remove.
-	 * @param arr_idx tracking list id.
+	 * @param pos_ leaf position to remove.
+	 * @param arr_idx_ tracking list id.
 	 */
-	void remove(const VecDi& pos, const UINT& arr_idx = 0)
+	void remove(const VecDi& pos_, const UINT& arr_idx_ = 0)
 	{
-		const VecDi& pos_child = this->pos_child(pos);
+		const VecDi& pos_child = this->pos_child(pos_);
 		Child& child = this->child(pos_child);
-		child.remove(pos, arr_idx);
-		if (child.list(arr_idx).size() == 0)
-			this->remove_child(pos_child, arr_idx);
+		child.remove(pos_, arr_idx_);
+		if (child.list(arr_idx_).size() == 0)
+			this->remove_child(pos_child, arr_idx_);
 	}
 
 	/**
 	 * Return structure for range based for loops over leaf nodes.
 	 *
-	 * @param listIdx tracking list id.
+	 * @param list_idx_ tracking list id.
 	 * @return
 	 */
-	const LeafsContainer<Derived> leafs(const UINT& listIdx = 0) const
+	const LeafsContainer<Derived> leafs(const UINT& list_idx_ = 0) const
 	{
 		return LeafsContainer<Derived>(
-			static_cast<const Derived*>(this), listIdx
+			static_cast<const Derived*>(this), list_idx_
 		);
 	}
 
@@ -1207,25 +1202,39 @@ private:
 	 * Override spoofed (non-partitioned) base class's list method to make
 	 * private, since it will always be empty (must use branch or child).
 	 *
-	 * @param arr_idx
-	 * @return
+	 * @param arr_idx_
+	 * @return list of this grid (will always be empty).
 	 */
-	PosArray& list(const UINT& arr_idx = 0)
+	PosArray& list(const UINT& arr_idx_ = 0)
 	{
-		return Child::list(arr_idx);
+		return Child::list(arr_idx_);
 	}
 };
 
 
+/**
+ * Traits for PartitionedGridBase to understand TrackingPartitionedGridBase.
+ *
+ * Just forward the traits defined for TrackingPartitionedGridBase subclasses.
+ *
+ * @tparam Derived the CRTP derived class.
+ */
 template <class Derived>
 struct PartitionedGridBaseTraits<TrackingPartitionedGridBase<Derived> >
 {
+	/// The class inheriting from the base.
 	using ThisType = typename TrackingPartitionedGridTraits<Derived>::ThisType;
+	/// The data type to store at leaf grid nodes.
 	using LeafType = typename TrackingPartitionedGridTraits<ThisType>::LeafType;
+	/// The data type to return when leaf grid nodes are queried.
 	using RetType = typename TrackingPartitionedGridTraits<ThisType>::RetType;
+	/// Child grid class.  Each spatial partition contains one Child grid.
 	using ChildType = typename TrackingPartitionedGridTraits<ThisType>::ChildType;
+	/// Base grid class to partition.
 	using MixinType = typename TrackingPartitionedGridTraits<ThisType>::MixinType;
+	/// Dimensions of the grid.
 	static const UINT Dims = TrackingPartitionedGridTraits<ThisType>::Dims;
+	/// Number of tracking lists.
 	static const UINT NumLists = TrackingPartitionedGridTraits<ThisType>::NumLists;
 };
 
@@ -1242,7 +1251,9 @@ class TrackedPartitionedGrid
 	: public TrackingPartitionedGridBase <TrackedPartitionedGrid<T, D, N>>
 {
 public:
+	/// This class.
 	using ThisType = TrackedPartitionedGrid<T, D, N>;
+	/// Base class
 	using Base = TrackingPartitionedGridBase<ThisType>;
 
 	using typename Base::Child;
@@ -1262,18 +1273,18 @@ public:
 	 *
 	 * Descend to relevant child grid to add to their tracking structure.
 	 *
-	 * @param pos position in grid.
-	 * @param val value to set.
-	 * @param arr_idx tracking list id.
+	 * @param pos_ position in grid.
+	 * @param val_ value to set.
+	 * @param arr_idx_ tracking list id.
 	 * @return true if grid node set in child lookup grid and position added
 	 * to tracking list, false if child grid node was already set so
 	 * position already in a list.
 	 */
-	bool add(const VecDi& pos, const T& val, const UINT& arr_idx = 0)
+	bool add(const VecDi& pos_, const T& val_, const UINT& arr_idx_ = 0)
 	{
-		const VecDi& pos_child = this->pos_child(pos);
-		Base::add_child(pos_child, arr_idx);
-		return this->child(pos_child).add(pos, val, arr_idx);
+		const VecDi& pos_child = this->pos_child(pos_);
+		Base::add_child(pos_child, arr_idx_);
+		return this->child(pos_child).add(pos_, val_, arr_idx_);
 	}
 
 	/**
@@ -1284,20 +1295,20 @@ public:
 	 *
 	 * Descend to relevant child grid to add to their tracking structure.
 	 *
-	 * @param pos position in grid.
-	 * @param val value to set.
-	 * @param arr_idx tracking list id.
+	 * @param pos_ position in grid.
+	 * @param val_ value to set.
+	 * @param arr_idx_ tracking list id.
 	 * @return true if grid node set in child lookup grid and position added
 	 * to tracking list, false if child grid node was already set so
 	 * position already in a list.
 	 */
-	bool add_safe(const VecDi& pos, const T& val, const UINT& arr_idx = 0)
+	bool add_safe(const VecDi& pos_, const T& val_, const UINT& arr_idx_ = 0)
 	{
-		const VecDi& pos_child = this->pos_child(pos);
-		Base::add_child(pos_child, arr_idx);
+		const VecDi& pos_child = this->pos_child(pos_);
+		Base::add_child(pos_child, arr_idx_);
 		Child& child = this->child(pos_child);
 		std::lock_guard<std::mutex> lock(child.mutex());
-		return child.add(pos, val, arr_idx);
+		return child.add(pos_, val_, arr_idx_);
 	}
 
 	/**
@@ -1307,16 +1318,16 @@ public:
 	 * Lookup grid will then be full of NULL indices for given tracking list
 	 * and the relevant tracking list(s) will be empty.
 	 *
-	 * @param val value to set in main grid.
-	 * @param arr_idx tracking list id to cycle over and clear.
+	 * @param val_ value to set in main grid.
+	 * @param arr_idx_ tracking list id to cycle over and clear.
 	 */
-	void reset(const T& val, const UINT& arr_idx = 0)
+	void reset(const T& val_, const UINT& arr_idx_ = 0)
 	{
 		BranchGrid& branch = this->branch();
-		for (const VecDi& pos_child : branch.list(arr_idx))
-			branch(pos_child).reset(val, arr_idx);
+		for (const VecDi& pos_child : branch.list(arr_idx_))
+			branch(pos_child).reset(val_, arr_idx_);
 
-		Base::reset(arr_idx);
+		Base::reset(arr_idx_);
 	}
 
 	/**
@@ -1335,17 +1346,29 @@ public:
 };
 
 
+/**
+ * Traits for TrackedGridBase to understand TrackedPartitionedGrid.
+ *
+ * @tparam T type of value stored in leaf grid nodes.
+ * @tparam D dimension of the grid.
+ * @tparam N number of tracking lists to use.
+ */
 template <typename T, UINT D, UINT N>
 struct TrackedGridBaseTraits<TrackedPartitionedGrid<T, D, N> >
 {
+	/// The class inheriting from the base.
 	using ThisType = TrackedPartitionedGrid<T, D, N>;
-	using LeafType = T;
+	/// The type of lookup grid to use for tracking active grid nodes.
 	using LookupType = LookupGrid<D, N>;
+	/// The data type to store at leaf grid nodes, from template parameter.
+	using LeafType = T;
+	/// Dimensions of the grid, from template parameter.
 	static const UINT Dims = D;
 };
 
+
 /**
- * Traits class for spatially partitioned wrapper for TrackedGrid.
+ * Traits for TrackingPartitionedGrid to understand TrackedPartitionedGrid.
  *
  * @tparam T type of value stored in leaf grid nodes.
  * @tparam D dimension of the grid.
@@ -1354,12 +1377,19 @@ struct TrackedGridBaseTraits<TrackedPartitionedGrid<T, D, N> >
 template <typename T, UINT D, UINT N>
 struct TrackingPartitionedGridTraits<TrackedPartitionedGrid<T, D, N> >
 {
+	/// The class inheriting from the base.
 	using ThisType = TrackedPartitionedGrid<T, D, N>;
+	/// Child grid class, in this case a TrackedGrid.
 	using ChildType = TrackedGrid<T, D, N>;
+	/// Base grid class to partition, in this case TrackedGridBase.
 	using MixinType = TrackedGridBase<ThisType>;
-	using LeafType = typename TrackedGridBaseTraits<ThisType>::LeafType;
+	/// The data type to store at leaf grid nodes, from template parameter.
+	using LeafType = T;
+	/// The data type to return when leaf grid nodes are queried, same as LeafType.
 	using RetType = LeafType;
-	static const UINT Dims = TrackedGridBaseTraits<ThisType>::Dims;
+	/// Dimensions of the grid, from template parameter.
+	static const UINT Dims = D;
+	/// Number of tracking lists, from template parameter.
 	static const UINT NumLists = N;
 };
 
@@ -1394,33 +1424,33 @@ public:
 	 *
 	 * Descend to relevant child grid to add to their tracking structure.
 	 *
-	 * @param pos position in grid.
-	 * @param val value to set.
-	 * @param arr_idx tracking list id.
+	 * @param pos_ position in grid.
+	 * @param val_ value to set.
+	 * @param arr_idx_ tracking list id.
 	 * @return true if grid node set in child lookup grid and position added
 	 * to tracking list, false if child grid node was already set so
 	 * position already in a list.
 	 */
-	bool add(const VecDi& pos, const T& val, const UINT& arr_idx)
+	bool add(const VecDi& pos_, const T& val_, const UINT& arr_idx_)
 	{
-		const VecDi& pos_child = this->pos_child(pos);
-		Base::add_child(pos_child, arr_idx);
-		return this->child(pos_child).add(pos, val, arr_idx);
+		const VecDi& pos_child = this->pos_child(pos_);
+		Base::add_child(pos_child, arr_idx_);
+		return this->child(pos_child).add(pos_, val_, arr_idx_);
 	}
 
 
 	/**
 	 * Add a position to the lookup grid.
 	 *
-	 * @param pos position in the grid to add.
-	 * @param arr_idx tracking list id.
+	 * @param pos_ position in the grid to add.
+	 * @param arr_idx_ tracking list id.
 	 * @return true if grid node set in child lookup grid and position added
 	 * to tracking list, false if leaf grid node was already set so position
 	 * already in a list.
 	 */
-	bool add(const VecDi& pos, const UINT& arr_idx)
+	bool add(const VecDi& pos_, const UINT& arr_idx_)
 	{
-		return Base::add(pos, arr_idx);
+		return Base::add(pos_, arr_idx_);
 	}
 
 	/**
@@ -1430,32 +1460,43 @@ public:
 	 * Lookup grid will then be full of NULL indices for given tracking list
 	 * and the relevant tracking list(s) will be empty.
 	 *
-	 * @param val value to set in main grid.
-	 * @param arr_idx tracking list id to cycle over and clear.
+	 * @param val_ value to set in main grid.
+	 * @param arr_idx_ tracking list id to cycle over and clear.
 	 */
-	void reset(const T& val, const UINT& arr_idx = 0)
+	void reset(const T& val_, const UINT& arr_idx_ = 0)
 	{
 		BranchGrid& branch = this->branch();
-		for (const VecDi& pos_child : branch.list(arr_idx))
-			branch(pos_child).reset(val, arr_idx);
+		for (const VecDi& pos_child : branch.list(arr_idx_))
+			branch(pos_child).reset(val_, arr_idx_);
 
-		Base::reset(arr_idx);
+		Base::reset(arr_idx_);
 	}
 };
 
 
+/**
+ * Traits class for TrackedGridBase to understand SharedTrackedPartitionedGrid.
+ *
+ * @tparam T type of value stored in leaf grid nodes.
+ * @tparam D dimension of the grid.
+ * @tparam N number of tracking lists to use.
+ */
 template <typename T, UINT D, UINT N>
 struct TrackedGridBaseTraits<SharedTrackedPartitionedGrid<T, D, N> >
 {
+	/// The class inheriting from TrackedGridBase.
 	using ThisType = SharedTrackedPartitionedGrid<T, D, N>;
-	using LeafType = T;
+	/// The type of lookup grid to use for tracking active grid nodes.
 	using LookupType = SharedLookupGrid<D, N>;
+	/// Lookup value at leaf nodes, from template parameter.
+	using LeafType = T;
+	/// Dimensions of the grid, from template parameter.
 	static const UINT Dims = D;
 };
 
 
 /**
- * Traits class for spatially partitioned wrapper for SharedTrackedGrid.
+ * Traits class for TrackingPartitionedGrid to understand SharedTrackedPartitionedGrid.
  *
  * @tparam T type of value stored in leaf grid nodes.
  * @tparam D dimension of the grid.
@@ -1464,12 +1505,19 @@ struct TrackedGridBaseTraits<SharedTrackedPartitionedGrid<T, D, N> >
 template <typename T, UINT D, UINT N>
 struct TrackingPartitionedGridTraits<SharedTrackedPartitionedGrid<T, D, N> >
 {
+	/// The class inheriting from TrackingPartitionedGrid.
 	using ThisType = SharedTrackedPartitionedGrid<T, D, N>;
+	/// Child grid class, in this case SharedTrackedGrid.
 	using ChildType = SharedTrackedGrid<T, D, N>;
+	/// Base grid class to partition, in this case TrackedGridBase.
 	using MixinType = TrackedGridBase<ThisType>;
-	using LeafType = typename TrackedGridBaseTraits<ThisType>::LeafType;
+	/// Lookup value at leaf nodes, from template parameter.
+	using LeafType = T;
+	/// The data type to return when leaf grid nodes are queried. Same as leaf type.
 	using RetType = LeafType;
-	static const UINT Dims = TrackedGridBaseTraits<ThisType>::Dims;
+	/// Dimensions of the grid, from template parameter.
+	static const UINT Dims = D;
+	/// Number of tracking lists, from template parameter.
 	static const UINT NumLists = N;
 };
 
@@ -1490,8 +1538,9 @@ public:
 	using Base::TrackingPartitionedGridBase;
 };
 
+
 /**
- * Traits class for spatially partitioned wrapper for LookupGrid.
+ * Traits class for TrackingPartitionedGrid to understand LookupPartitionedGrid.
  *
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
@@ -1499,23 +1548,43 @@ public:
 template <UINT D, UINT N>
 struct TrackingPartitionedGridTraits<LookupPartitionedGrid<D, N> >
 {
-	using ThisType = LookupPartitionedGrid<D, N>;
-	using LeafType = Eigen::Matrix<UINT, N, 1>;
-	using RetType = LeafType;
-	using ChildType = LookupGrid<D, N>;
-	using MixinType = LookupGridBase<ThisType>;
+	/// Dimensions of the grid, from template parameter.
 	static const UINT Dims = D;
+	/// Number of tracking lists, from template parameter.
 	static const UINT NumLists = N;
+	/// The class inheriting from TrackingPartitionedGrid.
+	using ThisType = LookupPartitionedGrid<Dims, NumLists>;
+	/// Lookup value at leaf nodes.  N-dimensional array, one element for each tracking list.
+	using LeafType = Eigen::Matrix<UINT, NumLists, 1>;
+	/// The data type to return when leaf grid nodes are queried. Same as leaf type.
+	using RetType = LeafType;
+	/// Child grid class, in this case LookupGrid.
+	using ChildType = LookupGrid<Dims, NumLists>;
+	/// Base grid class to partition, in this case LookupGridBase.
+	using MixinType = LookupGridBase<ThisType>;
 };
 
 
+/**
+ * Traits class for LookupGridBase to understand LookupPartitionedGrid.
+ *
+ * Just copy relevant traits from TrackingPartitionedGridTraits.
+ *
+ * @tparam D dimension of the grid.
+ * @tparam N number of tracking lists to use.
+ */
 template <UINT D, UINT N>
 struct LookupGridBaseTraits<LookupPartitionedGrid<D, N> >
 {
+	/// The class inheriting from LookupGridBase.
 	using ThisType = LookupPartitionedGrid<D, N>;
+	/// Lookup value at leaf nodes.
 	using LeafType = typename TrackingPartitionedGridTraits<ThisType>::LeafType;
+	/// The data type to return when leaf grid nodes are queried.
 	using RetType = typename TrackingPartitionedGridTraits<ThisType>::RetType;
+	/// Dimensions of the grid.
 	static const UINT Dims = TrackingPartitionedGridTraits<ThisType>::Dims;
+	/// Number of tracking lists to use.
 	static const UINT NumLists = TrackingPartitionedGridTraits<ThisType>::NumLists;
 };
 
@@ -1536,8 +1605,9 @@ public:
 	using Base::TrackingPartitionedGridBase;
 };
 
+
 /**
- * Traits class for spatially partitioned wrapper for SharedLookupGrid.
+ * Traits class for TrackingPartitionedGrid to understand SharedLookupPartitionedGrid.
  *
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
@@ -1545,9 +1615,17 @@ public:
 template <UINT D, UINT N>
 struct TrackingPartitionedGridTraits<SharedLookupPartitionedGrid<D, N> >
 {
+	/// The class inheriting from TrackingPartitionedGrid.
 	using ThisType = SharedLookupPartitionedGrid<D, N>;
+	/// Lookup value at leaf nodes.
 	using LeafType = Eigen::Matrix<UINT, N, 1>;
+	/**
+	 * The data type to return when leaf grid nodes are queried.
+	 *
+	 * A single index, since lookup grid is shared between tracking lists.
+	 */
 	using RetType = UINT;
+	/// Child grid class, in this case SharedLookupGrid.
 	using ChildType = SharedLookupGrid<D, N>;
 	using MixinType = SharedLookupGridBase<ThisType>;
 	static const UINT Dims = D;
@@ -1555,13 +1633,26 @@ struct TrackingPartitionedGridTraits<SharedLookupPartitionedGrid<D, N> >
 };
 
 
+/**
+ * Traits class for SharedLookupGridBase to understand SharedLookupPartitionedGrid.
+ *
+ * Just copy relevant traits from TrackingPartitionedGridTraits.
+ *
+ * @tparam D dimension of the grid.
+ * @tparam N number of tracking lists to use.
+ */
 template <UINT D, UINT N>
 struct SharedLookupGridBaseTraits<SharedLookupPartitionedGrid<D, N> >
 {
+	/// The class inheriting from LookupGridBase.
 	using ThisType = SharedLookupPartitionedGrid<D, N>;
+	/// Lookup value at leaf nodes.
 	using LeafType = typename TrackingPartitionedGridTraits<ThisType>::LeafType;
+	/// The data type to return when leaf grid nodes are queried.
 	using RetType = typename TrackingPartitionedGridTraits<ThisType>::RetType;
+	/// Dimensions of the grid.
 	static const UINT Dims = TrackingPartitionedGridTraits<ThisType>::Dims;
+	/// Number of tracking lists to use.
 	static const UINT NumLists = TrackingPartitionedGridTraits<ThisType>::NumLists;
 };
 

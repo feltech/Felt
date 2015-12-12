@@ -159,6 +159,8 @@ VecDf<D> floorf(const VecDf<D>& pos_)
 
 /**
  * Traits for classes CRTP derived from GridBase
+ *
+ * @tparam Derived the CRTP derived class.
  */
 template <class Derived> struct GridBaseTraits {};
 
@@ -1201,7 +1203,7 @@ public:
 	 *
 	 * @param val_corners_in_ list of corner values.
 	 * @param pos_ real-valued position to interpolate to.
-	 * @return
+	 * @return list of interpolated values
 	 */
 	std::vector<LeafType> interp (
 		const std::vector<LeafType>& val_corners_in_, const VecDf& pos_

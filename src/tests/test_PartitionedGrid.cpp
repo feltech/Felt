@@ -7,27 +7,29 @@
 
 using namespace felt;
 
-/*
- * Test spatially partitioned grid structures.
+/**
+ * @test PartitionedGrid test suite.
  */
 BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
-
+	/**
+	 * @test PartitionedGrid initialisation.
+	 */
 	BOOST_AUTO_TEST_CASE(init_simple)
 	{
 		{
-			typedef PartitionedGrid<FLOAT, 3> Grid_t;
-			// Default constructor.
-			Grid_t grid;
+			// ==== Setup/action ====
+			PartitionedGrid<FLOAT, 3> grid;
+
+			// ==== Confirm ====
 			BOOST_CHECK_EQUAL(grid.dims(), Vec3u(0,0,0));
 		}
 
 		{
-			typedef PartitionedGrid<FLOAT, 3> Grid_t;
-			typedef Grid_t::BranchGrid BranchGrid;
+			// ==== Setup/action ====
+			PartitionedGrid<FLOAT, 3> grid(Vec3u(4,4,4), Vec3i(-2, -2,-2), Vec3u(2, 2, 2));
+			PartitionedGrid<FLOAT, 3>::BranchGrid& parent = grid.branch();
 
-			Grid_t grid(Vec3u(4,4,4), Vec3i(-2, -2,-2), Vec3u(2, 2, 2));
-			BranchGrid& parent = grid.branch();
-
+			// ==== Confirm ====
 			BOOST_CHECK_EQUAL(
 				(void*)&parent(Vec3i(-1, -1, -1)), (void*)&parent.data()[0]
 			);
@@ -80,12 +82,11 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		}
 
 		{
-			typedef PartitionedGrid<FLOAT, 3> Grid_t;
-			typedef Grid_t::BranchGrid PartGrid_t;
+			// ==== Setup/action ====
+			PartitionedGrid<FLOAT, 3> grid(Vec3u(9,9,9), Vec3i(-4, -4, -4), Vec3u(3, 3, 3));
+			PartitionedGrid<FLOAT, 3>::BranchGrid& parent = grid.branch();
 
-			Grid_t grid(Vec3u(9,9,9), Vec3i(-4, -4, -4), Vec3u(3, 3, 3));
-			PartGrid_t& parent = grid.branch();
-
+			// ==== Confirm ====
 			BOOST_CHECK_EQUAL(grid.dims(), Vec3u(9,9,9));
 
 			BOOST_CHECK_EQUAL((UINT)parent.data().size(), 27u);
@@ -107,11 +108,11 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		}
 
 		{
-			typedef PartitionedGrid<FLOAT, 3> Grid_t;
+			// ==== Setup/action ====
+			PartitionedGrid<FLOAT, 3>  grid(Vec3u(8,8,8), Vec3i(-3,-3,-3), Vec3u(2, 2, 2));
+			const PartitionedGrid<FLOAT, 3> ::BranchGrid& parent = grid.branch();
 
-			Grid_t grid(Vec3u(8,8,8), Vec3i(-3,-3,-3), Vec3u(2, 2, 2));
-			const Grid_t::BranchGrid& parent = grid.branch();
-
+			// ==== Confirm ====
 			BOOST_CHECK_EQUAL(grid.dims(), Vec3u(8,8,8));
 
 			BOOST_CHECK_EQUAL((UINT)parent.data().size(), 64);
@@ -137,17 +138,19 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		}
 	}
 
-
+	/**
+	 * @test PartitionedGrid simple get and set values.
+	 */
 	BOOST_AUTO_TEST_CASE(get_and_set_simple)
 	{
-		typedef PartitionedGrid<FLOAT, 3> Grid_t;
-		typedef Grid_t::BranchGrid PartGrid_t;
+		// ==== Setup ====
+		PartitionedGrid<FLOAT, 3> grid(Vec3u(4,4,4), Vec3i(-2, -2,-2));
+		PartitionedGrid<FLOAT, 3>::BranchGrid& parent = grid.branch();
 
-		Grid_t grid(Vec3u(4,4,4), Vec3i(-2, -2,-2));
-		PartGrid_t& parent = grid.branch();
-
+		// ==== Action ====
 		grid.fill(-1.0f);
 
+		// ==== Confirm ====
 		for (INT x = -2; x <= 1; x++)
 			for (INT y = -2; y <= 1; y++)
 				for (INT z = -2; z <= 1; z++)
@@ -156,6 +159,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 					BOOST_CHECK_EQUAL(grid(pos), -1.0f);
 				}
 
+		// ==== Setup ====
 		const Vec3i pos1(-2, -2, -2);
 		const Vec3i pos2(-1, -1, -1);
 		const Vec3i pos3( 0,  0,  0);
@@ -163,6 +167,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		const Vec3i pos5(-2, -1,  1);
 		const Vec3i pos6( 0,  1,  0);
 
+		// ==== Action ====
 		grid(pos1) = 1.0f;
 		grid(pos2) = 2.0f;
 		grid(pos3) = 3.0f;
@@ -172,6 +177,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 
 		const Vec3f grad = grid.grad(pos3);
 
+		// ==== Confirm ====
 		BOOST_CHECK_EQUAL(grid(pos1), 1.0f);
 		BOOST_CHECK_EQUAL(grid(pos2), 2.0f);
 		BOOST_CHECK_EQUAL(grid(pos3), 3.0f);
@@ -181,108 +187,6 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		BOOST_CHECK_EQUAL((FLOAT)grad(1), 3.5f);
 		BOOST_CHECK_EQUAL((FLOAT)grad(2), 0.0f);
 	}
-
-
-//	BOOST_AUTO_TEST_CASE(array_mapped)
-//	{
-//		typedef MappedPartitionedGrid<FLOAT, 3, 3> Grid_t;
-//
-//		Grid_t grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
-//		Grid_t::BranchGrid& branch = grid.branch();
-//
-//		BOOST_CHECK_EQUAL((UINT)branch.data().size(), 27);
-//
-//		grid.fill(7.0f);
-//
-//		for (INT x = -4; x <= 4; x++)
-//			for (INT y = -4; y <= 4; y++)
-//				for (INT z = -4; z <= 4; z++)
-//				{
-//					const Vec3i pos(x, y, z);
-//					BOOST_CHECK_EQUAL(grid(pos), 7.0f);
-//					const Vec3i& pos_child = grid.pos_child(pos);
-//					BOOST_CHECK_EQUAL(branch(pos_child).data().size(), 27);
-//
-//					for (UINT l = 0; l < 3; l++)
-//						BOOST_CHECK_EQUAL(branch(pos_child).list(l).size(), 0);
-//				}
-//
-//		const Vec3i pos1( 1, -4, -4);
-//		grid.add(pos1, 1.0f, 1);
-//
-//		const Vec3i pos_child( 0, -1, -1);
-//		BOOST_CHECK_EQUAL(grid(pos1), 1.0f);
-//		BOOST_CHECK_EQUAL(branch.list(1).size(), 1);
-//		BOOST_CHECK_EQUAL(branch.list(1)[0], pos_child);
-//		BOOST_CHECK_EQUAL(branch(pos_child).list(1).size(), 1);
-//		BOOST_CHECK_EQUAL(branch(pos_child).list(1)[0], pos1);
-//		BOOST_CHECK_EQUAL(branch(pos_child)(pos1), 1.0f);
-//
-//		const Vec3i pos2( 2, -4, -4);
-//		const Vec3i pos3( 3, -4, -4);
-//		const Vec3i pos4( 4, -4, -4);
-//		const Vec3i pos5(-1, -4, -4);
-//
-//		const Vec3i part1_3_4( 1, -1, -1);
-//		const Vec3i part2_5( 0, -1, -1);
-//
-//		grid.add(pos2, 2.0f, 1);
-//		grid.add(pos3, 3.0f, 0);
-//		grid.add(pos4, 4.0f);
-//		grid.add(pos5, 5.0f, 2);
-//
-//		BOOST_CHECK_EQUAL(branch.list(0).size(), 1);
-//		BOOST_CHECK_EQUAL(branch.list(1).size(), 2);
-//		BOOST_CHECK_EQUAL(branch.list(2).size(), 1);
-//		BOOST_CHECK_EQUAL(branch.list(0)[0], part1_3_4);
-//		BOOST_CHECK_EQUAL(branch.list(1)[0], part2_5);
-//		BOOST_CHECK_EQUAL(branch.list(1)[1], part1_3_4);
-//
-//		BOOST_CHECK_EQUAL(branch(part1_3_4).list(0).size(), 2);
-//		BOOST_CHECK_EQUAL(branch(part2_5).list(1).size(), 1);
-//		BOOST_CHECK_EQUAL(branch(part1_3_4).list(1).size(), 1);
-//		BOOST_CHECK_EQUAL(branch(part2_5).list(2).size(), 1);
-//
-//		std::vector<Vec3i> apos_check;
-//		for (const Vec3i& pos : grid.leafs(1))
-//			apos_check.push_back(pos);
-//
-//		BOOST_REQUIRE_EQUAL(apos_check.size(), 2);
-//		BOOST_CHECK_EQUAL(apos_check[0], pos1);
-//		BOOST_CHECK_EQUAL(apos_check[1], pos2);
-//
-//		grid.reset(-1.0f, 1);
-//
-//		BOOST_CHECK_EQUAL(branch.list(0).size(), 1);
-//		BOOST_CHECK_EQUAL(branch.list(1).size(), 0);
-//		BOOST_CHECK_EQUAL(branch.list(2).size(), 1);
-//
-//		BOOST_CHECK_EQUAL(branch(part1_3_4).list(0).size(), 2);
-//		BOOST_CHECK_EQUAL(branch(part2_5).list(1).size(), 0);
-//		BOOST_CHECK_EQUAL(branch(part1_3_4).list(1).size(), 0);
-//
-//		BOOST_CHECK_EQUAL(grid(pos1), -1.0f);
-//		BOOST_CHECK_EQUAL(grid(pos2), -1.0f);
-//		BOOST_CHECK_EQUAL(grid(pos3),  3.0f);
-//		BOOST_CHECK_EQUAL(grid(pos4),  4.0f);
-//		BOOST_CHECK_EQUAL(grid(pos5),  5.0f);
-//
-//		branch(part1_3_4).remove(0, 0);
-//
-//		BOOST_CHECK_EQUAL(branch(part1_3_4).list(0).size(), 1);
-//		BOOST_CHECK_EQUAL(branch(part1_3_4).list(0)[0], pos4);
-//		BOOST_CHECK_EQUAL(branch.list(0).size(), 1);
-//
-//		branch(part1_3_4).remove(0, 0);
-//
-//		BOOST_CHECK_EQUAL(branch(part1_3_4).list(0).size(), 0);
-//		BOOST_CHECK_EQUAL(branch.list(0).size(), 1);
-//
-//		branch.remove(0, 2);
-//
-//		BOOST_CHECK_EQUAL(branch.list(2).size(), 0);
-//		BOOST_CHECK_EQUAL(branch(part2_5).list(2).size(), 1);
-//	}
 
 
 	BOOST_AUTO_TEST_CASE(partitioned_lookup)

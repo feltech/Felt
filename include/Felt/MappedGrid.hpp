@@ -18,6 +18,8 @@ namespace felt
 
 /**
  * Base traits class for classes CRTP derived from LookupGridBase.
+ *
+ * @tparam Derived the CRTP derived class.
  */
 template <class Derived> struct LookupGridBaseTraits;
 
@@ -396,6 +398,8 @@ LookupGridBase<Derived>::NULL_IDX = std::numeric_limits<UINT>::max();
  * Traits for GridBase to understand LookupGridBase.
  *
  * Just forward the traits defined for LookupGridBase subclasses.
+ *
+ * @tparam Derived the CRTP derived class.
  */
 template <class Derived>
 struct GridBaseTraits<LookupGridBase<Derived> >

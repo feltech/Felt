@@ -806,7 +806,7 @@ public:
 
 		if (pos_hit == NULL_POS<FLOAT>())
 		{
-			std::cout << "MISS" << std::endl;
+//			std::cout << "MISS" << std::endl;
 			return val;
 		}
 		return this->dphi_gauss<Distance>(pos_hit, val, stddev);
