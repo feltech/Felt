@@ -8,11 +8,21 @@
 using namespace felt;
 
 /**
- * @test PartitionedGrid test suite.
+ * @ingroup Tests
+ * @defgroup PartitionedGridTests Spatially Partitioned Grid Tests
+ *
+ * Test the various spatially partitioned wrappers around felt::Grid based classes.
+ *
+ * @{
  */
 BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 	/**
-	 * @test PartitionedGrid initialisation.
+	 * @name PartitionedGrid
+	 * @ref felt::PartitionedGrid
+	 */
+
+	/**
+	 * Basic initialisation.
 	 */
 	BOOST_AUTO_TEST_CASE(init_simple)
 	{
@@ -139,7 +149,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 	}
 
 	/**
-	 * @test PartitionedGrid simple get and set values.
+	 * Simple get and set values.
 	 */
 	BOOST_AUTO_TEST_CASE(get_and_set_simple)
 	{
@@ -188,7 +198,14 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		BOOST_CHECK_EQUAL((FLOAT)grad(2), 0.0f);
 	}
 
+	/**
+	 * @name LookupPartitionedGrid
+	 * @ref felt::LookupPartitionedGrid
+	 */
 
+	/**
+	 * Simple lookup get and set values.
+	 */
 	BOOST_AUTO_TEST_CASE(partitioned_lookup)
 	{
 		typedef LookupPartitionedGrid<3, 3> Grid_t;
@@ -300,6 +317,10 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 				}
 	}
 
+	/**
+	 * @name SharedLookupPartitionedGrid
+	 * @ref felt::SharedLookupPartitionedGrid
+	 */
 
 	BOOST_AUTO_TEST_CASE(partitioned_shared_lookup)
 	{
@@ -414,6 +435,10 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 				}
 	}
 
+	/**
+	 * @name SharedTrackedPartitionedGrid
+	 * @ref felt::SharedTrackedPartitionedGrid
+	 */
 
 	BOOST_AUTO_TEST_CASE(partitioned_shared_tracked)
 	{
@@ -530,6 +555,10 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 				}
 	}
 
+	/**
+	 * @name PartitionedArray
+	 * @ref felt::PartitionedArray
+	 */
 
 	BOOST_AUTO_TEST_CASE(partitioned_array)
 	{
@@ -569,3 +598,18 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 
 	}
 BOOST_AUTO_TEST_SUITE_END()
+
+/** @} */ // End group Tests.
+
+/**
+ *  @class felt::PartitionedGrid
+ *  @test see @ref Tests
+ *  @class felt::LookupPartitionedGrid
+ *  @test see @ref Tests
+ *  @class felt::SharedLookupPartitionedGrid
+ *  @test see @ref Tests
+ *  @class felt::SharedTrackedPartitionedGrid
+ *  @test see @ref Tests
+ *  @class felt::PartitionedArray
+ *  @test see @ref Tests
+ */

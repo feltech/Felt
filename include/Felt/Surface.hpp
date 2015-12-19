@@ -8,9 +8,9 @@
 #include <boost/math/special_functions/round.hpp>
 #include <eigen3/Eigen/Dense>
 #include <omp.h>
-#include <iostream>
 
 #include "PartitionedGrid.hpp"
+
 
 namespace felt
 {
@@ -26,13 +26,14 @@ template <UINT D, UINT L=2>
 class Surface
 {
 public:
+	/// Furthest layer from the zero-layer on the inside of the volume.
 	static constexpr INT LAYER_MIN	= (INT)-L;
+	/// Furthest layer from the zero-layer on the outside of the volume.
 	static constexpr INT LAYER_MAX	= (INT)L;
+	/// Total number of layers.
 	static constexpr UINT NUM_LAYERS = 2*L+1;
+	/// A tiny number used for error margin when raycasting.
 	static constexpr FLOAT TINY = 0.00001f;
-	static constexpr FLOAT REALLYTINY = std::numeric_limits<FLOAT>::epsilon();
-
-	using Surface_t = Surface<D, L>;
 	/**
 	 * A delta phi update grid with active (non-zero) grid points tracked.
 	 */
@@ -63,13 +64,10 @@ public:
 	 */
 	using AffectedLookupGrid = LookupPartitionedGrid<D, 2*L+1>;
 
-
+	/// D-dimensional hyperplane type (using Eigen library), for raycasting.
 	using Plane = Eigen::Hyperplane<FLOAT, D>;
+	/// D-dimensional parameterised line, for raycasting.
 	using Line = Eigen::ParametrizedLine<FLOAT, D>;
-
-
-	std::mutex m_mutex_child_locking;
-
 
 	/**
 	 * Storage class for flagging a point in the grid to be moved from one
@@ -81,14 +79,14 @@ public:
 			const VecDi& pos_, const INT& from_layer_, const INT& to_layer_
 		) : pos(pos_), from_layer(from_layer_), to_layer(to_layer_) {}
 
-		static UINT layer_idx(const INT& layer_id)
+		static UINT layer_idx(const INT& layer_id_)
 		{
-			return layer_id + (L + 1);
+			return layer_id_ + (L + 1);
 		}
 
-		static INT layer_id(const INT& layer_idx)
+		static INT layer_id(const INT& layer_idx_)
 		{
-			return layer_idx - (L + 1);
+			return layer_idx_ - (L + 1);
 		}
 
 		VecDi pos;
@@ -164,6 +162,9 @@ protected:
 
 public:
 
+	/**
+	 * Explicitly defined default constructor.
+	 */
 	Surface () = default;
 
 	/**
@@ -171,30 +172,27 @@ public:
 	 *
 	 * All points will be marked as outside the surface (i.e. no surface).
 	 *
-	 * @param dims
-	 * @param uborder
+	 * @param size_ size of the isogrid.
+	 * @param size_partition_ size of each spatial partition of the isogrid.
 	 */
-	Surface (
-		const VecDu& dims_,
-		const VecDu& dims_partition_ = VecDu::Constant(DEFAULT_PARTITION)
-	)
+	Surface (const VecDu& size_, const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION))
 	:	m_grid_phi(),
 		m_grid_status_change(),
 		m_grid_dphi()
 	{
-		this->init(dims_, dims_partition_);
+		this->init(size_, size_partition_);
 	}
 
 	/**
 	 * Initialise a Surface (e.g. after default-construction).
 	 *
-	 * @param dims
-	 * @param dims_partition
+	 * @param size_ size of the isogrid.
+	 * @param size_partition_ size of each spatial partition of the isogrid.
 	 */
 	void init (
-		const VecDu& dims_, const VecDu& dims_partition_ = VecDu::Constant(DEFAULT_PARTITION)
+		const VecDu& size_, const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION)
 	) {
-		this->dims(dims_, dims_partition_);
+		this->dims(size_, size_partition_);
 	}
 
 	/**
@@ -217,9 +215,9 @@ public:
 	 * @param pos
 	 * @return
 	 */
-	FLOAT& operator() (const VecDi& pos)
+	FLOAT& operator() (const VecDi& pos_)
 	{
-		return this->phi()(pos);
+		return this->phi()(pos_);
 	}
 
 	/**
@@ -242,20 +240,20 @@ public:
 	 *
 	 * @param udims
 	 */
-	void dims (const VecDu& udims, const VecDu& dims_partition)
+	void dims (const VecDu& udims_, const VecDu& dims_partition)
 	{
-		const VecDi idims = udims.template cast<INT>();
+		const VecDi idims = udims_.template cast<INT>();
 		const VecDi offset = -idims/2;
 
-		m_grid_phi.init(udims, offset, dims_partition);
+		m_grid_phi.init(udims_, offset, dims_partition);
 
 		// Configure delta phi embedding.
-		m_grid_dphi.init(udims, offset, dims_partition);
+		m_grid_dphi.init(udims_, offset, dims_partition);
 		// Configure status change partitioned lists.
-		m_grid_status_change.init(udims, offset, dims_partition);
+		m_grid_status_change.init(udims_, offset, dims_partition);
 
 		// Configure de-dupe grid for neighbourhood queries.
-		m_grid_affected.init(udims, offset, dims_partition);
+		m_grid_affected.init(udims_, offset, dims_partition);
 
 		// Store min and max usable positions in phi embedding.
 		this->pos_min(
@@ -671,19 +669,20 @@ public:
 //		return this->dphi_gauss(list, pos_centre, val, stddev);
 	}
 
-	std::set<std::mutex*> lock_children(const PosArray& list_pos_leafs_)
-	{
-		std::set<std::mutex*> locks;
-		for (const VecDi& pos : list_pos_leafs_)
-			locks.insert(&m_grid_dphi.child(m_grid_dphi.pos_child(pos)).lookup().mutex());
-
-		std::lock_guard<std::mutex> child_lock(m_mutex_child_locking);
-
-		for (std::mutex* lock : locks)
-			lock->lock();
-
-		return locks;
-	}
+//	std::set<std::mutex*> lock_children(const PosArray& list_pos_leafs_)
+//	{
+//		using MutexSet = std::set<std::mutex*>;
+//		using MutexIter = boost::indirect_iterator<MutexSet::iterator>;
+//
+//		MutexSet mutexes;
+//		for (const VecDi& pos : list_pos_leafs_)
+//			mutexes.insert(&m_grid_dphi.child(m_grid_dphi.pos_child(pos)).lookup().mutex());
+//
+//		MutexIter first(mutexes.begin()), last(mutexes.end());
+//		boost::lock(first, last);
+//
+//		return mutexes;
+//	}
 
 	/**
 	 * Update delta phi grid at given points with amount determined by Gaussian
@@ -1260,6 +1259,7 @@ public:
 
 				#endif
 
+
 				// Update delta phi grid.
 				grid_dphi_child.add(pos, dist, layer_idx);
 			}
@@ -1808,12 +1808,12 @@ protected:
 					#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 					if (num_converge_steps == MAX_CONVERGE_STEPS)
 					{
-						std::cerr << "WARNING: raycast failed to get to distance < "
-							<< TINY << ".\n"
-							<< "dir(" << felt::format(dir) << ");"
-							<< " normal(" << felt::format(normal) << ");"
-							<< " sample(" << felt::format(pos_sample) << ")"
-							<< " at dist " << dist;
+//						std::cerr << "WARNING: raycast failed to get to distance < "
+//							<< TINY << ".\n"
+//							<< "dir(" << felt::format(dir) << ");"
+//							<< " normal(" << felt::format(normal) << ");"
+//							<< " sample(" << felt::format(pos_sample) << ")"
+//							<< " at dist " << dist;
 					}
 					#endif
 

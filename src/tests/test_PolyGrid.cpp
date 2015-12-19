@@ -12,9 +12,12 @@
 #include "Utils.hpp"
 
 using namespace felt;
-
 /**
- * Tests for the PolyGrid class.
+ * @ingroup Tests
+ * @defgroup PolygonisationTests
+ * @{
+ * 	@name PolyGrid
+ * 	@ref felt::PolyGrid
  */
 BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
@@ -718,3 +721,9 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 	}
 
 BOOST_AUTO_TEST_SUITE_END()
+/** @} */ // End group Tests.
+
+/**
+ *  @class felt::PolyGrid
+ *  @test see @ref Tests
+ */

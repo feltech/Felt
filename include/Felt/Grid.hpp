@@ -331,6 +331,10 @@ public:
 	/**
 	 * Initialise a grid with given dimension, offset and delta x.
 	 *
+	 * @snippet test_Grid.cpp Initialsing grid size
+	 * @snippet test_Grid.cpp Offsetting the grid
+	 * @snippet test_Grid.cpp Divergence
+	 *
 	 * @param size_ size of grid.
 	 * @param offset_ spatial offset of grid.
 	 * @param delta_ spatial size of a leaf node, for spatial derivative calculation.
@@ -365,6 +369,8 @@ public:
 	/**
 	 * Set grid offset.
 	 *
+	 * @snippet test_Grid.cpp Offsetting the grid
+	 *
 	 * The offset is used to 'centre' the grid, so that e.g. negative
 	 * grid positions can be used. It is equal to the spatial position
 	 * of the zero coordinate.
@@ -391,6 +397,8 @@ public:
 	/**
 	 * Get grid's delta x, \f$ \Delta x \f$ .
 	 *
+	 * @snippet test_Grid.cpp Delta x setter
+	 *
 	 * @return representative spatial size of a leaf node.
 	 */
 	inline const FLOAT& dx () const
@@ -399,7 +407,9 @@ public:
 	}
 
 	/**
-	 * Set grid's delta x, \f$ \Delta x \f$ .
+	 * Set grid's delta x, \f$ \Delta x \f$.
+	 *
+	 * @snippet test_Grid.cpp Delta x setter
 	 *
 	 * @param dx_ the new representative spatial size of a leaf node.
 	 */

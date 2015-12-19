@@ -34,23 +34,29 @@ public:
 };
 
 
-/** @defgroup PartitionedGrids
+/** @addtogroup PartitionedGrids
  *
  *  Spatially partitioned versions of Grid, AlignedArray, LookupGrid and TrackedGrid.
  *
  *  @{
  */
 
+/**
+ * @defgroup Classes Partition grid classes.
+ * @defgroup Traits Traits for CRTP static inheritance.
+ */
 /// Default size of a spatial partition (in each dimension).
 static const UINT DEFAULT_PARTITION = 4;
 
 /**
+ * @ingroup Traits
  * Base traits class for classes CRTP derived from PartitionBase.
  */
 template <class Derived> struct PartitionBaseTraits {};
 
 
 /**
+ * @ingroup Classes
  * Base class for spatially partitioned structures.
  *
  * A TrackedGrid is used to store and track arbitrary Child structures. The grid as a whole has a
@@ -297,6 +303,7 @@ public:
 
 
 /**
+ * @ingroup Traits
  * Base traits class for classes CRTP derived from PartitionedArrayBase.
  *
  * @tparam Derived the CRTP derived class
@@ -305,6 +312,7 @@ template <class Derived> struct PartitionedArrayBaseTraits {};
 
 
 /**
+ * @ingroup Classes
  * Base class for common features of PartitionedArray template specialisations.
  */
 template <class Derived>
@@ -348,6 +356,7 @@ public:
 
 
 /**
+ * @ingroup Traits
  * Traits for PartitionBase to understand PartitionedArrayBase.
  *
  * Just forward the traits defined for PartitionedArrayBase subclasses.
@@ -367,6 +376,7 @@ struct PartitionBaseTraits<PartitionedArrayBase<Derived> >
 
 
 /**
+ * @ingroup Classes
  * Spatially partitioned expandable lists.
  *
  * A specialised partitioned grid, where the child grids are simply expandable lists.
@@ -437,6 +447,7 @@ public:
 
 
 /**
+ * @ingroup Traits
  * Traits of PartitionedArray for CRTP inheritance from PartitionedArrayBase.
  *
  * @tparam T type to store in elements of the list
@@ -458,6 +469,7 @@ struct PartitionedArrayBaseTraits<PartitionedArray<T, D, N> >
 
 
 /**
+ * @ingroup Classes
  * Spatially partitioned expandable list - 1D array specialisation.
  *
  * A specialised partitioned grid, where the child grids are simply
@@ -539,6 +551,7 @@ public:
 };
 
 /**
+ * @ingroup Traits
  * Traits of 1D PartitionedArray for CRTP inheritance from PartitionedArrayBase.
  *
  * @tparam T data type stored in array.
@@ -558,12 +571,14 @@ struct PartitionedArrayBaseTraits<PartitionedArray<T, D, 0> >
 };
 
 /**
+ * @ingroup Traits
  * Base traits class for classes CRTP derived from PartitionedGridBase.
  */
 template <class Derived> struct PartitionedGridBaseTraits {};
 
 
 /**
+ * @ingroup Classes
  * Base class for spatially partitioned grid storing arbitrary values.
  *
  * Uses multiple inheritance from child grid (MixinType) class, spoofing the signature,
@@ -808,6 +823,7 @@ public:
 
 
 /**
+ * @ingroup Traits
  * Traits for PartitionBase to understand PartitionedGridBase.
  *
  * Just forward the traits defined for PartitionedGridBase subclasses.
@@ -829,6 +845,7 @@ struct PartitionBaseTraits<PartitionedGridBase<Derived> >
 
 
 /**
+ * @ingroup Classes
  * Standard spatially partitioned grid storing arbitrary data.
  *
  * @tparam T the type of data to store in the grid.
@@ -845,6 +862,7 @@ public:
 };
 
 /**
+ * @ingroup Traits
  * Traits for GridBase to understand PartitionedGrid.
  *
  * @tparam T the type of data to store in the grid.
@@ -865,6 +883,7 @@ struct GridBaseTraits<PartitionedGrid<T, D> >
 
 
 /**
+ * @ingroup Traits
  * Traits for PartitionedGridBase to understand PartitionedGrid.
  *
  * @tparam T the type of data to store in the grid.
@@ -891,6 +910,7 @@ struct PartitionedGridBaseTraits<PartitionedGrid<T, D> >
 
 
 /**
+ * @ingroup Classes
  * Container wrapping iterator through leafs of a partitioned grid.
  *
  * @tparam G grid type to iterate over.
@@ -1074,6 +1094,7 @@ public:
 
 
 /**
+ * @ingroup Traits
  * Base traits for spatially partitioned wrapper for lookup and tracked grid.
  *
  * @tparam Derived the CRTP derived class
@@ -1082,6 +1103,7 @@ template <class Derived> struct TrackingPartitionedGridTraits {};
 
 
 /**
+ * @ingroup Classes
  * Base class for spatially partitioned wrappers for LookupGrid and TrackedGrid.
  *
  * @tparam Derived the CRTP derived class.
@@ -1213,6 +1235,7 @@ private:
 
 
 /**
+ * @ingroup Traits
  * Traits for PartitionedGridBase to understand TrackingPartitionedGridBase.
  *
  * Just forward the traits defined for TrackingPartitionedGridBase subclasses.
@@ -1240,6 +1263,7 @@ struct PartitionedGridBaseTraits<TrackingPartitionedGridBase<Derived> >
 
 
 /**
+ * @ingroup Classes
  * Spatially partitioned wrapper for TrackedGrid.
  *
  * @tparam T type of value stored in leaf grid nodes.
@@ -1347,6 +1371,7 @@ public:
 
 
 /**
+ * @ingroup Traits
  * Traits for TrackedGridBase to understand TrackedPartitionedGrid.
  *
  * @tparam T type of value stored in leaf grid nodes.
@@ -1368,6 +1393,7 @@ struct TrackedGridBaseTraits<TrackedPartitionedGrid<T, D, N> >
 
 
 /**
+ * @ingroup Traits
  * Traits for TrackingPartitionedGrid to understand TrackedPartitionedGrid.
  *
  * @tparam T type of value stored in leaf grid nodes.
@@ -1394,6 +1420,7 @@ struct TrackingPartitionedGridTraits<TrackedPartitionedGrid<T, D, N> >
 };
 
 /**
+ * @ingroup Classes
  * Spatially partitioned wrapper for SharedTrackedGrid.
  *
  * @tparam T type of value stored in leaf grid nodes.
@@ -1475,6 +1502,7 @@ public:
 
 
 /**
+ * @ingroup Traits
  * Traits class for TrackedGridBase to understand SharedTrackedPartitionedGrid.
  *
  * @tparam T type of value stored in leaf grid nodes.
@@ -1496,7 +1524,8 @@ struct TrackedGridBaseTraits<SharedTrackedPartitionedGrid<T, D, N> >
 
 
 /**
- * Traits class for TrackingPartitionedGrid to understand SharedTrackedPartitionedGrid.
+ * @ingroup Traits
+ * Traits class for TrackingPartitionedGridBase to understand SharedTrackedPartitionedGrid.
  *
  * @tparam T type of value stored in leaf grid nodes.
  * @tparam D dimension of the grid.
@@ -1523,6 +1552,7 @@ struct TrackingPartitionedGridTraits<SharedTrackedPartitionedGrid<T, D, N> >
 
 
 /**
+ * @ingroup Classes
  * Spatially partitioned wrapper for LookupGrid.
  *
  * @tparam D dimension of the grid.
@@ -1540,7 +1570,8 @@ public:
 
 
 /**
- * Traits class for TrackingPartitionedGrid to understand LookupPartitionedGrid.
+ * @ingroup Traits
+ * Traits class for TrackingPartitionedGridBase to understand LookupPartitionedGrid.
  *
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
@@ -1566,6 +1597,7 @@ struct TrackingPartitionedGridTraits<LookupPartitionedGrid<D, N> >
 
 
 /**
+ * @ingroup Traits
  * Traits class for LookupGridBase to understand LookupPartitionedGrid.
  *
  * Just copy relevant traits from TrackingPartitionedGridTraits.
@@ -1590,6 +1622,7 @@ struct LookupGridBaseTraits<LookupPartitionedGrid<D, N> >
 
 
 /**
+ * @ingroup Classes
  * Spatially partitioned wrapper for SharedLookupGrid.
  *
  * @tparam D dimension of the grid.
@@ -1607,7 +1640,8 @@ public:
 
 
 /**
- * Traits class for TrackingPartitionedGrid to understand SharedLookupPartitionedGrid.
+ * @ingroup Traits
+ * Traits class for TrackingPartitionedGridBase to understand SharedLookupPartitionedGrid.
  *
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
@@ -1634,6 +1668,7 @@ struct TrackingPartitionedGridTraits<SharedLookupPartitionedGrid<D, N> >
 
 
 /**
+ * @ingroup Traits
  * Traits class for SharedLookupGridBase to understand SharedLookupPartitionedGrid.
  *
  * Just copy relevant traits from TrackingPartitionedGridTraits.
@@ -1658,5 +1693,5 @@ struct SharedLookupGridBaseTraits<SharedLookupPartitionedGrid<D, N> >
 
 /** @} */ // End group LookupGrid.
 
-}
+} // End namespace felt.
 #endif /* PARTITIONEDGRID_HPP_ */

@@ -9,12 +9,18 @@
 #include "Utils.hpp"
 
 using namespace felt;
-
-/*
- * Test the Poly library.
+/**
+ * @ingroup Tests
+ * @defgroup PolygonisationTests Polygonisation Tests
+ *
+ * Tests for polygonisation of scalar field within narrow band of felt::Surface.
+ *
+ * @{
+ * 	@name Poly
+ * 	@ref felt::Poly
  */
 BOOST_AUTO_TEST_SUITE(test_Poly)
-	/*
+	/**
 	 * Initialsing.
 	 */
 	BOOST_AUTO_TEST_CASE(init)
@@ -295,7 +301,8 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 	}
 
 	/**
-	 * Test corner bitmask translates to edge mask and vertex order lookup.
+	 * Ensure corner bitmask translates to edge mask and vertex order lookup.
+	 *
 	 * Calculate vertices from edge mask and join them to make CCW ordered
 	 * simplices using vertex ordering lookup. 2D.
 	 */
@@ -370,6 +377,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 
 	/**
 	 * Test corner bitmask translates to edge mask and vertex order lookup.
+	 *
 	 * Calculate vertices from edge mask and join them to make CCW ordered
 	 * simplices using vertex ordering lookup. 3D.
 	 */
@@ -601,3 +609,11 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		BOOST_CHECK_EQUAL(poly.vtx().size(), 30);
 	}
 BOOST_AUTO_TEST_SUITE_END()
+
+
+/** @} */ // End group Tests.
+
+/**
+ *  @class felt::Poly
+ *  @test see @ref Tests
+ */

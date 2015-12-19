@@ -9,33 +9,37 @@
 
 using namespace felt;
 
-/*
+/**
  * Test the Grid library.
  */
 BOOST_AUTO_TEST_SUITE(test_Grid)
 
-	/*
-	 * Initialsing grid dimensions.
+	/**
+	 * Initialsing grid size.
 	 */
 	BOOST_AUTO_TEST_CASE(dimensions)
 	{
-		Vec3u vec_Dims(3, 7, 11);
-
-		Grid <FLOAT,3> grid(vec_Dims);
-
+		//! [Initialsing grid size]
+		// ==== Setup ====
+		const Vec3u size(3, 7, 11);
+		Grid <FLOAT, 3> grid(size);
 		const Vec3u& dims = grid.dims();
 
-		BOOST_CHECK_EQUAL((size_t)dims(0), (size_t)3);
-		BOOST_CHECK_EQUAL((size_t)dims(1), (size_t)7);
-		BOOST_CHECK_EQUAL((size_t)dims(2), (size_t)11);
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL((UINT)dims(0), 3);
+		BOOST_CHECK_EQUAL((UINT)dims(1), 7);
+		BOOST_CHECK_EQUAL((UINT)dims(2), 11);
+		BOOST_CHECK_EQUAL(grid.data().size(), (3*7*11));
 
-		BOOST_CHECK_EQUAL(grid.data().size(), (size_t)(3*7*11));
+		// ==== Action ====
+		grid.dims(Vec3u(5, 11, 13));
 
-		grid.dims(Vec3u(5,11,13));
-		BOOST_CHECK_EQUAL(grid.data().size(), (size_t)(5*11*13));
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.data().size(), (5*11*13));
+		//! [Initialsing grid size]
 	}
 
-	/*
+	/**
 	 * Getting/setting grid values.
 	 */
 	BOOST_AUTO_TEST_CASE(get_and_set)
@@ -56,13 +60,13 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 		BOOST_CHECK_EQUAL(test_const, 17.0f);
 	}
 
-	/*
+	/**
 	 * Getting grid point indices.
 	 */
 	BOOST_AUTO_TEST_CASE(get_indices)
 	{
 		Grid <FLOAT,2> grid(Vec2u(3, 4), Vec2i(-1,-1));
-/*
+/**
 	Row major order: (x,y) =>
 	(-1,-1),(-1,0),	(-1,1),	(-1,2)
 	(0,-1),	(0,0),	(0,1),	(0,2)
@@ -76,7 +80,7 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 	}
 
 
-	/*
+	/**
 	 * Fill grid with a value.
 	 */
 	BOOST_AUTO_TEST_CASE(filling)
@@ -93,7 +97,7 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 		BOOST_CHECK_EQUAL(sum, 3*7*11 * 7);
 	}
 
-	/*
+	/**
 	 * Check position is within grid.
 	 */
 	BOOST_AUTO_TEST_CASE(inside_outside_check)
@@ -106,29 +110,38 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 		BOOST_CHECK_EQUAL(grid.inside(Vec3i(3,7,11)), false);
 	}
 
-	/*
+	/**
 	 * Offsetting the grid.
 	 */
 	BOOST_AUTO_TEST_CASE(offsetting)
 	{
+		//! [Offsetting the grid]
+		// ==== Setup ====
 		Grid <FLOAT,3> grid(Vec3u(7, 11, 13), Vec3i(-3,-3,-3));
 
+		// ==== Confirm ====
 		BOOST_CHECK_EQUAL(grid.inside(Vec3i(-2,0,0)), true);
 		BOOST_CHECK_EQUAL(grid.inside(Vec3i(-4,0,0)), false);
 
+		// ==== Action ====
 		grid.offset(Vec3i(-1,-1,-1));
+
+		// ==== Confirm ====
 		BOOST_CHECK_EQUAL(grid.inside(Vec3i(-1,0,0)), true);
 		BOOST_CHECK_EQUAL(grid.inside(Vec3i(-2,0,0)), false);
 
+		// ==== Action ====
 		grid(Vec3i(-1,-1,-1)) = 21.0f;
 		grid(Vec3i(-1,0,-1)) = 23.0f;
 
+		// ==== Confirm ====
 		BOOST_CHECK_EQUAL((FLOAT)grid.data()(0), 21.0f);
 		BOOST_CHECK_EQUAL(grid(Vec3i(-1,0,-1)), 23.0f);
+		//! [Offsetting the grid]
 	}
 
 
-	/*
+	/**
 	 * Forward differencing.
 	 */
 	BOOST_AUTO_TEST_CASE(grad_forward)
@@ -176,7 +189,7 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 	}
 
 
-	/*
+	/**
 	 * Backward differencing.
 	 */
 	BOOST_AUTO_TEST_CASE(grad_backward)
@@ -226,7 +239,7 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 	}
 
 
-	/*
+	/**
 	 * Central differencing.
 	 */
 	BOOST_AUTO_TEST_CASE(grad_central)
@@ -260,7 +273,7 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 		// 3D.
 		{
 			Grid <FLOAT,3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1));
-/*
+/**
 	Row major order: (x,y,z) =>
 	(-1,-1,-1),	(-1,-1, 0),	(-1,-1, 1)
 	(-1, 0,-1),	(-1, 0, 0),	(-1, 0, 1)
@@ -325,31 +338,35 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 	}
 
 
-	/*
+	/**
 	 * Divergence.
 	 */
-	BOOST_AUTO_TEST_CASE(divergence__d2f_by_dx2)
+	BOOST_AUTO_TEST_CASE(divergence_d2f_by_dx2)
 	{
+		//! [Divergence] Divergence
+		// ==== Setup ====
 		Grid <FLOAT,3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1), 2);
+		grid.data() <<	1,	1,	1,
+						1,	1,	1,
+						1,	1,	1,
 
-		grid.data() <<
-			1,	1,	1,
-			1,	1,	1,
-			1,	1,	1,
+						1,	1,	1,
+						1,	0,	1,
+						1,	1,	1,
 
-			1,	1,	1,
-			1,	0,	1,
-			1,	1,	1,
+						1,	1,	1,
+						1,	1,	1,
+						1,	1,	1;
 
-			1,	1,	1,
-			1,	1,	1,
-			1,	1,	1;
+		// ==== Action ====
+		const FLOAT& d2f_by_dx2 = grid.divergence(Vec3i(0,0,0));
 
-		const FLOAT d2f_by_dx2__negative = grid.divergence(Vec3i(0,0,0));
-		BOOST_CHECK_CLOSE(d2f_by_dx2__negative, -0.75f, 0.00001f);
+		// ==== Confirm ====
+		BOOST_CHECK_CLOSE(d2f_by_dx2, -0.75f, 0.00001f);
+		//! [Divergence]
 	}
 
-	/*
+	/**
 	 * Using delta x.
 	 */
 	BOOST_AUTO_TEST_CASE(delta_x)
@@ -358,11 +375,19 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 
 		// Default and explicitly setting.
 		{
+			//! [Delta x setter]
+			// ==== Setup ====
 			Grid <FLOAT,2> grid(Vec2u(3, 3), Vec2i(-1,-1));
+
+			// ==== Confirm ====
 			BOOST_CHECK_EQUAL(grid.dx(), 1.0f);
 
+			// ==== Action ====
 			grid.dx(2.0f);
+
+			// ==== Confirm ====
 			BOOST_CHECK_EQUAL(grid.dx(), 2.0f);
+			//! [Delta x setter]
 		}
 
 		// Setting at construction.
@@ -392,13 +417,13 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 		}
 	}
 
-	/*
+	/**
 	 * Interpolation.
 	 */
 	BOOST_AUTO_TEST_CASE(interpolate1D)
 	{
 		Grid <FLOAT,1> grid = Grid <FLOAT,1>();
-/*
+/**
 		0----1
 */
 		{
@@ -417,7 +442,7 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 	BOOST_AUTO_TEST_CASE(interpolate2D)
 	{
 		Grid <FLOAT,2> grid = Grid <FLOAT,2>();
-/*
+/**
 		10----11
 		|	   |
 		|	   |
@@ -425,10 +450,10 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 */
 		{
 			std::vector<FLOAT> input = std::vector<FLOAT>(4);
-			input[0 /*00*/] = 2.0f;
-			input[1 /*01*/] = 0;
-			input[2 /*10*/] = 0.0f;
-			input[3 /*11*/] = 1.0;
+			input[0 /**00*/] = 2.0f;
+			input[1 /**01*/] = 0;
+			input[2 /**10*/] = 0.0f;
+			input[3 /**11*/] = 1.0;
 
 			Vec2f pos(0.8f, 0.5f);
 
@@ -446,7 +471,7 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 
 	BOOST_AUTO_TEST_CASE(interpolate3D)
 	{
-/*
+/**
 		  011----111
 		 /|		  /|
 		010----011 |
@@ -458,32 +483,32 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 
 		{
 			std::vector<FLOAT> input = std::vector<FLOAT>(8);
-			input[0 /*000*/] = 0.0f;
-			input[1 /*001*/] = 0.8f;
-			input[2 /*010*/] = 1.0f;
-			input[3 /*011*/] = 1.0f;
-			input[4 /*100*/] = 0.0f;
-			input[5 /*101*/] = 0.0f;
-			input[6 /*110*/] = 1.0f;
-			input[7 /*111*/] = 1.0f;
+			input[0 /**000*/] = 0.0f;
+			input[1 /**001*/] = 0.8f;
+			input[2 /**010*/] = 1.0f;
+			input[3 /**011*/] = 1.0f;
+			input[4 /**100*/] = 0.0f;
+			input[5 /**101*/] = 0.0f;
+			input[6 /**110*/] = 1.0f;
+			input[7 /**111*/] = 1.0f;
 
 			Vec3f pos(0.5f, 0.75f, 0.5f);
 
 			std::vector< FLOAT > output4 = grid.interp(input, pos);
 
-			BOOST_CHECK_EQUAL(output4[0 /*00x*/], 0.4f);
-			BOOST_CHECK_EQUAL(output4[1 /*01x*/], 1.0f);
-			BOOST_CHECK_EQUAL(output4[2 /*10x*/], 0.0f);
-			BOOST_CHECK_EQUAL(output4[3 /*11x*/], 1.0f);
+			BOOST_CHECK_EQUAL(output4[0 /**00x*/], 0.4f);
+			BOOST_CHECK_EQUAL(output4[1 /**01x*/], 1.0f);
+			BOOST_CHECK_EQUAL(output4[2 /**10x*/], 0.0f);
+			BOOST_CHECK_EQUAL(output4[3 /**11x*/], 1.0f);
 
 			input = output4;
 			std::vector< FLOAT > output2 = grid.interp(input, pos);
-			BOOST_CHECK_CLOSE(output2[0 /*0yx*/], 0.85f, 0.00001f);
-			BOOST_CHECK_CLOSE(output2[1 /*1yx*/], 0.75f, 0.00001f);
+			BOOST_CHECK_CLOSE(output2[0 /**0yx*/], 0.85f, 0.00001f);
+			BOOST_CHECK_CLOSE(output2[1 /**1yx*/], 0.75f, 0.00001f);
 
 			input = output2;
 			std::vector< FLOAT > output1 = grid.interp(input, pos);
-			BOOST_CHECK_CLOSE(output1[0 /*zyx*/], 0.8f, 0.00001f);
+			BOOST_CHECK_CLOSE(output1[0 /**zyx*/], 0.8f, 0.00001f);
 		}
 	}
 
@@ -515,7 +540,7 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 	}
 
 
-	/*
+	/**
 	 * Gradient interpolation.
 	 */
 	BOOST_AUTO_TEST_CASE(grad_forwardinterp)
@@ -535,13 +560,13 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 	}
 
 
-	/*
+	/**
 	 * Entropy satisfying gradient.
 	 */
 	BOOST_AUTO_TEST_CASE(grad_entropy_satisfying)
 	{
 		// ==== Setup ====
-		/*
+		/**
 			Row major order: (x,y) =>
 			(-1,-1),(-1,0),	(-1,1)
 			(0,-1),	(0,0),	(0,1)
