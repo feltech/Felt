@@ -369,11 +369,11 @@ public:
 	/**
 	 * Set grid offset.
 	 *
-	 * @snippet test_Grid.cpp Offsetting the grid
-	 *
 	 * The offset is used to 'centre' the grid, so that e.g. negative
 	 * grid positions can be used. It is equal to the spatial position
 	 * of the zero coordinate.
+	 *
+	 * @snippet test_Grid.cpp Offsetting the grid
 	 *
 	 * @param offset_ spatial offset of grid.
 	 */
@@ -421,6 +421,8 @@ public:
 	/**
 	 * Shorthand to access grid values.
 	 *
+	 * @snippet test_Grid.cpp Get and set
+	 *
 	 * @param pos_ position in grid to query.
 	 * @return value represented at given position.
 	 */
@@ -432,6 +434,8 @@ public:
 	/**
 	 * Shorthand to access grid values (const version).
 	 *
+	 * @snippet test_Grid.cpp Get and set
+	 *
 	 * @param pos_ position in grid to query.
 	 * @return value represented at given position.
 	 */
@@ -441,13 +445,7 @@ public:
 	}
 
 	/**
-	 * Get interpolated grid value.
-	 *
-	 * Passing a floating point position vector will initiate a linear
-	 * interpolation of the grid at that real-valued location.
-	 *
-	 * @param pos_ position in grid to query.
-	 * @return linearly interpolated value at given position.
+	 * @copydoc operator()(const VecDf&)
 	 */
 	const LeafType operator() (const VecDf& pos_) const
 	{
@@ -458,6 +456,8 @@ public:
 	 * Get interpolated grid value.
 	 *
 	 * Convenience operator to return linearly interpolated value given a real-valued location.
+	 *
+	 * @snippet test_Grid.cpp Interpolation
 	 *
 	 * @param pos_ position in grid to query.
 	 * @return linearly interpolated value at given position.
@@ -472,6 +472,8 @@ public:
 	 *
 	 * This allows the subclass to mutate the value stored in the grid before it is used.
 	 *
+	 * @snippet test_Grid.cpp Get and set
+	 *
 	 * @param pos_ position in grid to query.
 	 * @return value represented at given position.
 	 */
@@ -481,10 +483,8 @@ public:
 	}
 
 	/**
-	 * Abstract getter to be overriden by subclasses (const version).
-	 *
-	 * @param pos_ position in grid to query.
-	 * @return value represented at given position.
+	 * @copydoc GridBase::get(const VecDi&)
+	 * @brief Const version.
 	 */
 	const RetType& get (const VecDi& pos_) const
 	{
@@ -492,13 +492,7 @@ public:
 	}
 
 	/**
-	 * Get interpolated grid value.
-	 *
-	 * Passing a floating point position vector will initiate a linear
-	 * interpolation of the grid at that real-valued location.
-	 *
-	 * @param pos_ position in grid to query.
-	 * @return linearly interpolated value at given position.
+	 * @copydoc get(const VecDf&)
 	 */
 	const LeafType get (const VecDf& pos_) const
 	{
@@ -508,8 +502,10 @@ public:
 	/**
 	 * Get interpolated grid value.
 	 *
-	 * Passing a floating point position vector will initiate a linear
-	 * interpolation of the grid at that real-valued location.
+	 * Passing a floating point position vector will initiate a linear interpolation of the grid at
+	 * that real-valued location.
+	 *
+	 * @snippet test_Grid.cpp Interpolation
 	 *
 	 * @param pos_ position in grid to query.
 	 * @return linearly interpolated value at given position.
@@ -525,6 +521,8 @@ public:
 	 * The grid is packed in a 1D array, so this method is required to
 	 * get the index in that array of the D-dimensional position.
 	 *
+	 * @snippet test_Grid.cpp Position index
+	 *
 	 * @param pos_ position in grid to query.
 	 * @return index in internal data array of this grid position.
 	 */
@@ -538,6 +536,8 @@ public:
 	 *
 	 * The grid is packed in a 1D array, so this method is required to
 	 * get the index in that array of the D-dimensional position.
+	 *
+	 * @snippet test_Grid.cpp Position index
 	 *
 	 * @param pos_ position in grid.
 	 * @param size_ size of grid.
@@ -565,6 +565,8 @@ public:
 	 *
 	 * Given an index in the 1D grid data array, calculate the position vector that it pertains to.
 	 *
+	 * @snippet test_Grid.cpp Position index
+	 *
 	 * @param idx_ index in internal data array to query.
 	 * @return the position in the grid represented in the data array at given index.
 	 */
@@ -579,6 +581,8 @@ public:
 	 * Given an index and the dimensions and offset of a grid, calculate
 	 * the position vector that the index pertains to in a representative
 	 * 1D array.
+	 *
+	 * @snippet test_Grid.cpp Position index
 	 *
 	 * @param idx_ index in to query.
 	 * @param size_ size of grid.
@@ -980,6 +984,8 @@ x = (idx/Dz)/Dy % Dx
 	/**
 	 * Linear interpolation.
 	 *
+	 * @snippet test_Grid.cpp Interpolation
+
 	 * @param pos_ position in grid to query.
 	 * @return interpolated value at given position.
 	 */
@@ -1270,6 +1276,8 @@ public:
 
 	~Grid ()
 	{}
+
+	using Base::get;
 
 	/**
 	 * Override GridBase::get to simply return the value stored in the grid.

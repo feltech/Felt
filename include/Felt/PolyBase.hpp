@@ -1,6 +1,12 @@
 #include "Surface.hpp"
 
 namespace felt {
+/** @addtogroup Poly
+ *
+ *  Polygonisation of 2D and 3D isogrids.
+ *
+ *  @{
+ */
 
 template <UINT D, class Dummy>
 class PolyBase
@@ -89,15 +95,15 @@ protected:
 	 */
 	static const short vtx_mask [];
 
-	static const Vec2i SpxGridPosOffset;	
-
-	PolyBase<2, Dummy>()
-	{
-	}
-
-	~PolyBase<2, Dummy>()
-	{
-	}
+	/**
+	 * Offset to normalise marching squares/cubes corner ordering.
+	 *
+	 * The marching cubes implementation marches in the negative z-axis, but positive x and y axes.
+	 * Hence an offset is required so that the negative z-axis marching is compensated by shifting
+	 * the calculation in the +z direction by one grid node.
+	 * (NOTE: has no effect for 2D).
+	 */
+	static const Vec2i SpxGridPosOffset;
 };
 
 /**
@@ -186,16 +192,10 @@ protected:
 	 */
 	static const short vtx_mask [];
 
-	static const Vec3i SpxGridPosOffset;	
-
-
-	PolyBase<3, Dummy>()
-	{
-	}
-
-	~PolyBase<3, Dummy>()
-	{
-	}
+	/**
+	 * @copydoc PolyBase<2,Dummy>::SpxGridPosOffset
+	 */
+	static const Vec3i SpxGridPosOffset;
 };
 	
 	
@@ -663,5 +663,8 @@ const short PolyBase<3, Dummy>::vtx_order [][16] = {
 	{0, 9, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	{0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
-};	
+};
+/**
+ * @}
+ */
 }

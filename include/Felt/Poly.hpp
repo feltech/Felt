@@ -44,7 +44,7 @@ namespace felt
 		using VtxTuple = VecDu;
 		/// Vertex array type for primary vertex storage.
 		using VtxArray = std::vector<Vertex>;
-		/// Vertex spatial look type.
+		/// Vertex spatial lookup type.
 		using VtxGrid = TrackedGrid<VtxTuple, D>;
 		/// Simplex type (line or triangle).
 		using typename PolyBase<D, void>::Simplex;

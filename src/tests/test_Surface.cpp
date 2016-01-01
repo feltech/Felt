@@ -15,39 +15,36 @@ BOOST_AUTO_TEST_SUITE(test_Surface)
  */
 BOOST_AUTO_TEST_CASE(init)
 {
+	// ==== Setup ====
 	// Basic initialisation of 2D surface with 2 layers in a 5x5 embedding.
-
 	Surface<2, 2> surface(Vec2u(7, 7));
-	{
-		const Vec2u vec_dims = surface.phi().dims();
+	const Vec2u size = surface.phi().dims();
 
-		BOOST_CHECK_EQUAL((UINT)vec_dims(0), 7);
-		BOOST_CHECK_EQUAL((UINT)vec_dims(1), 7);
+	BOOST_CHECK_EQUAL((UINT)size(0), 7);
+	BOOST_CHECK_EQUAL((UINT)size(1), 7);
 
-		// Usable isogrid should have size=dims-layers and be offset by half
-		// grid width.
-		// In this test case, only the centre point is actually usable, all
-		// other points are reserved for outer layers.
+	// Usable isogrid should have size=dims-layers and be offset by half grid width.
+	// In this test case, only the centre point is actually usable, all other points are
+	// reserved for outer layers.
 
-		const Vec2i pos_min = surface.pos_min();
-		const Vec2i pos_max = surface.pos_max();
+	const Vec2i pos_min = surface.pos_min();
+	const Vec2i pos_max = surface.pos_max();
 
-		BOOST_CHECK_EQUAL(pos_min, Vec2i(0, 0));
-		BOOST_CHECK_EQUAL(pos_max, Vec2i(0, 0));
+	BOOST_CHECK_EQUAL(pos_min, Vec2i(0, 0));
+	BOOST_CHECK_EQUAL(pos_max, Vec2i(0, 0));
 
-		// But actual phi isogrid should have size equal to dims.
+	// But actual phi isogrid should have size equal to dims.
 
-		Surface<2, 2>::PhiGrid& phi = surface.phi();
+	Surface<2, 2>::PhiGrid& phi = surface.phi();
 
-		const Vec2u phi_dims = phi.dims();
-		BOOST_CHECK_EQUAL(phi_dims, Vec2u(7, 7));
+	const Vec2u phi_dims = phi.dims();
+	BOOST_CHECK_EQUAL(phi_dims, Vec2u(7, 7));
 
-		// Grid is initialised to all points 'outside' the surface (since there
-		// is no surface yet).
+	// Grid is initialised to all points 'outside' the surface (since there
+	// is no surface yet).
 
-		const FLOAT val_centre = phi(Vec2i(0, 0));
-		BOOST_CHECK_EQUAL(val_centre, 3);
-	}
+	const FLOAT val_centre = phi(Vec2i(0, 0));
+	BOOST_CHECK_EQUAL(val_centre, 3);
 }
 
 /*

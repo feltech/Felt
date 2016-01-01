@@ -10,7 +10,7 @@
 
 using namespace felt;
 /**
- * @ingroup Tests
+ * @defgroup Tests
  * @defgroup PolygonisationTests Polygonisation Tests
  *
  * Tests for polygonisation of scalar field within narrow band of felt::Surface.
@@ -50,19 +50,6 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		// Create an (uninitialised) 3D simplex (i.e. triangle).
 		Poly<3>::Simplex triangle;
 
-//		// Check offset parameter has been applied to the underlying grid.
-//		BOOST_CHECK_EQUAL(poly2D.grid_vtx().offset(), Vec2i(-4,-4));
-//
-//		// Check the grid has been initialised with "null" values.
-//		BOOST_REQUIRE_EQUAL(
-//			poly2D.grid_vtx()(Vec2i(0,0)),
-//			Poly<2>::NullVtxTuple
-//		);
-//		BOOST_REQUIRE_EQUAL(
-//			poly3D.grid_vtx()(Vec3i(0,0,0)),
-//			Poly<3>::NullVtxTuple
-//		);
-
 		BOOST_CHECK_EQUAL(poly2D.vtx().size(), 0);
 
 		BOOST_CHECK_EQUAL(poly3D.vtx().size(), 0);
@@ -70,15 +57,6 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		// Add dummy vertex and simplex to the polygonisation object.
 		poly3D.vtx().push_back(vertex3D);
 		poly3D.spx().push_back(triangle);
-		// Set edge vertex indices to dummy values.
-		// i.e. grid node at position (0,0,0) references vertex array element
-		// at index 1 for +x, 2 for +y and 3 for +z directions.
-//		poly3D.grid_vtx()(Vec3i(0,0,0)) = Vec3u(1,2,3);
-		// Ensure vertex was added.
-//		BOOST_CHECK_EQUAL(poly3D.vtx().size(), 1);
-//		// Ensure vertex lookup grid is updated.
-//		BOOST_CHECK_EQUAL(poly3D.grid_vtx()(Vec3i(0,0,0)), Vec3u(1,2,3));
-		// Ensure simplex was added to array.
 		BOOST_CHECK_EQUAL(poly3D.spx().size(), 1);
 
 		// Reset the polygonisation.
@@ -86,11 +64,6 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		// Ensure vertices and simplices are destroyed.
 		BOOST_CHECK_EQUAL(poly3D.vtx().size(), 0);
 		BOOST_CHECK_EQUAL(poly3D.spx().size(), 0);
-		// Ensure grid is now back to null.
-//		BOOST_CHECK_EQUAL(
-//			poly3D.grid_vtx()(Vec3i(0,0,0)),
-//			Poly<3>::NullVtxTuple
-//		);
 	}
 
 	/**

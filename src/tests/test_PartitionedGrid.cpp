@@ -8,8 +8,8 @@
 using namespace felt;
 
 /**
- * @ingroup Tests
- * @defgroup PartitionedGridTests Spatially Partitioned Grid Tests
+ * @addtogroup Tests
+ * @addtogroup PartitionedGridTests Spatially Partitioned Grid Tests
  *
  * Test the various spatially partitioned wrappers around felt::Grid based classes.
  *

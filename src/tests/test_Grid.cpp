@@ -44,39 +44,66 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 	 */
 	BOOST_AUTO_TEST_CASE(get_and_set)
 	{
-		Vec3u vec_Dims(3, 7, 11);
+		//! [Get and set]
+		// ==== Setup ====
+		Grid<FLOAT, 3> grid(Vec3u(3, 7, 11));
 
-		Grid <FLOAT,3> grid(Vec3u(3, 7, 11));
-
+		// ==== Action ====
 		grid(Vec3i(0,0,0)) = 13.0f;
 		grid(Vec3i(1,2,3)) = 17.0f;
 		grid(Vec3i(2,6,10)) = 19.0f;
 
-		BOOST_CHECK_EQUAL((FLOAT)grid.data()(0), 13.0f);
-		BOOST_CHECK_EQUAL((FLOAT)grid(Vec3i(1,2,3)), 17.0f);
-		BOOST_CHECK_EQUAL(grid.data()(grid.data().size()-1), (float)19.0f);
-
-		const float test_const = grid(Vec3i(1,2,3));
-		BOOST_CHECK_EQUAL(test_const, 17.0f);
+		// ==== Confirm ====
+		const float& check_get = grid.get(Vec3i(1,2,3));
+		const float& check_op = grid(Vec3i(1,2,3));
+		const float& check_data_start = grid.data()(0);
+		const float& check_data_end = grid.data()(grid.data().size() - 1);
+		BOOST_CHECK_EQUAL(check_get, 17.0f);
+		BOOST_CHECK_EQUAL(check_op, 17.0f);
+		BOOST_CHECK_EQUAL(check_data_start, 13.0f);
+		BOOST_CHECK_EQUAL(check_data_end, 19.0f);
+		//! [Get and set]
 	}
 
 	/**
 	 * Getting grid point indices.
 	 */
-	BOOST_AUTO_TEST_CASE(get_indices)
+	BOOST_AUTO_TEST_CASE(position_index)
 	{
-		Grid <FLOAT,2> grid(Vec2u(3, 4), Vec2i(-1,-1));
-/**
-	Row major order: (x,y) =>
-	(-1,-1),(-1,0),	(-1,1),	(-1,2)
-	(0,-1),	(0,0),	(0,1),	(0,2)
-	(1,-1),	(1,0),	(1,1),	(1,2)
+		//! [Position index]
+		// ==== Setup ====
 
-*/
-		BOOST_CHECK_EQUAL(grid.index(Vec2i(1,0)), 9);
-		Vec2i pos = grid.index(7);
-		BOOST_CHECK_EQUAL((INT)pos(0), 0);
-		BOOST_CHECK_EQUAL((INT)pos(1), 2);
+		using GridType = Grid<FLOAT, 2>;
+
+		const Vec2u size(3, 4);
+		const Vec2i offset(-1, -1);
+
+		GridType grid(size, offset);
+
+		/*
+			Row major order: (x,y) => [
+				(-1,-1),(-1,0),	(-1,1),	(-1,2)
+				(0,-1),	(0,0),	(0,1),	(0,2)
+				(1,-1),	(1,0),	(1,1),	(1,2)
+			]
+		*/
+
+		// ==== Action ====
+
+		const UINT& index_from_pos_static = GridType::index(Vec2i(1, 0), size, offset);
+		const Vec2i& pos_from_index_static = GridType::index(7, size, offset);
+
+		const UINT& index_from_pos = grid.index(Vec2i(1, 0));
+		const Vec2i& pos_from_index = grid.index(7);
+
+		// === Confirm ===
+
+		BOOST_CHECK_EQUAL(index_from_pos_static, 9);
+		BOOST_CHECK_EQUAL(pos_from_index_static, Vec2i(0, 2));
+
+		BOOST_CHECK_EQUAL(index_from_pos, 9);
+		BOOST_CHECK_EQUAL(pos_from_index, Vec2i(0, 2));
+		//! [Position index]
 	}
 
 
@@ -514,6 +541,8 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 
 	BOOST_AUTO_TEST_CASE(interpolate_grid_2D)
 	{
+		//! [Interpolation]
+		// ==== Setup ====
 		Grid <FLOAT,2> grid(Vec2u(3, 3), Vec2i(-1,-1));
 		grid.fill(0);
 		grid(Vec2i(-1,-1)) = 1.0f;
@@ -521,22 +550,23 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 		grid(Vec2i(0,1)) = 2.0f;
 		grid(Vec2i(1,1)) = 2.0f;
 
-		Vec2f pos = Vec2f(0.0f, 0.0f);
+		// ==== Action ====
+		// Via explicit function call.
+		const FLOAT& val1 = grid.interp(Vec2f(0.0f, 0.0f));
+		const FLOAT& val2 = grid.interp(Vec2f(-0.5f, -0.5f));
+		const FLOAT& val3 = grid.interp(Vec2f(0.5f, 0.5f));
+		// Via getter function overload.
+		const FLOAT& val4 = grid.get(Vec2f(0.5f, 0.5f));
+		// Via operator overload.
+		const FLOAT& val5 = grid(Vec2f(0.5f, 0.5f));
 
-		// Explicit call.
-		FLOAT val = grid.interp(pos);
-
-		BOOST_CHECK_CLOSE(val, 0.0f, 0.00001f);
-
-		BOOST_CHECK_CLOSE(grid.interp(Vec2f(-0.5f, -0.5f)), 0.5f, 0.00001f);
-
-
-		BOOST_CHECK_CLOSE(grid.interp(Vec2f(0.5f, 0.5f)), 1.0f, 0.00001f);
-
-		pos = Vec2f(0.5f, 0.5f);
-		// Via operator.
-		val = grid(pos);
-		BOOST_CHECK_CLOSE(val, 1.0f, 0.00001f);
+		// ==== Confirm ====
+		BOOST_CHECK_CLOSE(val1, 0.0f, 0.00001f);
+		BOOST_CHECK_CLOSE(val2, 0.5f, 0.00001f);
+		BOOST_CHECK_CLOSE(val3, 1.0f, 0.00001f);
+		BOOST_CHECK_CLOSE(val4, 1.0f, 0.00001f);
+		BOOST_CHECK_CLOSE(val5, 1.0f, 0.00001f);
+		//! [Interpolation]
 	}
 
 
