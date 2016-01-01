@@ -37,17 +37,17 @@ namespace felt
 		using VecDu = typename GridBase<Derived>::VecDu;
 		using VecDi = typename GridBase<Derived>::VecDi;
 
-		const VecDu& dims = grid.dims();
+		const VecDu& size = grid.size();
 		const VecDi& offset = grid.offset();
 		std::stringstream strGrid;
 		UINT axis_1 = (axis_plane+1) % GridType::Dims;
 		UINT axis_2 = (axis_plane+2) % GridType::Dims;
 		INT z = axis_plane_offset;
-		for (INT x = offset(axis_1); x < (INT)dims(axis_1) + offset(axis_1);
+		for (INT x = offset(axis_1); x < (INT)size(axis_1) + offset(axis_1);
 			x++)
 		{
 			strGrid << std::endl << "|";
-			for (INT y = offset(axis_2); y < (INT)dims(axis_2) + offset(axis_2);
+			for (INT y = offset(axis_2); y < (INT)size(axis_2) + offset(axis_2);
 				y++)
 			{
 				VecDi pos;

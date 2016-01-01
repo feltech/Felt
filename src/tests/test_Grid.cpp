@@ -21,18 +21,17 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 	{
 		//! [Initialsing grid size]
 		// ==== Setup ====
-		const Vec3u size(3, 7, 11);
-		Grid <FLOAT, 3> grid(size);
-		const Vec3u& dims = grid.dims();
+		Grid <FLOAT, 3> grid(Vec3u(3, 7, 11));
+		const Vec3u& size = grid.size();
 
 		// ==== Confirm ====
-		BOOST_CHECK_EQUAL((UINT)dims(0), 3);
-		BOOST_CHECK_EQUAL((UINT)dims(1), 7);
-		BOOST_CHECK_EQUAL((UINT)dims(2), 11);
+		BOOST_CHECK_EQUAL((UINT)size(0), 3);
+		BOOST_CHECK_EQUAL((UINT)size(1), 7);
+		BOOST_CHECK_EQUAL((UINT)size(2), 11);
 		BOOST_CHECK_EQUAL(grid.data().size(), (3*7*11));
 
 		// ==== Action ====
-		grid.dims(Vec3u(5, 11, 13));
+		grid.size(Vec3u(5, 11, 13));
 
 		// ==== Confirm ====
 		BOOST_CHECK_EQUAL(grid.data().size(), (5*11*13));

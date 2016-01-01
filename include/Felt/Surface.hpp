@@ -165,7 +165,7 @@ public:
 	Surface () = default;
 
 	/**
-	 * Construct a level set embedding of size dims.
+	 * Construct a level set embedding of size size.
 	 *
 	 * All points will be marked as outside the surface (i.e. no surface).
 	 *
@@ -189,7 +189,7 @@ public:
 	void init (
 		const VecDu& size_, const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION)
 	) {
-		this->dims(size_, size_partition_);
+		this->size(size_, size_partition_);
 	}
 
 	/**
@@ -235,29 +235,29 @@ public:
 	 * sparse field layers. Also calculates and stores the spatial limits
 	 * of the grid accounting for the narrow band space required.
 	 *
-	 * @param udims
+	 * @param usize
 	 */
-	void dims (const VecDu& udims_, const VecDu& dims_partition)
+	void size (const VecDu& usize_, const VecDu& size_partition)
 	{
-		const VecDi idims = udims_.template cast<INT>();
-		const VecDi offset = -idims/2;
+		const VecDi isize = usize_.template cast<INT>();
+		const VecDi offset = -isize/2;
 
-		m_grid_isogrid.init(udims_, offset, dims_partition);
+		m_grid_isogrid.init(usize_, offset, size_partition);
 
 		// Configure delta isogrid embedding.
-		m_grid_disogrid.init(udims_, offset, dims_partition);
+		m_grid_disogrid.init(usize_, offset, size_partition);
 		// Configure status change partitioned lists.
-		m_grid_status_change.init(udims_, offset, dims_partition);
+		m_grid_status_change.init(usize_, offset, size_partition);
 
 		// Configure de-dupe grid for neighbourhood queries.
-		m_grid_affected.init(udims_, offset, dims_partition);
+		m_grid_affected.init(usize_, offset, size_partition);
 
 		// Store min and max usable positions in isogrid embedding.
 		this->pos_min(
 			VecDi::Constant(L + 1) + m_grid_isogrid.offset()
 		);
 		this->pos_max(
-			(idims - VecDi::Constant(L + 1))
+			(isize - VecDi::Constant(L + 1))
 			+ m_grid_isogrid.offset() - VecDi::Constant(1)
 		);
 		// Fill isogrid grid with 'outside' value.
@@ -653,11 +653,11 @@ public:
 //		PosArray list;
 //		const INT w = Distance;
 //		const VecDi offset = VecDi::Constant(-w/2);
-//		const VecDu dims = VecDu::Constant(w);
+//		const VecDu size = VecDu::Constant(w);
 //		const VecDi pos_centre_rounded = round(pos_centre);
 //		for (UINT i = 0; i < std::pow(w, D); i++)
 //		{
-//			const VecDi& pos_offset = Grid<UINT, D>::index(i, dims, offset);
+//			const VecDi& pos_offset = Grid<UINT, D>::index(i, size, offset);
 //			const VecDi& pos_neigh = pos_offset + pos_centre_rounded;
 //			if (this->layer_id(pos_neigh) == 0)
 //				list.push_back(pos_neigh);
@@ -971,7 +971,7 @@ public:
 	void seed (const VecDi& pos_centre)
 	{
 		IsoGrid& isogrid = this->isogrid();
-		const VecDu dims = isogrid.dims();
+		const UINT dims = isogrid.size().size();
 
 		// Width of seed.
 		const VecDi vec_width = VecDi::Constant(L);
@@ -981,31 +981,28 @@ public:
 		const VecDi pos_max = pos_centre + vec_width;
 
 		// Get vector size of window formed by pos_min and pos_max.
-		const VecDu pos_size = (
+		const VecDu window_size = (
 			pos_max - pos_min + VecDi::Constant(1)
 		).template cast<UINT>(); //+1 for zero coord.
 
-		// Calculate number of grid points to be cycled through within
-		// window.
-		UINT size = 1;
-		for (INT axis = 0; axis < dims.size(); axis++)
-			size *= pos_size(axis);
+		// Calculate number of grid points to be cycled through within window.
+		UINT total_size = 1;
+		for (INT axis = 0; axis < dims; axis++)
+			total_size *= window_size(axis);
 
 		// Cycle through each point in window.
-		for (UINT u_pos = 0; u_pos <= size; u_pos++)
+		for (UINT idx_pos = 0; idx_pos <= total_size; idx_pos++)
 		{
-			// Calculate vector position from integer index,
-			// using Felt::Grid utility function, index().
-			VecDi pos = IsoGrid::index(u_pos, pos_size);
+			// Calculate vector position from integer index, using Felt::Grid utility function,
+			// index().
+			VecDi pos = IsoGrid::index(idx_pos, window_size);
 			// Translate position into isogrid grid space.
 			pos += pos_min;
 			// Calculate vector distance from this position to seed centre.
 			const VecDi vec_dist = pos - pos_centre;
-			// Sum of absolute distance along each axis == city-block
-			// distance.
+			// Sum of absolute distance along each axis == city-block distance.
 			FLOAT f_dist = (FLOAT)vec_dist.template lpNorm<1>();
-			// Check distance indicates that this point is within the
-			// narrow band.
+			// Check distance indicates that this point is within the narrow band.
 			if ((UINT)std::abs(this->layer_id(f_dist)) <= L)
 			{
 				// Set distance as value in isogrid grid.
@@ -1677,7 +1674,7 @@ public:
 				// If casting in -'ve direction, get maximum extent.
 				if (dir_dim == -1)
 				{
-					pos_grid_dim = m_grid_isogrid.offset()(dim) + m_grid_isogrid.dims()(dim);
+					pos_grid_dim = m_grid_isogrid.offset()(dim) + m_grid_isogrid.size()(dim);
 					if (pos_plane_dim < pos_grid_dim)
 						continue;
 				}
@@ -1714,7 +1711,7 @@ public:
 
 			// Keep marching along planes, casting ray to each and adding any candidate child
 			// grids to the tracking list.
-			const FLOAT& child_size_dim = m_grid_isogrid.child_dims()(dim);
+			const FLOAT& child_size_dim = m_grid_isogrid.child_size()(dim);
 			while (true)
 			{
 				pos_plane(dim) += dir_dim * child_size_dim;
@@ -1865,13 +1862,13 @@ protected:
 	{
 		// Real-valued child pos translated to [0, 2*childsize) space.
 		FLOAT pos_plane_dim = (
-			FLOAT(pos - m_grid_isogrid.offset()(dim)) / m_grid_isogrid.child_dims()(dim)
+			FLOAT(pos - m_grid_isogrid.offset()(dim)) / m_grid_isogrid.child_size()(dim)
 		);
 		// Round to next child en route in [0, 2*childsize) space.
 		pos_plane_dim = (dir == -1) ?
 			std::floor(pos_plane_dim) : std::ceil(pos_plane_dim);
 		// Scale back to isogrid grid in [0, 2*fullsize) space.
-		pos_plane_dim *= m_grid_isogrid.child_dims()(dim);
+		pos_plane_dim *= m_grid_isogrid.child_size()(dim);
 		// Translate back to isogrid grid in [-fullsize, fullsize) space.
 		pos_plane_dim += m_grid_isogrid.offset()(dim);
 

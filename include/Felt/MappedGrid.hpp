@@ -96,7 +96,7 @@ public:
 		m_a_pos = other_.m_a_pos;
 		this->m_data = other_.m_data;
 		this->m_offset = other_.m_offset;
-		this->m_dims = other_.m_dims;
+		this->m_size = other_.m_size;
 	}
 
 	/**
@@ -111,7 +111,7 @@ public:
 		m_a_pos = std::move(other_.m_a_pos);
 		this->m_data = std::move(other_.m_data);
 		this->m_offset = std::move(other_.m_offset);
-		this->m_dims = std::move(other_.m_dims);
+		this->m_size = std::move(other_.m_size);
 	}
 
 	/**
@@ -126,7 +126,7 @@ public:
 		m_a_pos = other_.m_a_pos;
 		this->m_data = other_.m_data;
 		this->m_offset = other_.m_offset;
-		this->m_dims = other_.m_dims;
+		this->m_size = other_.m_size;
 		return *this;
 	}
 
@@ -142,7 +142,7 @@ public:
 		m_a_pos = std::move(other_.m_a_pos);
 		this->m_data = std::move(other_.m_data);
 		this->m_offset = std::move(other_.m_offset);
-		this->m_dims = std::move(other_.m_dims);
+		this->m_size = std::move(other_.m_size);
 		return *this;
 	}
 
@@ -190,13 +190,13 @@ public:
 	 *
 	 * @param size_ new size of the grid.
 	 */
-	void dims (const VecDu& size_)
+	void size (const VecDu& size_)
 	{
-		Base::dims(size_);
+		Base::size(size_);
 		this->fill(NULL_IDX_TUPLE);
 	}
 
-	using Base::dims;
+	using Base::size;
 
 	/**
 	 * Get tracking list by id.
@@ -699,7 +699,7 @@ protected:
 	Lookup		m_grid_lookup;
 public:
 	using Base::offset;
-	using Base::dims;
+	using Base::size;
 
 	/**
 	 * Explicitly defined default constructor.
@@ -737,10 +737,10 @@ public:
 	 *
 	 * @param size_ new size of the grid.
 	 */
-	void dims (const VecDu& size_)
+	void size (const VecDu& size_)
 	{
-		Base::dims(size_);
-		m_grid_lookup.dims(size_);
+		Base::size(size_);
+		m_grid_lookup.size(size_);
 	}
 
 	/**

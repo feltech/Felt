@@ -133,20 +133,20 @@ namespace felt
 		 *
          * @param isogrid the signed distance grid to polygonise.
           */
-		Poly (const VecDu& dims_, const VecDi& offset_) : m_grid_vtx()
+		Poly (const VecDu& size_, const VecDi& offset_) : m_grid_vtx()
 		{
-			this->init(dims_, offset_);
+			this->init(size_, offset_);
 		}
 
 		/**
 		 * Initialise with given dimensions and offset.
 		 *
-		 * @param dims_
+		 * @param size_
 		 * @param offset_
 		 */
-		void init (const VecDu& dims_, const VecDi& offset_)
+		void init (const VecDu& size_, const VecDi& offset_)
 		{
-			m_grid_vtx.init(dims_, offset_);
+			m_grid_vtx.init(size_, offset_);
 			m_grid_vtx.fill(NULL_VTX_TUPLE);
 		}
 
@@ -395,7 +395,7 @@ namespace felt
 		template <UINT L>
 		void surf(const Surface<D, L>& surface)
 		{
-			LookupGrid_t grid_dupe(m_grid_vtx.dims(), m_grid_vtx.offset());
+			LookupGrid_t grid_dupe(m_grid_vtx.size(), m_grid_vtx.offset());
 			for (VecDi pos_centre : surface.layer(0))
 				for (const VecDi& pos_offset : corners)
 				{

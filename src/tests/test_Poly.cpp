@@ -29,9 +29,9 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		Surface<3> surface3D(Vec3u(9,9,9));
 		// Create a 2D polygonisation in a 9x9 embedding, offset by (-4,-4)
 		// so that (0,0) in coordinate space translates to (5,5) in grid space.
-		Poly<2> poly2D(surface2D.isogrid().dims(), surface2D.isogrid().offset());
+		Poly<2> poly2D(surface2D.isogrid().size(), surface2D.isogrid().offset());
 		// Similarly, create a 3D polygonisation in a 9x9x9 embedding.
-		Poly<3> poly3D(surface3D.isogrid().dims(), surface3D.isogrid().offset());
+		Poly<3> poly3D(surface3D.isogrid().size(), surface3D.isogrid().offset());
 
 		// Create a 2D vertex, consisting simply of position.
 		Poly<2>::Vertex vertex2D;
@@ -76,8 +76,8 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 
 		Poly<2>::Vertex vertex2D;
 		Poly<3>::Vertex vertex3D;
-		Poly<2> poly2D(surface2D.isogrid().dims(), surface2D.isogrid().offset());
-		Poly<3> poly3D(surface3D.isogrid().dims(), surface3D.isogrid().offset());
+		Poly<2> poly2D(surface2D.isogrid().size(), surface2D.isogrid().offset());
+		Poly<3> poly3D(surface3D.isogrid().size(), surface3D.isogrid().offset());
 
 		// Text extremities of grid, ensure no segmentation fault errors.
 		poly2D.idx(surface2D.pos_min(), 0, surface2D.isogrid());
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 	{
 		// Initialise a 2D grid for testing.
 		Surface<2> surface(Vec2u(9,9));
-		Poly<2> poly(surface.isogrid().dims(), surface.isogrid().offset());
+		Poly<2> poly(surface.isogrid().size(), surface.isogrid().offset());
 		surface.isogrid().data() <<
 			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3,
 			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		{
 			// Initialise a surface.
 			Surface<3> surface(Vec3u(13,13,13));
-			Poly<3> poly(surface.isogrid().dims(), surface.isogrid().offset());
+			Poly<3> poly(surface.isogrid().size(), surface.isogrid().offset());
 			unsigned short mask;
 			// At time of init, all points are "outside" the surface (there is
 			// no surface).
@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 	BOOST_AUTO_TEST_CASE(edge_vertices_2D)
 	{
 		Surface<2> surface(Vec2u(9,9));
-		Poly<2> poly(surface.isogrid().dims(), surface.isogrid().offset());
+		Poly<2> poly(surface.isogrid().size(), surface.isogrid().offset());
 		surface.isogrid().data() <<
 			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3,
 			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
@@ -360,7 +360,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 
 		// Initialise a surface.
 		Surface<3> surface(Vec3u(13,13,13));
-		Poly<3> poly(surface.isogrid().dims(), surface.isogrid().offset());
+		Poly<3> poly(surface.isogrid().size(), surface.isogrid().offset());
 		Poly<3>::SpxArray& spxs = poly.spx();
 		Poly<3>::VtxArray& vtxs = poly.vtx();
 
@@ -568,7 +568,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 	{
 		// Initialise a surface.
 		Surface<3> surface(Vec3u(13,13,13));
-		Poly<3> poly(surface.isogrid().dims(), surface.isogrid().offset());
+		Poly<3> poly(surface.isogrid().size(), surface.isogrid().offset());
 		// Initialise a seed and expand it.
 		surface.seed(Vec3i(0,0,0));
 		surface.update_start();

@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		// Initialise a surface.
 		Surface_t surface(Vec3u(15,15,15), Vec3u(5, 5, 5));
 		PolyGrid<3> poly(surface);
-		Poly<3> poly_single(surface.isogrid().dims(), surface.isogrid().offset());
+		Poly<3> poly_single(surface.isogrid().size(), surface.isogrid().offset());
 
 		// Initialise a seed.
 		surface.seed(Vec3i(0,0,0));
@@ -329,7 +329,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		// ==== Setup ====
 		Surface<3, 3> surface(Vec3u(13,13,13), Vec3u(4,4,4));
 		PolyGrid<3> polys(surface);
-		Poly<3> poly(surface.isogrid().dims(), surface.isogrid().offset());
+		Poly<3> poly(surface.isogrid().size(), surface.isogrid().offset());
 
 		surface.seed(Vec3i(0,0,0));
 
@@ -517,8 +517,8 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		// Initialise a 16x16x16 surface with two 16x8x16 partitions.
 		Surface_t surface(Vec3u(16,16,16), Vec3u(16, 8, 16));
 		PolyGrid<3> polys(surface);
-		Poly<3> poly(surface.isogrid().dims(), surface.isogrid().offset());
-		Grid<UINT, 3> grid_spxs_before(polys.dims(), polys.offset());
+		Poly<3> poly(surface.isogrid().size(), surface.isogrid().offset());
+		Grid<UINT, 3> grid_spxs_before(polys.size(), polys.offset());
 
 		// Initialise a seed.
 		surface.seed(Vec3i(0,-4,0));
@@ -600,8 +600,8 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		// Initialise a 24x24x24 surface with two 24x8x24 partitions.
 		Surface_t surface(Vec3u(24,24,24), Vec3u(24, 12, 24));
 		PolyGrid<3> polys(surface);
-		Poly<3> poly(surface.isogrid().dims(), surface.isogrid().offset());
-		Grid<UINT, 3> grid_spxs_before(polys.dims(), polys.offset());
+		Poly<3> poly(surface.isogrid().size(), surface.isogrid().offset());
+		Grid<UINT, 3> grid_spxs_before(polys.size(), polys.offset());
 
 		// Initialise a seed.
 		surface.seed(Vec3i(0,-5,0));
@@ -677,7 +677,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		// ==== Setup ====
 		Surface<3, 3> surface(Vec3u(13,13,13), Vec3u(4,4,4));
 		PolyGrid<3> polys(surface);
-		Poly<3> poly(surface.isogrid().dims(), surface.isogrid().offset());
+		Poly<3> poly(surface.isogrid().size(), surface.isogrid().offset());
 
 		surface.seed(Vec3i(0,0,0));
 

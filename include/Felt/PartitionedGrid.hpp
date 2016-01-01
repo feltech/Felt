@@ -94,9 +94,9 @@ protected:
 	std::mutex	m_mutex_update_branch;
 
 	/// A convenience vector of the (unsigned) size of a partition.
-	VecDu	m_udims_child;
+	VecDu	m_usize_child;
 	/// A convenience vector of the (signed) size of a partition.
-	VecDi 	m_idims_child;
+	VecDi 	m_isize_child;
 
 public:
 	/**
@@ -145,7 +145,7 @@ public:
 		DerivedType* self = static_cast<DerivedType*>(this);
 
 		self->init(partition_size_);
-		self->dims(size_);
+		self->size(size_);
 		self->offset(offset_);
 	}
 
@@ -156,16 +156,16 @@ public:
 	 */
 	void init (const VecDu& partition_size_)
 	{
-		m_udims_child = partition_size_;
-		m_idims_child = partition_size_.template cast<INT>();
+		m_usize_child = partition_size_;
+		m_isize_child = partition_size_.template cast<INT>();
 	}
 
 	/**
 	 * Get size of a spatial partition.
 	 */
-	const VecDu& child_dims() const
+	const VecDu& child_size() const
 	{
-		return m_udims_child;
+		return m_usize_child;
 	}
 
 	/**
@@ -224,20 +224,20 @@ public:
 	 *
 	 * @param grid_size_ overall size of grid.
 	 */
-	void dims (const VecDu& grid_size_)
+	void size (const VecDu& grid_size_)
 	{
 		VecDu branch_size = (
-			grid_size_.array() / m_udims_child.array()
+			grid_size_.array() / m_usize_child.array()
 		).matrix();
 
 		if (
-			(branch_size.array() * m_udims_child.array()).matrix()
+			(branch_size.array() * m_usize_child.array()).matrix()
 			!= grid_size_
 		) {
 			branch_size += VecDu::Constant(1);
 		}
 
-		m_grid_branch.dims(branch_size);
+		m_grid_branch.size(branch_size);
 	}
 
 	/**
@@ -249,7 +249,7 @@ public:
 	void offset (const VecDi& grid_offset_)
 	{
 		const VecDi& branch_offset = (
-			grid_offset_.array() / m_idims_child.array()
+			grid_offset_.array() / m_isize_child.array()
 		).matrix();
 
 		m_grid_branch.offset(branch_offset);
@@ -349,7 +349,7 @@ public:
 	const VecDi pos_child (const VecDi& pos_leaf_) const
 	{
 		return (
-			(pos_leaf_ - m_offset).array() / this->m_idims_child.array()
+			(pos_leaf_ - m_offset).array() / this->m_isize_child.array()
 		).matrix() + this->branch().offset();
 	}
 };
@@ -412,10 +412,10 @@ public:
 	 */
 	PartitionedArray (
 		const VecDu& size_, const VecDi& offset_,
-		const VecDu& dims_partition_ = VecDu::Constant(DEFAULT_PARTITION)
+		const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION)
 	) : Base()
 	{
-		this->init(size_, offset_, dims_partition_);
+		this->init(size_, offset_, size_partition_);
 	}
 
 	/**
@@ -631,7 +631,7 @@ protected:
 
 public:
 	using Base::reset;
-	using MixinType::dims;
+	using MixinType::size;
 	using MixinType::offset;
 
 	/// Explicitly defined default constructor.
@@ -659,18 +659,18 @@ public:
 	 * Initialisation function called by non-trivial constructor and
 	 * subclasses.
 	 *
-	 * @param dims the dimensions of the whole grid.
+	 * @param size the dimensions of the whole grid.
 	 * @param offset the offset of the whole grid.
-	 * @param dims_partition the dimensions of each spatial partition.
+	 * @param size_partition the dimensions of each spatial partition.
 	 * @param delta the grid delta value used for spatial derivatives (dx).
 	 */
 	void init (
-		const VecDu& dims, const VecDi& offset,
-		const VecDu& dims_partition = VecDu::Constant(DEFAULT_PARTITION),
+		const VecDu& size, const VecDi& offset,
+		const VecDu& size_partition = VecDu::Constant(DEFAULT_PARTITION),
 		const FLOAT& delta = 1.0f
 	) {
-		Base::init(dims_partition);
-		MixinType::init(dims, offset, delta);
+		Base::init(size_partition);
+		MixinType::init(size, offset, delta);
 	}
 
 	/**
@@ -678,16 +678,16 @@ public:
 	 *
 	 * @param size_ size of the overall grid.
 	 */
-	void dims (const VecDu& size_)
+	void size (const VecDu& size_)
 	{
-		Base::dims(size_);
+		Base::size(size_);
 
-		this->m_dims = size_;
+		this->m_size = size_;
 
 		for (UINT idx = 0; idx < this->branch().data().size(); idx++)
 		{
 			Child& child = this->branch().data()(idx);
-			child.dims(this->m_udims_child);
+			child.size(this->m_usize_child);
 		}
 	}
 
@@ -708,7 +708,7 @@ public:
 			const VecDi& offset_child = (
 				(
 					(pos_child - this->branch().offset()).array()
-					* this->m_idims_child.array()
+					* this->m_isize_child.array()
 				).matrix() + offset_
 			);
 
@@ -725,7 +725,7 @@ public:
 	const VecDi pos_child (const VecDi& pos_leaf_) const
 	{
 		return (
-			(pos_leaf_ - offset()).array() / this->m_idims_child.array()
+			(pos_leaf_ - offset()).array() / this->m_isize_child.array()
 		).matrix() + this->branch().offset();
 	}
 
@@ -783,7 +783,7 @@ public:
 	 */
 	typename SnapshotGrid::ArrayData& data()
 	{
-		m_pgrid_snapshot.reset(new SnapshotGrid(this->dims(), this->offset()));
+		m_pgrid_snapshot.reset(new SnapshotGrid(this->size(), this->offset()));
 
 		for (UINT branch_idx = 0; branch_idx < this->branch().data().size(); branch_idx++)
 		{

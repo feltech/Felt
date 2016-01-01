@@ -31,7 +31,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 			PartitionedGrid<FLOAT, 3> grid;
 
 			// ==== Confirm ====
-			BOOST_CHECK_EQUAL(grid.dims(), Vec3u(0,0,0));
+			BOOST_CHECK_EQUAL(grid.size(), Vec3u(0,0,0));
 		}
 
 		{
@@ -97,15 +97,15 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 			PartitionedGrid<FLOAT, 3>::BranchGrid& parent = grid.branch();
 
 			// ==== Confirm ====
-			BOOST_CHECK_EQUAL(grid.dims(), Vec3u(9,9,9));
+			BOOST_CHECK_EQUAL(grid.size(), Vec3u(9,9,9));
 
 			BOOST_CHECK_EQUAL((UINT)parent.data().size(), 27u);
 
-			const Vec3u part_dims(3,3,3);
-			BOOST_CHECK_EQUAL(parent(Vec3i(-1, -1, -1)).dims(), part_dims);
-			BOOST_CHECK_EQUAL(parent(Vec3i( 1,  1,  1)).dims(), part_dims);
-			BOOST_CHECK_EQUAL(parent(Vec3i( 0,  0,  0)).dims(), part_dims);
-			BOOST_CHECK_EQUAL(parent(Vec3i(-1,  0,  1)).dims(), part_dims);
+			const Vec3u part_size(3,3,3);
+			BOOST_CHECK_EQUAL(parent(Vec3i(-1, -1, -1)).size(), part_size);
+			BOOST_CHECK_EQUAL(parent(Vec3i( 1,  1,  1)).size(), part_size);
+			BOOST_CHECK_EQUAL(parent(Vec3i( 0,  0,  0)).size(), part_size);
+			BOOST_CHECK_EQUAL(parent(Vec3i(-1,  0,  1)).size(), part_size);
 			BOOST_CHECK_EQUAL(
 				parent(Vec3i(-1, -1, -1)).offset(), Vec3i(-4, -4, -4)
 			);
@@ -123,15 +123,15 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 			const PartitionedGrid<FLOAT, 3> ::BranchGrid& parent = grid.branch();
 
 			// ==== Confirm ====
-			BOOST_CHECK_EQUAL(grid.dims(), Vec3u(8,8,8));
+			BOOST_CHECK_EQUAL(grid.size(), Vec3u(8,8,8));
 
 			BOOST_CHECK_EQUAL((UINT)parent.data().size(), 64);
 
-			const Vec3u part_dims(2,2,2);
-			BOOST_CHECK_EQUAL(parent(Vec3i(-1, -1, -1)).dims(), part_dims);
-			BOOST_CHECK_EQUAL(parent(Vec3i( 0,  0,  0)).dims(), part_dims);
-			BOOST_CHECK_EQUAL(parent(Vec3i( 1,  1,  1)).dims(), part_dims);
-			BOOST_CHECK_EQUAL(parent(Vec3i( 2,  2,  2)).dims(), part_dims);
+			const Vec3u part_size(2,2,2);
+			BOOST_CHECK_EQUAL(parent(Vec3i(-1, -1, -1)).size(), part_size);
+			BOOST_CHECK_EQUAL(parent(Vec3i( 0,  0,  0)).size(), part_size);
+			BOOST_CHECK_EQUAL(parent(Vec3i( 1,  1,  1)).size(), part_size);
+			BOOST_CHECK_EQUAL(parent(Vec3i( 2,  2,  2)).size(), part_size);
 
 			BOOST_CHECK_EQUAL(
 				parent(Vec3i(-1, -1, -1)).offset(), Vec3i(-3, -3, -3)

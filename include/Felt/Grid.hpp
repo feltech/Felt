@@ -230,14 +230,14 @@ public:
 		/// Position in grid currently pointed to.
 		VecDi			m_pos;
 		/// Size of the grid.
-		const VecDu&	m_dims;
+		const VecDu&	m_size;
 		/// Offset of grid from bottom-front-left to (0,0,0).
 		const VecDi&	m_offset;
 	public:
 		/**
 		 * Default constructor for empty iterator.
 		 */
-		iterator() : m_idx(0), m_dims(VecDu::Constant(0)), m_offset(VecDi::Constant(0))
+		iterator() : m_idx(0), m_size(VecDu::Constant(0)), m_offset(VecDi::Constant(0))
 		{}
 
 		/**
@@ -246,8 +246,8 @@ public:
 		 * @param start_idx_ index in underlying data to start at.
 		 */
 		iterator(const GridBase& grid_, const UINT& start_idx_ = 0)
-		: m_idx(start_idx_), m_dims(grid_.dims()), m_offset(grid_.offset()),
-		  m_pos(ThisType::index(start_idx_, grid_.dims(), grid_.offset()))
+		: m_idx(start_idx_), m_size(grid_.size()), m_offset(grid_.offset()),
+		  m_pos(ThisType::index(start_idx_, grid_.size(), grid_.offset()))
 		{}
 
 	private:
@@ -258,7 +258,7 @@ public:
 		void increment()
 		{
 			m_idx++;
-			m_pos = ThisType::index(m_idx, m_dims, m_offset);
+			m_pos = ThisType::index(m_idx, m_size, m_offset);
 		}
 
 		/**
@@ -292,11 +292,11 @@ protected:
 	/**
 	 * The dimensions (size) of the grid.
 	 */
-	VecDu m_dims;
+	VecDu m_size;
 
 	/// Minimum position stored in grid (equal to m_offset).
 	VecDi m_pos_min;
-	/// One more than maximum position stored in grid (equal to m_offset + m_dims).
+	/// One more than maximum position stored in grid (equal to m_offset + m_size).
 	VecDi m_pos_max;
 
 	/**
@@ -323,7 +323,7 @@ public:
 	 */
 	GridBase () :
 	m_offset(VecDi::Zero()),
-	m_dims(VecDu::Zero()),
+	m_size(VecDu::Zero()),
 	m_dx(1)
 	{
 	}
@@ -362,7 +362,7 @@ public:
 		DerivedType* self = static_cast<DerivedType*>(this);
 
 		self->dx(delta_);
-		self->dims(size_);
+		self->size(size_);
 		self->offset(offset_);
 	}
 
@@ -381,7 +381,7 @@ public:
 	{
 		m_offset = offset_;
 		m_pos_min = offset_;
-		m_pos_max = m_offset + m_dims.template cast<INT>();
+		m_pos_max = m_offset + m_size.template cast<INT>();
 	}
 
 	/**
@@ -528,7 +528,7 @@ public:
 	 */
 	UINT index (const VecDi& pos_) const
 	{
-		return ThisType::index(pos_, this->dims(), this->offset());
+		return ThisType::index(pos_, this->size(), this->offset());
 	}
 
 	/**
@@ -572,7 +572,7 @@ public:
 	 */
 	VecDi index (const UINT& idx_) const
 	{
-		return ThisType::index(idx_, this->dims(), this->offset());
+		return ThisType::index(idx_, this->size(), this->offset());
 	}
 
 	/**
@@ -661,14 +661,14 @@ x = (idx/Dz)/Dy % Dx
 	 * @param size_ new size of the grid.
 	 * @return
 	 */
-	void dims (const VecDu& size_)
+	void size (const VecDu& size_)
 	{
-		m_dims = size_;
+		m_size = size_;
 
-		INT arr_size = m_dims(0);
-		for (INT i = 1; i < m_dims.size(); i++)
+		INT arr_size = m_size(0);
+		for (INT i = 1; i < m_size.size(); i++)
 		{
-			arr_size *= m_dims(i);
+			arr_size *= m_size(i);
 		}
 		m_data.resize(arr_size);
 	}
@@ -678,9 +678,9 @@ x = (idx/Dz)/Dy % Dx
 	 *
 	 * @return the size of the grid in grid nodes.
 	 */
-	const VecDu& dims () const
+	const VecDu& size () const
 	{
-		return m_dims;
+		return m_size;
 	}
 
 	/**
@@ -705,7 +705,7 @@ x = (idx/Dz)/Dy % Dx
 	{
 		return inside(
 			pos_, this->offset(),
-			this->offset() + this->dims().template cast<INT>()
+			this->offset() + this->size().template cast<INT>()
 		);
 	}
 
@@ -748,12 +748,12 @@ x = (idx/Dz)/Dy % Dx
 	void neighs (const VecDi& pos_, PosArray& aout_, bool bcheck = false) const
 	{
 		// Reference to GridBase dimensions.
-		const VecDu& dims = this->dims();
+		const VecDu& size = this->size();
 		// Most likely all neighbours are valid.
 		aout_.reserve(2*Dims);
 		// Position for look-around.
 		VecDi vec_dir(pos_);
-		for (INT axis = 0; axis < dims.size(); axis++) {
+		for (INT axis = 0; axis < size.size(); axis++) {
 			// Check if backward value is within GridBase.
 			vec_dir(axis) -= 1;
 			if (this->inside(vec_dir) && (!bcheck ||
@@ -784,7 +784,7 @@ x = (idx/Dz)/Dy % Dx
 	{
 		// Position for look-around.
 		VecDi vec_dir(pos_);
-		for (INT axis = 0; axis < this->dims().size(); axis++)
+		for (INT axis = 0; axis < this->size().size(); axis++)
 		{
 			// Check if backward value is within GridBase.
 			vec_dir(axis) -= 1;
@@ -813,13 +813,13 @@ x = (idx/Dz)/Dy % Dx
 		// Value at this point.
 		const LeafType val_centre = (*this)(pos_);
 		// Reference to GridBase dimensions.
-		const VecDu& dims = this->dims();
+		const VecDu& size = this->size();
 		// Vector to store gradient calculation.
-		VecDT vec_grad(dims.size());
+		VecDT vec_grad(size.size());
 		// Position for look-ahead.
 		Eigen::Matrix<PosType, Dims, 1> vec_dir(pos_);
 
-		for (INT axis = 0; axis < dims.size(); axis++)
+		for (INT axis = 0; axis < size.size(); axis++)
 		{
 			vec_dir(axis) += 1;
 			vec_grad(axis) = (*this)(vec_dir) - val_centre;
@@ -842,13 +842,13 @@ x = (idx/Dz)/Dy % Dx
 		// Value at this point.
 		const LeafType val_centre = (*this)(pos_);
 		// Reference to GridBase dimensions.
-		const VecDu& dims = this->dims();
+		const VecDu& size = this->size();
 		// Vector to store gradient calculation.
-		VecDT vec_grad(dims.size());
+		VecDT vec_grad(size.size());
 		// Position for look-behind.
 		Eigen::Matrix<PosType, Dims, 1> vec_dir(pos_);
 
-		for (INT axis = 0; axis < dims.size(); axis++) {
+		for (INT axis = 0; axis < size.size(); axis++) {
 			vec_dir(axis) -= 1;
 			vec_grad(axis) = val_centre - (*this)(vec_dir);
 			vec_dir(axis) += 1;
@@ -867,13 +867,13 @@ x = (idx/Dz)/Dy % Dx
 	VecDT gradC (const felt::VecDT<PosType, Dims>& pos_) const
 	{
 		// Reference to GridBase dimensions.
-		const VecDu& dims = this->dims();
+		const VecDu& size = this->size();
 		// Vector to store gradient calculation.
-		VecDT vec_grad(dims.size());
+		VecDT vec_grad(size.size());
 		// Position for look-around.
 		felt::VecDT<PosType, Dims> vec_dir(pos_);
 
-		for (INT axis = 0; axis < dims.size(); axis++) {
+		for (INT axis = 0; axis < size.size(); axis++) {
 			vec_dir(axis) -= 1;
 			const LeafType back = (*this)(vec_dir);
 			vec_dir(axis) += 2;
@@ -902,16 +902,16 @@ x = (idx/Dz)/Dy % Dx
 	{
 		using VecDR = felt::VecDT<PosType, Dims>;
 		// Reference to GridBase dimensions.
-		const VecDu& dims = this->dims();
+		const VecDu& size = this->size();
 		// Vector to store gradient calculation.
-		VecDT vec_grad(dims.size());
+		VecDT vec_grad(size.size());
 		// Position for look-around.
 		VecDR pos_test(pos_);
 
 		// Central value.
 		LeafType centre = this->get(pos_);
 
-		for (INT axis = 0; axis < dims.size(); axis++)
+		for (INT axis = 0; axis < size.size(); axis++)
 		{
 			LeafType back = centre;
 			LeafType forward = centre;
@@ -958,13 +958,13 @@ x = (idx/Dz)/Dy % Dx
 		// Value at this point.
 		const LeafType centre = (*this)(pos);
 		// Reference to GridBase dimensions.
-		const VecDu& dims = this->dims();
+		const VecDu& size = this->size();
 		// Vector to store gradient calculation.
-		VecDT vec_grad(dims.size());
+		VecDT vec_grad(size.size());
 		// Position for look-around.
 		VecDp pos_test(pos);
 
-		for (INT axis = 0; axis < dims.size(); axis++)
+		for (INT axis = 0; axis < size.size(); axis++)
 		{
 			pos_test(axis) -= 1;
 			LeafType back = this->get(pos_test);
@@ -991,10 +991,10 @@ x = (idx/Dz)/Dy % Dx
 	 */
 	LeafType interp (const VecDf& pos_) const
 	{
-		const VecDu& dims = this->dims();
+		const VecDu& size = this->size();
 
 		// Store all 2^d corners.
-		std::vector< LeafType > val_corners(1 << dims.size());
+		std::vector< LeafType > val_corners(1 << size.size());
 
 		// Get all corners of containing cell.
 		for (UINT i = 0; i < val_corners.size(); i++)
@@ -1004,7 +1004,7 @@ x = (idx/Dz)/Dy % Dx
 			// 2 = 10 => (x,y+1)
 			// 3 = 11 => (x+1,y+1)
 
-			VecDi pos_corner(dims.size());
+			VecDi pos_corner(size.size());
 			for (INT dim = 0; dim < pos_corner.size(); dim++)
 			{
 				INT pos = (INT)std::floor(pos_(dim));
@@ -1050,13 +1050,13 @@ x = (idx/Dz)/Dy % Dx
 		using VecDp = felt::VecDT<PosType, Dims>;
 
 		const LeafType val_centre = (*this)(pos_);
-		const VecDu& dims = this->dims();
+		const VecDu& size = this->size();
 		VecDp dir(pos_);
 
 		// Forward directed principal normal.
 		VecDT n_forward;
 
-		for (INT axis = 0; axis < dims.size(); axis++)
+		for (INT axis = 0; axis < size.size(); axis++)
 		{
 			dir(axis) += 1;
 
@@ -1064,7 +1064,7 @@ x = (idx/Dz)/Dy % Dx
 			LeafType val_neighs_sq = 0;
 
 			// Loop other dimensions to get central difference across them.
-			for (INT axis_neigh = 0; axis_neigh < dims.size(); axis_neigh++)
+			for (INT axis_neigh = 0; axis_neigh < size.size(); axis_neigh++)
 			{
 				// Only getting differences across other axes.
 				if (axis_neigh != axis)
@@ -1091,7 +1091,7 @@ x = (idx/Dz)/Dy % Dx
 		// Backward directed principal normal.
 		VecDT n_backward;
 
-		for (INT axis = 0; axis < dims.size(); axis++)
+		for (INT axis = 0; axis < size.size(); axis++)
 		{
 			dir(axis) -= 1;
 
@@ -1100,7 +1100,7 @@ x = (idx/Dz)/Dy % Dx
 
 			// Loop other dimensions to get central difference across them.
 			for (
-				INT axis_neigh = 0; axis_neigh < dims.size(); axis_neigh++
+				INT axis_neigh = 0; axis_neigh < size.size(); axis_neigh++
 			) {
 				// Only getting differences across other axes.
 				if (axis_neigh != axis)
@@ -1193,7 +1193,7 @@ x = (idx/Dz)/Dy % Dx
 		{
 			const VecDi& pos_min = self->offset();
 			const VecDi& pos_max = (
-				self->dims().template cast<INT>() + pos_min - VecDi::Constant(1)
+				self->size().template cast<INT>() + pos_min - VecDi::Constant(1)
 			);
 			std::stringstream err;
 			err << title_ << format(pos_.transpose())

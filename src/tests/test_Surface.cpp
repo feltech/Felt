@@ -18,12 +18,12 @@ BOOST_AUTO_TEST_CASE(init)
 	// ==== Setup ====
 	// Basic initialisation of 2D surface with 2 layers in a 5x5 embedding.
 	Surface<2, 2> surface(Vec2u(7, 7));
-	const Vec2u size = surface.isogrid().dims();
+	const Vec2u size = surface.isogrid().size();
 
 	BOOST_CHECK_EQUAL((UINT)size(0), 7);
 	BOOST_CHECK_EQUAL((UINT)size(1), 7);
 
-	// Usable isogrid should have size=dims-layers and be offset by half grid width.
+	// Usable isogrid should have size=size-layers and be offset by half grid width.
 	// In this test case, only the centre point is actually usable, all other points are
 	// reserved for outer layers.
 
@@ -33,12 +33,12 @@ BOOST_AUTO_TEST_CASE(init)
 	BOOST_CHECK_EQUAL(pos_min, Vec2i(0, 0));
 	BOOST_CHECK_EQUAL(pos_max, Vec2i(0, 0));
 
-	// But actual isogrid isogrid should have size equal to dims.
+	// But actual isogrid isogrid should have size equal to size.
 
 	Surface<2, 2>::IsoGrid& isogrid = surface.isogrid();
 
-	const Vec2u isogrid_dims = isogrid.dims();
-	BOOST_CHECK_EQUAL(isogrid_dims, Vec2u(7, 7));
+	const Vec2u isogrid_size = isogrid.size();
+	BOOST_CHECK_EQUAL(isogrid_size, Vec2u(7, 7));
 
 	// Grid is initialised to all points 'outside' the surface (since there
 	// is no surface yet).

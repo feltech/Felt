@@ -75,14 +75,14 @@ namespace felt
 		{
 			DerivedType* self = static_cast<DerivedType*>(this);
 			Base::init(
-				surface.isogrid().branch().dims(), surface.isogrid().branch().offset()
+				surface.isogrid().branch().size(), surface.isogrid().branch().offset()
 			);
 			m_grid_changes.init(
-				surface.isogrid().dims(), surface.isogrid().offset()
+				surface.isogrid().size(), surface.isogrid().offset()
 			);
 			for (const VecDi& pos_child : surface.isogrid().branch())
 				self->init_child(
-					pos_child, surface.isogrid().child(pos_child).dims(),
+					pos_child, surface.isogrid().child(pos_child).size(),
 					surface.isogrid().child(pos_child).offset()
 				);
 		}
@@ -95,11 +95,11 @@ namespace felt
 		 * @param pos_child
 		 */
 		void init_child(
-			const VecDi& pos_child_, const VecDu& dims_, const VecDi& offset_
+			const VecDi& pos_child_, const VecDu& size_, const VecDi& offset_
 		) {
 			// Add a one-element border to account for partition overlap.
 			this->get(pos_child_).init(
-				dims_ + VecDu::Constant(2), offset_ - VecDi::Constant(1)
+				size_ + VecDu::Constant(2), offset_ - VecDi::Constant(1)
 			);
 		}
 
