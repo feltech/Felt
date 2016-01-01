@@ -176,12 +176,12 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		// Initialise a surface.
 		Surface_t surface(Vec3u(15,15,15), Vec3u(5, 5, 5));
 		PolyGrid<3> poly(surface);
-		Poly<3> poly_single(surface.phi().dims(), surface.phi().offset());
+		Poly<3> poly_single(surface.isogrid().dims(), surface.isogrid().offset());
 
 		// Initialise a seed.
 		surface.seed(Vec3i(0,0,0));
 		surface.update_start();
-		surface.dphi(Vec3i(0,0,0), -1.0f);
+		surface.disogrid(Vec3i(0,0,0), -1.0f);
 		surface.update_end();
 
 		// ==== Action ====
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		surface.update_start();
 		for (auto pos : surface.layer(0))
-			surface.dphi(pos, -1);
+			surface.disogrid(pos, -1);
 		surface.update_end();
 
 		poly.notify(surface);
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 */
 		// ==== Confirm ====
 
-//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.isogrid()));
 		poly_single.reset();
 		poly_single.surf(surface);
 
@@ -261,11 +261,11 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		surface.update_start();
 		for (auto pos : surface.layer(0))
-			surface.dphi(pos, -0.3);
+			surface.disogrid(pos, -0.3);
 		surface.update_end();
 		poly.notify(surface);
 		surface.update_start();
-		surface.dphi(Vec3i(0,-2,0), 1);
+		surface.disogrid(Vec3i(0,-2,0), 1);
 		surface.update_end();
 		poly.notify(surface);
 
@@ -290,7 +290,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 */
 		// ==== Confirm ====
 
-//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.isogrid()));
 		poly_single.reset();
 		poly_single.surf(surface);
 
@@ -329,7 +329,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		// ==== Setup ====
 		Surface<3, 3> surface(Vec3u(13,13,13), Vec3u(4,4,4));
 		PolyGrid<3> polys(surface);
-		Poly<3> poly(surface.phi().dims(), surface.phi().offset());
+		Poly<3> poly(surface.isogrid().dims(), surface.isogrid().offset());
 
 		surface.seed(Vec3i(0,0,0));
 
@@ -337,21 +337,21 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		surface.update_start();
 		for (auto pos : surface.layer(0))
-			surface.dphi(pos, -1.0);
+			surface.disogrid(pos, -1.0);
 		surface.update_end();
 
 		polys.notify(surface);
 
 		surface.update_start();
 		for (auto pos : surface.layer(0))
-			surface.dphi(pos, -1.0);
+			surface.disogrid(pos, -1.0);
 		surface.update_end();
 
 		polys.notify(surface);
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.isogrid()));
 
 		// ==== Confirm ====
 
@@ -416,11 +416,11 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.isogrid()));
 
 		// ==== Confirm ====
 
-		BOOST_CHECK_EQUAL(surface.phi().branch().data().size(), 1u);
+		BOOST_CHECK_EQUAL(surface.isogrid().branch().data().size(), 1u);
 
 		UINT num_spxs_after = 0;
 		UINT num_vtxs_after = 0;
@@ -455,7 +455,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.isogrid()));
 
 		UINT num_spxs_before = 0;
 		UINT num_vtxs_before = 0;
@@ -469,31 +469,31 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		// Expand.
 		surface.update_start();
-		surface.dphi(Vec3i(-1,0,0), -1.0f);
+		surface.disogrid(Vec3i(-1,0,0), -1.0f);
 		surface.update_end();
 		polys.notify(surface);
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.isogrid()));
 
 		// Contract
 		surface.update_start();
-		surface.dphi(Vec3i(-2,0,0), 1.0f);
-		surface.dphi(Vec3i(-1,-1,0), 1.0f);
-		surface.dphi(Vec3i(-1,1,0), 1.0f);
-		surface.dphi(Vec3i(-1,0,-1), 1.0f);
-		surface.dphi(Vec3i(-1,0,1), 1.0f);
+		surface.disogrid(Vec3i(-2,0,0), 1.0f);
+		surface.disogrid(Vec3i(-1,-1,0), 1.0f);
+		surface.disogrid(Vec3i(-1,1,0), 1.0f);
+		surface.disogrid(Vec3i(-1,0,-1), 1.0f);
+		surface.disogrid(Vec3i(-1,0,1), 1.0f);
 		surface.update_end();
 		polys.notify(surface);
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.isogrid()));
 
 		// ==== Confirm ====
 
-		BOOST_CHECK_EQUAL(surface.phi().branch().data().size(), 1);
+		BOOST_CHECK_EQUAL(surface.isogrid().branch().data().size(), 1);
 
 		UINT num_spxs_after = 0;
 		UINT num_vtxs_after = 0;
@@ -517,7 +517,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		// Initialise a 16x16x16 surface with two 16x8x16 partitions.
 		Surface_t surface(Vec3u(16,16,16), Vec3u(16, 8, 16));
 		PolyGrid<3> polys(surface);
-		Poly<3> poly(surface.phi().dims(), surface.phi().offset());
+		Poly<3> poly(surface.isogrid().dims(), surface.isogrid().offset());
 		Grid<UINT, 3> grid_spxs_before(polys.dims(), polys.offset());
 
 		// Initialise a seed.
@@ -532,7 +532,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.isogrid()));
 
 		UINT num_spxs_before = 0;
 		for (const Vec3i& pos_child : polys)
@@ -545,27 +545,27 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		// Expand - expanding across to other partition.
 		surface.update_start();
-		surface.dphi(Vec3i(0,1,0), -1.0f);
+		surface.disogrid(Vec3i(0,1,0), -1.0f);
 		surface.update_end();
 		polys.notify(surface);
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.isogrid()));
 
 		// Contract.
 		surface.update_start();
-		surface.dphi(Vec3i(0,0,0), 1.0f);
-		surface.dphi(Vec3i(-1,1,0), 1.0f);
-		surface.dphi(Vec3i(1,1,0), 1.0f);
-		surface.dphi(Vec3i(0,1,-1), 1.0f);
-		surface.dphi(Vec3i(0,1,1), 1.0f);
+		surface.disogrid(Vec3i(0,0,0), 1.0f);
+		surface.disogrid(Vec3i(-1,1,0), 1.0f);
+		surface.disogrid(Vec3i(1,1,0), 1.0f);
+		surface.disogrid(Vec3i(0,1,-1), 1.0f);
+		surface.disogrid(Vec3i(0,1,1), 1.0f);
 		surface.update_end();
 		polys.notify(surface);
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.isogrid()));
 
 		// ==== Confirm ====
 
@@ -600,7 +600,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		// Initialise a 24x24x24 surface with two 24x8x24 partitions.
 		Surface_t surface(Vec3u(24,24,24), Vec3u(24, 12, 24));
 		PolyGrid<3> polys(surface);
-		Poly<3> poly(surface.phi().dims(), surface.phi().offset());
+		Poly<3> poly(surface.isogrid().dims(), surface.isogrid().offset());
 		Grid<UINT, 3> grid_spxs_before(polys.dims(), polys.offset());
 
 		// Initialise a seed.
@@ -612,11 +612,11 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		});
 		polys.notify(surface);
 
-		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.isogrid()));
 
 		// Expand - expanding across to other partition.
 		surface.update_start();
-		surface.dphi(Vec3i(0,3,0), -1.0f);
+		surface.disogrid(Vec3i(0,3,0), -1.0f);
 		surface.update_end();
 		polys.notify(surface);
 		polys.poly_cubes(surface);
@@ -626,7 +626,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		assert_partitioned_matches_baseline(polys, poly);
 		poly.reset();
 
-		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.isogrid()));
 
 		UINT num_spxs_before = 0;
 		for (const Vec3i& pos_child : polys)
@@ -638,10 +638,10 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		// ==== Action ====
 
 		surface.update_start();
-		surface.dphi(Vec3i(0,5,0), 0.0f);
+		surface.disogrid(Vec3i(0,5,0), 0.0f);
 		surface.update_end();
 
-//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.isogrid()));
 
 		// ==== Confirm ====
 
@@ -677,7 +677,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		// ==== Setup ====
 		Surface<3, 3> surface(Vec3u(13,13,13), Vec3u(4,4,4));
 		PolyGrid<3> polys(surface);
-		Poly<3> poly(surface.phi().dims(), surface.phi().offset());
+		Poly<3> poly(surface.isogrid().dims(), surface.isogrid().offset());
 
 		surface.seed(Vec3i(0,0,0));
 
@@ -685,18 +685,18 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		surface.update_start();
 		for (auto pos : surface.layer(0))
-			surface.dphi(pos, -1.0);
+			surface.disogrid(pos, -1.0);
 		surface.update_end();
 
 
 		surface.update_start();
 		for (auto pos : surface.layer(0))
-			surface.dphi(pos, -1.0);
+			surface.disogrid(pos, -1.0);
 		surface.update_end();
 
 		polys.surf(surface);
 
-//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.phi()));
+//		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.isogrid()));
 
 		// ==== Confirm ====
 

@@ -35,30 +35,30 @@ public:
 	/// A tiny number used for error margin when raycasting.
 	static constexpr FLOAT TINY = 0.00001f;
 	/**
-	 * A delta phi update grid with active (non-zero) grid points tracked.
+	 * A delta isogrid update grid with active (non-zero) grid points tracked.
 	 */
-	using DeltaPhiGrid = TrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
+	using DeltaIsoGrid = TrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
 	/**
-	 * A level set embedding phi grid, with active grid points (the narrow
+	 * A level set embedding isogrid grid, with active grid points (the narrow
 	 * band) tracked.
 	 */
-	using PhiGrid = SharedTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
+	using IsoGrid = SharedTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
 	/**
 	 * A resizable array of D-dimensional grid positions.
 	 */
-	using PosArray = typename PhiGrid::PosArray;
+	using PosArray = typename IsoGrid::PosArray;
 	/**
 	 * D-dimensional unsigned int vector.
 	 */
-	using VecDu = typename PhiGrid::VecDu;
+	using VecDu = typename IsoGrid::VecDu;
 	/**
 	 * D-dimensional integer vector.
 	 */
-	using VecDi = typename PhiGrid::VecDi;
+	using VecDi = typename IsoGrid::VecDi;
 	/**
 	 * D-dimensional float vector.
 	 */
-	using VecDf = typename PhiGrid::VecDf;
+	using VecDf = typename IsoGrid::VecDf;
 	/**
 	 * Grid to track positions that require an update.
 	 */
@@ -117,7 +117,7 @@ protected:
 	/**
 	 * The minimum usable position in the grid for the surface (zero-layer).
 	 *
-	 * Additional space is required at the border of the phi embedding for
+	 * Additional space is required at the border of the isogrid embedding for
 	 * the outer layers, so this is the effective minimum position a point
 	 * on the surface can occupy.
 	 */
@@ -125,7 +125,7 @@ protected:
 	/**
 	 * The maximum usable position in the grid for the surface (zero-layer).
 	 *
-	 * Additional space is required at the border of the phi embedding for
+	 * Additional space is required at the border of the isogrid embedding for
 	 * the outer layers, so this is the effective maximum position a point
 	 * on the surface can occupy.
 	 */
@@ -137,19 +137,16 @@ protected:
 	AffectedLookupGrid 	m_grid_affected;
 
 	/**
-	 * The main level set embedding phi grid.
-	 *
-	 * Named after the greek letter often used to represent the level set
-	 * function.
+	 * The main level set embedding isogrid.
 	 */
-	PhiGrid				m_grid_phi;
+	IsoGrid				m_grid_isogrid;
 
 	/**
-	 * The delta phi update grid.
+	 * The delta isogrid update grid.
 	 *
 	 * Used to allow for asynchronous updating.
 	 */
-	DeltaPhiGrid 		m_grid_dphi;
+	DeltaIsoGrid 		m_grid_disogrid;
 
 	/**
 	 * The (spatially partitioned) status change list.
@@ -176,9 +173,9 @@ public:
 	 * @param size_partition_ size of each spatial partition of the isogrid.
 	 */
 	Surface (const VecDu& size_, const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION))
-	:	m_grid_phi(),
+	:	m_grid_isogrid(),
 		m_grid_status_change(),
-		m_grid_dphi()
+		m_grid_disogrid()
 	{
 		this->init(size_, size_partition_);
 	}
@@ -210,25 +207,25 @@ public:
 	};
 
 	/**
-	 * Shorthand for accessing the phi (level set) grid at a given position.
+	 * Shorthand for accessing the isogrid (level set) grid at a given position.
 	 *
 	 * @param pos
 	 * @return
 	 */
 	FLOAT& operator() (const VecDi& pos_)
 	{
-		return this->phi()(pos_);
+		return this->isogrid()(pos_);
 	}
 
 	/**
-	 * Shorthand for accessing the phi (level set) grid (const version).
+	 * Shorthand for accessing the isogrid (level set) grid (const version).
 	 *
 	 * @param pos
 	 * @return
 	 */
 	const FLOAT& operator() (const VecDi& pos) const
 	{
-		return this->phi()(pos);
+		return this->isogrid()(pos);
 	}
 
 	/**
@@ -245,32 +242,32 @@ public:
 		const VecDi idims = udims_.template cast<INT>();
 		const VecDi offset = -idims/2;
 
-		m_grid_phi.init(udims_, offset, dims_partition);
+		m_grid_isogrid.init(udims_, offset, dims_partition);
 
-		// Configure delta phi embedding.
-		m_grid_dphi.init(udims_, offset, dims_partition);
+		// Configure delta isogrid embedding.
+		m_grid_disogrid.init(udims_, offset, dims_partition);
 		// Configure status change partitioned lists.
 		m_grid_status_change.init(udims_, offset, dims_partition);
 
 		// Configure de-dupe grid for neighbourhood queries.
 		m_grid_affected.init(udims_, offset, dims_partition);
 
-		// Store min and max usable positions in phi embedding.
+		// Store min and max usable positions in isogrid embedding.
 		this->pos_min(
-			VecDi::Constant(L + 1) + m_grid_phi.offset()
+			VecDi::Constant(L + 1) + m_grid_isogrid.offset()
 		);
 		this->pos_max(
 			(idims - VecDi::Constant(L + 1))
-			+ m_grid_phi.offset() - VecDi::Constant(1)
+			+ m_grid_isogrid.offset() - VecDi::Constant(1)
 		);
-		// Fill phi grid with 'outside' value.
-		m_grid_phi.fill(L+1);
-		// Initialise delta phi to zero.
-		m_grid_dphi.fill(0);
+		// Fill isogrid grid with 'outside' value.
+		m_grid_isogrid.fill(L+1);
+		// Initialise delta isogrid to zero.
+		m_grid_disogrid.fill(0);
 	}
 
 	/**
-	 * Get minimum usable position in phi grid.
+	 * Get minimum usable position in isogrid grid.
 	 *
 	 * @return
 	 */
@@ -280,7 +277,7 @@ public:
 	}
 
 	/**
-	 * Get maximum usable position in phi grid.
+	 * Get maximum usable position in isogrid grid.
 	 *
 	 * @return
 	 */
@@ -291,7 +288,7 @@ public:
 
 
 	/**
-	 * Set minimum usable position in phi grid.
+	 * Set minimum usable position in isogrid grid.
 	 *
 	 * @param pos
 	 */
@@ -301,7 +298,7 @@ public:
 	}
 
 	/**
-	 * Set maximum usable position in phi grid.
+	 * Set maximum usable position in isogrid grid.
 	 *
 	 * @param pos
 	 */
@@ -312,46 +309,46 @@ public:
 
 
 	/**
-	 * Get reference to phi grid.
+	 * Get reference to isogrid grid.
 	 *
 	 * @return
 	 */
-	PhiGrid& phi ()
+	IsoGrid& isogrid ()
 	{
-		return m_grid_phi;
+		return m_grid_isogrid;
 	}
 
 	/**
-	 * Get reference to phi grid.
+	 * Get reference to isogrid grid.
 	 *
 	 * @return
 	 */
-	const PhiGrid& phi () const
+	const IsoGrid& isogrid () const
 	{
-		return m_grid_phi;
+		return m_grid_isogrid;
 	}
 
 	/**
-	 * Shorthand for accessing phi grid at given position (const
+	 * Shorthand for accessing isogrid grid at given position (const
 	 * version).
 	 *
 	 * @param pos
 	 * @return
 	 */
-	const FLOAT& phi (const VecDi& pos) const
+	const FLOAT& isogrid (const VecDi& pos) const
 	{
-		return m_grid_phi(pos);
+		return m_grid_isogrid(pos);
 	}
 
 	/**
-	 * Shorthand for accessing phi grid at given position.
+	 * Shorthand for accessing isogrid grid at given position.
 	 *
 	 * @param pos
 	 * @return
 	 */
-	FLOAT& phi (const VecDi& pos)
+	FLOAT& isogrid (const VecDi& pos)
 	{
-		return m_grid_phi(pos);
+		return m_grid_isogrid(pos);
 	}
 
 	/**
@@ -372,7 +369,7 @@ public:
 	}
 
 	/**
-	 * Update phi grid point at pos by val.
+	 * Update isogrid grid point at pos by val.
 	 *
 	 * Checks if the layer should change and if so adds to the appropriate
 	 * status change list.
@@ -383,7 +380,7 @@ public:
 	 * @param val
 	 * @param layer_id
 	 */
-	void phi (const VecDi& pos_, const FLOAT& val_, const INT& layer_id_ = 0)
+	void isogrid (const VecDi& pos_, const FLOAT& val_, const INT& layer_id_ = 0)
 	{
 		const INT newlayer_id = this->layer_id(val_);
 
@@ -395,7 +392,7 @@ public:
 			&& std::abs(this->layer_id(val_)) != std::abs(layer_id_) - 1
 		) {
 			std::stringstream strs;
-			strs << "Phi update value out of bounds at layer "
+			strs << "Iso update value out of bounds at layer "
 				<< layer_id_ << " " << felt::format(pos_) << ": " << val_;
 			std::string str = strs.str();
 			throw std::domain_error(str);
@@ -403,7 +400,7 @@ public:
 		
 		#endif
 
-		m_grid_phi(pos_) = val_;
+		m_grid_isogrid(pos_) = val_;
 
 		this->status_change(pos_, layer_id_, newlayer_id);
 	}
@@ -413,7 +410,7 @@ public:
 	{
 		// Get neighbouring points.
 		PosArray neighs;
-		m_grid_phi.neighs(pos, neighs);
+		m_grid_isogrid.neighs(pos, neighs);
 
 		const INT& to_layer_id = side*INT(L);
 
@@ -422,7 +419,7 @@ public:
 		for (UINT neighIdx = 0; neighIdx < neighs.size(); neighIdx++)
 		{
 			const VecDi& pos_neigh = neighs[neighIdx];
-			typename PhiGrid::Child& child = m_grid_phi.child(m_grid_phi.pos_child(pos_neigh));
+			typename IsoGrid::Child& child = m_grid_isogrid.child(m_grid_isogrid.pos_child(pos_neigh));
 			
 			const INT from_layer_id = this->layer_id(pos_neigh);
 
@@ -450,7 +447,7 @@ public:
 			m_grid_status_change.add_safe(
 				pos_neigh, StatusChange(pos_neigh, from_layer_id, to_layer_id)
 			);
-			// Set distance in phi grid.
+			// Set distance in isogrid grid.
 			child(pos_neigh) = dist_neigh;
 		} // End for neighbouring points.
 	}
@@ -477,7 +474,7 @@ public:
 
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		{
-			m_grid_phi.assert_pos_bounds(pos_, "status_change: ");
+			m_grid_isogrid.assert_pos_bounds(pos_, "status_change: ");
 
 			if (
 				std::abs(layer_id_from_) != std::abs(layer_id_to_) + 1
@@ -526,55 +523,55 @@ public:
 	}
 
 	/**
-	 * Get reference to delta phi grid.
+	 * Get reference to delta isogrid grid.
 	 *
 	 * @return
 	 */
-	DeltaPhiGrid& dphi ()
+	DeltaIsoGrid& disogrid ()
 	{
-		return m_grid_dphi;
+		return m_grid_disogrid;
 	}
 
 	/**
-	 * Get reference to delta phi grid (const version).
+	 * Get reference to delta isogrid grid (const version).
 	 *
 	 * @return
 	 */
-	const DeltaPhiGrid& dphi () const
+	const DeltaIsoGrid& disogrid () const
 	{
-		return m_grid_dphi;
+		return m_grid_disogrid;
 	}
 
 	/**
-	 * Shorthand for access to the delta phi grid at given position.
+	 * Shorthand for access to the delta isogrid grid at given position.
 	 *
 	 * @param pos
 	 * @return
 	 */
-	FLOAT& dphi (const VecDi& pos)
+	FLOAT& disogrid (const VecDi& pos)
 	{
-		return m_grid_dphi(pos);
+		return m_grid_disogrid(pos);
 	}
 
 	/**
-	 * Shorthand for access to the delta phi grid at given position (const
+	 * Shorthand for access to the delta isogrid grid at given position (const
 	 * version)
 	 *
 	 * @param pos
 	 * @return
 	 */
-	const FLOAT& dphi (const VecDi& pos) const
+	const FLOAT& disogrid (const VecDi& pos) const
 	{
-		return m_grid_dphi(pos);
+		return m_grid_disogrid(pos);
 	}
 
 	/**
-	 * Update delta phi grid and append point to change list for
+	 * Update delta isogrid grid and append point to change list for
 	 * given thread.
 	 * @param pos
 	 * @param val
 	 */
-	void dphi (const VecDi& pos_, FLOAT val_, const INT& layer_id_ = 0)
+	void disogrid (const VecDi& pos_, FLOAT val_, const INT& layer_id_ = 0)
 	{
 		if (layer_id_ == 0)
 			val_ = clamp(pos_, val_);
@@ -595,11 +592,11 @@ public:
 
 		#endif
 		
-		this->dphi().add(pos_, val_, this->layer_idx(layer_id_));
+		this->disogrid().add(pos_, val_, this->layer_idx(layer_id_));
 	}
 
 	/**
-	 * Clamp delta phi value such that it doesn't breach the grid or cause
+	 * Clamp delta isogrid value such that it doesn't breach the grid or cause
 	 * instability.
 	 *
 	 * @param pos
@@ -619,21 +616,21 @@ public:
 			// Check if pos lies at the max bound of this axis.
 			if (pos_min(d) == pos(d) || pos_max(d) == pos(d))
 			{
-				// Get phi at this point.
-				const FLOAT& fphi = this->phi(pos);
+				// Get isogrid at this point.
+				const FLOAT& fisogrid = this->isogrid(pos);
 				// Max value that will not be rounded and thus trigger
 				// a layer_move.
 				const FLOAT& val_max = -0.5 +
 					(std::numeric_limits<FLOAT>::epsilon() * 2);
-				// Clamp the value of delta phi.
-				val = std::max(val_max - fphi, val);
+				// Clamp the value of delta isogrid.
+				val = std::max(val_max - fisogrid, val);
 				break;
 			}
 		return val;
 	}
 
 	/**
-	 * Update delta phi grid surrounding a given point with amount determined
+	 * Update delta isogrid grid surrounding a given point with amount determined
 	 * by Gaussian distribution about (real-valued) central point.
 	 *
 	 * Will be normalised so that the total amount distributed over the points
@@ -645,13 +642,13 @@ public:
 	 * @param stddev standard deviation of Gaussian.
 	 */	
 	template <UINT Distance>
-	FLOAT dphi_gauss (
+	FLOAT disogrid_gauss (
 		const VecDf& pos_centre, const FLOAT& val, const FLOAT& stddev
 	) {
 		const SharedLookupGrid<D, NUM_LAYERS>& lookup = this->walk_band<Distance>(
 			round(pos_centre)
 		);
-		return this->dphi_gauss(lookup.list(this->layer_idx(0)), pos_centre, val, stddev);
+		return this->disogrid_gauss(lookup.list(this->layer_idx(0)), pos_centre, val, stddev);
 
 //		PosArray list;
 //		const INT w = Distance;
@@ -666,7 +663,7 @@ public:
 //				list.push_back(pos_neigh);
 //		}
 //
-//		return this->dphi_gauss(list, pos_centre, val, stddev);
+//		return this->disogrid_gauss(list, pos_centre, val, stddev);
 	}
 
 //	std::set<std::mutex*> lock_children(const PosArray& list_pos_leafs_)
@@ -676,7 +673,7 @@ public:
 //
 //		MutexSet mutexes;
 //		for (const VecDi& pos : list_pos_leafs_)
-//			mutexes.insert(&m_grid_dphi.child(m_grid_dphi.pos_child(pos)).lookup().mutex());
+//			mutexes.insert(&m_grid_disogrid.child(m_grid_disogrid.pos_child(pos)).lookup().mutex());
 //
 //		MutexIter first(mutexes.begin()), last(mutexes.end());
 //		boost::lock(first, last);
@@ -685,7 +682,7 @@ public:
 //	}
 
 	/**
-	 * Update delta phi grid at given points with amount determined by Gaussian
+	 * Update delta isogrid grid at given points with amount determined by Gaussian
 	 * distribution about (real-valued) central point.
 	 *
 	 * Will be normalised so that the total amount distributed over the points
@@ -699,8 +696,8 @@ public:
 	 * @param val amount to spread over the points.
 	 * @param stddev standard deviation of Gaussian.
 	 */
-	FLOAT dphi_gauss (
-		const typename DeltaPhiGrid::PosArray& list, const VecDf& pos_centre,
+	FLOAT disogrid_gauss (
+		const typename DeltaIsoGrid::PosArray& list, const VecDf& pos_centre,
 		const FLOAT& val, const FLOAT& stddev
 	) {
 		constexpr FLOAT sqrt2piDinv = 1.0f/sqrt(pow(2*M_PI, D));
@@ -711,7 +708,7 @@ public:
 		for (UINT idx = 0; idx < list.size(); idx++)
 		{
 			const VecDf& pos = list[idx].template cast<FLOAT>();
-			if (this->dphi(list[idx]) != 0)
+			if (this->disogrid(list[idx]) != 0)
 			{
 				weights(idx) = 0;
 				continue;
@@ -736,7 +733,7 @@ public:
 			for (UINT idx = 0; idx < list.size(); idx++)
 			{
 				const VecDi& pos = list[idx];
-				const VecDi& pos_child = m_grid_dphi.pos_child(pos);
+				const VecDi& pos_child = m_grid_disogrid.pos_child(pos);
 
 				if (pos_child_current != pos_child)
 				{
@@ -745,18 +742,18 @@ public:
 						pmutex_current->unlock();
 					}
 					pos_child_current = pos_child;
-					pmutex_current = &m_grid_dphi.child(pos_child_current).lookup().mutex();
+					pmutex_current = &m_grid_disogrid.child(pos_child_current).lookup().mutex();
 					pmutex_current->lock();
 				}
 
-				const FLOAT amount = this->clamp(pos, weights(idx) + m_grid_dphi(pos));
+				const FLOAT amount = this->clamp(pos, weights(idx) + m_grid_disogrid(pos));
 
 				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
 				if (std::abs(amount) > 1)
 				{
 					std::stringstream strs;
-					strs << "Delta phi value out of bounds at " << felt::format(pos)
+					strs << "Delta isogrid value out of bounds at " << felt::format(pos)
 						<< ": " << amount;
 					std::string str = strs.str();
 					throw std::domain_error(str);
@@ -765,7 +762,7 @@ public:
 				{
 					std::stringstream strs;
 					strs << "Attempting to Gaussian update non-zero layer " << felt::format(pos)
-						<< ": " << m_grid_phi(pos) << " += " << amount;
+						<< ": " << m_grid_isogrid(pos) << " += " << amount;
 					std::string str = strs.str();
 					throw std::domain_error(str);
 				}
@@ -774,7 +771,7 @@ public:
 				
 				weights(idx) -= (weights(idx) - amount);
 
-				this->dphi().add(pos, amount, this->layer_idx(0));
+				this->disogrid().add(pos, amount, this->layer_idx(0));
 			} // End for list of leafs.
 		} // End if weights > 0
 
@@ -787,7 +784,7 @@ public:
 	}
 
 	/**
-	 * Update delta phi grid surrounding a zero layer point found via a
+	 * Update delta isogrid grid surrounding a zero layer point found via a
 	 * raycast by amount spread using Gaussian distribution.
 	 *
 	 * @param pos_origin
@@ -797,7 +794,7 @@ public:
 	 * @param stddev
 	 */
 	template <UINT Distance>
-	FLOAT dphi_gauss (
+	FLOAT disogrid_gauss (
 		const VecDf& pos_origin, const VecDf& dir,
 		const FLOAT& val, const float& stddev
 	) {
@@ -808,7 +805,7 @@ public:
 //			std::cout << "MISS" << std::endl;
 			return val;
 		}
-		return this->dphi_gauss<Distance>(pos_hit, val, stddev);
+		return this->disogrid_gauss<Distance>(pos_hit, val, stddev);
 	}
 
 	/**
@@ -820,7 +817,7 @@ public:
 	 */
 	PosArray& parts (const INT& id = 0)
 	{
-		return m_grid_phi.branch().list(id+L);
+		return m_grid_isogrid.branch().list(id+L);
 	}
 
 	/**
@@ -833,7 +830,7 @@ public:
 	 */
 	PosArray& layer (const VecDi& pos_child, const INT& id = 0)
 	{
-		return m_grid_phi.child(pos_child).list(id+L);
+		return m_grid_isogrid.child(pos_child).list(id+L);
 	}
 
 	/**
@@ -848,7 +845,7 @@ public:
 		const VecDi& pos_child, const INT& id = 0
 	) const
 	{
-		return m_grid_phi.child(pos_child).list(id+L);
+		return m_grid_isogrid.child(pos_child).list(id+L);
 	}
 
 	/**
@@ -862,9 +859,9 @@ public:
 	 * @param layer_id
 	 * @return
 	 */
-	const LeafsContainer<PhiGrid> layer(const UINT& layer_id) const
+	const LeafsContainer<IsoGrid> layer(const UINT& layer_id) const
 	{
-		return m_grid_phi.leafs(this->layer_idx(layer_id));
+		return m_grid_isogrid.leafs(this->layer_idx(layer_id));
 	}
 
 	/**
@@ -878,13 +875,13 @@ public:
 		// Do nothing if position is outside narrow band.
 		if (!this->inside_band(layer_id))
 			return;
-		m_grid_phi.add(pos, this->layer_idx(layer_id));
+		m_grid_isogrid.add(pos, this->layer_idx(layer_id));
 	}
 
 	/**
 	 * Append position to a layer of the narrow band.
 	 *
-	 * Skip the lookup in the phi grid by assuming passed val is the phi
+	 * Skip the lookup in the isogrid grid by assuming passed val is the isogrid
 	 * grid value of this point.
 	 *
 	 * @param pos
@@ -910,7 +907,7 @@ public:
 		if (!this->inside_band(layer_id))
 			return;
 
-		m_grid_phi.remove(pos, this->layer_idx(layer_id));
+		m_grid_isogrid.remove(pos, this->layer_idx(layer_id));
 	}
 
 	/**
@@ -930,14 +927,14 @@ public:
 	}
 
 	/**
-	 * Get narrow band layer id of location in phi grid.
+	 * Get narrow band layer id of location in isogrid grid.
 	 * @param pos
 	 * @return
 	 */
 	template <class PosType>
 	INT layer_id(const PosType& pos) const
 	{
-		return this->layer_id(this->phi()(pos));
+		return this->layer_id(this->isogrid()(pos));
 	}
 
 	/**
@@ -965,7 +962,7 @@ public:
 	}
 
 	/**
-	 * Create a single singularity seed point in the phi grid.
+	 * Create a single singularity seed point in the isogrid grid.
 	 * NOTE: does not handle overwriting of points currently already on the
 	 * surface/in the volume.
 	 *
@@ -973,8 +970,8 @@ public:
 	 */
 	void seed (const VecDi& pos_centre)
 	{
-		PhiGrid& phi = this->phi();
-		const VecDu dims = phi.dims();
+		IsoGrid& isogrid = this->isogrid();
+		const VecDu dims = isogrid.dims();
 
 		// Width of seed.
 		const VecDi vec_width = VecDi::Constant(L);
@@ -999,8 +996,8 @@ public:
 		{
 			// Calculate vector position from integer index,
 			// using Felt::Grid utility function, index().
-			VecDi pos = PhiGrid::index(u_pos, pos_size);
-			// Translate position into phi grid space.
+			VecDi pos = IsoGrid::index(u_pos, pos_size);
+			// Translate position into isogrid grid space.
 			pos += pos_min;
 			// Calculate vector distance from this position to seed centre.
 			const VecDi vec_dist = pos - pos_centre;
@@ -1011,8 +1008,8 @@ public:
 			// narrow band.
 			if ((UINT)std::abs(this->layer_id(f_dist)) <= L)
 			{
-				// Set distance as value in phi grid.
-				phi(pos) = f_dist;
+				// Set distance as value in isogrid grid.
+				isogrid(pos) = f_dist;
 				// Append point to a narrow band layer (if applicable).
 				this->layer_add(f_dist, pos);
 			}
@@ -1020,7 +1017,7 @@ public:
 	}
 
 	/**
-	 * Get neighbouring position in phi grid that is closest to
+	 * Get neighbouring position in isogrid grid that is closest to
 	 * zero-curve.
 	 *
 	 * @param pos
@@ -1033,19 +1030,19 @@ public:
 		if (this->layer_id(pos) == 0)
 			return pos;
 
-		const PhiGrid& phi = this->phi();
+		const IsoGrid& isogrid = this->isogrid();
 
 		// Get all neighbours of this point.
 		PosArray neighs;
-		phi.neighs(pos, neighs);
+		isogrid.neighs(pos, neighs);
 
 		VecDi pos_nearest = VecDi(pos);
-		FLOAT val_nearest = phi(pos)*side;
+		FLOAT val_nearest = isogrid(pos)*side;
 		// Cycle neighbours finding one that is closest to zero-layer.
 		for (UINT neighIdx = 0; neighIdx < neighs.size(); neighIdx++)
 		{
 			const VecDi pos_neigh = neighs[neighIdx];
-			const FLOAT val_neigh = phi(pos_neigh);
+			const FLOAT val_neigh = isogrid(pos_neigh);
 			// Check absolute value of this neighbour is less than nearest
 			// point.
 			// NOTE: cannot simply use abs() because during an update,
@@ -1064,7 +1061,7 @@ public:
 		// in all cases because pos may not yet be initialised (this
 		// next_closest() function is used to initialise it), so gradient
 		// can be erroneous.
-//			const VecDf vec_dir = phi.grad(pos) * dir;
+//			const VecDf vec_dir = isogrid.grad(pos) * dir;
 //			const UINT axis_best = ublas::index_norm_inf(vec_dir);
 //			VecDi pos_nearest = VecDi(pos);
 //			const FLOAT val_best = vec_dir(axis_best);
@@ -1075,7 +1072,7 @@ public:
 	}
 
 	/**
-	 * Get neighbouring position in phi grid that is closest to the
+	 * Get neighbouring position in isogrid grid that is closest to the
 	 * zero-curve.
 	 *
 	 * @param pos
@@ -1083,8 +1080,8 @@ public:
 	 */
 	VecDi next_closest (const VecDi& pos) const
 	{
-		const PhiGrid& phi = this->phi();
-		const FLOAT val_centre = phi(pos);
+		const IsoGrid& isogrid = this->isogrid();
+		const FLOAT val_centre = isogrid(pos);
 		// Direction multiplier for gradient toward zero-curve.
 		const FLOAT side = sgn(val_centre);
 
@@ -1092,13 +1089,13 @@ public:
 	}
 
 	/**
-	 * Reset delta phi to zero and clear update lists.
+	 * Reset delta isogrid to zero and clear update lists.
 	 */
 	void update_start ()
 	{
 		for (UINT layer_idx = 0; layer_idx < 2*L+1; layer_idx++)
 		{
-			m_grid_dphi.reset(0, layer_idx);
+			m_grid_disogrid.reset(0, layer_idx);
 			m_grid_affected.reset(layer_idx);
 		}
 
@@ -1106,12 +1103,12 @@ public:
 		
 		#if false
 		
-		for (const VecDi& pos_child : m_grid_dphi.branch())
-			for (const VecDi& pos : m_grid_dphi.child(pos_child))
+		for (const VecDi& pos_child : m_grid_disogrid.branch())
+			for (const VecDi& pos : m_grid_disogrid.child(pos_child))
 			{
-				if (m_grid_dphi(pos) != 0)
+				if (m_grid_disogrid(pos) != 0)
 				{
-					throw std::domain_error(std::string("Delta phi not reset!"));
+					throw std::domain_error(std::string("Delta isogrid not reset!"));
 				}
 			}
 		#endif
@@ -1119,12 +1116,12 @@ public:
 
 
 	/**
-	 * Apply delta phi to phi along the zero layer.
+	 * Apply delta isogrid to isogrid along the zero layer.
 	 */
 	void update_zero_layer ()
 	{
-		const typename DeltaPhiGrid::BranchGrid&
-		branch = this->dphi().branch();
+		const typename DeltaIsoGrid::BranchGrid&
+		branch = this->disogrid().branch();
 
 		const UINT& layer_idx = this->layer_idx(0);
 
@@ -1136,32 +1133,32 @@ public:
 			const VecDi& pos_child = branch.list(layer_idx)[idx_child];
 			for (const VecDi& pos : branch(pos_child).list(layer_idx))
 			{
-				const FLOAT& fphi = this->phi(pos);
-				const FLOAT& fdphi = this->dphi(pos);
-				const FLOAT& fval = fphi + fdphi;
+				const FLOAT& fisogrid = this->isogrid(pos);
+				const FLOAT& fdisogrid = this->disogrid(pos);
+				const FLOAT& fval = fisogrid + fdisogrid;
 
 				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
-				if (this->layer_id(fphi) != 0)
+				if (this->layer_id(fisogrid) != 0)
 				{
 					std::stringstream strs;
 					strs << "Zero layer updated attempted at non-zero layer point "
-						<< felt::format(pos) << ": " << fphi << " + " << fdphi << " = " << fval;
+						<< felt::format(pos) << ": " << fisogrid << " + " << fdisogrid << " = " << fval;
 					std::string str = strs.str();
 					throw std::domain_error(str);
 				}
 				if (std::abs(this->layer_id(fval)) > 1)
 				{
 					std::stringstream strs;
-					strs << "Zero layer phi value out of bounds at " << felt::format(pos)
-						<< ": " << fphi << " + " << fdphi << " = " << fval;
+					strs << "Zero layer isogrid value out of bounds at " << felt::format(pos)
+						<< ": " << fisogrid << " + " << fdisogrid << " = " << fval;
 					std::string str = strs.str();
 					throw std::domain_error(str);
 				}
 
 				#endif
 
-				this->phi(pos, fval);
+				this->isogrid(pos, fval);
 			}
 		}
 	}
@@ -1174,7 +1171,7 @@ public:
 	{
 		this->update_zero_layer();
 
-		this->update_distance(m_grid_phi);
+		this->update_distance(m_grid_isogrid);
 
 		this->flush_status_change();
 	}
@@ -1188,7 +1185,7 @@ public:
 		// zero-layer.
 		this->calc_affected();
 
-		// Update the zero layer, applying delta to phi.
+		// Update the zero layer, applying delta to isogrid.
 		this->update_zero_layer();
 
 		this->update_distance(m_grid_affected);
@@ -1217,8 +1214,8 @@ public:
 	template <typename GridType>
 	void update_distance(const INT& layer_id_, const INT& side_, const GridType& lookup_)
 	{
-		using DeltaPhiChild = typename DeltaPhiGrid::Child;
-		using PhiChild = typename PhiGrid::Child;
+		using DeltaIsoChild = typename DeltaIsoGrid::Child;
+		using IsoChild = typename IsoGrid::Child;
 		const UINT& layer_idx = this->layer_idx(layer_id_);
 
 		#pragma omp parallel for
@@ -1226,16 +1223,16 @@ public:
 		{
 			const VecDi& pos_child = lookup_.branch().list(layer_idx)[pos_idx];
 
-			m_grid_dphi.add_child(pos_child, layer_idx);
+			m_grid_disogrid.add_child(pos_child, layer_idx);
 
-			PhiChild& grid_phi_child = m_grid_phi.branch().get(pos_child);
-			DeltaPhiChild& grid_dphi_child = m_grid_dphi.branch().get(pos_child);
+			IsoChild& grid_isogrid_child = m_grid_isogrid.branch().get(pos_child);
+			DeltaIsoChild& grid_disogrid_child = m_grid_disogrid.branch().get(pos_child);
 
 			const PosArray& apos_leafs = lookup_.child(pos_child).list(layer_idx);
 
 			// Calculate distance of every point in this layer to the zero
-			// layer, and store in delta phi grid.
-			// Delta phi grid is used to allow for asynchronous updates, that
+			// layer, and store in delta isogrid grid.
+			// Delta isogrid grid is used to allow for asynchronous updates, that
 			// is, to prevent neighbouring points affecting the distance
 			// transform.
 			for (const VecDi& pos : apos_leafs)
@@ -1260,8 +1257,8 @@ public:
 				#endif
 
 
-				// Update delta phi grid.
-				grid_dphi_child.add(pos, dist, layer_idx);
+				// Update delta isogrid grid.
+				grid_disogrid_child.add(pos, dist, layer_idx);
 			}
 		}
 		
@@ -1270,19 +1267,19 @@ public:
 		{
 			const VecDi& pos_child = lookup_.branch().list(layer_idx)[pos_idx];
 
-			PhiChild& grid_phi_child = m_grid_phi.branch().get(pos_child);
-			DeltaPhiChild& grid_dphi_child = m_grid_dphi.branch().get(pos_child);
+			IsoChild& grid_isogrid_child = m_grid_isogrid.branch().get(pos_child);
+			DeltaIsoChild& grid_disogrid_child = m_grid_disogrid.branch().get(pos_child);
 
 			const PosArray& apos_leafs = lookup_.child(pos_child).list(layer_idx);
 
-			// Update distance in phi from delta phi and append any points that
+			// Update distance in isogrid from delta isogrid and append any points that
 			// move out of their layer to a status change list.
 			for (const VecDi& pos : apos_leafs)
 			{
 				// Distance calculated above.
-				const FLOAT& dist = grid_dphi_child(pos);
+				const FLOAT& dist = grid_disogrid_child(pos);
 
-				grid_phi_child(pos) = dist;
+				grid_isogrid_child(pos) = dist;
 
 				const INT& newlayer_id = this->layer_id(dist);
 
@@ -1310,10 +1307,10 @@ public:
 	 */
 	FLOAT distance (const VecDi& pos_, const FLOAT& side_) const
 	{
-		const PhiGrid& phi = this->phi();
+		const IsoGrid& isogrid = this->isogrid();
 		// Get neighbouring point that is next closest to the zero-layer.
 		const VecDi pos_closest = this->next_closest(pos_, side_);
-		const FLOAT val_closest = phi(pos_closest);
+		const FLOAT val_closest = isogrid(pos_closest);
 		// This point's distance is then the distance of the closest
 		// neighbour +/-1, depending which side of the band we are looking
 		// at.
@@ -1396,11 +1393,11 @@ public:
 					// grid nodes and call a lambda to add the point
 					// to the appropriate tracking list.
 
-					this->phi().neighs(
+					this->isogrid().neighs(
 						pos_centre,
 						[this](const VecDi& pos_neigh) {
 							// Calculate layer of this neighbouring
-							// point from the phi grid.
+							// point from the isogrid grid.
 							const INT& layer_id = this->layer_id(pos_neigh);
 							// If the calculated layer lies within the
 							// narrow band, then we want to track it.
@@ -1444,18 +1441,18 @@ public:
 	{
 		const UINT& layer_idxZero = this->layer_idx(0);
 
-		// Loop over delta phi modified zero-layer points adding to
+		// Loop over delta isogrid modified zero-layer points adding to
 		// tracking grid.
 
-		// Loop spatial partitions of dphi for zero-layer.
+		// Loop spatial partitions of disogrid for zero-layer.
 		for (
 			const VecDi& pos_child
-			: this->dphi().branch().list(layer_idxZero))
+			: this->disogrid().branch().list(layer_idxZero))
 		{
 			// Loop leaf grid nodes with spatial partition
 			for (
 				const VecDi& pos_leaf
-				: this->dphi().child(pos_child).list(layer_idxZero)
+				: this->disogrid().child(pos_child).list(layer_idxZero)
 			)
 				// Add zero-layer point to tracking grid.
 				m_grid_affected.add(pos_leaf, layer_idxZero);
@@ -1546,11 +1543,11 @@ public:
 						// grid nodes and call a lambda to add the point
 						// to the appropriate tracking list.
 
-						this->phi().neighs(
+						this->isogrid().neighs(
 							pos_centre,
 							[this](const VecDi& pos_neigh) {
 								// Calculate layer of this neighbouring
-								// point from the phi grid.
+								// point from the isogrid grid.
 								const INT& layer_id = this->layer_id(pos_neigh);
 								// If the calculated layer lies within the
 								// narrow band, then we want to track it.
@@ -1590,12 +1587,12 @@ public:
 	 * Perform a a full (parallelised) update of the narrow band.
 	 *
 	 * Lambda function passed will be given the position to process and
-	 * a reference to the phi grid, and is expected to return delta phi to
+	 * a reference to the isogrid grid, and is expected to return delta isogrid to
 	 * apply.
 	 *
-	 * @param fn_ (pos, phi) -> float
+	 * @param fn_ (pos, isogrid) -> float
 	 */
-	void update(std::function<FLOAT(const VecDi&, const PhiGrid&)> fn_)
+	void update(std::function<FLOAT(const VecDi&, const IsoGrid&)> fn_)
 	{
 		this->update_start();
 		#pragma omp parallel for
@@ -1603,7 +1600,7 @@ public:
 		{
 			const VecDi& pos_part = this->parts()[part_idx];
 			for (const VecDi& pos : this->layer(pos_part))
-				this->dphi(pos, fn_(pos, m_grid_phi));
+				this->disogrid(pos, fn_(pos, m_grid_isogrid));
 		}
 		this->update_end();
 	}
@@ -1638,13 +1635,13 @@ public:
 
 		using ChildHits = std::vector<ChildHit>;
 
-		// If ray is cast from within phi grid, first check child grid containing origin point.
-		if (m_grid_phi.inside(pos_origin))
+		// If ray is cast from within isogrid grid, first check child grid containing origin point.
+		if (m_grid_isogrid.inside(pos_origin))
 		{
 			const VecDf& pos_hit = ray(
 				pos_origin, dir,
-				m_grid_phi.child(
-					m_grid_phi.pos_child(pos_origin.template cast<INT>())
+				m_grid_isogrid.child(
+					m_grid_isogrid.pos_child(pos_origin.template cast<INT>())
 				)
 			);
 			if (pos_hit != NULL_POS<FLOAT>())
@@ -1673,21 +1670,21 @@ public:
 			pos_plane(dim) = pos_plane_dim;
 
 			// If the zero point on this plane is not within the grid, then jump to max/min point
-			// on phi grid.
-			if (!m_grid_phi.inside(pos_plane))
+			// on isogrid grid.
+			if (!m_grid_isogrid.inside(pos_plane))
 			{
 				FLOAT pos_grid_dim;
 				// If casting in -'ve direction, get maximum extent.
 				if (dir_dim == -1)
 				{
-					pos_grid_dim = m_grid_phi.offset()(dim) + m_grid_phi.dims()(dim);
+					pos_grid_dim = m_grid_isogrid.offset()(dim) + m_grid_isogrid.dims()(dim);
 					if (pos_plane_dim < pos_grid_dim)
 						continue;
 				}
 				// Else if casting in +'ve direction, get minimum extent.
 				else
 				{
-					pos_grid_dim = m_grid_phi.offset()(dim);
+					pos_grid_dim = m_grid_isogrid.offset()(dim);
 					if (pos_plane_dim > pos_grid_dim)
 						continue;
 				}
@@ -1704,7 +1701,7 @@ public:
 				continue;
 
 			// Round up/down to next child, in case we started at inexact modulo of child grid size
-			// (i.e. when phi grid size is not integer multiple of child grid size).
+			// (i.e. when isogrid grid size is not integer multiple of child grid size).
 			pos_plane_dim = round_to_next_child(dim, dir_dim, pos_plane(dim));
 			// If rounding produced a different plane, then cast to that plane, and potentially add
 			// child grid to tracking list.
@@ -1717,7 +1714,7 @@ public:
 
 			// Keep marching along planes, casting ray to each and adding any candidate child
 			// grids to the tracking list.
-			const FLOAT& child_size_dim = m_grid_phi.child_dims()(dim);
+			const FLOAT& child_size_dim = m_grid_isogrid.child_dims()(dim);
 			while (true)
 			{
 				pos_plane(dim) += dir_dim * child_size_dim;
@@ -1748,7 +1745,7 @@ public:
 		{
 			const VecDf& pos_hit = this->ray(
 				child_hit.pos_intersect, dir,
-				this->phi().child(child_hit.pos_child)
+				this->isogrid().child(child_hit.pos_child)
 			);
 
 			if (pos_hit != NULL_POS<FLOAT>())
@@ -1771,7 +1768,7 @@ protected:
 	 * curve.
 	 */
 	const VecDf ray(
-		VecDf pos_sample, const VecDf& dir, const typename PhiGrid::Child& child
+		VecDf pos_sample, const VecDf& dir, const typename IsoGrid::Child& child
 	) const {
 		using Line = Eigen::ParametrizedLine<FLOAT, D>;
 
@@ -1784,7 +1781,7 @@ protected:
 
 			if (abs(layer_id) == 0)
 			{
-				VecDf normal = this->phi().grad(pos_sample);
+				VecDf normal = this->isogrid().grad(pos_sample);
 				normal.normalize();
 
 				if (normal.dot(dir) < 0)
@@ -1794,14 +1791,14 @@ protected:
 					FLOAT dist = 0;
 					for (; num_converge_steps < MAX_CONVERGE_STEPS; num_converge_steps++)
 					{
-						dist = this->phi().interp(pos_sample);
+						dist = this->isogrid().interp(pos_sample);
 
 						pos_sample -= normal*dist;
 
 						if (std::abs(dist) <= TINY || normal.dot(dir) >= 0)
 							break;
 
-						normal = this->phi().grad(pos_sample);
+						normal = this->isogrid().grad(pos_sample);
 						normal.normalize();
 					}
 
@@ -1843,11 +1840,11 @@ protected:
 			line.intersectionPoint(plane) + line.direction() * FLOAT(TINY)
 		);
 
-		if (!this->m_grid_phi.inside(pos_intersect))
+		if (!this->m_grid_isogrid.inside(pos_intersect))
 			return false;
 
 		const VecDi& pos_floor = floor(pos_intersect);
-		const VecDi& pos_child = this->m_grid_phi.pos_child(pos_floor);
+		const VecDi& pos_child = this->m_grid_isogrid.pos_child(pos_floor);
 
 		if (this->layer(pos_child, 0).size())
 		{
@@ -1868,15 +1865,15 @@ protected:
 	{
 		// Real-valued child pos translated to [0, 2*childsize) space.
 		FLOAT pos_plane_dim = (
-			FLOAT(pos - m_grid_phi.offset()(dim)) / m_grid_phi.child_dims()(dim)
+			FLOAT(pos - m_grid_isogrid.offset()(dim)) / m_grid_isogrid.child_dims()(dim)
 		);
 		// Round to next child en route in [0, 2*childsize) space.
 		pos_plane_dim = (dir == -1) ?
 			std::floor(pos_plane_dim) : std::ceil(pos_plane_dim);
-		// Scale back to phi grid in [0, 2*fullsize) space.
-		pos_plane_dim *= m_grid_phi.child_dims()(dim);
-		// Translate back to phi grid in [-fullsize, fullsize) space.
-		pos_plane_dim += m_grid_phi.offset()(dim);
+		// Scale back to isogrid grid in [0, 2*fullsize) space.
+		pos_plane_dim *= m_grid_isogrid.child_dims()(dim);
+		// Translate back to isogrid grid in [-fullsize, fullsize) space.
+		pos_plane_dim += m_grid_isogrid.offset()(dim);
 
 		return pos_plane_dim;
 	}

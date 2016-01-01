@@ -20,7 +20,7 @@ namespace felt
 	class Poly : public PolyBase<D, void> {
 	public:
 		/// Signed distance grid type.
-		template <class Derived> using PhiGrid = GridBase<Derived>;
+		template <class Derived> using IsoGrid = GridBase<Derived>;
 
 		// Create typedefs of Eigen types for this D-dimensional polygonisation.
 		/**
@@ -83,7 +83,7 @@ namespace felt
 		 */
 		SpxArray m_a_spx;
 		/**
-		 * Indices along each axis of phi grid of interpolated vertex.
+		 * Indices along each axis of isogrid grid of interpolated vertex.
 		 */
 		VtxGrid m_grid_vtx;
 
@@ -100,21 +100,21 @@ namespace felt
 
 		/**
 		 * Calculate corner mask of cube at pos, based on inside-outside status
-		 * of corners in phi.
+		 * of corners in isogrid.
 		 *
-         * @param phi
+         * @param isogrid
          * @param pos
          * @return
          */
 		template <class Derived>
-		static unsigned short mask (const PhiGrid<Derived>& phi, const VecDi& pos)
+		static unsigned short mask (const IsoGrid<Derived>& isogrid, const VecDi& pos)
 		{
 			// Num corners == 2^D.  That is, 4 for 2D, 8 for 3D.
 			unsigned short mask = 0;
 			const UINT num_corners = (1 << D);
 			for (UINT idx = 0; idx < num_corners; idx++) {
 				const VecDi corner = pos + Poly<D>::corners[idx];
-				const FLOAT val = phi(corner);
+				const FLOAT val = isogrid(corner);
 				mask |= (val > 0) << idx;
 			}
 			return mask;
@@ -131,7 +131,7 @@ namespace felt
 		/**
 		 * Construct a new polygonisation enclosing a signed distance grid.
 		 *
-         * @param phi the signed distance grid to polygonise.
+         * @param isogrid the signed distance grid to polygonise.
           */
 		Poly (const VecDu& dims_, const VecDi& offset_) : m_grid_vtx()
 		{
@@ -183,13 +183,13 @@ namespace felt
 
 		/**
 		 * Lookup, or calculate then store, and return the index into the vertex
-		 * array of a vertex at the zero-crossing of phi at pos_a along axis.
+		 * array of a vertex at the zero-crossing of isogrid at pos_a along axis.
 		 *
          * @return
          */
 		template <class Derived>
 		UINT idx(
-			const VecDi& pos_a, const UINT& axis, const PhiGrid<Derived>& grid_phi
+			const VecDi& pos_a, const UINT& axis, const IsoGrid<Derived>& grid_isogrid
 		)
 		{
 			// Check lookup to see if vertex has already been calculated.
@@ -206,9 +206,9 @@ namespace felt
 			// precisely at one endpoint.
 			const FLOAT val_small = Poly<D>::epsilon();
 
-			// Value of phi at each endpoint of this edge.
-			const FLOAT val_a = grid_phi(pos_a);
-			const FLOAT val_b = grid_phi(pos_b);
+			// Value of isogrid at each endpoint of this edge.
+			const FLOAT val_a = grid_isogrid(pos_a);
+			const FLOAT val_b = grid_isogrid(pos_b);
 
 			// The newly created vertex.
 			Vertex vtx;
@@ -216,9 +216,9 @@ namespace felt
 			// Check if lies very close to an endpoint or midpoint,
 			// if so then no need (and possibly dangerous) to interpolate.
 			if (std::abs(val_a) <= val_small) {
-				vtx = Vertex(grid_phi, pos_a);
+				vtx = Vertex(grid_isogrid, pos_a);
 			} else if (std::abs(val_b) <= val_small) {
-				vtx = Vertex(grid_phi, pos_b);
+				vtx = Vertex(grid_isogrid, pos_b);
 			} else {
 				FLOAT mu;
 
@@ -235,7 +235,7 @@ namespace felt
 				const VecDf vec_b = pos_b.template cast<FLOAT>();
 				const VecDf vec_c = vec_a + (vec_b - vec_a) * mu;
 
-				vtx = Vertex(grid_phi, vec_c);
+				vtx = Vertex(grid_isogrid, vec_c);
 			}
 
 			// Append newly created vertex to the cache and return a reference
@@ -280,15 +280,15 @@ namespace felt
 
 
 		/**
-		 * Generate simplex(es) for phi grid at position pos.
+		 * Generate simplex(es) for isogrid grid at position pos.
 		 *
-         * @param phi
+         * @param isogrid
          * @param pos
          * @param mask
          * @param spxs
          */
 		template <class Derived>
-		void spx(const VecDi& pos, const PhiGrid<Derived>& grid_phi)
+		void spx(const VecDi& pos, const IsoGrid<Derived>& grid_isogrid)
 		{
 			// TODO: this is here for consistency only, since the marching
 			// cubes implementation marches in the negative z-axis, but
@@ -299,7 +299,7 @@ namespace felt
 			const VecDi pos_calc = pos - SpxGridPosOffset;
 
 			// Get corner inside-outside bitmask at this position.
-			const unsigned short mask = this->mask(grid_phi, pos_calc);
+			const unsigned short mask = this->mask(grid_isogrid, pos_calc);
 			// Get a reference to the simplex array.
 			SpxArray& spxs = this->spx();
 			// Array of indices of zero-crossing vertices along each axis from
@@ -325,7 +325,7 @@ namespace felt
 					// Edges are defined as an axis and an offset.
 					// Lookup index of vertex along current edge.
 					vtx_idxs[edge_idx] = this->idx(
-						pos_calc + edge.offset, edge.axis, grid_phi
+						pos_calc + edge.offset, edge.axis, grid_isogrid
 					);
 				}
 			}
@@ -404,7 +404,7 @@ namespace felt
 					);
 					if (grid_dupe.add(pos_corner))
 					{
-						this->spx(pos_corner, surface.phi());
+						this->spx(pos_corner, surface.isogrid());
 					}
 				}
 		}

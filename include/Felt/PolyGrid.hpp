@@ -75,15 +75,15 @@ namespace felt
 		{
 			DerivedType* self = static_cast<DerivedType*>(this);
 			Base::init(
-				surface.phi().branch().dims(), surface.phi().branch().offset()
+				surface.isogrid().branch().dims(), surface.isogrid().branch().offset()
 			);
 			m_grid_changes.init(
-				surface.phi().dims(), surface.phi().offset()
+				surface.isogrid().dims(), surface.isogrid().offset()
 			);
-			for (const VecDi& pos_child : surface.phi().branch())
+			for (const VecDi& pos_child : surface.isogrid().branch())
 				self->init_child(
-					pos_child, surface.phi().child(pos_child).dims(),
-					surface.phi().child(pos_child).offset()
+					pos_child, surface.isogrid().child(pos_child).dims(),
+					surface.isogrid().child(pos_child).offset()
 				);
 		}
 
@@ -129,7 +129,7 @@ namespace felt
 			{
 				for (
 					const VecDi& pos_child
-					: surface.dphi().branch().list(surface.layer_idx(layer_id))
+					: surface.disogrid().branch().list(surface.layer_idx(layer_id))
 				) {
 					this->notify(surface, pos_child);
 				}
@@ -156,10 +156,10 @@ namespace felt
 				is_active = surface.status_change().branch().is_active(pos_child);
 
 				for (
-					UINT layer_idx = 0; layer_idx < surface.phi().NUM_LISTS && !is_active;
+					UINT layer_idx = 0; layer_idx < surface.isogrid().NUM_LISTS && !is_active;
 					layer_idx++
 				) {
-					is_active = surface.phi().branch().is_active(pos_child, layer_idx);
+					is_active = surface.isogrid().branch().is_active(pos_child, layer_idx);
 				}
 			}
 
@@ -197,7 +197,7 @@ namespace felt
 					for (
 						const VecDi& pos : surface.layer(pos_child, layer_id)
 					) {
-						leaf.spx(pos, surface.phi());
+						leaf.spx(pos, surface.isogrid());
 					}
 				}
 			}
@@ -238,7 +238,7 @@ namespace felt
 			) {
 				for (
 					const VecDi& pos_child
-					: surface.phi().branch().list(layer_idx)
+					: surface.isogrid().branch().list(layer_idx)
 				) {
 					m_grid_changes.add(pos_child);
 				}

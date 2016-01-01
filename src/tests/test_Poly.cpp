@@ -29,9 +29,9 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		Surface<3> surface3D(Vec3u(9,9,9));
 		// Create a 2D polygonisation in a 9x9 embedding, offset by (-4,-4)
 		// so that (0,0) in coordinate space translates to (5,5) in grid space.
-		Poly<2> poly2D(surface2D.phi().dims(), surface2D.phi().offset());
+		Poly<2> poly2D(surface2D.isogrid().dims(), surface2D.isogrid().offset());
 		// Similarly, create a 3D polygonisation in a 9x9x9 embedding.
-		Poly<3> poly3D(surface3D.phi().dims(), surface3D.phi().offset());
+		Poly<3> poly3D(surface3D.isogrid().dims(), surface3D.isogrid().offset());
 
 		// Create a 2D vertex, consisting simply of position.
 		Poly<2>::Vertex vertex2D;
@@ -76,21 +76,21 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 
 		Poly<2>::Vertex vertex2D;
 		Poly<3>::Vertex vertex3D;
-		Poly<2> poly2D(surface2D.phi().dims(), surface2D.phi().offset());
-		Poly<3> poly3D(surface3D.phi().dims(), surface3D.phi().offset());
+		Poly<2> poly2D(surface2D.isogrid().dims(), surface2D.isogrid().offset());
+		Poly<3> poly3D(surface3D.isogrid().dims(), surface3D.isogrid().offset());
 
 		// Text extremities of grid, ensure no segmentation fault errors.
-		poly2D.idx(surface2D.pos_min(), 0, surface2D.phi());
-		poly2D.idx(surface2D.pos_max(), 0, surface2D.phi());
-		poly2D.idx(surface2D.pos_min(), 1, surface2D.phi());
-		poly2D.idx(surface2D.pos_max(), 1, surface2D.phi());
+		poly2D.idx(surface2D.pos_min(), 0, surface2D.isogrid());
+		poly2D.idx(surface2D.pos_max(), 0, surface2D.isogrid());
+		poly2D.idx(surface2D.pos_min(), 1, surface2D.isogrid());
+		poly2D.idx(surface2D.pos_max(), 1, surface2D.isogrid());
 
-		poly3D.idx(surface3D.pos_min(), 0, surface3D.phi());
-		poly3D.idx(surface3D.pos_max(), 0, surface3D.phi());
-		poly3D.idx(surface3D.pos_min(), 1, surface3D.phi());
-		poly3D.idx(surface3D.pos_max(), 1, surface3D.phi());
-		poly3D.idx(surface3D.pos_min(), 2, surface3D.phi());
-		poly3D.idx(surface3D.pos_max(), 2, surface3D.phi());
+		poly3D.idx(surface3D.pos_min(), 0, surface3D.isogrid());
+		poly3D.idx(surface3D.pos_max(), 0, surface3D.isogrid());
+		poly3D.idx(surface3D.pos_min(), 1, surface3D.isogrid());
+		poly3D.idx(surface3D.pos_max(), 1, surface3D.isogrid());
+		poly3D.idx(surface3D.pos_min(), 2, surface3D.isogrid());
+		poly3D.idx(surface3D.pos_max(), 2, surface3D.isogrid());
 
 		// Reset vertex cache.
 		poly2D.reset();
@@ -102,16 +102,16 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		surface2D.seed(Vec2i(0,0));
 		surface3D.seed(Vec3i(0,0,0));
 		surface2D.update_start();
-		surface2D.dphi(Vec2i(0,0), -1);
+		surface2D.disogrid(Vec2i(0,0), -1);
 		surface2D.update_end();
 		surface3D.update_start();
-		surface3D.dphi(Vec3i(0,0,0), -1);
+		surface3D.disogrid(Vec3i(0,0,0), -1);
 		surface3D.update_end();
 
 		// Index in vertex array of vertex along edge from centre to +x.
-		UINT idx2D = poly2D.idx(Vec2i(0,0), 0, surface2D.phi());
+		UINT idx2D = poly2D.idx(Vec2i(0,0), 0, surface2D.isogrid());
 		// Index in vertex array of vertex along edge from centre to +z.
-		UINT idx3D = poly3D.idx(Vec3i(0,0,0), 2, surface3D.phi());
+		UINT idx3D = poly3D.idx(Vec3i(0,0,0), 2, surface3D.isogrid());
 		// Vertex along these edges should be the first in the list.
 		BOOST_CHECK_EQUAL(idx2D, 0);
 		BOOST_CHECK_EQUAL(idx3D, 0);
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		// Test cache is used for subsequent fetches:
 
 		// First calculate another vertex.
-		idx3D = poly3D.idx(Vec3i(0,0,-1), 2, surface3D.phi());
+		idx3D = poly3D.idx(Vec3i(0,0,-1), 2, surface3D.isogrid());
 		vertex3D = poly3D.vtx(idx3D);
 		// This new vertex should be appended to array (index=1).
 		BOOST_CHECK_EQUAL(idx3D, 1);
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 
 		// Now cache should be used for previous vertex, such that idx == 0,
 		// not 2.
-		idx3D = poly3D.idx(Vec3i(0,0,0), 2, surface3D.phi());
+		idx3D = poly3D.idx(Vec3i(0,0,0), 2, surface3D.isogrid());
 		vertex3D = poly3D.vtx(idx3D);
 		BOOST_CHECK_EQUAL(idx3D, 0);
 		// Check it's still at the correct position with the correct normal.
@@ -156,8 +156,8 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 	{
 		// Initialise a 2D grid for testing.
 		Surface<2> surface(Vec2u(9,9));
-		Poly<2> poly(surface.phi().dims(), surface.phi().offset());
-		surface.phi().data() <<
+		Poly<2> poly(surface.isogrid().dims(), surface.isogrid().offset());
+		surface.isogrid().data() <<
 			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3,
 			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
 			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
@@ -167,34 +167,34 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
 			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
 			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3;
-		surface.phi().flush_snapshot();
+		surface.isogrid().flush_snapshot();
 
 		unsigned short mask;
-		mask = Poly<2>::mask(surface.phi(), Vec2i(-3,-3));
+		mask = Poly<2>::mask(surface.isogrid(), Vec2i(-3,-3));
 		// All outside = 1111.
 		BOOST_CHECK_EQUAL(mask, 15);
 
-		mask = Poly<2>::mask(surface.phi(), Vec2i(0,0));
+		mask = Poly<2>::mask(surface.isogrid(), Vec2i(0,0));
 		// All inside = 0000
 		BOOST_CHECK_EQUAL(mask, 0);
 
-		mask = Poly<2>::mask(surface.phi(), Vec2i(-1,-1));
+		mask = Poly<2>::mask(surface.isogrid(), Vec2i(-1,-1));
 		// 0000
 		BOOST_CHECK_EQUAL(mask, 0);
 
-		mask = Poly<2>::mask(surface.phi(), Vec2i(1,-1));
+		mask = Poly<2>::mask(surface.isogrid(), Vec2i(1,-1));
 		// 0010
 		BOOST_CHECK_EQUAL(mask, 2);
 
-		mask = Poly<2>::mask(surface.phi(), Vec2i(2,1));
+		mask = Poly<2>::mask(surface.isogrid(), Vec2i(2,1));
 		// 1111
 		BOOST_CHECK_EQUAL(mask, 15);
 
-		mask = Poly<2>::mask(surface.phi(), Vec2i(-2,0));
+		mask = Poly<2>::mask(surface.isogrid(), Vec2i(-2,0));
 		// 1000
 		BOOST_CHECK_EQUAL(mask, 8);
 
-		mask = Poly<2>::mask(surface.phi(), Vec2i(-1,-2));
+		mask = Poly<2>::mask(surface.isogrid(), Vec2i(-1,-2));
 		// 0001
 		BOOST_CHECK_EQUAL(mask, 1);
 	}
@@ -209,18 +209,18 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		{
 			// Initialise a surface.
 			Surface<3> surface(Vec3u(13,13,13));
-			Poly<3> poly(surface.phi().dims(), surface.phi().offset());
+			Poly<3> poly(surface.isogrid().dims(), surface.isogrid().offset());
 			unsigned short mask;
 			// At time of init, all points are "outside" the surface (there is
 			// no surface).
-			mask = poly.mask(surface.phi(), Vec3i(0,0,0));
+			mask = poly.mask(surface.isogrid(), Vec3i(0,0,0));
 			// All outside = 11111111.
 			BOOST_CHECK_EQUAL(mask, 255);
 
 			// Initialise a seed and expand it.
 			surface.seed(Vec3i(0,0,0));
 			surface.update_start();
-			surface.dphi(Vec3i(0,0,0), -1);
+			surface.disogrid(Vec3i(0,0,0), -1);
 			surface.update_end();
 
 			// Relative position of corners in bitmask order (LSB first,
@@ -246,7 +246,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 //			 3,	 3,	 3,	 3,	 3,	 3,	 3,	 3,	 3;
 
 
-			mask = poly.mask(surface.phi(), Vec3i(0,0,0));
+			mask = poly.mask(surface.isogrid(), Vec3i(0,0,0));
 
 			// The mask of cube starting at (0,0,0)
 			BOOST_CHECK_EQUAL(mask, 0b11100100);
@@ -254,15 +254,15 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 			// Expand the surface outwards twice.
 			surface.update_start();;
 			for (auto pos : surface.layer(0))
-				surface.dphi(pos, -1);
+				surface.disogrid(pos, -1);
 			surface.update_end();
 			surface.update_start();;
 			for (auto pos : surface.layer(0))
-				surface.dphi(pos, -1);
+				surface.disogrid(pos, -1);
 			surface.update_end();
 
 			// The central cube is now completely inside the surface.
-			mask = Poly<3>::mask(surface.phi(), Vec3i(0,0,0));
+			mask = Poly<3>::mask(surface.isogrid(), Vec3i(0,0,0));
 
 //			for (unsigned bitIdx =0; bitIdx < 8; bitIdx++)
 //				std::cerr << (1 & (mask >> (7-bitIdx)));
@@ -282,8 +282,8 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 	BOOST_AUTO_TEST_CASE(edge_vertices_2D)
 	{
 		Surface<2> surface(Vec2u(9,9));
-		Poly<2> poly(surface.phi().dims(), surface.phi().offset());
-		surface.phi().data() <<
+		Poly<2> poly(surface.isogrid().dims(), surface.isogrid().offset());
+		surface.isogrid().data() <<
 			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3,
 			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
 			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
@@ -293,13 +293,13 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
 			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
 			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3;
-		surface.phi().flush_snapshot();
+		surface.isogrid().flush_snapshot();
 
 		unsigned short mask, vtx_mask;
 
 
 		// 0010
-		mask = Poly<2>::mask(surface.phi(), Vec2i(1,-1));
+		mask = Poly<2>::mask(surface.isogrid(), Vec2i(1,-1));
 		// 0, -1
 		// 1,  0
 
@@ -322,7 +322,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 
 		// Simplex (line) at given position.
 		Poly<2>::SpxArray& spxs = poly.spx();
-		poly.spx(Vec2i(1,-1), surface.phi());
+		poly.spx(Vec2i(1,-1), surface.isogrid());
 		// Check only one simplex.
 		BOOST_REQUIRE_EQUAL(spxs.size(), 1);
 
@@ -360,31 +360,31 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 
 		// Initialise a surface.
 		Surface<3> surface(Vec3u(13,13,13));
-		Poly<3> poly(surface.phi().dims(), surface.phi().offset());
+		Poly<3> poly(surface.isogrid().dims(), surface.isogrid().offset());
 		Poly<3>::SpxArray& spxs = poly.spx();
 		Poly<3>::VtxArray& vtxs = poly.vtx();
 
 		// At time of init, all points are "outside" the surface
 		// (there is no surface).
-		mask = poly.mask(surface.phi(), Vec3i(0,0,0));
+		mask = poly.mask(surface.isogrid(), Vec3i(0,0,0));
 		// All outside = 11111111.
 		vtx_mask = Poly<3>::vtx_mask[mask];
 
 		BOOST_CHECK_EQUAL(vtx_mask, 0b0000);
 
-		surface.phi().fill(-1);
+		surface.isogrid().fill(-1);
 		// All inside = 00000000.
 		vtx_mask = Poly<3>::vtx_mask[mask];
 
 		// Reset back to 'all outside' status.
-		surface.phi().fill(3);
+		surface.isogrid().fill(3);
 
 		BOOST_CHECK_EQUAL(vtx_mask, 0b0000);
 		// Initialise a seed and expand it.
 		surface.seed(Vec3i(0,0,0));
 
 		// Attempt to generate triangle mesh for cube at (0,0,0).
-		poly.spx(Vec3i(0,0,0), surface.phi());
+		poly.spx(Vec3i(0,0,0), surface.isogrid());
 
 		// TODO: Currently, we have a degenerate case -- corners that are at
 		// precisely zero (i.e. points or lines rather than triangles),
@@ -398,7 +398,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 
 		// Expand the surface outward.
 		surface.update_start();
-		surface.dphi(Vec3i(0,0,0), -1);
+		surface.disogrid(Vec3i(0,0,0), -1);
 		surface.update_end();
 
 
@@ -425,7 +425,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 //			 3,	 3,	 3,	 3,	 3,	 3,	 3,	 3,	 3;
 
 
-		mask = Poly<3>::mask(surface.phi(), Vec3i(0,0,0));
+		mask = Poly<3>::mask(surface.isogrid(), Vec3i(0,0,0));
 /*
 		== 0b11100100 (see test 'mask').
 		(0, 0, 0) == inside
@@ -520,15 +520,15 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		// Check that the corner inside/outside status mask is indeed still
 		// the same.
 		BOOST_REQUIRE_EQUAL(
-			Poly<3>::mask(surface.phi(), Vec3i(0,0,0)), mask
+			Poly<3>::mask(surface.isogrid(), Vec3i(0,0,0)), mask
 		);
 
 		// Reset the polygonisation.
 		poly.reset();
 
 		// Recalculate the polygonisation (triangle mesh) for the updated
-		// phi grid.
-		poly.spx(Vec3i(0,0,0), surface.phi());
+		// isogrid grid.
+		poly.spx(Vec3i(0,0,0), surface.isogrid());
 
 		// Check 4 triangles are now created from 6 vertices.
 		BOOST_CHECK_EQUAL(vtxs.size(), 6);
@@ -541,21 +541,21 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		// corner, so no degenerate triangles.
 		surface.update_start();
 		for (auto pos : surface.layer(0))
-			surface.dphi(pos, -0.3);
+			surface.disogrid(pos, -0.3);
 		surface.update_end();
 
 		// Check that the corner inside/outside status mask is indeed still
 		// the same.
 		BOOST_REQUIRE_EQUAL(
-			Poly<3>::mask(surface.phi(), Vec3i(0,0,0)), mask
+			Poly<3>::mask(surface.isogrid(), Vec3i(0,0,0)), mask
 		);
 
 		// Reset the polygonisation.
 		poly.reset();
 
 		// Recalculate the polygonisation (triangle mesh) for the updated
-		// phi grid.
-		poly.spx(Vec3i(0,0,0), surface.phi());
+		// isogrid grid.
+		poly.spx(Vec3i(0,0,0), surface.isogrid());
 
 		// Check 4 triangles are now created from 6 vertices.
 		BOOST_CHECK_EQUAL(vtxs.size(), 6);
@@ -568,11 +568,11 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 	{
 		// Initialise a surface.
 		Surface<3> surface(Vec3u(13,13,13));
-		Poly<3> poly(surface.phi().dims(), surface.phi().offset());
+		Poly<3> poly(surface.isogrid().dims(), surface.isogrid().offset());
 		// Initialise a seed and expand it.
 		surface.seed(Vec3i(0,0,0));
 		surface.update_start();
-		surface.dphi(Vec3i(0,0,0), -1.3f);
+		surface.disogrid(Vec3i(0,0,0), -1.3f);
 		surface.update_end();
 
 		// Polygonise zero-layer.
