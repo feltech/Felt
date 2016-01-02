@@ -566,8 +566,12 @@ public:
 	}
 
 	/**
-	 * Update delta isogrid grid and append point to change list for
-	 * given thread.
+	 * Update delta isogrid grid and append point to change list for given thread.
+	 *
+	 * @snippet test_Surface.cpp Delta isogrid clamping
+	 *
+	 * @snippet test_Surface.cpp Simple delta isogrid update
+	 *
 	 * @param pos
 	 * @param val
 	 */
@@ -1087,6 +1091,8 @@ public:
 
 	/**
 	 * Reset delta isogrid to zero and clear update lists.
+	 *
+	 * @snippet test_Surface.cpp Simple delta isogrid update
 	 */
 	void update_start ()
 	{

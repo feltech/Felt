@@ -194,21 +194,25 @@ BOOST_AUTO_TEST_CASE(next_closest_grid_point)
 /*
  * Using delta isogrid grid/list.
  */
-BOOST_AUTO_TEST_CASE(delta_isogrid)
+BOOST_AUTO_TEST_CASE(delta_isogrid_clamping)
 {
+	//! [Delta isogrid clamping]
+	// ==== Setup ====
 	// Basic non-threaded check.
-	{
-		Surface<3, 2> surface(Vec3u(5, 5, 5));
+	Surface<3, 2> surface(Vec3u(5, 5, 5));
+	Vec3i pos(0, 0, 0);
 
-		Vec3i pos = Vec3i(0, 0, 0);
-		// Apply a delta to the surface.
-		surface.disogrid(pos, -2);
-		// Check delta was stored in underlying grid - will be clamped to -1.
-		BOOST_CHECK_EQUAL(surface.disogrid(pos), -1);
-		// Check position vector of point in surface grid that delta was
-		// applied to is stored in a corresponding list to be iterated over.
-		BOOST_CHECK_EQUAL(surface.disogrid().leafs(surface.layer_idx(0)).size(), 1);
-	}
+	// ==== Action ====
+	// Apply a delta to the surface.
+	surface.disogrid(pos, -2);
+
+	// ==== Confirm ====
+	// Check delta was stored in underlying grid - will be clamped to -1.
+	BOOST_CHECK_EQUAL(surface.disogrid(pos), -1);
+	// Check position vector of point in surface grid that delta was
+	// applied to is stored in a corresponding list to be iterated over.
+	BOOST_CHECK_EQUAL(surface.disogrid().leafs(surface.layer_idx(0)).size(), 1);
+	//! [Delta isogrid clamping]
 }
 
 /*
@@ -216,58 +220,61 @@ BOOST_AUTO_TEST_CASE(delta_isogrid)
  */
 BOOST_AUTO_TEST_CASE(delta_isogrid_update)
 {
+	//! [Simple delta isogrid update]
+	// ==== Setup ====
 	Surface<3, 2> surface(Vec3u(5, 5, 5));
-
 	Surface<3, 2>::IsoGrid& isogrid = surface.isogrid();
 	Surface<3, 2>::DeltaIsoGrid& disogrid = surface.disogrid();
 
+	// ==== Action ====
 	// Put in 'dirty' state, to check update_start is doing it's job.
-	surface.disogrid(Vec3i(0, 0, 0), 1.0f);
+	surface.disogrid(Vec3i(0, 0, 0), 0.5f);
 
+	// ==== Confirm ====
+	BOOST_CHECK_EQUAL(surface.disogrid().branch().list(surface.layer_idx(0)).size(), 1);
+	BOOST_CHECK_EQUAL(surface.disogrid().get(Vec3i(0, 0, 0)), 0.5f);
+
+	// ==== Action ====
 	// Clear delta isogrid.
 	surface.update_start();
-	{
-		// Check update_start cleared the above surface.disogrid changes.
-		for (const Vec3i& pos_child : surface.disogrid().branch())
-			for (const Vec3i& pos : surface.disogrid().child(pos_child))
-				BOOST_CHECK_EQUAL(surface.disogrid().get(pos), 0);
 
-	}
-	// Apply delta isogrid.
-	surface.update_end();
+	// ==== Confirm ====
+	// Check update_start cleared the above surface.disogrid changes.
+	BOOST_CHECK_EQUAL(surface.disogrid().branch().list(surface.layer_idx(0)).size(), 0);
+	BOOST_CHECK_EQUAL(surface.disogrid().get(Vec3i(0, 0, 0)), 0.0f);
 
+	// ==== Action ====
 	// Add a zero-layer point.
 	surface.isogrid(Vec3i(0, 0, 0), 0.0f);
 
 	// Clear delta isogrid.
 	surface.update_start();
-	{
-		// Do nothing.
-		surface.disogrid(Vec3i(0, 0, 0), 0);
-	}
+	// Do nothing.
+	surface.disogrid(Vec3i(0, 0, 0), 0);
 	// Apply delta isogrid.
 	surface.update_end();
 
-	// Ensure nothing was changed.  Every point in 5x5x5 grid == 3, except
-	// centre which == 0.
+	// ==== Confirm ====
+	// Ensure nothing was changed.  Every point in 5x5x5 grid == 3, except centre which == 0.
 	BOOST_CHECK_EQUAL(isogrid.data().sum(), 3 * 5 * 5 * 5 - 3);
 	// Delta isogrid position vector list should still contain one point.
-	BOOST_CHECK_EQUAL(surface.disogrid().leafs(surface.layer_idx(0)).size(), 1u);
+	BOOST_CHECK_EQUAL(surface.disogrid().leafs(surface.layer_idx(0)).size(), 1);
 	// Delta isogrid grid itself should have reset back to zero.
 	BOOST_CHECK_EQUAL(disogrid(Vec3i(0, 0, 0)), 0);
 
+	// ==== Action ====
 	// Clear delta isogrid.
 	surface.update_start();
-	{
-		// Apply small update.
-		surface.disogrid(Vec3i(0, 0, 0), 0.4f);
-	}
+	// Apply small update.
+	surface.disogrid(Vec3i(0, 0, 0), 0.4f);
 	// Apply delta isogrid.
 	surface.update_end();
 
-	// Ensure change applied.  Every point in grid == 3, except centre which
-	// == 0.4.
+	// ==== Confirm ====
+	// Ensure change applied.  Every point in grid == 3, except centre which == 0.4.
 	BOOST_CHECK_EQUAL(isogrid.data().sum(), 3 * 5 * 5 * 5 - 3 + 0.4f);
+	BOOST_CHECK_EQUAL(isogrid.get(Vec3i(0, 0, 0)), 0.4f);
+	//! [Simple delta isogrid update]
 }
 
 /*
