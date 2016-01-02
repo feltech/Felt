@@ -12,3 +12,4 @@
 **/.fuse_hidden*
 /CMakeLists.txt~
 /.idea/
+/[Source directory]/

@@ -595,8 +595,8 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		BOOST_CHECK_EQUAL(grid.child(part1).size(), 0);
 		BOOST_CHECK_EQUAL(grid.child(part2_3).size(), 0);
 		BOOST_CHECK_EQUAL(grid.child(part4).size(), 0);
-
 	}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 /** @} */ // End group Tests.
