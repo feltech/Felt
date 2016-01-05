@@ -371,7 +371,8 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 	{
 		//! [Divergence] Divergence
 		// ==== Setup ====
-		Grid <FLOAT,3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1), 2);
+		Grid <FLOAT,3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1));
+		grid.dx(2);
 		grid.data() <<	1,	1,	1,
 						1,	1,	1,
 						1,	1,	1,
@@ -416,15 +417,10 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 			//! [Delta x setter]
 		}
 
-		// Setting at construction.
-		{
-			Grid <FLOAT,2> grid(Vec2u(3, 3), Vec2i(-1,-1), 3.0f);
-			BOOST_CHECK_EQUAL(grid.dx(), 3.0f);
-		}
-
 		// Spatial derivatives with dx != 1.
 		{
-			Grid <FLOAT,3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1), 2.0f);
+			Grid <FLOAT,3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1));
+			grid.dx(2.0f);
 			grid.fill(0);
 			grid(Vec3i(0,0,0)) = 1.0f;
 			grid(Vec3i(0,0,1)) = 2.0f;
@@ -751,4 +747,6 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 			BOOST_CHECK_CLOSE(sharp_corner_curvature_3D, 1.5f, 0.00001f);
 		}
 	}
+
+
 BOOST_AUTO_TEST_SUITE_END()

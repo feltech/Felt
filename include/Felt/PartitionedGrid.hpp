@@ -613,7 +613,7 @@ public:
 	 *
 	 * Each grid node stores a Child grid and tracks active nodes using one or more tracking lists.
 	 */
-	using BranchGrid = TrackedGrid<Child, Dims, Traits::NumLists>;
+	using BranchGrid = typename Base::BranchGrid;
 	
 	using VecDu = typename MixinType::VecDu;
 	using VecDi = typename MixinType::VecDi;
@@ -643,16 +643,14 @@ public:
 	 * @param size_ spatial size of the whole grid.
 	 * @param offset_ spatial offset of the whole grid.
 	 * @param size_partition_ size of each spatial partition.
-	 * @param delta_ grid delta value used for spatial derivatives (dx).
 	 */
 	PartitionedGridBase (
 		const VecDu& size_, const VecDi& offset_,
-		const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION),
-		const FLOAT& delta_ = 1
+		const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION)
 	) : Base()
 	{
 		DerivedType* self = static_cast<DerivedType*>(this);
-		self->init(size_, offset_, size_partition_, delta_);
+		self->init(size_, offset_, size_partition_);
 	}
 
 	/**
@@ -662,15 +660,13 @@ public:
 	 * @param size the dimensions of the whole grid.
 	 * @param offset the offset of the whole grid.
 	 * @param size_partition the dimensions of each spatial partition.
-	 * @param delta the grid delta value used for spatial derivatives (dx).
 	 */
 	void init (
 		const VecDu& size, const VecDi& offset,
-		const VecDu& size_partition = VecDu::Constant(DEFAULT_PARTITION),
-		const FLOAT& delta = 1.0f
+		const VecDu& size_partition = VecDu::Constant(DEFAULT_PARTITION)
 	) {
 		Base::init(size_partition);
-		MixinType::init(size, offset, delta);
+		MixinType::init(size, offset);
 	}
 
 	/**

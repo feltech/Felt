@@ -37,7 +37,7 @@ public:
 	/**
 	 * A delta isogrid update grid with active (non-zero) grid points tracked.
 	 */
-	using DeltaIsoGrid = TrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
+	using DeltaIsoGrid = SharedTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
 	/**
 	 * A level set embedding isogrid grid, with active grid points (the narrow
 	 * band) tracked.
@@ -62,7 +62,7 @@ public:
 	/**
 	 * Grid to track positions that require an update.
 	 */
-	using AffectedLookupGrid = LookupPartitionedGrid<D, 2*L+1>;
+	using AffectedLookupGrid = SharedLookupPartitionedGrid<D, 2*L+1>;
 
 	/// D-dimensional hyperplane type (using Eigen library), for raycasting.
 	using Plane = Eigen::Hyperplane<FLOAT, D>;

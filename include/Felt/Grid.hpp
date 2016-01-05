@@ -340,12 +340,11 @@ public:
 	 * @param delta_ spatial size of a leaf node, for spatial derivative calculation.
 	 */
 	GridBase (
-		const VecDu& size_, const VecDi& offset_ = VecDi::Zero(),
-		const FLOAT& delta_ = 1
+		const VecDu& size_, const VecDi& offset_ = VecDi::Zero()
 	) :
 	m_dx(1)
 	{
-		this->init(size_, offset_, delta_);
+		this->init(size_, offset_);
 	}
 
 	/**
@@ -356,12 +355,9 @@ public:
 	 * @param delta_ representative spatial size of a leaf node, for spatial derivative calculation.
 	 */
 	void init (
-		const VecDu& size_, const VecDi& offset_ = VecDi::Zero(),
-		const FLOAT& delta_ = 1
+		const VecDu& size_, const VecDi& offset_ = VecDi::Zero()
 	) {
 		DerivedType* self = static_cast<DerivedType*>(this);
-
-		self->dx(delta_);
 		self->size(size_);
 		self->offset(offset_);
 	}
