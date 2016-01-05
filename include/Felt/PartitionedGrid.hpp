@@ -602,8 +602,6 @@ public:
 	using Traits = PartitionedGridBaseTraits<DerivedType>;
 	/// Child grid class.  Each spatial partition contains one Child grid.
 	using Child = typename Traits::ChildType;
-	/// Type of data to return when leaf grid nodes are queried.
-	using RetType = typename Traits::RetType;
 	/// Type of data stored in leaf grid nodes.
 	using LeafType = typename Traits::LeafType;
 	/// Dimension of overall grid.
@@ -749,7 +747,7 @@ public:
 	 * @param pos_ position in grid to fetch.
 	 * @return value stored at grid point.
 	 */
-	RetType& get (const VecDi& pos_)
+	LeafType& get (const VecDi& pos_)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
 		Child& child = this->branch().get(pos_child);
@@ -764,7 +762,7 @@ public:
 	 * @param pos_ position in grid to fetch.
 	 * @return value stored at grid point pos.
 	 */
-	const RetType& get (const VecDi& pos_) const
+	const LeafType& get (const VecDi& pos_) const
 	{
 		const Child& child = this->branch()(pos_child(pos_));
 		return child.get(pos_);
@@ -873,8 +871,6 @@ struct GridBaseTraits<PartitionedGrid<T, D> >
 	static const UINT Dims = D;
 	/// The data type to store at leaf grid nodes, from template parameter.
 	using LeafType = T;
-	/// The data type to return when leaf grid nodes are queried, from template parameter.
-	using RetType = T;
 };
 
 
@@ -892,8 +888,6 @@ struct PartitionedGridBaseTraits<PartitionedGrid<T, D> >
 	using ThisType = PartitionedGrid<T, D>;
 	/// The data type to store at leaf grid nodes, from template parameter.
 	using LeafType = T;
-	/// The data type to return when leaf grid nodes are queried, from template parameter.
-	using RetType = T;
 	/// Child type to store in spatial partitions - in this case a standard Grid.
 	using ChildType = Grid<T, D>;
 	/// Mixin type whose signature to spoof - in this case a standard GridBase.
@@ -1245,8 +1239,6 @@ struct PartitionedGridBaseTraits<TrackingPartitionedGridBase<Derived> >
 	using ThisType = typename TrackingPartitionedGridTraits<Derived>::ThisType;
 	/// The data type to store at leaf grid nodes.
 	using LeafType = typename TrackingPartitionedGridTraits<ThisType>::LeafType;
-	/// The data type to return when leaf grid nodes are queried.
-	using RetType = typename TrackingPartitionedGridTraits<ThisType>::RetType;
 	/// Child grid class.  Each spatial partition contains one Child grid.
 	using ChildType = typename TrackingPartitionedGridTraits<ThisType>::ChildType;
 	/// Base grid class to partition.
@@ -1407,8 +1399,6 @@ struct TrackingPartitionedGridTraits<TrackedPartitionedGrid<T, D, N> >
 	using MixinType = TrackedGridBase<ThisType>;
 	/// The data type to store at leaf grid nodes, from template parameter.
 	using LeafType = T;
-	/// The data type to return when leaf grid nodes are queried, same as LeafType.
-	using RetType = LeafType;
 	/// Dimensions of the grid, from template parameter.
 	static const UINT Dims = D;
 	/// Number of tracking lists, from template parameter.
@@ -1538,8 +1528,6 @@ struct TrackingPartitionedGridTraits<SharedTrackedPartitionedGrid<T, D, N> >
 	using MixinType = TrackedGridBase<ThisType>;
 	/// Lookup value at leaf nodes, from template parameter.
 	using LeafType = T;
-	/// The data type to return when leaf grid nodes are queried. Same as leaf type.
-	using RetType = LeafType;
 	/// Dimensions of the grid, from template parameter.
 	static const UINT Dims = D;
 	/// Number of tracking lists, from template parameter.
@@ -1583,8 +1571,6 @@ struct TrackingPartitionedGridTraits<LookupPartitionedGrid<D, N> >
 	using ThisType = LookupPartitionedGrid<Dims, NumLists>;
 	/// Lookup value at leaf nodes.  N-dimensional array, one element for each tracking list.
 	using LeafType = Eigen::Matrix<UINT, NumLists, 1>;
-	/// The data type to return when leaf grid nodes are queried. Same as leaf type.
-	using RetType = LeafType;
 	/// Child grid class, in this case LookupGrid.
 	using ChildType = LookupGrid<Dims, NumLists>;
 	/// Base grid class to partition, in this case LookupGridBase.
@@ -1608,8 +1594,6 @@ struct LookupGridBaseTraits<LookupPartitionedGrid<D, N> >
 	using ThisType = LookupPartitionedGrid<D, N>;
 	/// Lookup value at leaf nodes.
 	using LeafType = typename TrackingPartitionedGridTraits<ThisType>::LeafType;
-	/// The data type to return when leaf grid nodes are queried.
-	using RetType = typename TrackingPartitionedGridTraits<ThisType>::RetType;
 	/// Dimensions of the grid.
 	static const UINT Dims = TrackingPartitionedGridTraits<ThisType>::Dims;
 	/// Number of tracking lists to use.
@@ -1648,13 +1632,7 @@ struct TrackingPartitionedGridTraits<SharedLookupPartitionedGrid<D, N> >
 	/// The class inheriting from TrackingPartitionedGrid.
 	using ThisType = SharedLookupPartitionedGrid<D, N>;
 	/// Lookup value at leaf nodes.
-	using LeafType = Eigen::Matrix<UINT, N, 1>;
-	/**
-	 * The data type to return when leaf grid nodes are queried.
-	 *
-	 * A single index, since lookup grid is shared between tracking lists.
-	 */
-	using RetType = UINT;
+	using LeafType = UINT;
 	/// Child grid class, in this case SharedLookupGrid.
 	using ChildType = SharedLookupGrid<D, N>;
 	using MixinType = SharedLookupGridBase<ThisType>;
@@ -1679,8 +1657,6 @@ struct SharedLookupGridBaseTraits<SharedLookupPartitionedGrid<D, N> >
 	using ThisType = SharedLookupPartitionedGrid<D, N>;
 	/// Lookup value at leaf nodes.
 	using LeafType = typename TrackingPartitionedGridTraits<ThisType>::LeafType;
-	/// The data type to return when leaf grid nodes are queried.
-	using RetType = typename TrackingPartitionedGridTraits<ThisType>::RetType;
 	/// Dimensions of the grid.
 	static const UINT Dims = TrackingPartitionedGridTraits<ThisType>::Dims;
 	/// Number of tracking lists to use.

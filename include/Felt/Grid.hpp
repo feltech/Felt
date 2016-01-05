@@ -186,8 +186,6 @@ public:
 	static const UINT Dims = GridBaseTraits<Derived>::Dims;
 	/// Type of data to store in grid nodes.
 	using LeafType = typename GridBaseTraits<Derived>::LeafType;
-	/// Type of data to return when grid nodes are queried (usually same as LeafType).
-	using RetType = typename GridBaseTraits<Derived>::RetType;
 
 	/**
 	 * D-dimensional unsigned integer vector.
@@ -422,7 +420,7 @@ public:
 	 * @param pos_ position in grid to query.
 	 * @return value represented at given position.
 	 */
-	RetType& operator() (const VecDi& pos_)
+	LeafType& operator() (const VecDi& pos_)
 	{
 		return this->get(pos_);
 	}
@@ -435,7 +433,7 @@ public:
 	 * @param pos_ position in grid to query.
 	 * @return value represented at given position.
 	 */
-	const RetType& operator() (const VecDi& pos_) const
+	const LeafType& operator() (const VecDi& pos_) const
 	{
 		return this->get(pos_);
 	}
@@ -473,7 +471,7 @@ public:
 	 * @param pos_ position in grid to query.
 	 * @return value represented at given position.
 	 */
-	RetType& get (const VecDi& pos_)
+	LeafType& get (const VecDi& pos_)
 	{
 		return static_cast<DerivedType*>(this)->get(pos_);
 	}
@@ -482,7 +480,7 @@ public:
 	 * @copydoc GridBase::get(const VecDi&)
 	 * @brief Const version.
 	 */
-	const RetType& get (const VecDi& pos_) const
+	const LeafType& get (const VecDi& pos_) const
 	{
 		return static_cast<const DerivedType*>(this)->get(pos_);
 	}
@@ -1314,8 +1312,6 @@ struct GridBaseTraits<Grid<T, D> >
 	static const UINT Dims = D;
 	/// The data type to store at leaf grid nodes, from template parameter.
 	using LeafType = T;
-	/// The data type to return when leaf grid nodes are queried, from template parameter.
-	using RetType = T;
 };
 
 /** @} */ // End group Grid.

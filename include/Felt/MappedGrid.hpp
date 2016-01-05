@@ -41,8 +41,6 @@ public:
 	using ThisType = LookupGridBase<Derived>;
 	/// Type of data stored in grid nodes. For lookup grids this is an N-tuple of array indices.
 	using LeafType = typename LookupGridBaseTraits<Derived>::LeafType;
-	/// Type of data to return when grid nodes are queried.  Either array index or indices.
-	using RetType = typename LookupGridBaseTraits<Derived>::RetType;
 	/// GridBase base class.
 	using Base = GridBase<ThisType>;
 	using typename Base::VecDu;
@@ -154,7 +152,7 @@ public:
 	 * @param pos_ position in grid to query.
 	 * @return tuple of indices at this grid position.
 	 */
-	RetType& get (const VecDi& pos_)
+	LeafType& get (const VecDi& pos_)
 	{
 		return this->get_internal(pos_);
 	}
@@ -167,7 +165,7 @@ public:
 	 * @param pos_ position in grid to query.
 	 * @return tuple of indices at this grid position.
 	 */
-	const RetType& get (const VecDi& pos_) const
+	const LeafType& get (const VecDi& pos_) const
 	{
 		return this->get_internal(pos_);
 	}
@@ -193,7 +191,7 @@ public:
 	void size (const VecDu& size_)
 	{
 		Base::size(size_);
-		this->fill(NULL_IDX_TUPLE);
+		static_cast<Derived*>(this)->clear();
 	}
 
 	using Base::size;
@@ -290,6 +288,14 @@ public:
 protected:
 
 	/**
+	 * Reset the entire grid to null indices.
+	 */
+	void clear ()
+	{
+		this->fill(LeafType::Constant(NULL_IDX));
+	}
+
+	/**
 	 * Add pos to tracking list and set pos in grid to index in tracking
 	 * list.
 	 *
@@ -310,7 +316,7 @@ protected:
 		this->assert_pos_bounds(pos_, "add: ");
 		#endif
 
-		UINT& idx = this->get_internal(pos_)[lookup_idx_];
+		UINT& idx = static_cast<Derived*>(this)->idx_from_pos(pos_, lookup_idx_);
 		// Do not allow duplicates.
 		if (idx != NULL_IDX)
 			return false;
@@ -341,8 +347,20 @@ protected:
 	void reset(const UINT& arr_idx_, const UINT& lookup_idx_)
 	{
 		for (VecDi pos : m_a_pos[arr_idx_])
-			this->get_internal(pos)[lookup_idx_] = NULL_IDX;
+			static_cast<Derived*>(this)->idx_from_pos(pos, lookup_idx_) = NULL_IDX;
 		this->list(arr_idx_).clear();
+	}
+
+	/**
+	 * Get index in a tracking list from position.
+	 *
+	 * @param pos_ position in grid to find index data.
+	 * @param arr_idx_ tracking list id.
+	 * @return
+	 */
+	UINT& idx_from_pos(const VecDi& pos_, const UINT& arr_idx_)
+	{
+		return this->get_internal(pos_)[arr_idx_];
 	}
 
 	/**
@@ -362,8 +380,10 @@ protected:
 		this->assert_pos_bounds(pos_, "remove: ");
 		#endif
 
+		Derived* self = static_cast<Derived*>(this);
+
 		// Set index lookup to null value.
-		this->get_internal(pos_)[lookup_idx_] = NULL_IDX;
+		self->idx_from_pos(pos_, lookup_idx_) = NULL_IDX;
 
 		// If this is not the last remaining position in the array, then
 		// we must move the last position to this position and update the
@@ -375,7 +395,7 @@ protected:
 			const VecDi& pos_last = this->list(arr_idx_)[size - 1];
 			this->list(arr_idx_)[idx_] = pos_last;
 			// Set the lookup grid to reference the new index in the array.
-			this->get_internal(pos_last)[lookup_idx_] = idx_;
+			self->idx_from_pos(pos_last, lookup_idx_) = idx_;
 		}
 		// Remove the last element in the array (which is at this point
 		// either the last remaining element or a duplicate).
@@ -385,7 +405,7 @@ protected:
 
 
 template <class Derived> const typename LookupGridBase<Derived>::LeafType
-LookupGridBase<Derived>::NULL_IDX_TUPLE = LookupGridBase<Derived>::LeafType::Constant(
+LookupGridBase<Derived>::NULL_IDX_TUPLE = felt::VecDu<LookupGridBase<Derived>::NUM_LISTS>::Constant(
 	std::numeric_limits<UINT>::max()
 );
 
@@ -407,7 +427,6 @@ struct GridBaseTraits<LookupGridBase<Derived> >
 	/// Dimension of grid.
 	static const UINT Dims = LookupGridBaseTraits<Derived>::Dims;
 	using LeafType = typename LookupGridBaseTraits<Derived>::LeafType;
-	using RetType = typename LookupGridBaseTraits<Derived>::RetType;
 	using ThisType = typename LookupGridBaseTraits<Derived>::ThisType;
 };
 
@@ -448,8 +467,6 @@ struct LookupGridBaseTraits<LookupGrid<D, N> >
 	using ThisType = LookupGrid<D, N>;
 	/// Leaf grid nodes store N-tuple of list indices.
 	using LeafType = VecDu<N>;
-	/// Grid returns the same type as is stored, N-tuple of list indices.
-	using RetType = LeafType;
 	/// Dimension of the grid taken from template parameter.
 	static const UINT Dims = D;
 	/// Number of tracking lists taken from template parameter.
@@ -475,43 +492,17 @@ template <class Derived>
 class SharedLookupGridBase : public LookupGridBase<SharedLookupGridBase<Derived> >
 {
 public:
+	friend class LookupGridBase<SharedLookupGridBase<Derived> >;
 	using ThisType = SharedLookupGridBase<Derived>;
 	using Base = LookupGridBase<ThisType>;
-	using typename Base::RetType;
+	using Base::NULL_IDX;
+	using typename Base::LeafType;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 protected:
 	using Base::m_a_pos;
 public:
 	using Base::LookupGridBase;
-
-	/**
-	 * Return index in associated list of grid node.
-	 *
-	 * Overloads get method of GridBase to return the first (and only)
-	 * element in the tuple of indices.
-	 *
-	 * @param pos_ position in grid to query.
-	 * @return list index stored at given position
-	 */
-	RetType& get (const VecDi& pos_)
-	{
-		return this->get_internal(pos_)[0];
-	}
-
-	/**
-	 * Return index in associated list of grid node.
-	 *
-	 * Overloads get method of GridBase to return the first (and only)
-	 * element in the tuple of indices.
-	 *
-	 * @param pos_ position in grid to query.
-	 * @return list index stored at given position
-	 */
-	const RetType& get (const VecDi& pos_) const
-	{
-		return this->get_internal(pos_)[0];
-	}
 
 	/**
 	 * Return true if position currently tracked for given list id, false
@@ -592,8 +583,30 @@ public:
 	 */
 	void remove (const VecDi& pos_, const UINT& arr_idx_ = 0)
 	{
-		const UINT& idx = this->get_internal(pos_)[0];
+		const UINT& idx = idx_from_pos(pos_);
 		Base::remove(idx, pos_, arr_idx_, 0);
+	}
+
+protected:
+
+	/**
+	 * Reset the entire grid to null indices.
+	 */
+	void clear ()
+	{
+		this->fill(NULL_IDX);
+	}
+
+	/**
+	 * Get index in a tracking list from position.
+	 *
+	 * @param pos_ position in grid to find index data.
+	 * @param arr_idx_ tracking list id.
+	 * @return
+	 */
+	UINT& idx_from_pos(const VecDi& pos_, const UINT& arr_idx_ = 0)
+	{
+		return this->get_internal(pos_);
 	}
 };
 
@@ -608,7 +621,6 @@ struct LookupGridBaseTraits<SharedLookupGridBase<Derived> >
 {
 	using ThisType = typename SharedLookupGridBaseTraits<Derived>::ThisType;
 	using LeafType = typename SharedLookupGridBaseTraits<Derived>::LeafType;
-	using RetType = typename SharedLookupGridBaseTraits<Derived>::RetType;
 	static const UINT Dims = SharedLookupGridBaseTraits<Derived>::Dims;
 	static const UINT NumLists = SharedLookupGridBaseTraits<Derived>::NumLists;
 };
@@ -644,9 +656,7 @@ struct SharedLookupGridBaseTraits<SharedLookupGrid<D, N> >
 {
 	using ThisType = SharedLookupGrid<D, N>;
 	/// Shared lookup grids only store a single index at each grid position.
-	using LeafType = VecDu<1>;
-	/// Grid queries return the index stored at that position.
-	using RetType = UINT;
+	using LeafType = UINT;
 	/// Dimension of the grid taken from template parameter.
 	static const UINT Dims = D;
 	/// Number of tracking lists taken from template parameter.
@@ -928,7 +938,6 @@ struct GridBaseTraits<TrackedGridBase<Derived> >
 {
 	using ThisType = typename TrackedGridBaseTraits<Derived>::ThisType;
 	using LeafType = typename TrackedGridBaseTraits<Derived>::LeafType;
-	using RetType = LeafType;
 	static const UINT Dims = TrackedGridBaseTraits<Derived>::Dims;
 };
 
