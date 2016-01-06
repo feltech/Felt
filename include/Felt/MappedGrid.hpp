@@ -39,6 +39,7 @@ class LookupGridBase : public GridBase<LookupGridBase<Derived> >
 {
 public:
 	using ThisType = LookupGridBase<Derived>;
+	using DerivedType = typename LookupGridBaseTraits<Derived>::ThisType;
 	/// Type of data stored in grid nodes. For lookup grids this is an N-tuple of array indices.
 	using LeafType = typename LookupGridBaseTraits<Derived>::LeafType;
 	/// GridBase base class.
@@ -145,32 +146,6 @@ public:
 	}
 
 	/**
-	 * Return tuple of indices stored at given position in grid.
-	 *
-	 * Overloads get method of GridBase to simply return value stored.
-	 *
-	 * @param pos_ position in grid to query.
-	 * @return tuple of indices at this grid position.
-	 */
-	LeafType& get (const VecDi& pos_)
-	{
-		return this->get_internal(pos_);
-	}
-
-	/**
-	 * Return tuple of indices stored at given position in grid.
-	 *
-	 * Overloads get method of GridBase to simply return value stored.
-	 *
-	 * @param pos_ position in grid to query.
-	 * @return tuple of indices at this grid position.
-	 */
-	const LeafType& get (const VecDi& pos_) const
-	{
-		return this->get_internal(pos_);
-	}
-
-	/**
 	 * Get mutex associated with this lookup grid - only used externally.
 	 *
 	 * Adding and removing elements from the tracking list/grid is not thread safe, so if multiple
@@ -191,7 +166,7 @@ public:
 	void size (const VecDu& size_)
 	{
 		Base::size(size_);
-		static_cast<Derived*>(this)->clear();
+		self->clear();
 	}
 
 	using Base::size;
@@ -226,9 +201,9 @@ public:
 	 * @param arr_idx_ id of tracking list to test.
 	 * @return true if grid position tracked, false otherwise.
 	 */
-	const bool is_active (const VecDi& pos, const UINT& arr_idx_ = 0) const
+	const bool is_active (const VecDi& pos_, const UINT& arr_idx_ = 0) const
 	{
-		return this->get(pos)[arr_idx_] != NULL_IDX;
+		return cself->idx_from_pos(pos_, arr_idx_) != NULL_IDX;
 	}
 
 	/**
@@ -269,7 +244,7 @@ public:
 	 */
 	void remove (const VecDi& pos, const UINT& arr_idx_ = 0)
 	{
-		const UINT& idx = this->get_internal(pos)[arr_idx_];
+		const UINT& idx = this->get(pos)[arr_idx_];
 		if (idx == NULL_IDX)
 			return;
 		remove(idx, pos, arr_idx_, arr_idx_);
@@ -316,13 +291,13 @@ protected:
 		this->assert_pos_bounds(pos_, "add: ");
 		#endif
 
-		UINT& idx = static_cast<Derived*>(this)->idx_from_pos(pos_, lookup_idx_);
+		UINT& idx = self->idx_from_pos(pos_, lookup_idx_);
 		// Do not allow duplicates.
 		if (idx != NULL_IDX)
 			return false;
 		// idx is by reference, so this sets the value in grid.
 		idx = this->list(arr_idx_).size();
-		this->list(arr_idx_).push_back(pos_);
+		list(arr_idx_).push_back(pos_);
 		return true;
 	}
 
@@ -347,8 +322,8 @@ protected:
 	void reset(const UINT& arr_idx_, const UINT& lookup_idx_)
 	{
 		for (VecDi pos : m_a_pos[arr_idx_])
-			static_cast<Derived*>(this)->idx_from_pos(pos, lookup_idx_) = NULL_IDX;
-		this->list(arr_idx_).clear();
+			self->idx_from_pos(pos, lookup_idx_) = NULL_IDX;
+		list(arr_idx_).clear();
 	}
 
 	/**
@@ -360,7 +335,15 @@ protected:
 	 */
 	UINT& idx_from_pos(const VecDi& pos_, const UINT& arr_idx_)
 	{
-		return this->get_internal(pos_)[arr_idx_];
+		return this->get(pos_)[arr_idx_];
+	}
+
+	/**
+	 * @copydoc idx_from_pos(const VecDi&,const UINT&)
+	 */
+	const UINT& idx_from_pos(const VecDi& pos_, const UINT& arr_idx_) const
+	{
+		return this->get(pos_)[arr_idx_];
 	}
 
 	/**
@@ -380,8 +363,6 @@ protected:
 		this->assert_pos_bounds(pos_, "remove: ");
 		#endif
 
-		Derived* self = static_cast<Derived*>(this);
-
 		// Set index lookup to null value.
 		self->idx_from_pos(pos_, lookup_idx_) = NULL_IDX;
 
@@ -399,7 +380,7 @@ protected:
 		}
 		// Remove the last element in the array (which is at this point
 		// either the last remaining element or a duplicate).
-		this->list(arr_idx_).pop_back();
+		list(arr_idx_).pop_back();
 	}
 };
 
@@ -606,7 +587,15 @@ protected:
 	 */
 	UINT& idx_from_pos(const VecDi& pos_, const UINT& arr_idx_ = 0)
 	{
-		return this->get_internal(pos_);
+		return this->get(pos_);
+	}
+
+	/**
+	 * @copydoc idx_from_pos(const VecDi&,const UINT&)
+	 */
+	const UINT& idx_from_pos(const VecDi& pos_, const UINT& arr_idx_) const
+	{
+		return this->get(pos_);
 	}
 };
 
@@ -762,29 +751,6 @@ public:
 	{
 		Base::offset(offset_);
 		m_grid_lookup.offset(offset_);
-	}
-
-	/**
-	 * Override GridBase::get to simply return the value stored in the grid.
-	 *
-	 * @param pos_ position in grid to query.
-	 * @return value stored in main grid at given position.
-	 */
-	LeafType& get (const VecDi& pos_)
-	{
-		return this->get_internal(pos_);
-	}
-
-	/**
-	 * Override GridBase::get to simply return the value stored in the grid
-	 * (const version).
-	 *
-	 * @param pos_ position in grid to query.
-	 * @return value stored in main grid at given position.
-	 */
-	const LeafType& get (const VecDi& pos_) const
-	{
-		return this->get_internal(pos_);
 	}
 
 	/**

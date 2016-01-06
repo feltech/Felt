@@ -142,8 +142,6 @@ public:
 		const VecDu& size_, const VecDi& offset_,
 		const VecDu& partition_size_ = VecDu::Constant(DEFAULT_PARTITION)
 	) {
-		DerivedType* self = static_cast<DerivedType*>(this);
-
 		self->init(partition_size_);
 		self->size(size_);
 		self->offset(offset_);
@@ -647,7 +645,6 @@ public:
 		const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION)
 	) : Base()
 	{
-		DerivedType* self = static_cast<DerivedType*>(this);
 		self->init(size_, offset_, size_partition_);
 	}
 
@@ -786,7 +783,7 @@ public:
 			{
 				const VecDi& pos = child.index(leaf_idx);
 				if (m_pgrid_snapshot->inside(pos))
-					m_pgrid_snapshot->get_internal(pos) = child.get_internal(pos);
+					m_pgrid_snapshot->get(pos) = child.get(pos);
 			}
 		}
 		return m_pgrid_snapshot->data();
@@ -809,7 +806,7 @@ public:
 			{
 				const VecDi& pos = child.index(leaf_idx);
 				if (m_pgrid_snapshot->inside(pos))
-					child.get_internal(pos) = m_pgrid_snapshot->get_internal(pos);
+					child.get(pos) = m_pgrid_snapshot->get(pos);
 			}
 		}
 	}

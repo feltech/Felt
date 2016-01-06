@@ -10,6 +10,12 @@
 
 namespace felt
 {
+
+/// Shorthand cast to CRTP derived type.
+#define self static_cast<DerivedType*>(this)
+/// Shorthand cast to const CRTP derived type.
+#define cself static_cast<const DerivedType*>(this)
+
 /**
  * Use 32 bit float by default.
  */
@@ -355,7 +361,6 @@ public:
 	void init (
 		const VecDu& size_, const VecDi& offset_ = VecDi::Zero()
 	) {
-		DerivedType* self = static_cast<DerivedType*>(this);
 		self->size(size_);
 		self->offset(offset_);
 	}
@@ -422,7 +427,7 @@ public:
 	 */
 	LeafType& operator() (const VecDi& pos_)
 	{
-		return this->get(pos_);
+		return self->get(pos_);
 	}
 
 	/**
@@ -435,7 +440,7 @@ public:
 	 */
 	const LeafType& operator() (const VecDi& pos_) const
 	{
-		return this->get(pos_);
+		return cself->get(pos_);
 	}
 
 	/**
@@ -458,7 +463,7 @@ public:
 	 */
 	LeafType operator() (const VecDf& pos_)
 	{
-		return this->interp(pos_);
+		return interp(pos_);
 	}
 
 	/**
@@ -469,11 +474,11 @@ public:
 	 * @snippet test_Grid.cpp Get and set
 	 *
 	 * @param pos_ position in grid to query.
-	 * @return value represented at given position.
+	 * @return reference to value represented at given position.
 	 */
 	LeafType& get (const VecDi& pos_)
 	{
-		return static_cast<DerivedType*>(this)->get(pos_);
+		return get_internal(pos_);
 	}
 
 	/**
@@ -482,15 +487,19 @@ public:
 	 */
 	const LeafType& get (const VecDi& pos_) const
 	{
-		return static_cast<const DerivedType*>(this)->get(pos_);
+		return get_internal(pos_);
 	}
 
+
 	/**
-	 * @copydoc get(const VecDf&)
+	 * Get (copy of) value at grid node.
+	 *
+	 * @param pos_ position in grid to query.
+	 * @return value at grid node.
 	 */
-	const LeafType get (const VecDf& pos_) const
+	LeafType val (const VecDi& pos_) const
 	{
-		return this->interp(pos_);
+		return cself->get(pos_);
 	}
 
 	/**
@@ -504,10 +513,11 @@ public:
 	 * @param pos_ position in grid to query.
 	 * @return linearly interpolated value at given position.
 	 */
-	LeafType get (const VecDf& pos_)
+	LeafType val (const VecDf& pos_) const
 	{
-		return this->interp(pos_);
+		return interp(pos_);
 	}
+
 
 	/**
 	 * Get index in data array of position vector.
@@ -805,7 +815,7 @@ x = (idx/Dz)/Dy % Dx
 	VecDT gradF (const felt::VecDT<PosType, Dims>& pos_) const
 	{
 		// Value at this point.
-		const LeafType val_centre = (*this)(pos_);
+		const LeafType val_centre = val(pos_);
 		// Reference to GridBase dimensions.
 		const VecDu& size = this->size();
 		// Vector to store gradient calculation.
@@ -834,7 +844,7 @@ x = (idx/Dz)/Dy % Dx
 	VecDT gradB (const felt::VecDT<PosType, Dims>& pos_) const
 	{
 		// Value at this point.
-		const LeafType val_centre = (*this)(pos_);
+		const LeafType val_centre = val(pos_);
 		// Reference to GridBase dimensions.
 		const VecDu& size = this->size();
 		// Vector to store gradient calculation.
@@ -869,9 +879,9 @@ x = (idx/Dz)/Dy % Dx
 
 		for (INT axis = 0; axis < size.size(); axis++) {
 			vec_dir(axis) -= 1;
-			const LeafType back = (*this)(vec_dir);
+			const LeafType back = val(vec_dir);
 			vec_dir(axis) += 2;
-			const LeafType forward = (*this)(vec_dir);
+			const LeafType forward = val(vec_dir);
 			vec_dir(axis) -= 1;
 
 			vec_grad(axis) = (forward - back) /  2;
@@ -902,8 +912,8 @@ x = (idx/Dz)/Dy % Dx
 		// Position for look-around.
 		VecDR pos_test(pos_);
 
-		// Central value.
-		LeafType centre = this->get(pos_);
+		// Central value (not reference, since could be interpolated).
+		LeafType centre = val(pos_);
 
 		for (INT axis = 0; axis < size.size(); axis++)
 		{
@@ -912,16 +922,16 @@ x = (idx/Dz)/Dy % Dx
 			UINT order = 0;
 			// Check if backward value is within GridBase.
 			pos_test(axis) -= 1;
-			if (this->inside(pos_test))
+			if (inside(pos_test))
 			{
-				back = this->get(pos_test);
+				back = val(pos_test);
 				order++;
 			}
 			// Check if forward value is within GridBase.
 			pos_test(axis) += 2;
-			if (this->inside(pos_test))
+			if (inside(pos_test))
 			{
-				forward = this->get(pos_test);
+				forward = val(pos_test);
 				order++;
 			}
 			pos_test(axis) -= 1;
@@ -950,7 +960,7 @@ x = (idx/Dz)/Dy % Dx
 	{
 		typedef Eigen::Matrix<PosType, Dims, 1> VecDp;
 		// Value at this point.
-		const LeafType centre = (*this)(pos);
+		const LeafType centre = val(pos);
 		// Reference to GridBase dimensions.
 		const VecDu& size = this->size();
 		// Vector to store gradient calculation.
@@ -961,9 +971,9 @@ x = (idx/Dz)/Dy % Dx
 		for (INT axis = 0; axis < size.size(); axis++)
 		{
 			pos_test(axis) -= 1;
-			LeafType back = this->get(pos_test);
+			LeafType back = val(pos_test);
 			pos_test(axis) += 2;
-			LeafType forward = this->get(pos_test);
+			LeafType forward = val(pos_test);
 			pos_test(axis) -= 1;
 
 			back = std::max((centre - back), 0.0f);
@@ -1043,7 +1053,7 @@ x = (idx/Dz)/Dy % Dx
 	{
 		using VecDp = felt::VecDT<PosType, Dims>;
 
-		const LeafType val_centre = (*this)(pos_);
+		const LeafType val_centre = val(pos_);
 		const VecDu& size = this->size();
 		VecDp dir(pos_);
 
@@ -1054,7 +1064,7 @@ x = (idx/Dz)/Dy % Dx
 		{
 			dir(axis) += 1;
 
-			const LeafType val_axis = (*this)(dir) - val_centre;
+			const LeafType val_axis = val(dir) - val_centre;
 			LeafType val_neighs_sq = 0;
 
 			// Loop other dimensions to get central difference across them.
@@ -1066,11 +1076,11 @@ x = (idx/Dz)/Dy % Dx
 					// Central difference across this forward point.
 					VecDp dir_neigh(dir);
 					dir_neigh(axis_neigh) -= 1;
-					const LeafType val_low = this->get(dir_neigh);
+					const LeafType& val_low = val(dir_neigh);
 					dir_neigh(axis_neigh) += 2;
-					const LeafType val_high = this->get(dir_neigh);
+					const LeafType& val_high = val(dir_neigh);
 
-					const LeafType val_neigh = (val_high - val_low) / 2;
+					const LeafType& val_neigh = (val_high - val_low) / 2;
 					val_neighs_sq += val_neigh*val_neigh;
 				}
 			}
@@ -1102,11 +1112,11 @@ x = (idx/Dz)/Dy % Dx
 					// Central difference across this backward point.
 					VecDp dir_neigh(dir);
 					dir_neigh(axis_neigh) -= 1;
-					const LeafType val_low = this->get(dir_neigh);
+					const LeafType& val_low = cself->get(dir_neigh);
 					dir_neigh(axis_neigh) += 2;
-					const LeafType val_high = this->get(dir_neigh);
+					const LeafType& val_high = cself->get(dir_neigh);
 
-					const LeafType val_neigh = (val_high - val_low) / 2;
+					const LeafType& val_neigh = (val_high - val_low) / 2;
 					val_neighs_sq += val_neigh*val_neigh;
 				}
 			}
@@ -1133,8 +1143,8 @@ x = (idx/Dz)/Dy % Dx
 	template <typename PosType>
 	LeafType divergence (const felt::VecDT<PosType, Dims>& pos_) const
 	{
-		const VecDT vec_grad_f = this->gradF(pos_);
-		const VecDT vec_grad_b = this->gradB(pos_);
+		const VecDT vec_grad_f = gradF(pos_);
+		const VecDT vec_grad_b = gradB(pos_);
 		const VecDT vec_grad_diff = vec_grad_b - vec_grad_f;
 
 		// Component-wise sum.
@@ -1149,7 +1159,8 @@ x = (idx/Dz)/Dy % Dx
 	 * @param pos_ position in grid to query.
 	 * @return internally stored value at given grid position
 	 */
-	LeafType& get_internal (const VecDi& pos_) {
+	LeafType& get_internal (const VecDi& pos_)
+	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		assert_pos_bounds(pos_, "get_internal: ");
 		#endif
@@ -1181,13 +1192,11 @@ x = (idx/Dz)/Dy % Dx
 	 */
 	void assert_pos_bounds (const VecDi& pos_, std::string title_) const
 	{
-		const DerivedType* self = static_cast<const DerivedType*>(this);
-
-		if (!self->inside(pos_))
+		if (!cself->inside(pos_))
 		{
-			const VecDi& pos_min = self->offset();
+			const VecDi& pos_min = cself->offset();
 			const VecDi& pos_max = (
-				self->size().template cast<INT>() + pos_min - VecDi::Constant(1)
+				cself->size().template cast<INT>() + pos_min - VecDi::Constant(1)
 			);
 			std::stringstream err;
 			err << title_ << format(pos_.transpose())
@@ -1270,31 +1279,6 @@ public:
 
 	~Grid ()
 	{}
-
-	using Base::get;
-
-	/**
-	 * Override GridBase::get to simply return the value stored in the grid.
-	 *
-	 * @param pos_ position in grid to query.
-	 * @return internally stored value at given grid position
-	 */
-	T& get (const VecDi& pos_)
-	{
-		return this->get_internal(pos_);
-	}
-
-	/**
-	 * Override GridBase::get to simply return the value stored in the grid
-	 * (const version).
-	 *
-	 * @param pos_ position in grid to query.
-	 * @return internally stored value at given grid position
-	 */
-	const T& get (const VecDi& pos_) const
-	{
-		return this->get_internal(pos_);
-	}
 };
 
 /**

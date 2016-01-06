@@ -551,9 +551,9 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 		const FLOAT& val2 = grid.interp(Vec2f(-0.5f, -0.5f));
 		const FLOAT& val3 = grid.interp(Vec2f(0.5f, 0.5f));
 		// Via getter function overload.
-		const FLOAT& val4 = grid.get(Vec2f(0.5f, 0.5f));
+		const FLOAT val4 = grid.val(Vec2f(0.5f, 0.5f));
 		// Via operator overload.
-		const FLOAT& val5 = grid(Vec2f(0.5f, 0.5f));
+		const FLOAT val5 = grid(Vec2f(0.5f, 0.5f));
 
 		// ==== Confirm ====
 		BOOST_CHECK_CLOSE(val1, 0.0f, 0.00001f);

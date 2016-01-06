@@ -73,7 +73,6 @@ namespace felt
 		 */
 		void init(const PolySurface& surface)
 		{
-			DerivedType* self = static_cast<DerivedType*>(this);
 			Base::init(
 				surface.isogrid().branch().size(), surface.isogrid().branch().offset()
 			);
