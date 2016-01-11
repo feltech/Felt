@@ -8,7 +8,8 @@
 
 #include "PolyBase.hpp"
 #include "Grid.hpp"
-#include "MappedGrid.hpp"
+#include "LookupGrid.hpp"
+#include "TrackedGrid.hpp"
 #include "Surface.hpp"
 
 namespace felt 

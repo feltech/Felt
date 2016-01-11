@@ -168,7 +168,7 @@ VecDf<D> floorf(const VecDf<D>& pos_)
  *
  * @tparam Derived the CRTP derived class.
  */
-template <class Derived> struct GridBaseTraits {};
+template <class Derived> struct GridTraits {};
 
 
 /**
@@ -187,11 +187,11 @@ public:
 	/// This GridBase type.
 	using ThisType = GridBase<Derived>;
 	/// CRTP derived class.
-	using DerivedType = typename GridBaseTraits<Derived>::ThisType;
+	using DerivedType = typename GridTraits<Derived>::ThisType;
 	/// Dimension of the grid.
-	static const UINT Dims = GridBaseTraits<Derived>::Dims;
+	static const UINT Dims = GridTraits<Derived>::Dims;
 	/// Type of data to store in grid nodes.
-	using LeafType = typename GridBaseTraits<Derived>::LeafType;
+	using LeafType = typename GridTraits<Derived>::LeafType;
 
 	/**
 	 * D-dimensional unsigned integer vector.
@@ -467,9 +467,7 @@ public:
 	}
 
 	/**
-	 * Abstract getter to be overriden by subclasses.
-	 *
-	 * This allows the subclass to mutate the value stored in the grid before it is used.
+	 * Get value at position in grid
 	 *
 	 * @snippet test_Grid.cpp Get and set
 	 *
@@ -489,7 +487,6 @@ public:
 	{
 		return get_internal(pos_);
 	}
-
 
 	/**
 	 * Get (copy of) value at grid node.
@@ -668,12 +665,17 @@ x = (idx/Dz)/Dy % Dx
 	void size (const VecDu& size_)
 	{
 		m_size = size_;
+		activate();
+	}
 
+	/**
+	 * Create the internal data array and fill with background value.
+	 */
+	void activate()
+	{
 		INT arr_size = m_size(0);
 		for (INT i = 1; i < m_size.size(); i++)
-		{
 			arr_size *= m_size(i);
-		}
 		m_data.resize(arr_size);
 	}
 
@@ -694,7 +696,7 @@ x = (idx/Dz)/Dy % Dx
 	 */
 	void fill (const LeafType& val_)
 	{
-		this->data().fill(val_);
+		m_data.fill(val_);
 	}
 
 	/**
@@ -1261,6 +1263,22 @@ public:
 
 
 /**
+ * Abstract traits struct for GridBase.
+ *
+ * @tparam T the type of data to store in the grid.
+ * @tparam D the number of dimensions of the grid.
+ */
+template <typename T, UINT D>
+struct DefaultGridTraits
+{
+	/// Dimensions of the grid, from template parameter.
+	static const UINT Dims = D;
+	/// The data type to store at leaf grid nodes, from template parameter.
+	using LeafType = T;
+};
+
+
+/**
  * A standard D-dimensional grid for storing values of type T.
  *
  * @tparam T the type of data to store in the grid.
@@ -1276,10 +1294,8 @@ public:
 	using typename Base::VecDi;
 	using typename Base::VecDf;
 	using Base::GridBase;
-
-	~Grid ()
-	{}
 };
+
 
 /**
  * Traits for GridBase to understand Grid.
@@ -1288,14 +1304,193 @@ public:
  * @tparam D the number of dimensions of the grid.
  */
 template <typename T, UINT D>
-struct GridBaseTraits<Grid<T, D> >
+struct GridTraits<Grid<T, D> > : DefaultGridTraits<T, D>
 {
 	/// The class inheriting from the base.
 	using ThisType = Grid<T, D>;
-	/// Dimensions of the grid, from template parameter.
-	static const UINT Dims = D;
-	/// The data type to store at leaf grid nodes, from template parameter.
-	using LeafType = T;
+};
+
+
+/**
+ * A lazy-loaded D-dimensional grid for storing values of type T.
+ *
+ * @tparam Derived the CRTP derived class.
+ */
+template <class Derived>
+class LazyGridBase : public GridBase<LazyGridBase<Derived> >
+{
+public:
+	using ThisType = LazyGridBase<Derived>;
+	using DerivedType = typename GridTraits<Derived>::ThisType;
+	using Base = GridBase<ThisType>;
+	using typename Base::VecDu;
+	using typename Base::VecDi;
+	using typename Base::VecDf;
+	using typename Base::LeafType;
+	using Base::GridBase;
+private:
+	/// The background value to return when grid is inactive.
+	LeafType m_background;
+public:
+
+	/**
+	 * Default constructor
+	 */
+	LazyGridBase () : Base(), m_background()
+	{}
+
+	/**
+	 * Initialise a grid with given dimension, offset, and background value.
+	 *
+	 * @snippet test_Grid.cpp LazyGrid initialisation
+	 *
+	 * @param size_ size of grid.
+	 * @param offset_ spatial offset of grid.
+	 * @param background_ default value to use when grid is inactive.
+	 */
+	LazyGridBase (
+		const VecDu& size_, const VecDi& offset_,
+		const LeafType& background_
+	) : Base(size_, offset_)
+	{
+		init(size_, offset_, background_);
+	}
+
+	/**
+	 * Initialise the grid dimensions, offset, and background value.
+	 *
+	 * @snippet test_Grid.cpp LazyGrid initialisation
+	 *
+	 * @param size_ size of grid.
+	 * @param offset_ spatial offset of grid.
+	 * @param background_ default value to use when grid is inactive.
+	 */
+	void init (const VecDu& size_, const VecDi& offset_, const LeafType& background_ = LeafType())
+	{
+		self->size(size_);
+		self->offset(offset_);
+		m_background = background_;
+	}
+
+	/**
+	 * Get the background value returned when grid is inactive.
+	 */
+	LeafType& background()
+	{
+		return m_background;
+	}
+
+	/**
+	 * @copydoc LazyGrid::background()
+	 */
+	const LeafType& background() const
+	{
+		return m_background;
+	}
+
+	/**
+	 * Get whether this grid is active or not.
+	 *
+	 * An inactive grid stores no data and always returns the background value.
+	 *
+	 * @return boolean of the current active state of this grid.
+	 */
+	const bool is_active() const
+	{
+		return this->m_data.size() > 0;
+	}
+
+	using Base::size;
+
+	/**
+	 * Set the dimensions of the grid, but do not alter the data array.
+	 *
+	 * @param size_ new size of the grid.
+	 */
+	void size (const VecDu& size_)
+	{
+		this->m_size = size_;
+	}
+
+	/**
+	 * Create the internal data array and fill with background value.
+	 *
+	 * @snippet test_Grid.cpp LazyGrid activation
+	 */
+	void activate()
+	{
+		Base::activate();
+		this->fill(m_background);
+	}
+
+	/**
+	 * Destroy the internal data array.
+	 *
+	 * @snippet test_Grid.cpp LazyGrid deactivation
+	 */
+	void deactivate()
+	{
+		this->m_data.resize(0);
+	}
+
+	/**
+	 * Get value at position in grid, or return background value if grid is inactive.
+	 *
+	 * @snippet test_Grid.cpp LazyGrid activation
+	 * @snippet test_Grid.cpp LazyGrid deactivation
+	 *
+	 * @param pos_ position in grid to query.
+	 * @return reference to value represented at given position.
+	 */
+	LeafType& get (const VecDi& pos_)
+	{
+		if (is_active())
+			return this->get_internal(pos_);
+		return m_background;
+	}
+
+	/**
+	 * @copydoc LazyGrid::get(const VecDi&)
+	 * @brief Const version.
+	 */
+	const LeafType& get (const VecDi& pos_) const
+	{
+		if (is_active())
+			return this->get_internal(pos_);
+		return m_background;
+	}
+};
+
+template <class Derived>
+struct GridTraits<LazyGridBase<Derived> > : GridTraits<Derived>
+{};
+
+/**
+ * A lazy-loaded D-dimensional grid for storing values of type T.
+ *
+ * @tparam T the type of data to store in the grid.
+ * @tparam D the dimensions of the grid.
+ */
+template <typename T, UINT D>
+class LazyGrid : public LazyGridBase<LazyGrid<T, D> >
+{
+public:
+	using Base = LazyGridBase<LazyGrid<T, D> >;
+	using Base::LazyGridBase;
+};
+
+
+/**
+ * Traits for GridBase to understand LazyGrid.
+ *
+ * @tparam T the type of data to store in the grid.
+ * @tparam D the number of dimensions of the grid.
+ */
+template <typename T, UINT D>
+struct GridTraits<LazyGrid<T, D> > : DefaultGridTraits<T, D>
+{
+	/// The class inheriting from the base.
+	using ThisType = LazyGrid<T, D>;
 };
 
 /** @} */ // End group Grid.

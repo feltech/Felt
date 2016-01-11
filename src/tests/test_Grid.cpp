@@ -10,7 +10,7 @@
 using namespace felt;
 
 /**
- * Test the Grid library.
+ * Test the Grid class.
  */
 BOOST_AUTO_TEST_SUITE(test_Grid)
 
@@ -747,6 +747,64 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 			BOOST_CHECK_CLOSE(sharp_corner_curvature_3D, 1.5f, 0.00001f);
 		}
 	}
+BOOST_AUTO_TEST_SUITE_END()
 
 
+BOOST_AUTO_TEST_SUITE(test_LazyGrid)
+	BOOST_AUTO_TEST_CASE(initialisation)
+	{
+		/// [LazyGrid initialisation]
+		// ==== Setup ====
+		LazyGrid <FLOAT, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1), 7.0f);
+
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.is_active(), false);
+		BOOST_CHECK_EQUAL(grid.data().size(), 0);
+		BOOST_CHECK_EQUAL(grid.background(), 7.0f);
+		BOOST_CHECK_EQUAL(grid.get(Vec3i(1,1,1)), 7.0f);
+		/// [LazyGrid initialisation]
+	}
+
+	BOOST_AUTO_TEST_CASE(activation)
+	{
+		/// [LazyGrid activation]
+		// ==== Setup ====
+		LazyGrid <FLOAT, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1), 7.0f);
+
+		// ==== Action ====
+		grid.activate();
+
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.is_active(), true);
+		BOOST_CHECK_EQUAL(grid.data().size(), 3*3*3);
+		BOOST_CHECK_EQUAL(grid.get(Vec3i(1,1,1)), 7.0f);
+		BOOST_CHECK_EQUAL(grid.get(Vec3i(0,1,1)), 7.0f);
+
+		// ==== Action ====
+		grid.get(Vec3i(1,1,1)) = 5.0f;
+
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.get(Vec3i(1,1,1)), 5.0f);
+		BOOST_CHECK_EQUAL(grid.get(Vec3i(0,1,1)), 7.0f);
+		/// [LazyGrid activation]
+	}
+
+	BOOST_AUTO_TEST_CASE(deactivation)
+	{
+		/// [LazyGrid deactivation]
+		// ==== Setup ====
+		LazyGrid <FLOAT, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1), 7.0f);
+
+		// ==== Action ====
+		grid.get(Vec3i(1,1,1)) = 5.0f;
+		grid.background() = 3.0f;
+		grid.deactivate();
+
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.is_active(), false);
+		BOOST_CHECK_EQUAL(grid.data().size(), 0);
+		BOOST_CHECK_EQUAL(grid.background(), 3.0f);
+		BOOST_CHECK_EQUAL(grid.get(Vec3i(1,1,1)), 3.0f);
+		/// [LazyGrid deactivation]
+	}
 BOOST_AUTO_TEST_SUITE_END()

@@ -208,11 +208,11 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 	 */
 	BOOST_AUTO_TEST_CASE(partitioned_lookup)
 	{
-		typedef LookupPartitionedGrid<3, 3> Grid_t;
+		typedef LookupPartitionedGrid<3, 3> GridType;
 		typedef LookupPartitionedGrid<3, 3>::BranchGrid BranchGrid;
 		typedef LookupPartitionedGrid<3, 3>::BranchGrid::Lookup LookupGrid;
 
-		Grid_t grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
+		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
 		BranchGrid& branch = grid.branch();
 		LookupGrid& lookup = branch.lookup();
 
@@ -222,14 +222,14 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 				for (INT z = -4; z <= 4; z++)
 				{
 					Vec3i pos(x, y, z);
-					BOOST_CHECK_EQUAL(grid(pos), Grid_t::NULL_IDX_TUPLE);
+					BOOST_CHECK_EQUAL(grid(pos), GridType::MixinType::Traits::NULL_IDX_DATA);
 				}
 		for (INT x = -1; x <= 1; x++)
 			for (INT y = -1; y <= 1; y++)
 				for (INT z = -1; z <= 1; z++)
 				{
 					Vec3i pos(x, y, z);
-					BOOST_CHECK_EQUAL(lookup(pos), Grid_t::NULL_IDX_TUPLE);
+					BOOST_CHECK_EQUAL(lookup(pos), GridType::MixinType::Traits::NULL_IDX_DATA);
 				}
 
 
@@ -278,21 +278,21 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 
 		BOOST_CHECK_EQUAL(branch.list(2).size(), 0);
 		BOOST_CHECK_EQUAL(branch(part4).list(2).size(), 0);
-		BOOST_CHECK_EQUAL(grid(pos4), Grid_t::NULL_IDX_TUPLE);
-		BOOST_CHECK_EQUAL(lookup(part4), Grid_t::NULL_IDX_TUPLE);
+		BOOST_CHECK_EQUAL(grid(pos4), GridType::MixinType::Traits::NULL_IDX_DATA);
+		BOOST_CHECK_EQUAL(lookup(part4), GridType::MixinType::Traits::NULL_IDX_DATA);
 
 		grid.remove(pos2, 0);
 
 		BOOST_CHECK_EQUAL(branch(part2_3).list(0).size(), 1);
-		BOOST_CHECK_EQUAL(grid(pos2), Grid_t::NULL_IDX_TUPLE);
+		BOOST_CHECK_EQUAL(grid(pos2), GridType::MixinType::Traits::NULL_IDX_DATA);
 		BOOST_CHECK_EQUAL((UINT)lookup(part2_3)(0), 1);
 
 		grid.remove(pos1, 0);
 
 		BOOST_CHECK_EQUAL(branch.list(0).size(), 1);
 		BOOST_CHECK_EQUAL(branch(part1).list(0).size(), 0);
-		BOOST_CHECK_EQUAL(grid(pos1), Grid_t::NULL_IDX_TUPLE);
-		BOOST_CHECK_EQUAL(lookup(part1), Grid_t::NULL_IDX_TUPLE);
+		BOOST_CHECK_EQUAL(grid(pos1), GridType::MixinType::Traits::NULL_IDX_DATA);
+		BOOST_CHECK_EQUAL(lookup(part1), GridType::MixinType::Traits::NULL_IDX_DATA);
 
 		grid.remove(pos3, 0);
 
@@ -304,14 +304,14 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 				for (INT z = -4; z <= 4; z++)
 				{
 					Vec3i pos(x, y, z);
-					BOOST_CHECK_EQUAL(grid(pos), Grid_t::NULL_IDX_TUPLE);
+					BOOST_CHECK_EQUAL(grid(pos), GridType::MixinType::Traits::NULL_IDX_DATA);
 				}
 		for (INT x = -1; x <= 1; x++)
 			for (INT y = -1; y <= 1; y++)
 				for (INT z = -1; z <= 1; z++)
 				{
 					Vec3i pos(x, y, z);
-					BOOST_CHECK_EQUAL(lookup(pos), Grid_t::NULL_IDX_TUPLE);
+					BOOST_CHECK_EQUAL(lookup(pos), GridType::MixinType::Traits::NULL_IDX_DATA);
 					for (UINT i = 0; i < 3; i++)
 						BOOST_CHECK_EQUAL(branch(pos).list(i).size(), 0);
 				}
@@ -327,7 +327,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		typedef SharedLookupPartitionedGrid<3, 3> GridType;
 		typedef GridType::BranchGrid BranchGrid;
 		typedef BranchGrid::Lookup LookupGrid;
-		const Vec3u& BRANCH_NULL_IDX = LookupGrid::NULL_IDX_TUPLE;
+		const Vec3u& BRANCH_NULL_IDX = LookupGrid::Traits::NULL_IDX_DATA;
 		const UINT& CHILD_NULL_IDX = GridType::NULL_IDX;
 
 		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
@@ -445,7 +445,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		typedef SharedTrackedPartitionedGrid<FLOAT, 3, 3> GridType;
 		typedef GridType::BranchGrid BranchGrid;
 		typedef BranchGrid::Lookup LookupGrid;
-		const Vec3u& BRANCH_NULL_IDX = LookupGrid::NULL_IDX_TUPLE;
+		const Vec3u& BRANCH_NULL_IDX = LookupGrid::Traits::NULL_IDX_DATA;
 		const UINT& CHILD_NULL_IDX = GridType::Child::Lookup::NULL_IDX;
 
 		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));

@@ -3,7 +3,10 @@
 
 #define _TESTING
 
-#include "Felt/MappedGrid.hpp"
+#include "Felt/LookupGrid.hpp"
+#include "Felt/SharedLookupGrid.hpp"
+#include "Felt/TrackedGrid.hpp"
+
 
 using namespace felt;
 

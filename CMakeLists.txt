@@ -24,7 +24,6 @@ add_executable(
 	tests 
 	${TESTS_ROOT}/test_all.cpp ${TESTS_ROOT}/test_Grid.cpp 
 	${TESTS_ROOT}/test_MappedGrid.cpp ${TESTS_ROOT}/test_PartitionedGrid.cpp 
-	${TESTS_ROOT}/test_LazyPartitionedGrid.cpp 
 	${TESTS_ROOT}/test_Poly.cpp ${TESTS_ROOT}/test_Surface.cpp
 	${TESTS_ROOT}/test_PolyGrid.cpp ${TESTS_ROOT}/Utils.cpp
 )

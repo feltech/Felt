@@ -1,7 +1,7 @@
 #ifndef INCLUDE_FELT_POLYGRID_HPP_
 #define INCLUDE_FELT_POLYGRID_HPP_
 
-#include "MappedGrid.hpp"
+#include "LookupGrid.hpp"
 #include "PartitionedGrid.hpp"
 #include "Surface.hpp"
 #include "Poly.hpp"
