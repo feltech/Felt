@@ -16,6 +16,7 @@ namespace felt
  *  @{
  */
 
+
 /**
  * Base class for a lookup grid.
  *
@@ -26,17 +27,17 @@ namespace felt
  *
  * @tparam Derived the CRTP derived class
  */
-template <class Derived>
-class LookupGridBase : public GridBase<LookupGridBase<Derived> >
+template <class Derived, bool IsLazy=false>
+class LookupGridBase : public GridBase<LookupGridBase<Derived, IsLazy>, IsLazy>
 {
 public:
-	using ThisType = LookupGridBase<Derived>;
+	using ThisType = LookupGridBase<Derived, IsLazy>;
 	using Traits = GridTraits<Derived>;
 	using DerivedType = typename Traits::ThisType;
 	/// Type of data stored in grid nodes. For lookup grids this is an N-tuple of array indices.
 	using LeafType = typename Traits::LeafType;
 	/// GridBase base class.
-	using Base = GridBase<ThisType>;
+	using Base = GridBase<ThisType, IsLazy>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 	using typename Base::PosArray;
@@ -374,8 +375,93 @@ protected:
 	}
 };
 
-template <class Derived> const UINT
-LookupGridBase<Derived>::NULL_IDX = std::numeric_limits<UINT>::max();
+/**
+ * Base class for static lookup grid.
+ *
+ * @tparam Derived CRTP derived class.
+ */
+template <class Derived>
+class StaticLookupGridBase : public LookupGridBase<StaticLookupGridBase<Derived>, false>
+{
+public:
+	using Base = LookupGridBase<StaticLookupGridBase<Derived>, false>;
+	using Base::LookupGridBase;
+};
+
+/**
+ * Base class for lazy lookup grid.
+ *
+ * @tparam Derived CRTP derived class.
+ */
+template <class Derived>
+class LazyLookupGridBase : public LookupGridBase<LazyLookupGridBase<Derived>, true>
+{
+public:
+	using Base = LookupGridBase<LazyLookupGridBase<Derived>, true>;
+	using typename Base::VecDu;
+	using typename Base::VecDi;
+	using Base::Base::is_active;
+	using Base::is_active;
+	using Traits = GridTraits<LazyLookupGridBase<Derived> >;
+
+	/**
+	 * Construct lazy lookup grid, initialising the background value to NULL index.
+	 *
+	 * @param size_ size of grid.
+	 * @param offset_ spatial offset of grid.
+	 */
+	LazyLookupGridBase(const VecDu& size_, const VecDi& offset_)
+	{
+		this->init(size_, offset_, Traits::NULL_IDX_DATA);
+	}
+};
+
+
+template <class Derived, bool IsLazy> const UINT
+LookupGridBase<Derived, IsLazy>::NULL_IDX = std::numeric_limits<UINT>::max();
+
+
+/**
+ * Standard lookup grid.
+ *
+ * Holds a set of tracking lists storing grid positions, and a corresponding grid storing tuples of
+ * list indices.
+ *
+ * @tparam D the dimension of the grid.
+ * @tparam N the number of tracking lists to use.
+ */
+template <UINT D, UINT N=1>
+class LookupGrid : public StaticLookupGridBase<LookupGrid<D, N> >
+{
+protected:
+	using ThisType = LookupGrid<D, N>;
+	using Base = StaticLookupGridBase<ThisType>;
+public:
+	using Base::StaticLookupGridBase;
+};
+
+
+/**
+ * Lazy lookup grid - only initialised on activation, otherwise returns NULL_IDX when queried.
+ *
+ * @snippet test_MappedGrid.cpp LazyLazyLookupGrid initialisation
+ *
+ * @tparam D the dimension of the grid.
+ * @tparam N the number of tracking lists to use.
+ */
+template <UINT D, UINT N=1>
+class LazyLookupGrid : public LazyLookupGridBase<LazyLookupGrid<D, N> >
+{
+protected:
+	using ThisType = LazyLookupGrid<D, N>;
+	using Base = LazyLookupGridBase<ThisType>;
+	using typename Base::VecDu;
+	using typename Base::VecDi;
+
+public:
+	using Base::LazyLookupGridBase;
+	using Base::reset;
+};
 
 /**
  * Traits for GridBase to understand LookupGridBase.
@@ -383,9 +469,34 @@ LookupGridBase<Derived>::NULL_IDX = std::numeric_limits<UINT>::max();
  * Just forward the traits defined for LookupGridBase subclasses.
  *
  * @tparam Derived the CRTP derived class.
+ * @tparam IsLazy true if the direct ancestor is a LazyGridBase.
+ */
+template <class Derived, bool IsLazy>
+struct GridTraits< LookupGridBase<Derived, IsLazy> > : GridTraits<Derived>
+{};
+
+
+/**
+ * Traits for StaticLookupGridBase.
+ *
+ * Just forward the traits defined in subclasses.
+ *
+ * @tparam Derived the CRTP derived class.
  */
 template <class Derived>
-struct GridTraits<LookupGridBase<Derived> > : GridTraits<Derived>
+struct GridTraits< StaticLookupGridBase<Derived> > : GridTraits<Derived>
+{};
+
+
+/**
+ * Traits for LazyLookupGridBase.
+ *
+ * Just forward the traits defined in subclasses.
+ *
+ * @tparam Derived the CRTP derived class.
+ */
+template <class Derived>
+struct GridTraits< LazyLookupGridBase<Derived> > : GridTraits<Derived>
 {};
 
 
@@ -411,31 +522,7 @@ const VecDu<N> DefaultLookupGridTraits<D, N>::NULL_IDX_DATA = (
 
 
 /**
- * Standard lookup grid.
- *
- * Holds a set of tracking lists storing grid positions, and a corresponding grid storing tuples of
- * list indices.
- *
- * @tparam D the dimension of the grid.
- * @tparam N the number of tracking lists to use.
- */
-template <UINT D, UINT N=1>
-class LookupGrid : public LookupGridBase<LookupGrid<D, N> >
-{
-protected:
-	using ThisType = LookupGrid<D, N>;
-	using Base = LookupGridBase<ThisType>;
-	using typename Base::VecDu;
-	using typename Base::VecDi;
-
-public:
-	using Base::LookupGridBase;
-	using Base::reset;
-};
-
-
-/**
- * Traits of standard LookupGrid for CRTP inheritance from LookupGridBase.
+ * Traits for LookupGrid.
  *
  * @tparam D the dimension of the grid.
  * @tparam N the number of tracking lists to use.
@@ -444,6 +531,19 @@ template <UINT D, UINT N>
 struct GridTraits<LookupGrid<D, N> > : DefaultLookupGridTraits<D, N>
 {
 	using ThisType = LookupGrid<D, N>;
+};
+
+
+/**
+ * Traits for LazyLookupGrid.
+ *
+ * @tparam D the dimension of the grid.
+ * @tparam N the number of tracking lists to use.
+ */
+template <UINT D, UINT N>
+struct GridTraits<LazyLookupGrid<D, N> > : DefaultLookupGridTraits<D, N>
+{
+	using ThisType = LazyLookupGrid<D, N>;
 };
 
 

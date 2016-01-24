@@ -825,8 +825,6 @@ struct GridTraits<PartitionedGrid<T, D> > : DefaultGridTraits<T, D>
 {
 	/// The class inheriting from the base.
 	using ThisType = PartitionedGrid<T, D>;
-	/// Dimensions of the grid, from template parameter.
-	static const UINT Dims = D;
 	/// Child type to store in spatial partitions - in this case a standard Grid.
 	using ChildType = Grid<T, D>;
 	/// Mixin type whose signature to spoof - in this case a standard GridBase.

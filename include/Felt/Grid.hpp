@@ -163,8 +163,9 @@ VecDf<D> floorf(const VecDf<D>& pos_)
  *  @{
  */
 
+
 /**
- * Traits for classes CRTP derived from GridBase
+ * Traits class to be specialised for the various grid types.
  *
  * @tparam Derived the CRTP derived class.
  */
@@ -181,11 +182,11 @@ template <class Derived> struct GridTraits {};
  * @tparam Derived the CRTP derived class
  */
 template <class Derived>
-class GridBase
+class StaticGridBase
 {
 public:
 	/// This GridBase type.
-	using ThisType = GridBase<Derived>;
+	using ThisType = StaticGridBase<Derived>;
 	/// CRTP derived class.
 	using DerivedType = typename GridTraits<Derived>::ThisType;
 	/// Dimension of the grid.
@@ -225,7 +226,7 @@ public:
 	 * Iterator for contiguous cycling over entire grid.
 	 */
 	class iterator : public boost::iterator_facade<
-		GridBase::iterator, const VecDi&, boost::forward_traversal_tag
+		StaticGridBase::iterator, const VecDi&, boost::forward_traversal_tag
 	> {
 	private:
 		friend class boost::iterator_core_access;
@@ -249,7 +250,7 @@ public:
 		 * @param grid_ grid to iterator over.
 		 * @param start_idx_ index in underlying data to start at.
 		 */
-		iterator(const GridBase& grid_, const UINT& start_idx_ = 0)
+		iterator(const StaticGridBase& grid_, const UINT& start_idx_ = 0)
 		: m_idx(start_idx_), m_size(grid_.size()), m_offset(grid_.offset()),
 		  m_pos(ThisType::index(start_idx_, grid_.size(), grid_.offset()))
 		{}
@@ -316,7 +317,7 @@ public:
 	/**
 	 * Trivial destructor.
 	 */
-	~GridBase ()
+	~StaticGridBase ()
 	{}
 
 	/**
@@ -325,7 +326,7 @@ public:
 	 * If custom initialisation is required, then use this constructor
 	 * and call init() in the derived class.
 	 */
-	GridBase () :
+	StaticGridBase () :
 	m_offset(VecDi::Zero()),
 	m_size(VecDu::Zero()),
 	m_dx(1)
@@ -343,7 +344,7 @@ public:
 	 * @param offset_ spatial offset of grid.
 	 * @param delta_ spatial size of a leaf node, for spatial derivative calculation.
 	 */
-	GridBase (
+	StaticGridBase (
 		const VecDu& size_, const VecDi& offset_ = VecDi::Zero()
 	) :
 	m_dx(1)
@@ -1263,71 +1264,22 @@ public:
 
 
 /**
- * Abstract traits struct for GridBase.
- *
- * @tparam T the type of data to store in the grid.
- * @tparam D the number of dimensions of the grid.
- */
-template <typename T, UINT D>
-struct DefaultGridTraits
-{
-	/// Dimensions of the grid, from template parameter.
-	static const UINT Dims = D;
-	/// The data type to store at leaf grid nodes, from template parameter.
-	using LeafType = T;
-};
-
-
-/**
- * A standard D-dimensional grid for storing values of type T.
- *
- * @tparam T the type of data to store in the grid.
- * @tparam D the dimensions of the grid.
- */
-template <typename T, UINT D>
-class Grid : public GridBase<Grid<T, D> >
-{
-public:
-	using ThisType = Grid<T, D>;
-	using Base = GridBase<ThisType>;
-	using typename Base::VecDu;
-	using typename Base::VecDi;
-	using typename Base::VecDf;
-	using Base::GridBase;
-};
-
-
-/**
- * Traits for GridBase to understand Grid.
- *
- * @tparam T the type of data to store in the grid.
- * @tparam D the number of dimensions of the grid.
- */
-template <typename T, UINT D>
-struct GridTraits<Grid<T, D> > : DefaultGridTraits<T, D>
-{
-	/// The class inheriting from the base.
-	using ThisType = Grid<T, D>;
-};
-
-
-/**
  * A lazy-loaded D-dimensional grid for storing values of type T.
  *
  * @tparam Derived the CRTP derived class.
  */
 template <class Derived>
-class LazyGridBase : public GridBase<LazyGridBase<Derived> >
+class LazyGridBase : public StaticGridBase<Derived>
 {
 public:
 	using ThisType = LazyGridBase<Derived>;
 	using DerivedType = typename GridTraits<Derived>::ThisType;
-	using Base = GridBase<ThisType>;
+	using Base = StaticGridBase<Derived>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 	using typename Base::VecDf;
 	using typename Base::LeafType;
-	using Base::GridBase;
+	using Base::StaticGridBase;
 private:
 	/// The background value to return when grid is inactive.
 	LeafType m_background;
@@ -1461,9 +1413,66 @@ public:
 	}
 };
 
-template <class Derived>
-struct GridTraits<LazyGridBase<Derived> > : GridTraits<Derived>
+
+/**
+ * Placeholder GridBase to be specialised based on IsLazy template parameter.
+ *
+ * @tparam Derived the CRTP derived class.
+ * @tparam IsLazy true if base class is a LazyGridBase, false if base class is a StaticGridBase.
+ */
+template <class Derived, bool IsLazy=false>
+class GridBase
 {};
+
+
+/**
+ * Specialisation of GridBase that inherits from StaticGridBase.
+ *
+ * Used to provide templated choice of base class.
+ *
+ * @tparam Derived the CRTP derived class.
+ */
+template <class Derived>
+class GridBase<Derived, false> : public StaticGridBase<Derived>
+{
+public:
+	using StaticGridBase<Derived>::StaticGridBase;
+};
+
+
+/**
+ * Specialisation of GridBase that inherits from LazyGridBase.
+ *
+ * Used to provide templated choice of base class.
+ *
+ * @tparam Derived the CRTP derived class.
+ */
+template <class Derived>
+class GridBase<Derived, true> : public LazyGridBase<Derived>
+{
+public:
+	using LazyGridBase<Derived>::LazyGridBase;
+};
+
+
+/**
+ * A standard D-dimensional grid for storing values of type T.
+ *
+ * @tparam T the type of data to store in the grid.
+ * @tparam D the dimensions of the grid.
+ */
+template <typename T, UINT D>
+class Grid : public GridBase<Grid<T, D>, false>
+{
+public:
+	using ThisType = Grid<T, D>;
+	using Base = GridBase<ThisType, false>;
+	using typename Base::VecDu;
+	using typename Base::VecDi;
+	using typename Base::VecDf;
+	using Base::GridBase;
+};
+
 
 /**
  * A lazy-loaded D-dimensional grid for storing values of type T.
@@ -1472,16 +1481,66 @@ struct GridTraits<LazyGridBase<Derived> > : GridTraits<Derived>
  * @tparam D the dimensions of the grid.
  */
 template <typename T, UINT D>
-class LazyGrid : public LazyGridBase<LazyGrid<T, D> >
+class LazyGrid : public GridBase<LazyGrid<T, D>, true>
 {
 public:
-	using Base = LazyGridBase<LazyGrid<T, D> >;
-	using Base::LazyGridBase;
+	using Base = GridBase<LazyGrid<T, D>, true>;
+	using Base::GridBase;
 };
 
 
 /**
- * Traits for GridBase to understand LazyGrid.
+ * Traits for StaticGridBase.
+ *
+ * Just forward the traits defined for StaticGridBase subclasses.
+ */
+template <class Derived>
+struct GridTraits<StaticGridBase<Derived> > : GridTraits<Derived>
+{};
+
+
+/**
+ * Traits for LazyGridBase.
+ *
+ * Just forward the traits defined for LazyGridBase subclasses.
+ */
+template <class Derived>
+struct GridTraits<LazyGridBase<Derived> > : GridTraits<Derived>
+{};
+
+
+/**
+ * Default traits for grids to derive from.
+ *
+ * @tparam T the type of data to store in the grid.
+ * @tparam D the number of dimensions of the grid.
+ */
+template <typename T, UINT D>
+struct DefaultGridTraits
+{
+	/// Dimensions of the grid, from template parameter.
+	static const UINT Dims = D;
+	/// The data type to store at leaf grid nodes, from template parameter.
+	using LeafType = T;
+};
+
+
+/**
+ * Traits for Grid.
+ *
+ * @tparam T the type of data to store in the grid.
+ * @tparam D the number of dimensions of the grid.
+ */
+template <typename T, UINT D>
+struct GridTraits<Grid<T, D> > : DefaultGridTraits<T, D>
+{
+	/// The class inheriting from the base.
+	using ThisType = Grid<T, D>;
+};
+
+
+/**
+ * Traits for LazyGrid.
  *
  * @tparam T the type of data to store in the grid.
  * @tparam D the number of dimensions of the grid.

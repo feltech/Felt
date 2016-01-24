@@ -347,3 +347,39 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		TrackedGrid<FLOAT, 3, 3> grid(Vec3u(9,9,9), Vec3i(-4,-4,-4));
 	}
 BOOST_AUTO_TEST_SUITE_END()
+
+
+BOOST_AUTO_TEST_SUITE(test_LazyLookupGrid)
+	BOOST_AUTO_TEST_CASE(initialisation)
+	{
+		/// [LazyLookupGrid initialisation]
+		// ==== Setup ====
+		LazyLookupGrid<3, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1));
+		const Vec3u NULL_IDX_DATA = LazyLookupGrid<3, 3>::Traits::NULL_IDX_DATA;
+
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.is_active(), false);
+		BOOST_CHECK_EQUAL(grid.data().size(), 0);
+		BOOST_CHECK_EQUAL(grid.background(), NULL_IDX_DATA);
+		BOOST_CHECK_EQUAL(grid.get(Vec3i(1,1,1)), NULL_IDX_DATA);
+		/// [LazyLookupGrid initialisation]
+	}
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE(test_LazySharedLookupGrid)
+	BOOST_AUTO_TEST_CASE(initialisation)
+	{
+		/// [LazySharedLookupGrid initialisation]
+		// ==== Setup ====
+		LazySharedLookupGrid<3, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1));
+		const UINT NULL_IDX_DATA = LazySharedLookupGrid<3, 3>::NULL_IDX;
+
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.is_active(), false);
+		BOOST_CHECK_EQUAL(grid.data().size(), 0);
+		BOOST_CHECK_EQUAL(grid.background(), NULL_IDX_DATA);
+		BOOST_CHECK_EQUAL(grid.get(Vec3i(1,1,1)), NULL_IDX_DATA);
+		/// [LazySharedLookupGrid initialisation]
+	}
+BOOST_AUTO_TEST_SUITE_END()
+
