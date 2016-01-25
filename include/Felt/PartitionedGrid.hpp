@@ -44,15 +44,18 @@ public:
  */
 
 /**
- * @defgroup Classes Partition grid classes.
- * @defgroup Traits Traits for CRTP static inheritance.
+ * @defgroup Classes
+ * @defgroup Traits
  */
 /// Default size of a spatial partition (in each dimension).
 static const UINT DEFAULT_PARTITION = 4;
 
+/** @addtogroup Classes
+ *  @{
+ */
+
 
 /**
- * @ingroup Classes
  * Base class for spatially partitioned structures.
  *
  * A TrackedGrid is used to store and track arbitrary Child structures. The grid as a whole has a
@@ -298,7 +301,6 @@ public:
 
 
 /**
- * @ingroup Classes
  * Base class for common features of PartitionedArray template specialisations.
  */
 template <class Derived>
@@ -342,18 +344,6 @@ public:
 
 
 /**
- * @ingroup Traits
- * Traits for PartitionBase to understand PartitionedArrayBase.
- *
- * Just forward the traits defined for PartitionedArrayBase subclasses.
- */
-template <class Derived>
-struct GridTraits<PartitionedArrayBase<Derived> > : GridTraits<Derived>
-{};
-
-
-/**
- * @ingroup Classes
  * Spatially partitioned expandable lists.
  *
  * A specialised partitioned grid, where the child grids are simply expandable lists.
@@ -424,27 +414,6 @@ public:
 
 
 /**
- * @ingroup Traits
- * Traits of PartitionedArray for CRTP inheritance from PartitionedArrayBase.
- *
- * @tparam T type to store in elements of the list
- * @tparam D dimension of the 'imaginary' grid.
- * @tparam N number of distinct arrays to partition.
- */
-template <typename T, UINT D, UINT N>
-struct GridTraits<PartitionedArray<T, D, N> > : DefaultGridTraits<T, D>
-{
-	/// The class inheriting from the base.
-	using ThisType = PartitionedArray<T, D, N>;
-	/// Child type to store in spatial partitions - in this case an array of lists.
-	using ChildType = std::array<AlignedArray<T>, N>;
-	/// Number of distinct arrays to partition - in this case a single list.
-	static const UINT NumLists = N;
-};
-
-
-/**
- * @ingroup Classes
  * Spatially partitioned expandable list - 1D array specialisation.
  *
  * A specialised partitioned grid, where the child grids are simply
@@ -527,26 +496,6 @@ public:
 
 
 /**
- * @ingroup Traits
- * Traits of 1D PartitionedArray for CRTP inheritance from PartitionedArrayBase.
- *
- * @tparam T data type stored in array.
- * @tparam D dimension of the grid.
- */
-template <typename T, UINT D>
-struct GridTraits<PartitionedArray<T, D, 0> > : DefaultGridTraits<T, D>
-{
-	/// The class inheriting from the base.
-	using ThisType = PartitionedArray<T, D, 0>;
-	/// Child type to store in spatial partitions - in this case a single list.
-	using ChildType = AlignedArray<T>;
-	/// Number of distinct arrays to partition - in this case a single list.
-	static const UINT NumLists = 1;
-};
-
-
-/**
- * @ingroup Classes
  * Base class for spatially partitioned grid storing arbitrary values.
  *
  * Uses multiple inheritance from child grid (MixinType) class, spoofing the signature,
@@ -784,20 +733,6 @@ public:
 
 
 /**
- * @ingroup Traits
- * Traits for PartitionBase to understand PartitionedGridBase.
- *
- * Just forward the traits defined for PartitionedGridBase subclasses.
- *
- * @tparam Derived the CRTP derived class
- */
-template <class Derived>
-struct GridTraits<PartitionedGridBase<Derived> > : GridTraits<Derived>
-{};
-
-
-/**
- * @ingroup Classes
  * Standard spatially partitioned grid storing arbitrary data.
  *
  * @tparam T the type of data to store in the grid.
@@ -813,29 +748,8 @@ public:
 	using Base::PartitionedGridBase;
 };
 
-/**
- * @ingroup Traits
- * Traits for GridBase to understand PartitionedGrid.
- *
- * @tparam T the type of data to store in the grid.
- * @tparam D the number of dimensions of the grid.
- */
-template <typename T, UINT D>
-struct GridTraits<PartitionedGrid<T, D> > : DefaultGridTraits<T, D>
-{
-	/// The class inheriting from the base.
-	using ThisType = PartitionedGrid<T, D>;
-	/// Child type to store in spatial partitions - in this case a standard Grid.
-	using ChildType = Grid<T, D>;
-	/// Mixin type whose signature to spoof - in this case a standard GridBase.
-	using MixinType = GridBase<ThisType>;
-	/// Numer of tracking lists to use, in this case only 1.
-	static const UINT NumLists = 1;
-};
-
 
 /**
- * @ingroup Classes
  * Container wrapping iterator through leafs of a partitioned grid.
  *
  * @tparam G grid type to iterate over.
@@ -1019,7 +933,6 @@ public:
 
 
 /**
- * @ingroup Classes
  * Base class for spatially partitioned wrappers for LookupGrid and TrackedGrid.
  *
  * @tparam Derived the CRTP derived class.
@@ -1151,20 +1064,6 @@ private:
 
 
 /**
- * @ingroup Traits
- * Traits for PartitionedGridBase to understand TrackingPartitionedGridBase.
- *
- * Just forward the traits defined for TrackingPartitionedGridBase subclasses.
- *
- * @tparam Derived the CRTP derived class.
- */
-template <class Derived>
-struct GridTraits<TrackingPartitionedGridBase<Derived> > : GridTraits<Derived>
-{};
-
-
-/**
- * @ingroup Classes
  * Spatially partitioned wrapper for TrackedGrid.
  *
  * @tparam T type of value stored in leaf grid nodes.
@@ -1272,31 +1171,6 @@ public:
 
 
 /**
- * @ingroup Traits
- * Traits for TrackedGridBase to understand TrackedPartitionedGrid.
- *
- * @tparam T type of value stored in leaf grid nodes.
- * @tparam D dimension of the grid.
- * @tparam N number of tracking lists to use.
- */
-template <typename T, UINT D, UINT N>
-struct GridTraits<TrackedPartitionedGrid<T, D, N> > : DefaultGridTraits<T, D>
-{
-	/// The class inheriting from the base.
-	using ThisType = TrackedPartitionedGrid<T, D, N>;
-	/// The type of lookup grid to use for tracking active grid nodes.
-	using LookupType = LookupGrid<D, N>;
-	/// Child grid class, in this case a TrackedGrid.
-	using ChildType = TrackedGrid<T, D, N>;
-	/// Base grid class to partition, in this case TrackedGridBase.
-	using MixinType = TrackedGridBase<ThisType>;
-	/// Number of tracking lists, from template parameter.
-	static const UINT NumLists = N;
-};
-
-
-/**
- * @ingroup Classes
  * Spatially partitioned wrapper for SharedTrackedGrid.
  *
  * @tparam T type of value stored in leaf grid nodes.
@@ -1378,8 +1252,179 @@ public:
 
 
 /**
- * @ingroup Traits
- * Traits class for TrackedGridBase to understand SharedTrackedPartitionedGrid.
+ * Spatially partitioned wrapper for LookupGrid.
+ *
+ * @tparam D dimension of the grid.
+ * @tparam N number of tracking lists to use.
+ */
+template <UINT D, UINT N=1>
+class LookupPartitionedGrid
+	: public TrackingPartitionedGridBase<LookupPartitionedGrid<D, N> >
+{
+public:
+	using ThisType = LookupPartitionedGrid<D, N>;
+	using Base = TrackingPartitionedGridBase<ThisType>;
+	using Base::TrackingPartitionedGridBase;
+};
+
+
+/**
+ * Spatially partitioned wrapper for SharedLookupGrid.
+ *
+ * @snippet test_PartitionedGrid.cpp LazySharedLookupPartitionedGrid initialisation
+ *
+ * @tparam D dimension of the grid.
+ * @tparam N number of tracking lists to use.
+ */
+template <UINT D, UINT N>
+class SharedLookupPartitionedGrid
+	: public TrackingPartitionedGridBase<SharedLookupPartitionedGrid<D, N> >
+{
+public:
+	using ThisType = SharedLookupPartitionedGrid<D, N>;
+	using Base = TrackingPartitionedGridBase<ThisType>;
+	using Base::TrackingPartitionedGridBase;
+};
+
+
+/**
+ * Spatially partitioned wrapper for LazySharedLookupGrid.
+ *
+ * @tparam D dimension of the grid.
+ * @tparam N number of tracking lists to use.
+ */
+template <UINT D, UINT N>
+class LazySharedLookupPartitionedGrid
+	: public TrackingPartitionedGridBase<LazySharedLookupPartitionedGrid<D, N> >
+{
+public:
+	using ThisType = LazySharedLookupPartitionedGrid<D, N>;
+	using Base = TrackingPartitionedGridBase<ThisType>;
+	using Base::TrackingPartitionedGridBase;
+};
+
+// End group Classes.
+/** @}
+ *  @addtogroup Traits
+ *  @{
+ */
+
+/**
+ * Traits for PartitionedArrayBase.
+ *
+ * Just forward the traits defined for PartitionedArrayBase subclasses.
+ */
+template <class Derived>
+struct GridTraits<PartitionedArrayBase<Derived> > : GridTraits<Derived>
+{};
+
+
+/**
+ * Traits for PartitionedArray.
+ *
+ * @tparam T type to store in elements of the list
+ * @tparam D dimension of the 'imaginary' grid.
+ * @tparam N number of distinct arrays to partition.
+ */
+template <typename T, UINT D, UINT N>
+struct GridTraits<PartitionedArray<T, D, N> > : DefaultGridTraits<T, D>
+{
+	/// The class inheriting from the base.
+	using ThisType = PartitionedArray<T, D, N>;
+	/// Child type to store in spatial partitions - in this case an array of lists.
+	using ChildType = std::array<AlignedArray<T>, N>;
+	/// Number of distinct arrays to partition - in this case a single list.
+	static const UINT NumLists = N;
+};
+
+
+/**
+ * Traits for PartitionedGridBase.
+ *
+ * Just forward the traits defined for PartitionedGridBase subclasses.
+ *
+ * @tparam Derived the CRTP derived class
+ */
+template <class Derived>
+struct GridTraits<PartitionedGridBase<Derived> > : GridTraits<Derived>
+{};
+
+
+/**
+ * Traits for PartitionedArray.
+ *
+ * @tparam T data type stored in array.
+ * @tparam D dimension of the grid.
+ */
+template <typename T, UINT D>
+struct GridTraits<PartitionedArray<T, D, 0> > : DefaultGridTraits<T, D>
+{
+	/// The class inheriting from the base.
+	using ThisType = PartitionedArray<T, D, 0>;
+	/// Child type to store in spatial partitions - in this case a single list.
+	using ChildType = AlignedArray<T>;
+	/// Number of distinct arrays to partition - in this case a single list.
+	static const UINT NumLists = 1;
+};
+
+
+/**
+ * Traits for GridBase to understand PartitionedGrid.
+ *
+ * @tparam T the type of data to store in the grid.
+ * @tparam D the number of dimensions of the grid.
+ */
+template <typename T, UINT D>
+struct GridTraits<PartitionedGrid<T, D> > : DefaultGridTraits<T, D>
+{
+	/// The class inheriting from the base.
+	using ThisType = PartitionedGrid<T, D>;
+	/// Child type to store in spatial partitions - in this case a standard Grid.
+	using ChildType = Grid<T, D>;
+	/// Mixin type whose signature to spoof - in this case a standard GridBase.
+	using MixinType = GridBase<ThisType>;
+	/// Numer of tracking lists to use, in this case only 1.
+	static const UINT NumLists = 1;
+};
+
+
+/**
+ * Traits for TrackingPartitionedGridBase.
+ *
+ * Just forward the traits defined for TrackingPartitionedGridBase subclasses.
+ *
+ * @tparam Derived the CRTP derived class.
+ */
+template <class Derived>
+struct GridTraits<TrackingPartitionedGridBase<Derived> > : GridTraits<Derived>
+{};
+
+
+/**
+ * Traits for TrackedPartitionedGrid.
+ *
+ * @tparam T type of value stored in leaf grid nodes.
+ * @tparam D dimension of the grid.
+ * @tparam N number of tracking lists to use.
+ */
+template <typename T, UINT D, UINT N>
+struct GridTraits<TrackedPartitionedGrid<T, D, N> > : DefaultGridTraits<T, D>
+{
+	/// The class inheriting from the base.
+	using ThisType = TrackedPartitionedGrid<T, D, N>;
+	/// The type of lookup grid to use for tracking active grid nodes.
+	using LookupType = LookupGrid<D, N>;
+	/// Child grid class, in this case a TrackedGrid.
+	using ChildType = TrackedGrid<T, D, N>;
+	/// Base grid class to partition, in this case TrackedGridBase.
+	using MixinType = TrackedGridBase<ThisType>;
+	/// Number of tracking lists, from template parameter.
+	static const UINT NumLists = N;
+};
+
+
+/**
+ * Traits for SharedTrackedPartitionedGrid.
  *
  * @tparam T type of value stored in leaf grid nodes.
  * @tparam D dimension of the grid.
@@ -1402,26 +1447,7 @@ struct GridTraits<SharedTrackedPartitionedGrid<T, D, N> > : DefaultGridTraits<T,
 
 
 /**
- * @ingroup Classes
- * Spatially partitioned wrapper for LookupGrid.
- *
- * @tparam D dimension of the grid.
- * @tparam N number of tracking lists to use.
- */
-template <UINT D, UINT N=1>
-class LookupPartitionedGrid
-	: public TrackingPartitionedGridBase<LookupPartitionedGrid<D, N> >
-{
-public:
-	using ThisType = LookupPartitionedGrid<D, N>;
-	using Base = TrackingPartitionedGridBase<ThisType>;
-	using Base::TrackingPartitionedGridBase;
-};
-
-
-/**
- * @ingroup Traits
- * Traits class for TrackingPartitionedGridBase to understand LookupPartitionedGrid.
+ * Traits for LookupPartitionedGrid.
  *
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
@@ -1439,26 +1465,7 @@ struct GridTraits<LookupPartitionedGrid<D, N> > : DefaultLookupGridTraits<D, N>
 
 
 /**
- * @ingroup Classes
- * Spatially partitioned wrapper for SharedLookupGrid.
- *
- * @tparam D dimension of the grid.
- * @tparam N number of tracking lists to use.
- */
-template <UINT D, UINT N>
-class SharedLookupPartitionedGrid
-	: public TrackingPartitionedGridBase<SharedLookupPartitionedGrid<D, N> >
-{
-public:
-	using ThisType = SharedLookupPartitionedGrid<D, N>;
-	using Base = TrackingPartitionedGridBase<ThisType>;
-	using Base::TrackingPartitionedGridBase;
-};
-
-
-/**
- * @ingroup Traits
- * Traits class for TrackingPartitionedGridBase to understand SharedLookupPartitionedGrid.
+ * Traits for SharedLookupPartitionedGrid.
  *
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
@@ -1474,7 +1481,27 @@ struct GridTraits<SharedLookupPartitionedGrid<D, N> > : DefaultSharedLookupGridT
 	using MixinType = SharedLookupGridBase<ThisType>;
 };
 
-/** @} */ // End group LookupGrid.
+
+/**
+ * Traits for LazySharedLookupPartitionedGrid.
+ *
+ * @tparam D dimension of the grid.
+ * @tparam N number of tracking lists to use.
+ */
+template <UINT D, UINT N>
+struct GridTraits<LazySharedLookupPartitionedGrid<D, N> > : DefaultSharedLookupGridTraits<D, N>
+{
+	/// The class inheriting from TrackingPartitionedGrid.
+	using ThisType = LazySharedLookupPartitionedGrid<D, N>;
+	/// Child grid class, in this case SharedLookupGrid.
+	using ChildType = LazySharedLookupGrid<D, N>;
+	/// Grid class whose interface to copy via CRTP mixin.
+	using MixinType = SharedLookupGridBase<ThisType>;
+};
+
+/**
+ * @}
+ * @} */ // End group Traits  // End group ParitionedGrid.
 
 } // End namespace felt.
 #endif /* PARTITIONEDGRID_HPP_ */

@@ -184,6 +184,11 @@ public:
 	using Base::is_active;
 	using Traits = GridTraits< LazySharedLookupGridBase<Derived> >;
 
+	LazySharedLookupGridBase()
+	{
+		this->m_background = Traits::NULL_IDX_DATA;
+	}
+
 	/**
 	 * Construct lazy lookup grid, initialising the background value to NULL index.
 	 *

@@ -13,62 +13,9 @@ using namespace felt;
 /*
  * Test the Grid library.
  */
-BOOST_AUTO_TEST_SUITE(test_MappedGrid)
-	/*
-	 * MappedGrid.
-	 */
-//	BOOST_AUTO_TEST_CASE(test_MappedGrid)
-//	{
-//		typedef MappedGrid<FLOAT, 3> Grid_t;
-//
-//		Grid_t grid(Vec3u(5,5,5), Vec3i(-2,-2,-2));
-//
-//		Vec3i pos1(0, 0, 1);
-//		Vec3i pos2(1, 1, 0);
-//		Vec3i pos3(2, 0, -1);
-//		grid.add(pos1, 3.0f);
-//		grid.add(pos2, -1.0f);
-//		grid(pos2) = 5.0f;
-//		grid.add(pos3, 7.0f);
-//
-//
-//		BOOST_CHECK_EQUAL(grid.list().size(), 3);
-//		BOOST_CHECK_EQUAL(grid(pos1), 3.0f);
-//		BOOST_CHECK_EQUAL(grid(pos2), 5.0f);
-//		BOOST_CHECK_EQUAL(grid(pos3), 7.0f);
-//		BOOST_CHECK_EQUAL(grid.list()[0], pos1);
-//		BOOST_CHECK_EQUAL(grid.list()[1], pos2);
-//		BOOST_CHECK_EQUAL(grid.list()[2], pos3);
-//
-//		for (Vec3i pos : grid.list())
-//			grid(pos) = 4.0f;
-//
-//		BOOST_CHECK_EQUAL(grid(pos1), 4.0f);
-//		BOOST_CHECK_EQUAL(grid(pos2), 4.0f);
-//		BOOST_CHECK_EQUAL(grid(pos3), 4.0f);
-//
-//		grid.remove(1);
-//		BOOST_CHECK_EQUAL(grid.list().size(), 2);
-//		BOOST_CHECK_EQUAL(grid.list()[0], pos1);
-//		BOOST_CHECK_EQUAL(grid.list()[1], pos3);
-//
-//		grid.reset(-1.0f);
-//		BOOST_CHECK_EQUAL(grid.list().size(), 0);
-//		BOOST_CHECK_EQUAL(grid(pos1), -1.0f);
-//		BOOST_CHECK_EQUAL(grid(pos2), 4.0f);
-//		BOOST_CHECK_EQUAL(grid(pos3), -1.0f);
-//
-//		grid.add(pos1, 3.0f);
-//		grid.add(pos2, 5.0f);
-//		grid.list().clear();
-//
-//		BOOST_CHECK_EQUAL(grid.list().size(), 0);
-//		BOOST_CHECK_EQUAL(grid(pos1), 3.0f);
-//		BOOST_CHECK_EQUAL(grid(pos2), 5.0f);
-//	}
+BOOST_AUTO_TEST_SUITE(test_LookupGrid)
 
-
-	BOOST_AUTO_TEST_CASE(test_LookupGrid)
+	BOOST_AUTO_TEST_CASE(initialise_and_populate_single_tracking_list)
 	{
 		typedef LookupGrid<3> Grid_t;
 		Grid_t grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
@@ -156,8 +103,7 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL((UINT)grid(pos4)(0), Grid_t::NULL_IDX);
 	}
 
-
-	BOOST_AUTO_TEST_CASE(test_multi_LookupGrid)
+	BOOST_AUTO_TEST_CASE(initialise_and_populatate_multiple_tracking_lists)
 	{
 		typedef LookupGrid<3, 3> Grid_t;
 		Grid_t grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
@@ -248,12 +194,14 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL((UINT)grid(pos4)(2), Grid_t::NULL_IDX);
 		BOOST_CHECK_EQUAL((UINT)grid(pos5)(2), Grid_t::NULL_IDX);
 	}
+BOOST_AUTO_TEST_SUITE_END()
 
 
-	BOOST_AUTO_TEST_CASE(test_multi_shared_LookupGrid)
+BOOST_AUTO_TEST_SUITE(test_SharedLookupGrid)
+	BOOST_AUTO_TEST_CASE(intialise_and_populate)
 	{
-		typedef SharedLookupGrid<3, 3> Grid_t;
-		Grid_t grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
+		using GridType = SharedLookupGrid<3, 3>;
+		GridType grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
 
 		const Vec3i pos1(1, 0, -1);
 		const Vec3i pos2(2, 1, 0);
@@ -289,7 +237,7 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL(grid.list(1)[0], pos3);
 		BOOST_CHECK_EQUAL(grid.list(2)[0], pos4);
 		BOOST_CHECK_EQUAL((UINT)grid(pos1), 0);
-		BOOST_CHECK_EQUAL((UINT)grid(pos2), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL((UINT)grid(pos2), GridType::NULL_IDX);
 		BOOST_CHECK_EQUAL((UINT)grid(pos3), 0);
 		BOOST_CHECK_EQUAL((UINT)grid(pos4), 0);
 
@@ -305,7 +253,7 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL(grid.list(2)[1], pos5);
 		BOOST_CHECK_EQUAL(grid.list(2)[2], pos6);
 		BOOST_CHECK_EQUAL((UINT)grid(pos1), 0);
-		BOOST_CHECK_EQUAL((UINT)grid(pos2), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL((UINT)grid(pos2), GridType::NULL_IDX);
 		BOOST_CHECK_EQUAL((UINT)grid(pos3), 0);
 		BOOST_CHECK_EQUAL((UINT)grid(pos4), 0);
 		BOOST_CHECK_EQUAL((UINT)grid(pos5), 1);
@@ -321,10 +269,10 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL(grid.list(1)[0], pos3);
 		BOOST_CHECK_EQUAL(grid.list(2)[1], pos5);
 		BOOST_CHECK_EQUAL(grid.list(2)[0], pos6);
-		BOOST_CHECK_EQUAL((UINT)grid(pos1), Grid_t::NULL_IDX);
-		BOOST_CHECK_EQUAL((UINT)grid(pos2), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL((UINT)grid(pos1), GridType::NULL_IDX);
+		BOOST_CHECK_EQUAL((UINT)grid(pos2), GridType::NULL_IDX);
 		BOOST_CHECK_EQUAL((UINT)grid(pos3), 0);
-		BOOST_CHECK_EQUAL((UINT)grid(pos4), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL((UINT)grid(pos4), GridType::NULL_IDX);
 		BOOST_CHECK_EQUAL((UINT)grid(pos5), 1);
 		BOOST_CHECK_EQUAL((UINT)grid(pos6), 0);
 
@@ -334,15 +282,18 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL(grid.list(1).size(), 1);
 		BOOST_CHECK_EQUAL(grid.list(2).size(), 0);
 		BOOST_CHECK_EQUAL(grid.list(1)[0], pos3);
-		BOOST_CHECK_EQUAL((UINT)grid(pos1), Grid_t::NULL_IDX);
-		BOOST_CHECK_EQUAL((UINT)grid(pos2), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL((UINT)grid(pos1), GridType::NULL_IDX);
+		BOOST_CHECK_EQUAL((UINT)grid(pos2), GridType::NULL_IDX);
 		BOOST_CHECK_EQUAL((UINT)grid(pos3), 0);
-		BOOST_CHECK_EQUAL((UINT)grid(pos4), Grid_t::NULL_IDX);
-		BOOST_CHECK_EQUAL((UINT)grid(pos5), Grid_t::NULL_IDX);
+		BOOST_CHECK_EQUAL((UINT)grid(pos4), GridType::NULL_IDX);
+		BOOST_CHECK_EQUAL((UINT)grid(pos5), GridType::NULL_IDX);
 
 	}
+BOOST_AUTO_TEST_SUITE_END()
 
-	BOOST_AUTO_TEST_CASE(test_TrackedGrid)
+
+BOOST_AUTO_TEST_SUITE(test_TrackedGrid)
+	BOOST_AUTO_TEST_CASE(initialisation)
 	{
 		TrackedGrid<FLOAT, 3, 3> grid(Vec3u(9,9,9), Vec3i(-4,-4,-4));
 	}
@@ -365,6 +316,7 @@ BOOST_AUTO_TEST_SUITE(test_LazyLookupGrid)
 		/// [LazyLookupGrid initialisation]
 	}
 BOOST_AUTO_TEST_SUITE_END()
+
 
 BOOST_AUTO_TEST_SUITE(test_LazySharedLookupGrid)
 	BOOST_AUTO_TEST_CASE(initialisation)

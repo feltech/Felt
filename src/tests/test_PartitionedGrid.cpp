@@ -7,20 +7,8 @@
 
 using namespace felt;
 
-/**
- * @addtogroup Tests
- * @addtogroup PartitionedGridTests Spatially Partitioned Grid Tests
- *
- * Test the various spatially partitioned wrappers around felt::Grid based classes.
- *
- * @{
- */
-BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
-	/**
-	 * @name PartitionedGrid
-	 * @ref felt::PartitionedGrid
-	 */
 
+BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 	/**
 	 * Basic initialisation.
 	 */
@@ -197,16 +185,14 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		BOOST_CHECK_EQUAL((FLOAT)grad(1), 3.5f);
 		BOOST_CHECK_EQUAL((FLOAT)grad(2), 0.0f);
 	}
+BOOST_AUTO_TEST_SUITE_END()
 
-	/**
-	 * @name LookupPartitionedGrid
-	 * @ref felt::LookupPartitionedGrid
-	 */
 
+BOOST_AUTO_TEST_SUITE(test_LookupPartitionedGrid)
 	/**
 	 * Simple lookup get and set values.
 	 */
-	BOOST_AUTO_TEST_CASE(partitioned_lookup)
+	BOOST_AUTO_TEST_CASE(initialise_and_populate)
 	{
 		typedef LookupPartitionedGrid<3, 3> GridType;
 		typedef LookupPartitionedGrid<3, 3>::BranchGrid BranchGrid;
@@ -316,13 +302,11 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 						BOOST_CHECK_EQUAL(branch(pos).list(i).size(), 0);
 				}
 	}
+BOOST_AUTO_TEST_SUITE_END()
 
-	/**
-	 * @name SharedLookupPartitionedGrid
-	 * @ref felt::SharedLookupPartitionedGrid
-	 */
 
-	BOOST_AUTO_TEST_CASE(partitioned_shared_lookup)
+BOOST_AUTO_TEST_SUITE(test_SharedLookupPartitionedGrid)
+	BOOST_AUTO_TEST_CASE(initialise_and_populate)
 	{
 		typedef SharedLookupPartitionedGrid<3, 3> GridType;
 		typedef GridType::BranchGrid BranchGrid;
@@ -434,13 +418,11 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 						BOOST_CHECK_EQUAL(branch(pos).list(i).size(), 0);
 				}
 	}
+BOOST_AUTO_TEST_SUITE_END()
 
-	/**
-	 * @name SharedTrackedPartitionedGrid
-	 * @ref felt::SharedTrackedPartitionedGrid
-	 */
 
-	BOOST_AUTO_TEST_CASE(partitioned_shared_tracked)
+BOOST_AUTO_TEST_SUITE(test_SharedTrackedPartitionedGrid)
+	BOOST_AUTO_TEST_CASE(initialise_and_populate)
 	{
 		typedef SharedTrackedPartitionedGrid<FLOAT, 3, 3> GridType;
 		typedef GridType::BranchGrid BranchGrid;
@@ -554,13 +536,11 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 						BOOST_CHECK_EQUAL(branch(pos).list(i).size(), 0);
 				}
 	}
+BOOST_AUTO_TEST_SUITE_END()
 
-	/**
-	 * @name PartitionedArray
-	 * @ref felt::PartitionedArray
-	 */
 
-	BOOST_AUTO_TEST_CASE(partitioned_array)
+BOOST_AUTO_TEST_SUITE(test_PartitionedArray)
+	BOOST_AUTO_TEST_CASE(initialise_and_populate)
 	{
 		typedef PartitionedArray<FLOAT, 3> ArrayGrid;
 
@@ -596,20 +576,22 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		BOOST_CHECK_EQUAL(grid.child(part2_3).size(), 0);
 		BOOST_CHECK_EQUAL(grid.child(part4).size(), 0);
 	}
-
 BOOST_AUTO_TEST_SUITE_END()
 
-/** @} */ // End group Tests.
 
-/**
- *  @class felt::PartitionedGrid
- *  @test see @ref Tests
- *  @class felt::LookupPartitionedGrid
- *  @test see @ref Tests
- *  @class felt::SharedLookupPartitionedGrid
- *  @test see @ref Tests
- *  @class felt::SharedTrackedPartitionedGrid
- *  @test see @ref Tests
- *  @class felt::PartitionedArray
- *  @test see @ref Tests
- */
+BOOST_AUTO_TEST_SUITE(test_LazySharedLookupPartitionedGrid)
+	BOOST_AUTO_TEST_CASE(initialisation)
+	{
+		/// [LazySharedLookupPartitionedGrid initialisation]
+		// ==== Setup ====
+		LazySharedLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
+		const UINT NULL_IDX_DATA = LazySharedLookupPartitionedGrid<3, 3>::NULL_IDX;
+
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.child(Vec3i(1,1,1)).is_active(), false);
+		BOOST_CHECK_EQUAL(grid.child(Vec3i(1,1,1)).data().size(), 0);
+		BOOST_CHECK_EQUAL(grid.child(Vec3i(1,1,1)).background(), NULL_IDX_DATA);
+		BOOST_CHECK_EQUAL(grid.child(Vec3i(1,1,1)).get(Vec3i(1,1,1)), NULL_IDX_DATA);
+		/// [LazySharedLookupPartitionedGrid initialisation]
+	}
+BOOST_AUTO_TEST_SUITE_END()

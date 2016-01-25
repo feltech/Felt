@@ -262,8 +262,7 @@ protected:
 	}
 
 	/**
-	 * Add pos to tracking list and set pos in grid to index in tracking
-	 * list.
+	 * Add pos to tracking list and set pos in grid to index in tracking list.
 	 *
 	 * If a grid node has a non-NULL index then does nothing.
 	 *
@@ -433,10 +432,9 @@ LookupGridBase<Derived, IsLazy>::NULL_IDX = std::numeric_limits<UINT>::max();
 template <UINT D, UINT N=1>
 class LookupGrid : public StaticLookupGridBase<LookupGrid<D, N> >
 {
-protected:
+public:
 	using ThisType = LookupGrid<D, N>;
 	using Base = StaticLookupGridBase<ThisType>;
-public:
 	using Base::StaticLookupGridBase;
 };
 
@@ -444,7 +442,7 @@ public:
 /**
  * Lazy lookup grid - only initialised on activation, otherwise returns NULL_IDX when queried.
  *
- * @snippet test_MappedGrid.cpp LazyLazyLookupGrid initialisation
+ * @snippet test_MappedGrid.cpp LazyLookupGrid initialisation
  *
  * @tparam D the dimension of the grid.
  * @tparam N the number of tracking lists to use.
@@ -452,13 +450,11 @@ public:
 template <UINT D, UINT N=1>
 class LazyLookupGrid : public LazyLookupGridBase<LazyLookupGrid<D, N> >
 {
-protected:
+public:
 	using ThisType = LazyLookupGrid<D, N>;
 	using Base = LazyLookupGridBase<ThisType>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
-
-public:
 	using Base::LazyLookupGridBase;
 	using Base::reset;
 };

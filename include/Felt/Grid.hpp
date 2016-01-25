@@ -1280,7 +1280,7 @@ public:
 	using typename Base::VecDf;
 	using typename Base::LeafType;
 	using Base::StaticGridBase;
-private:
+protected:
 	/// The background value to return when grid is inactive.
 	LeafType m_background;
 public:
