@@ -61,7 +61,7 @@ public:
 	 * @return true if grid node set and position added to list, false if grid node was already set
 	 * so position already in a list.
 	 */
-	bool add (const VecDi& pos_, const UINT& arr_idx_ = 0)
+	bool add (const VecDi& pos_, const UINT arr_idx_ = 0)
 	{
 		return Base::add(pos_, arr_idx_, 0u);
 	}
@@ -75,7 +75,7 @@ public:
 	 *
 	 * @param arr_idx_ tracking list id.
 	 */
-	void reset (const UINT& arr_idx_ = 0)
+	void reset (const UINT arr_idx_ = 0)
 	{
 		Base::reset(arr_idx_, 0u);
 	}
@@ -99,7 +99,7 @@ public:
 	 * @param idx_ index in tracking list.
 	 * @param arr_idx_ tracking list id.
 	 */
-	void remove (const UINT& idx_, const UINT& arr_idx_ = 0)
+	void remove (const UINT idx_, const UINT arr_idx_ = 0)
 	{
 		const VecDi& pos = this->list(arr_idx_)[idx_];
 		Base::remove(idx_, pos, arr_idx_, 0);
@@ -115,9 +115,9 @@ public:
 	 * @param pos_ position in lookup grid.
 	 * @param arr_idx_ tracking list id.
 	 */
-	void remove (const VecDi& pos_, const UINT& arr_idx_ = 0)
+	void remove (const VecDi& pos_, const UINT arr_idx_ = 0)
 	{
-		const UINT& idx = idx_from_pos(pos_);
+		const UINT idx = idx_from_pos(pos_);
 		Base::remove(idx, pos_, arr_idx_, 0);
 	}
 
@@ -138,15 +138,15 @@ protected:
 	 * @param arr_idx_ tracking list id.
 	 * @return
 	 */
-	UINT& idx_from_pos(const VecDi& pos_, const UINT& arr_idx_ = 0)
+	UINT& idx_from_pos(const VecDi& pos_, const UINT arr_idx_ = 0)
 	{
 		return this->get(pos_);
 	}
 
 	/**
-	 * @copydoc idx_from_pos(const VecDi&,const UINT&)
+	 * @copydoc idx_from_pos(const VecDi&,const UINT)
 	 */
-	const UINT& idx_from_pos(const VecDi& pos_, const UINT& arr_idx_) const
+	const UINT idx_from_pos(const VecDi& pos_, const UINT arr_idx_) const
 	{
 		return this->get(pos_);
 	}

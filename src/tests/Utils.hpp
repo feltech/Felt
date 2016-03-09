@@ -11,7 +11,7 @@ namespace felt
 {
 	/// Utility: turn a vector into a string.
 	template <class T>
-	std::string stringifyVector(const T& p, const INT& prec = 3)
+	std::string stringifyVector(const T& p, const INT prec = 3)
 	{
 		std::stringstream str;
 		str << "(";

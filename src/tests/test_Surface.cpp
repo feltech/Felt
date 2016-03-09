@@ -539,7 +539,7 @@ BOOST_AUTO_TEST_CASE(iterate_layers)
 	// Only version that can be parallelised easily using OpenMP.
 	counter = 0;
 	pos_sum = Vec3i(0, 0, 0);
-	const UINT& zeroLayerIdx = surface.layer_idx(0);
+	const UINT zeroLayerIdx = surface.layer_idx(0);
 
 	#pragma omp parallel for
 	for (UINT part_idx = 0; part_idx < surface.parts().size(); part_idx++)
@@ -978,7 +978,7 @@ BOOST_AUTO_TEST_CASE(walk)
 		BOOST_CHECK_EQUAL(lookup(Vec3i(-4, 0, 0)), 0);
 		BOOST_CHECK_EQUAL(lookup(Vec3i(-3, 0, 0)), 0);
 		BOOST_CHECK_PREDICATE(
-			[](const UINT& idx) {
+			[](const UINT idx) {
 				return 0 <= idx <= 4;
 			}, (lookup(Vec3i(-5, 0, 0)))
 		);

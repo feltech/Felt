@@ -53,10 +53,10 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 		grid(Vec3i(2,6,10)) = 19.0f;
 
 		// ==== Confirm ====
-		const float& check_get = grid.get(Vec3i(1,2,3));
-		const float& check_op = grid(Vec3i(1,2,3));
-		const float& check_data_start = grid.data()(0);
-		const float& check_data_end = grid.data()(grid.data().size() - 1);
+		const float check_get = grid.get(Vec3i(1,2,3));
+		const float check_op = grid(Vec3i(1,2,3));
+		const float check_data_start = grid.data()(0);
+		const float check_data_end = grid.data()(grid.data().size() - 1);
 		BOOST_CHECK_EQUAL(check_get, 17.0f);
 		BOOST_CHECK_EQUAL(check_op, 17.0f);
 		BOOST_CHECK_EQUAL(check_data_start, 13.0f);
@@ -89,10 +89,10 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 
 		// ==== Action ====
 
-		const UINT& index_from_pos_static = GridType::index(Vec2i(1, 0), size, offset);
+		const UINT index_from_pos_static = GridType::index(Vec2i(1, 0), size, offset);
 		const Vec2i& pos_from_index_static = GridType::index(7, size, offset);
 
-		const UINT& index_from_pos = grid.index(Vec2i(1, 0));
+		const UINT index_from_pos = grid.index(Vec2i(1, 0));
 		const Vec2i& pos_from_index = grid.index(7);
 
 		// === Confirm ===
@@ -386,7 +386,7 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 						1,	1,	1;
 
 		// ==== Action ====
-		const FLOAT& d2f_by_dx2 = grid.divergence(Vec3i(0,0,0));
+		const FLOAT d2f_by_dx2 = grid.divergence(Vec3i(0,0,0));
 
 		// ==== Confirm ====
 		BOOST_CHECK_CLOSE(d2f_by_dx2, -0.75f, 0.00001f);
@@ -547,9 +547,9 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 
 		// ==== Action ====
 		// Via explicit function call.
-		const FLOAT& val1 = grid.interp(Vec2f(0.0f, 0.0f));
-		const FLOAT& val2 = grid.interp(Vec2f(-0.5f, -0.5f));
-		const FLOAT& val3 = grid.interp(Vec2f(0.5f, 0.5f));
+		const FLOAT val1 = grid.interp(Vec2f(0.0f, 0.0f));
+		const FLOAT val2 = grid.interp(Vec2f(-0.5f, -0.5f));
+		const FLOAT val3 = grid.interp(Vec2f(0.5f, 0.5f));
 		// Via getter function overload.
 		const FLOAT val4 = grid.val(Vec2f(0.5f, 0.5f));
 		// Via operator overload.

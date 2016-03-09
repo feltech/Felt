@@ -262,7 +262,7 @@ public:
 	 * @param arr_idx_ index of tracking list used to track position.
 	 * @return true if position was added to tracking grid, false if it was already added.
 	 */
-	bool add_child(const VecDi& pos_, const UINT& arr_idx_ = 0)
+	bool add_child(const VecDi& pos_, const UINT arr_idx_ = 0)
 	{
 		if (m_grid_branch.is_active(pos_, arr_idx_))
 			return false;
@@ -278,7 +278,7 @@ public:
 	 * @param pos_ position of spatial partition to stop tracking.
 	 * @param arr_idx_ index of tracking list used to track position.
 	 */
-	void remove_child(const VecDi& pos_, const UINT& arr_idx_ = 0)
+	void remove_child(const VecDi& pos_, const UINT arr_idx_ = 0)
 	{
 		if (!m_grid_branch.is_active(pos_, arr_idx_))
 			return;
@@ -293,7 +293,7 @@ public:
 	 *
 	 * @param arr_idx_ index of tracking list to reset.
 	 */
-	void reset(const UINT& arr_idx_ = 0)
+	void reset(const UINT arr_idx_ = 0)
 	{
 		this->branch().reset(arr_idx_);
 	}
@@ -392,7 +392,7 @@ public:
 	 * @param val_ value to insert in list.
 	 * @param arr_idx_ ID of list to insert into.
 	 */
-	void add(const VecDi& pos_, const T& val_, const UINT& arr_idx_)
+	void add(const VecDi& pos_, const T& val_, const UINT arr_idx_)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
 		this->child(pos_child)[arr_idx_].push_back(val_);
@@ -404,7 +404,7 @@ public:
 	 *
 	 * @param arr_idx_ ID of list to reset.
 	 */
-	void reset(const UINT& arr_idx_)
+	void reset(const UINT arr_idx_)
 	{
 		for (const VecDi& pos_child : this->branch().list(arr_idx_))
 			this->child(pos_child)[arr_idx_].clear();
@@ -793,7 +793,7 @@ public:
 		 * @param it_leaf iterator over lowest level leaf grid point.
 		 */
 		iterator(
-			const GridTree* pgrid, const UINT& list_idx,
+			const GridTree* pgrid, const UINT list_idx,
 			const Iter& it_child, const Iter& it_leaf
 		)
 		: m_pgrid(pgrid), m_list_idx(list_idx), m_it_child(it_child),
@@ -871,7 +871,7 @@ public:
 	 * @param pgrid grid to iterate over
 	 * @param list_idx tracking list id identifying leafs
 	 */
-	LeafsContainer(const GridTree* pgrid, const UINT& list_idx)
+	LeafsContainer(const GridTree* pgrid, const UINT list_idx)
 	: m_pgrid(pgrid), m_list_idx(list_idx)
 	{}
 
@@ -966,7 +966,7 @@ public:
 	 *
 	 * @param arr_idx_ tracking list id.
 	 */
-	void reset(const UINT& arr_idx_ = 0)
+	void reset(const UINT arr_idx_ = 0)
 	{
 		BranchGrid& branch = this->branch();
 		for (const VecDi& pos_child : branch.list(arr_idx_))
@@ -986,7 +986,7 @@ public:
 	 * to tracking list, false if child grid node was already set so
 	 * position already in a list.
 	 */
-	bool add(const VecDi& pos_, const UINT& arr_idx_ = 0)
+	bool add(const VecDi& pos_, const UINT arr_idx_ = 0)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
 		Base::add_child(pos_child, arr_idx_);
@@ -1008,7 +1008,7 @@ public:
 	 * to tracking list, false if child grid node was already set so
 	 * position already in a list.
 	 */
-	bool add_safe(const VecDi& pos_, const UINT& arr_idx_ = 0)
+	bool add_safe(const VecDi& pos_, const UINT arr_idx_ = 0)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
 		Base::add_child(pos_child, arr_idx_);
@@ -1026,7 +1026,7 @@ public:
 	 * @param pos_ leaf position to remove.
 	 * @param arr_idx_ tracking list id.
 	 */
-	void remove(const VecDi& pos_, const UINT& arr_idx_ = 0)
+	void remove(const VecDi& pos_, const UINT arr_idx_ = 0)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
 		Child& child = this->child(pos_child);
@@ -1041,7 +1041,7 @@ public:
 	 * @param list_idx_ tracking list id.
 	 * @return
 	 */
-	const LeafsContainer<Derived> leafs(const UINT& list_idx_ = 0) const
+	const LeafsContainer<Derived> leafs(const UINT list_idx_ = 0) const
 	{
 		return LeafsContainer<Derived>(
 			static_cast<const Derived*>(this), list_idx_
@@ -1056,7 +1056,7 @@ private:
 	 * @param arr_idx_
 	 * @return list of this grid (will always be empty).
 	 */
-	PosArray& list(const UINT& arr_idx_ = 0)
+	PosArray& list(const UINT arr_idx_ = 0)
 	{
 		return Child::list(arr_idx_);
 	}
@@ -1104,7 +1104,7 @@ public:
 	 * to tracking list, false if child grid node was already set so
 	 * position already in a list.
 	 */
-	bool add(const VecDi& pos_, const T& val_, const UINT& arr_idx_ = 0)
+	bool add(const VecDi& pos_, const T& val_, const UINT arr_idx_ = 0)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
 		Base::add_child(pos_child, arr_idx_);
@@ -1126,7 +1126,7 @@ public:
 	 * to tracking list, false if child grid node was already set so
 	 * position already in a list.
 	 */
-	bool add_safe(const VecDi& pos_, const T& val_, const UINT& arr_idx_ = 0)
+	bool add_safe(const VecDi& pos_, const T& val_, const UINT arr_idx_ = 0)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
 		Base::add_child(pos_child, arr_idx_);
@@ -1145,7 +1145,7 @@ public:
 	 * @param val_ value to set in main grid.
 	 * @param arr_idx_ tracking list id to cycle over and clear.
 	 */
-	void reset(const T& val_, const UINT& arr_idx_ = 0)
+	void reset(const T& val_, const UINT arr_idx_ = 0)
 	{
 		BranchGrid& branch = this->branch();
 		for (const VecDi& pos_child : branch.list(arr_idx_))
@@ -1159,7 +1159,7 @@ public:
 	 *
 	 * @param arr_idx_ tracking list to clear.
 	 */
-	void reset(const UINT& arr_idx_ = 0)
+	void reset(const UINT arr_idx_ = 0)
 	{
 		BranchGrid& branch = this->branch();
 		for (const VecDi& pos_child : branch.list(arr_idx_))
@@ -1208,7 +1208,7 @@ public:
 	 * to tracking list, false if child grid node was already set so
 	 * position already in a list.
 	 */
-	bool add(const VecDi& pos_, const T& val_, const UINT& arr_idx_)
+	bool add(const VecDi& pos_, const T& val_, const UINT arr_idx_)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
 		Base::add_child(pos_child, arr_idx_);
@@ -1225,7 +1225,7 @@ public:
 	 * to tracking list, false if leaf grid node was already set so position
 	 * already in a list.
 	 */
-	bool add(const VecDi& pos_, const UINT& arr_idx_)
+	bool add(const VecDi& pos_, const UINT arr_idx_)
 	{
 		return Base::add(pos_, arr_idx_);
 	}
@@ -1240,7 +1240,7 @@ public:
 	 * @param val_ value to set in main grid.
 	 * @param arr_idx_ tracking list id to cycle over and clear.
 	 */
-	void reset(const T& val_, const UINT& arr_idx_ = 0)
+	void reset(const T& val_, const UINT arr_idx_ = 0)
 	{
 		BranchGrid& branch = this->branch();
 		for (const VecDi& pos_child : branch.list(arr_idx_))

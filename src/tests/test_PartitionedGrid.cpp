@@ -312,7 +312,7 @@ BOOST_AUTO_TEST_SUITE(test_SharedLookupPartitionedGrid)
 		typedef GridType::BranchGrid BranchGrid;
 		typedef BranchGrid::Lookup LookupGrid;
 		const Vec3u& BRANCH_NULL_IDX = LookupGrid::Traits::NULL_IDX_DATA;
-		const UINT& CHILD_NULL_IDX = GridType::NULL_IDX;
+		const UINT CHILD_NULL_IDX = GridType::NULL_IDX;
 
 		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
 		BranchGrid& branch = grid.branch();
@@ -428,7 +428,7 @@ BOOST_AUTO_TEST_SUITE(test_SharedTrackedPartitionedGrid)
 		typedef GridType::BranchGrid BranchGrid;
 		typedef BranchGrid::Lookup LookupGrid;
 		const Vec3u& BRANCH_NULL_IDX = LookupGrid::Traits::NULL_IDX_DATA;
-		const UINT& CHILD_NULL_IDX = GridType::Child::Lookup::NULL_IDX;
+		const UINT CHILD_NULL_IDX = GridType::Child::Lookup::NULL_IDX;
 
 		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
 		BranchGrid& branch = grid.branch();
@@ -588,7 +588,7 @@ BOOST_AUTO_TEST_SUITE(test_LazySharedLookupPartitionedGrid)
 		const UINT NULL_IDX_DATA = LazySharedLookupPartitionedGrid<3, 3>::NULL_IDX;
 
 		// ==== Confirm ====
-		BOOST_CHECK_EQUAL(grid.child(Vec3i(1,1,1)).is_active(), false);
+		BOOST_CHECK_EQUAL((bool)grid.child(Vec3i(1,1,1)).is_active(), false);
 		BOOST_CHECK_EQUAL(grid.child(Vec3i(1,1,1)).data().size(), 0);
 		BOOST_CHECK_EQUAL(grid.child(Vec3i(1,1,1)).background(), NULL_IDX_DATA);
 		BOOST_CHECK_EQUAL(grid.child(Vec3i(1,1,1)).get(Vec3i(1,1,1)), NULL_IDX_DATA);

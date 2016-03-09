@@ -176,7 +176,7 @@ namespace felt
 		 *
          * @return
          */
-		const Vertex& vtx(const UINT& idx) const
+		const Vertex& vtx(const UINT idx) const
 		{
 			return this->vtx()[idx];
 		}
@@ -190,11 +190,11 @@ namespace felt
          */
 		template <class Derived>
 		UINT idx(
-			const VecDi& pos_a, const UINT& axis, const IsoGrid<Derived>& grid_isogrid
+			const VecDi& pos_a, const UINT axis, const IsoGrid<Derived>& grid_isogrid
 		)
 		{
 			// Check lookup to see if vertex has already been calculated.
-			const UINT& idx_lookup = m_grid_vtx(pos_a)(axis);
+			const UINT idx_lookup = m_grid_vtx(pos_a)(axis);
 			if (idx_lookup != NULL_IDX) {
 				return idx_lookup;
 			}
@@ -273,7 +273,7 @@ namespace felt
 		 *
          * @return
          */
-		const Simplex& spx(const UINT& idx) const
+		const Simplex& spx(const UINT idx) const
 		{
 			return this->spx()[idx];
 		}

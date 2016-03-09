@@ -250,7 +250,7 @@ public:
 		 * @param grid_ grid to iterator over.
 		 * @param start_idx_ index in underlying data to start at.
 		 */
-		iterator(const StaticGridBase& grid_, const UINT& start_idx_ = 0)
+		iterator(const StaticGridBase& grid_, const UINT start_idx_ = 0)
 		: m_idx(start_idx_), m_size(grid_.size()), m_offset(grid_.offset()),
 		  m_pos(ThisType::index(start_idx_, grid_.size(), grid_.offset()))
 		{}
@@ -401,7 +401,7 @@ public:
 	 *
 	 * @return representative spatial size of a leaf node.
 	 */
-	inline const FLOAT& dx () const
+	inline const FLOAT dx () const
 	{
 		return m_dx;
 	}
@@ -413,7 +413,7 @@ public:
 	 *
 	 * @param dx_ the new representative spatial size of a leaf node.
 	 */
-	void dx (const FLOAT& dx_)
+	void dx (const FLOAT dx_)
 	{
 		m_dx = dx_;
 	}
@@ -572,7 +572,7 @@ public:
 	 * @param idx_ index in internal data array to query.
 	 * @return the position in the grid represented in the data array at given index.
 	 */
-	VecDi index (const UINT& idx_) const
+	VecDi index (const UINT idx_) const
 	{
 		return ThisType::index(idx_, this->size(), this->offset());
 	}
@@ -1167,7 +1167,7 @@ x = (idx/Dz)/Dy % Dx
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		assert_pos_bounds(pos_, "get_internal: ");
 		#endif
-		const UINT& idx = this->index(pos_);
+		const UINT idx = this->index(pos_);
 		return this->data()(idx);
 	}
 
@@ -1183,7 +1183,7 @@ x = (idx/Dz)/Dy % Dx
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		assert_pos_bounds(pos, "get_internal: ");
 		#endif
-		const UINT& idx = this->index(pos);
+		const UINT idx = this->index(pos);
 		return this->data()(idx);
 	}
 
