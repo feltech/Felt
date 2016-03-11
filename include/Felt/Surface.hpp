@@ -419,7 +419,7 @@ public:
 		for (UINT neighIdx = 0; neighIdx < neighs.size(); neighIdx++)
 		{
 			const VecDi& pos_neigh = neighs[neighIdx];
-			typename IsoGrid::Child& child = m_grid_isogrid.child(m_grid_isogrid.pos_child(pos_neigh));
+			typename IsoGrid::Child& child = m_grid_isogrid.children().get(m_grid_isogrid.pos_child(pos_neigh));
 			
 			const INT from_layer_id = this->layer_id(pos_neigh);
 
@@ -495,8 +495,8 @@ public:
 	 */
 	void flush_status_change ()
 	{
-		for (const VecDi& pos_child : m_grid_status_change.branch().list())
-			for (const StatusChange& status : m_grid_status_change.child(pos_child))
+		for (const VecDi& pos_child : m_grid_status_change.children().list())
+			for (const StatusChange& status : m_grid_status_change.children().get(pos_child))
 			{
 				const INT layer_id_to = status.to_layer;
 				const INT layer_id_from = status.from_layer;
@@ -677,7 +677,7 @@ public:
 //
 //		MutexSet mutexes;
 //		for (const VecDi& pos : list_pos_leafs_)
-//			mutexes.insert(&m_grid_disogrid.child(m_grid_disogrid.pos_child(pos)).lookup().mutex());
+//			mutexes.insert(&m_grid_disogrid.children().get(m_grid_disogrid.pos_child(pos)).lookup().mutex());
 //
 //		MutexIter first(mutexes.begin()), last(mutexes.end());
 //		boost::lock(first, last);
@@ -746,7 +746,7 @@ public:
 						pmutex_current->unlock();
 					}
 					pos_child_current = pos_child;
-					pmutex_current = &m_grid_disogrid.child(pos_child_current).lookup().mutex();
+					pmutex_current = &m_grid_disogrid.children().get(pos_child_current).lookup().mutex();
 					pmutex_current->lock();
 				}
 
@@ -821,7 +821,7 @@ public:
 	 */
 	PosArray& parts (const INT id = 0)
 	{
-		return m_grid_isogrid.branch().list(id+L);
+		return m_grid_isogrid.children().list(id+L);
 	}
 
 	/**
@@ -834,7 +834,7 @@ public:
 	 */
 	PosArray& layer (const VecDi& pos_child, const INT id = 0)
 	{
-		return m_grid_isogrid.child(pos_child).list(id+L);
+		return m_grid_isogrid.children().get(pos_child).list(id+L);
 	}
 
 	/**
@@ -849,7 +849,7 @@ public:
 		const VecDi& pos_child, const INT id = 0
 	) const
 	{
-		return m_grid_isogrid.child(pos_child).list(id+L);
+		return m_grid_isogrid.children().get(pos_child).list(id+L);
 	}
 
 	/**
@@ -1106,8 +1106,8 @@ public:
 		
 		#if false
 		
-		for (const VecDi& pos_child : m_grid_disogrid.branch())
-			for (const VecDi& pos : m_grid_disogrid.child(pos_child))
+		for (const VecDi& pos_child : m_grid_disogrid.children())
+			for (const VecDi& pos : m_grid_disogrid.children().get(pos_child))
 			{
 				if (m_grid_disogrid(pos) != 0)
 				{
@@ -1123,18 +1123,18 @@ public:
 	 */
 	void update_zero_layer ()
 	{
-		const typename DeltaIsoGrid::BranchGrid&
-		branch = this->disogrid().branch();
+		const typename DeltaIsoGrid::ChildrenGrid&
+		children = this->disogrid().children();
 
 		const UINT layer_idx = this->layer_idx(0);
 
 		#pragma omp parallel for
 		for (
-			UINT idx_child = 0; idx_child < branch.list(layer_idx).size();
+			UINT idx_child = 0; idx_child < children.list(layer_idx).size();
 			idx_child++
 		) {
-			const VecDi& pos_child = branch.list(layer_idx)[idx_child];
-			for (const VecDi& pos : branch(pos_child).list(layer_idx))
+			const VecDi& pos_child = children.list(layer_idx)[idx_child];
+			for (const VecDi& pos : children(pos_child).list(layer_idx))
 			{
 				const FLOAT fisogrid = this->isogrid(pos);
 				const FLOAT fdisogrid = this->disogrid(pos);
@@ -1222,16 +1222,16 @@ public:
 		const UINT layer_idx = this->layer_idx(layer_id_);
 
 		#pragma omp parallel for
-		for (UINT pos_idx = 0; pos_idx < lookup_.branch().list(layer_idx).size(); pos_idx++)
+		for (UINT pos_idx = 0; pos_idx < lookup_.children().list(layer_idx).size(); pos_idx++)
 		{
-			const VecDi& pos_child = lookup_.branch().list(layer_idx)[pos_idx];
+			const VecDi& pos_child = lookup_.children().list(layer_idx)[pos_idx];
 
 			m_grid_disogrid.add_child(pos_child, layer_idx);
 
-			IsoChild& grid_isogrid_child = m_grid_isogrid.branch().get(pos_child);
-			DeltaIsoChild& grid_disogrid_child = m_grid_disogrid.branch().get(pos_child);
+			IsoChild& grid_isogrid_child = m_grid_isogrid.children().get(pos_child);
+			DeltaIsoChild& grid_disogrid_child = m_grid_disogrid.children().get(pos_child);
 
-			const PosArray& apos_leafs = lookup_.child(pos_child).list(layer_idx);
+			const PosArray& apos_leafs = lookup_.children().get(pos_child).list(layer_idx);
 
 			// Calculate distance of every point in this layer to the zero
 			// layer, and store in delta isogrid grid.
@@ -1266,14 +1266,14 @@ public:
 		}
 		
 		#pragma omp parallel for
-		for (UINT pos_idx = 0; pos_idx < lookup_.branch().list(layer_idx).size(); pos_idx++)
+		for (UINT pos_idx = 0; pos_idx < lookup_.children().list(layer_idx).size(); pos_idx++)
 		{
-			const VecDi& pos_child = lookup_.branch().list(layer_idx)[pos_idx];
+			const VecDi& pos_child = lookup_.children().list(layer_idx)[pos_idx];
 
-			IsoChild& grid_isogrid_child = m_grid_isogrid.branch().get(pos_child);
-			DeltaIsoChild& grid_disogrid_child = m_grid_disogrid.branch().get(pos_child);
+			IsoChild& grid_isogrid_child = m_grid_isogrid.children().get(pos_child);
+			DeltaIsoChild& grid_disogrid_child = m_grid_disogrid.children().get(pos_child);
 
-			const PosArray& apos_leafs = lookup_.child(pos_child).list(layer_idx);
+			const PosArray& apos_leafs = lookup_.children().get(pos_child).list(layer_idx);
 
 			// Update distance in isogrid from delta isogrid and append any points that
 			// move out of their layer to a status change list.
@@ -1450,12 +1450,12 @@ public:
 		// Loop spatial partitions of disogrid for zero-layer.
 		for (
 			const VecDi& pos_child
-			: this->disogrid().branch().list(layer_idxZero))
+			: this->disogrid().children().list(layer_idxZero))
 		{
 			// Loop leaf grid nodes with spatial partition
 			for (
 				const VecDi& pos_leaf
-				: this->disogrid().child(pos_child).list(layer_idxZero)
+				: this->disogrid().children().get(pos_child).list(layer_idxZero)
 			)
 				// Add zero-layer point to tracking grid.
 				m_grid_affected.add(pos_leaf, layer_idxZero);
@@ -1478,7 +1478,7 @@ public:
 				const UINT layer_idx = this->layer_idx(layer_id);
 				// Get number of spatial partitions for this layer.
 				const UINT num_childs = (
-					m_grid_affected.branch().list(layer_idx).size()
+					m_grid_affected.children().list(layer_idx).size()
 				);
 				// Resize spatial partition index lists for this layer to
 				// to include any newly added partitions.
@@ -1494,11 +1494,11 @@ public:
 				) {
 					// Get position of this spatial partition in parent
 					// lookup grid.
-					const VecDi& pos_child = m_grid_affected.branch().list(layer_idx)[idx_child];
+					const VecDi& pos_child = m_grid_affected.children().list(layer_idx)[idx_child];
 					// Copy number of active grid nodes for this partition
 					// into relevant index in the list.
 					aidx_last_neigh[layer_idx][idx_child] = (
-						m_grid_affected.child(pos_child).list(layer_idx).size()
+						m_grid_affected.children().get(pos_child).list(layer_idx).size()
 					);
 				}
 			}
@@ -1522,7 +1522,7 @@ public:
 					// Get position of this spatial partition in this layer (not by-reference since
 					// list will be modified).
 					const VecDi pos_child = (
-						m_grid_affected.branch().list(layer_idx)[idx_child]
+						m_grid_affected.children().list(layer_idx)[idx_child]
 					);
 
 					// Loop over leaf grid nodes within this spatial
@@ -1536,7 +1536,7 @@ public:
 						// Get list of active leaf grid nodes in this
 						// spatial partition.
 						const PosArray& apos_neigh = (
-							m_grid_affected.child(pos_child).list(layer_idx)
+							m_grid_affected.children().get(pos_child).list(layer_idx)
 						);
 						// This leaf grid nodes is the centre to search
 						// about.
@@ -1643,7 +1643,7 @@ public:
 		{
 			const VecDf& pos_hit = ray(
 				pos_origin, dir,
-				m_grid_isogrid.child(
+				m_grid_isogrid.children().get(
 					m_grid_isogrid.pos_child(pos_origin.template cast<INT>())
 				)
 			);
@@ -1748,7 +1748,7 @@ public:
 		{
 			const VecDf& pos_hit = this->ray(
 				child_hit.pos_intersect, dir,
-				this->isogrid().child(child_hit.pos_child)
+				this->isogrid().children().get(child_hit.pos_child)
 			);
 
 			if (pos_hit != NULL_POS<FLOAT>())

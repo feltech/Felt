@@ -79,16 +79,16 @@ public:
 	static const UINT NUM_LISTS = Traits::NumLists;
 
 	/// Grid of partitions with tracking list(s) of active partitions.
-	using BranchGrid = TrackedGrid<Child, Traits::Dims, NUM_LISTS>;
+	using ChildrenGrid = TrackedGrid<Child, Traits::Dims, NUM_LISTS>;
 	/// D-dimensional unsigned int vector.
-	using VecDu = typename BranchGrid::VecDu;
+	using VecDu = typename ChildrenGrid::VecDu;
 	/// D-dimensional signed int vector.
-	using VecDi = typename BranchGrid::VecDi;
+	using VecDi = typename ChildrenGrid::VecDi;
 
 
 protected:
 	/// Grid of partitions with tracking list(s) of active grid points.
-	BranchGrid	m_grid_branch;
+	ChildrenGrid	m_grid_children;
 
 	/// Mutex used to synchrnonise the the adding/removing of elements from the tracking list(s).
 	std::mutex	m_mutex_update_branch;
@@ -120,7 +120,7 @@ public:
 	 * @param partition_size_ spatial size of the child data structure.
 	 */
 	PartitionBase (const VecDu& size_, const VecDi& offset_, const VecDu& partition_size_)
-		: m_grid_branch()
+		: m_grid_children()
 	{
 		this->init(size_, offset_, partition_size_);
 	}
@@ -167,57 +167,31 @@ public:
 	}
 
 	/**
-	 * Get TrackedGrid branch grid - the spatial partition grid that stores the PartitionBase::Child 
+	 * Get TrackedGrid children grid - the spatial partition grid that stores the PartitionBase::Child 
 	 * objects.
 	 *
 	 * @return TrackedGrid storing/tracking Child objects.
 	 */
-	BranchGrid& branch ()
+	ChildrenGrid& children ()
 	{
-		return m_grid_branch;
+		return m_grid_children;
 	}
 
 	/**
-	 * Get TrackedGrid branch grid - the spatial partition grid that stores the PartitionBase::Child 
+	 * Get TrackedGrid children grid - the spatial partition grid that stores the PartitionBase::Child 
 	 * objects.
 	 *
 	 * @return TrackedGrid storing/tracking Child objects.
 	 */
-	const BranchGrid& branch () const
+	const ChildrenGrid& children () const
 	{
-		return m_grid_branch;
+		return m_grid_children;
 	}
 
 	/**
-	 * Get the PartitionBase::Child object at given position.
+	 * Reshape grid, computing the size of the children grid.
 	 *
-	 * Shorthand for branch().get(pos) or branch()(pos).
-	 *
-	 * @param pos position within the spatial partition grid.
-	 * @return PartitionBase::Child at given position.
-	 */
-	Child& child (const VecDi& pos_)
-	{
-		return m_grid_branch(pos_);
-	}
-
-	/**
-	 * Get the PartitionBase::Child object at given position.
-	 *
-	 * Shorthand for branch().get(pos) or branch()(pos).
-	 *
-	 * @param pos position within the spatial partition grid.
-	 * @return PartitionBase::Child at given position.
-	 */
-	const Child& child (const VecDi& pos_) const
-	{
-		return m_grid_branch(pos_);
-	}
-
-	/**
-	 * Reshape grid, computing the size of the branch grid.
-	 *
-	 * The branch grid will be increased in size by one, if required, to ensure all leaf nodes are
+	 * The children grid will be increased in size by one, if required, to ensure all leaf nodes are
 	 * completely contained.
 	 *
 	 * @param grid_size_ overall size of grid.
@@ -235,11 +209,11 @@ public:
 			branch_size += VecDu::Constant(1);
 		}
 
-		m_grid_branch.size(branch_size);
+		m_grid_children.size(branch_size);
 	}
 
 	/**
-	 * Calculate the offset of the branch grid from the given offset and the size of a spatial
+	 * Calculate the offset of the children grid from the given offset and the size of a spatial
 	 * partition (the child size).
 	 *
 	 * @param grid_offset_ overall spatial offset the grid
@@ -250,11 +224,11 @@ public:
 			grid_offset_.array() / m_isize_child.array()
 		).matrix();
 
-		m_grid_branch.offset(branch_offset);
+		m_grid_children.offset(branch_offset);
 	}
 
 	/**
-	 * Add a spatial partition to branch grid's tracking subgrid.
+	 * Add a spatial partition to children grid's tracking subgrid.
 	 *
 	 * Uses mutex for thread safety.
 	 *
@@ -264,14 +238,14 @@ public:
 	 */
 	bool add_child(const VecDi& pos_, const UINT arr_idx_ = 0)
 	{
-		if (m_grid_branch.is_active(pos_, arr_idx_))
+		if (m_grid_children.is_active(pos_, arr_idx_))
 			return false;
 		std::lock_guard<std::mutex> lock(m_mutex_update_branch);
-		return this->branch().add(pos_, arr_idx_);
+		return this->children().add(pos_, arr_idx_);
 	}
 
 	/**
-	 * Remove a spatial partition from branch grid's tracking subgrid.
+	 * Remove a spatial partition from children grid's tracking subgrid.
 	 *
 	 * Uses mutex for thread safety.
 	 *
@@ -280,14 +254,14 @@ public:
 	 */
 	void remove_child(const VecDi& pos_, const UINT arr_idx_ = 0)
 	{
-		if (!m_grid_branch.is_active(pos_, arr_idx_))
+		if (!m_grid_children.is_active(pos_, arr_idx_))
 			return;
 		std::lock_guard<std::mutex> lock(m_mutex_update_branch);
-		this->branch().remove(pos_, arr_idx_);
+		this->children().remove(pos_, arr_idx_);
 	}
 
 	/**
-	 * Reset the tracking list at given index in the branch grid.
+	 * Reset the tracking list at given index in the children grid.
 	 *
 	 * Removes all spatial partitions from the tracking subgrid for given list index.
 	 *
@@ -295,7 +269,7 @@ public:
 	 */
 	void reset(const UINT arr_idx_ = 0)
 	{
-		this->branch().reset(arr_idx_);
+		this->children().reset(arr_idx_);
 	}
 };
 
@@ -332,13 +306,13 @@ public:
 	 * Get spatial partition from leaf grid node in 'imaginary' grid.
 	 *
 	 * @param pos_leaf_
-	 * @return location of spatial partition in branch grid.
+	 * @return location of spatial partition in children grid.
 	 */
 	const VecDi pos_child (const VecDi& pos_leaf_) const
 	{
 		return (
 			(pos_leaf_ - m_offset).array() / this->m_isize_child.array()
-		).matrix() + this->branch().offset();
+		).matrix() + this->children().offset();
 	}
 };
 
@@ -395,7 +369,7 @@ public:
 	void add(const VecDi& pos_, const T& val_, const UINT arr_idx_)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
-		this->child(pos_child)[arr_idx_].push_back(val_);
+		this->children().get(pos_child)[arr_idx_].push_back(val_);
 		Base::add_child(pos_child, arr_idx_);
 	}
 
@@ -406,8 +380,8 @@ public:
 	 */
 	void reset(const UINT arr_idx_)
 	{
-		for (const VecDi& pos_child : this->branch().list(arr_idx_))
-			this->child(pos_child)[arr_idx_].clear();
+		for (const VecDi& pos_child : this->children().list(arr_idx_))
+			this->children().get(pos_child)[arr_idx_].clear();
 		Base::reset(arr_idx_);
 	}
 };
@@ -464,7 +438,7 @@ public:
 	void add(const VecDi& pos, const T& val)
 	{
 		const VecDi& pos_child = this->pos_child(pos);
-		this->child(pos_child).push_back(val);
+		this->children().get(pos_child).push_back(val);
 		Base::add_child(pos_child);
 	}
 
@@ -477,7 +451,7 @@ public:
 	void add_safe(const VecDi& pos, const T& val)
 	{
 		const VecDi& pos_child = this->pos_child(pos);
-		Child& child = this->child(pos_child);
+		Child& child = this->children().get(pos_child);
 		Base::add_child(pos_child);
 		std::lock_guard<std::mutex> lock(child.mutex());
 		child.push_back(val);
@@ -488,8 +462,8 @@ public:
 	 */
 	void reset()
 	{
-		for (const VecDi& pos_child : this->branch().list())
-			this->child(pos_child).clear();
+		for (const VecDi& pos_child : this->children().list())
+			this->children().get(pos_child).clear();
 		Base::reset();
 	}
 };
@@ -528,7 +502,7 @@ public:
 	 *
 	 * Each grid node stores a Child grid and tracks active nodes using one or more tracking lists.
 	 */
-	using BranchGrid = typename Base::BranchGrid;
+	using ChildrenGrid = typename Base::ChildrenGrid;
 	
 	using VecDu = typename MixinType::VecDu;
 	using VecDi = typename MixinType::VecDi;
@@ -594,15 +568,15 @@ public:
 
 		this->m_size = size_;
 
-		for (UINT idx = 0; idx < this->branch().data().size(); idx++)
+		for (UINT idx = 0; idx < this->children().data().size(); idx++)
 		{
-			Child& child = this->branch().data()(idx);
+			Child& child = this->children().data()(idx);
 			child.size(this->m_usize_child);
 		}
 	}
 
 	/**
-	 * Set offset of branch grid and propagate offset to children, translating as appropriate.
+	 * Set offset of children grid and propagate offset to children, translating as appropriate.
 	 *
 	 * @param offset_ offset of overall grid.
 	 */
@@ -611,13 +585,13 @@ public:
 		Base::offset(offset_);
 		MixinType::offset(offset_);
 
-		for (UINT idx = 0; idx < this->branch().data().size(); idx++)
+		for (UINT idx = 0; idx < this->children().data().size(); idx++)
 		{
-			Child& child = this->branch().data()(idx);
-			const VecDi& pos_child = this->branch().index(idx);
+			Child& child = this->children().data()(idx);
+			const VecDi& pos_child = this->children().index(idx);
 			const VecDi& offset_child = (
 				(
-					(pos_child - this->branch().offset()).array()
+					(pos_child - this->children().offset()).array()
 					* this->m_isize_child.array()
 				).matrix() + offset_
 			);
@@ -636,7 +610,7 @@ public:
 	{
 		return (
 			(pos_leaf_ - offset()).array() / this->m_isize_child.array()
-		).matrix() + this->branch().offset();
+		).matrix() + this->children().offset();
 	}
 
 	/**
@@ -648,9 +622,9 @@ public:
 	 */
 	void fill (const LeafType& val_)
 	{
-		for (UINT idx = 0; idx < this->branch().data().size(); idx++)
+		for (UINT idx = 0; idx < this->children().data().size(); idx++)
 		{
-			Child& child = this->branch().data()(idx);
+			Child& child = this->children().data()(idx);
 			child.fill(val_);
 		}
 	}
@@ -666,7 +640,7 @@ public:
 	LeafType& get (const VecDi& pos_)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
-		Child& child = this->branch().get(pos_child);
+		Child& child = this->children().get(pos_child);
 		return child.get(pos_);
 	}
 
@@ -680,7 +654,7 @@ public:
 	 */
 	const LeafType& get (const VecDi& pos_) const
 	{
-		const Child& child = this->branch()(pos_child(pos_));
+		const Child& child = this->children()(pos_child(pos_));
 		return child.get(pos_);
 	}
 
@@ -695,9 +669,9 @@ public:
 	{
 		m_pgrid_snapshot.reset(new SnapshotGrid(this->size(), this->offset()));
 
-		for (UINT branch_idx = 0; branch_idx < this->branch().data().size(); branch_idx++)
+		for (UINT branch_idx = 0; branch_idx < this->children().data().size(); branch_idx++)
 		{
-			const Child& child = this->branch().data()[branch_idx];
+			const Child& child = this->children().data()[branch_idx];
 			for (UINT leaf_idx = 0; leaf_idx < child.data().size(); leaf_idx++)
 			{
 				const VecDi& pos = child.index(leaf_idx);
@@ -718,9 +692,9 @@ public:
 		if (m_pgrid_snapshot.get() == NULL)
 			return;
 
-		for (UINT branch_idx = 0; branch_idx < this->branch().data().size(); branch_idx++)
+		for (UINT branch_idx = 0; branch_idx < this->children().data().size(); branch_idx++)
 		{
-			Child& child = this->branch().data()[branch_idx];
+			Child& child = this->children().data()[branch_idx];
 			for (UINT leaf_idx = 0; leaf_idx < child.data().size(); leaf_idx++)
 			{
 				const VecDi& pos = child.index(leaf_idx);
@@ -798,7 +772,7 @@ public:
 		)
 		: m_pgrid(pgrid), m_list_idx(list_idx), m_it_child(it_child),
 		  m_it_leaf(it_leaf),
-		  m_it_child_end(pgrid->branch().list(list_idx).end())
+		  m_it_child_end(pgrid->children().list(list_idx).end())
 		{}
 
 	private:
@@ -825,13 +799,13 @@ public:
 
 			if (m_it_leaf == m_it_child)
 			{
-				m_it_leaf = m_pgrid->child(*m_it_child).list(m_list_idx).begin();
+				m_it_leaf = m_pgrid->children().get(*m_it_child).list(m_list_idx).begin();
 				return;
 			}
 
 			m_it_leaf++;
 
-			if (m_it_leaf == m_pgrid->child(*m_it_child).list(m_list_idx).end())
+			if (m_it_leaf == m_pgrid->children().get(*m_it_child).list(m_list_idx).end())
 			{
 				m_it_child++;
 				m_it_leaf = m_it_child;
@@ -883,15 +857,15 @@ public:
 	const iterator begin() const
 	{
 		const typename PosArray::const_iterator& it_child_begin
-			= m_pgrid->branch().list(m_list_idx).cbegin();
+			= m_pgrid->children().list(m_list_idx).cbegin();
 		const typename PosArray::const_iterator& it_child_end
-			= m_pgrid->branch().list(m_list_idx).cend();
+			= m_pgrid->children().list(m_list_idx).cend();
 
 		typename PosArray::const_iterator it_leaf_begin = it_child_end;
 
 		if (it_child_begin != it_child_end)
 		{
-			it_leaf_begin = m_pgrid->child(
+			it_leaf_begin = m_pgrid->children().get(
 				*it_child_begin
 			).list(m_list_idx).begin();
 		}
@@ -912,8 +886,8 @@ public:
 	{
 		return iterator(
 			m_pgrid, m_list_idx,
-			m_pgrid->branch().list(m_list_idx).cend(),
-			m_pgrid->branch().list(m_list_idx).cend()
+			m_pgrid->children().list(m_list_idx).cend(),
+			m_pgrid->children().list(m_list_idx).cend()
 		);
 	}
 
@@ -925,8 +899,8 @@ public:
 	UINT size() const
 	{
 		UINT sum = 0;
-		for (const VecDi& pos_child : m_pgrid->branch().list(m_list_idx))
-			sum += m_pgrid->child(pos_child).list(m_list_idx).size();
+		for (const VecDi& pos_child : m_pgrid->children().list(m_list_idx))
+			sum += m_pgrid->children().get(pos_child).list(m_list_idx).size();
 		return sum;
 	}
 };
@@ -943,6 +917,7 @@ class TrackingPartitionedGridBase
 {
 public:
 	using ThisType = TrackingPartitionedGridBase<Derived>;
+	using DerivedType = typename GridTraits<Derived>::ThisType;
 	/// Base class.
 	using Base = PartitionedGridBase<ThisType>;
 
@@ -951,7 +926,7 @@ public:
 	using typename Base::Child;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
-	using typename Base::BranchGrid;
+	using typename Base::ChildrenGrid;
 
 	using PosArray = typename Child::PosArray;
 
@@ -968,9 +943,9 @@ public:
 	 */
 	void reset(const UINT arr_idx_ = 0)
 	{
-		BranchGrid& branch = this->branch();
-		for (const VecDi& pos_child : branch.list(arr_idx_))
-			branch(pos_child).reset(arr_idx_);
+		ChildrenGrid& children = this->children();
+		for (const VecDi& pos_child : children.list(arr_idx_))
+			children(pos_child).reset(arr_idx_);
 
 		Base::reset(arr_idx_);
 	}
@@ -989,8 +964,8 @@ public:
 	bool add(const VecDi& pos_, const UINT arr_idx_ = 0)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
-		Base::add_child(pos_child, arr_idx_);
-		return this->child(pos_child).add(pos_, arr_idx_);
+		self->add_child(pos_child, arr_idx_);
+		return this->children().get(pos_child).add(pos_, arr_idx_);
 	}
 
 	/**
@@ -1011,8 +986,8 @@ public:
 	bool add_safe(const VecDi& pos_, const UINT arr_idx_ = 0)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
-		Base::add_child(pos_child, arr_idx_);
-		Child& child = this->child(pos_child);
+		self->add_child(pos_child, arr_idx_);
+		Child& child = this->children().get(pos_child);
 		if (child.is_active(pos_))
 			return false;
 		std::lock_guard<std::mutex> lock(child.mutex());
@@ -1029,7 +1004,7 @@ public:
 	void remove(const VecDi& pos_, const UINT arr_idx_ = 0)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
-		Child& child = this->child(pos_child);
+		Child& child = this->children().get(pos_child);
 		child.remove(pos_, arr_idx_);
 		if (child.list(arr_idx_).size() == 0)
 			this->remove_child(pos_child, arr_idx_);
@@ -1051,7 +1026,7 @@ public:
 private:
 	/**
 	 * Override spoofed (non-partitioned) base class's list method to make
-	 * private, since it will always be empty (must use branch or child).
+	 * private, since it will always be empty (must use children or child).
 	 *
 	 * @param arr_idx_
 	 * @return list of this grid (will always be empty).
@@ -1083,7 +1058,7 @@ public:
 	using typename Base::Child;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
-	using typename Base::BranchGrid;
+	using typename Base::ChildrenGrid;
 
 	using PosArray = typename Child::PosArray;
 public:
@@ -1108,7 +1083,7 @@ public:
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
 		Base::add_child(pos_child, arr_idx_);
-		return this->child(pos_child).add(pos_, val_, arr_idx_);
+		return this->children().get(pos_child).add(pos_, val_, arr_idx_);
 	}
 
 	/**
@@ -1130,7 +1105,7 @@ public:
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
 		Base::add_child(pos_child, arr_idx_);
-		Child& child = this->child(pos_child);
+		Child& child = this->children().get(pos_child);
 		std::lock_guard<std::mutex> lock(child.mutex());
 		return child.add(pos_, val_, arr_idx_);
 	}
@@ -1147,25 +1122,11 @@ public:
 	 */
 	void reset(const T& val_, const UINT arr_idx_ = 0)
 	{
-		BranchGrid& branch = this->branch();
-		for (const VecDi& pos_child : branch.list(arr_idx_))
-			branch(pos_child).reset(val_, arr_idx_);
+		ChildrenGrid& children = this->children();
+		for (const VecDi& pos_child : children.list(arr_idx_))
+			children(pos_child).reset(val_, arr_idx_);
 
-		Base::reset(arr_idx_);
-	}
-
-	/**
-	 * Reset a tracking list on the lookup grid.
-	 *
-	 * @param arr_idx_ tracking list to clear.
-	 */
-	void reset(const UINT arr_idx_ = 0)
-	{
-		BranchGrid& branch = this->branch();
-		for (const VecDi& pos_child : branch.list(arr_idx_))
-			branch(pos_child).reset(arr_idx_);
-
-		Base::reset(arr_idx_);
+		Base::Base::reset(arr_idx_);
 	}
 };
 
@@ -1187,11 +1148,12 @@ public:
 	using typename Base::Child;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
-	using typename Base::BranchGrid;
+	using typename Base::ChildrenGrid;
 	using PosArray = typename Child::PosArray;
 
 public:
 	using Base::TrackingPartitionedGridBase;
+	using Base::add;
 
 	/**
 	 * Set value in grid at given position and add position to lookup grid.
@@ -1212,22 +1174,7 @@ public:
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
 		Base::add_child(pos_child, arr_idx_);
-		return this->child(pos_child).add(pos_, val_, arr_idx_);
-	}
-
-
-	/**
-	 * Add a position to the lookup grid.
-	 *
-	 * @param pos_ position in the grid to add.
-	 * @param arr_idx_ tracking list id.
-	 * @return true if grid node set in child lookup grid and position added
-	 * to tracking list, false if leaf grid node was already set so position
-	 * already in a list.
-	 */
-	bool add(const VecDi& pos_, const UINT arr_idx_)
-	{
-		return Base::add(pos_, arr_idx_);
+		return this->children().get(pos_child).add(pos_, val_, arr_idx_);
 	}
 
 	/**
@@ -1242,9 +1189,9 @@ public:
 	 */
 	void reset(const T& val_, const UINT arr_idx_ = 0)
 	{
-		BranchGrid& branch = this->branch();
-		for (const VecDi& pos_child : branch.list(arr_idx_))
-			branch(pos_child).reset(val_, arr_idx_);
+		ChildrenGrid& children = this->children();
+		for (const VecDi& pos_child : children.list(arr_idx_))
+			children(pos_child).reset(val_, arr_idx_);
 
 		Base::reset(arr_idx_);
 	}
@@ -1301,6 +1248,71 @@ public:
 	using ThisType = LazySharedLookupPartitionedGrid<D, N>;
 	using Base = TrackingPartitionedGridBase<ThisType>;
 	using Base::TrackingPartitionedGridBase;
+	using typename Base::VecDi;
+	using typename Base::Child;
+
+	/**
+	 * Reset and conditionally deactivate children.
+	 *
+	 * @snippet test_PartitionedGrid.cpp LazySharedLookupPartitionedGrid masked_reset
+	 *
+	 * All child grids will be reset, but they will not be deactivated and removed from tracking
+	 * if the given master grid is currently tracking them.
+	 *
+	 * This is an optimisation to ensure spatial partitions that are 'paired' do not get
+	 * constantly created and destroyed unnecessarily.
+	 *
+	 * @param grid_master
+	 */
+	template<typename T>
+	void reset(const PartitionedGrid<T, D>& grid_master)
+	{
+		for (const VecDi& pos_child : this->children().list())
+		{
+			Child& child = this->children().get(pos_child);
+			child.reset();
+			if (!grid_master.children().is_active(pos_child))
+			{
+				child.deactivate();
+				this->remove_child(pos_child);
+			}
+		}
+	}
+
+	/**
+	 * Add a spatial partition to children grid's tracking subgrid.
+	 *
+	 * Uses mutex for thread safety. Activates the child grid.
+	 *
+	 * @param pos_ position in spatial partition grid to track.
+	 * @param arr_idx_ index of tracking list used to track position.
+	 * @return true if position was added to tracking grid, false if it was already added.
+	 */
+	bool add_child(const VecDi& pos_, const UINT& idx = 0)
+	{
+		if (this->m_grid_children.is_active(pos_))
+			return false;
+		std::lock_guard<std::mutex> lock(this->m_mutex_update_branch);
+		this->m_grid_children.get(pos_).activate();
+		return this->m_grid_children.add(pos_);
+	}
+
+	/**
+	 * Remove a spatial partition from children grid's tracking subgrid.
+	 *
+	 * Uses mutex for thread safety. Deactivates the child grid
+	 *
+	 * @param pos_ position of spatial partition to stop tracking.
+	 * @param arr_idx_ index of tracking list used to track position.
+	 */
+	void remove_child(const VecDi& pos_, const UINT& idx = 0)
+	{
+		if (!this->m_grid_children.is_active(pos_))
+			return;
+		std::lock_guard<std::mutex> lock(this->m_mutex_update_branch);
+		this->m_grid_children.get(pos_).deactivate();
+		this->m_grid_children.remove(pos_);
+	}
 };
 
 // End group Classes.
@@ -1493,7 +1505,7 @@ struct GridTraits<LazySharedLookupPartitionedGrid<D, N> > : DefaultSharedLookupG
 {
 	/// The class inheriting from TrackingPartitionedGrid.
 	using ThisType = LazySharedLookupPartitionedGrid<D, N>;
-	/// Child grid class, in this case SharedLookupGrid.
+	/// Child grid class, in this case LazySharedLookupGrid.
 	using ChildType = LazySharedLookupGrid<D, N>;
 	/// Grid class whose interface to copy via CRTP mixin.
 	using MixinType = SharedLookupGridBase<ThisType>;

@@ -74,15 +74,15 @@ namespace felt
 		void init(const PolySurface& surface)
 		{
 			Base::init(
-				surface.isogrid().branch().size(), surface.isogrid().branch().offset()
+				surface.isogrid().children().size(), surface.isogrid().children().offset()
 			);
 			m_grid_changes.init(
 				surface.isogrid().size(), surface.isogrid().offset()
 			);
-			for (const VecDi& pos_child : surface.isogrid().branch())
+			for (const VecDi& pos_child : surface.isogrid().children())
 				self->init_child(
-					pos_child, surface.isogrid().child(pos_child).size(),
-					surface.isogrid().child(pos_child).offset()
+					pos_child, surface.isogrid().children().get(pos_child).size(),
+					surface.isogrid().children().get(pos_child).offset()
 				);
 		}
 
@@ -128,13 +128,13 @@ namespace felt
 			{
 				for (
 					const VecDi& pos_child
-					: surface.disogrid().branch().list(surface.layer_idx(layer_id))
+					: surface.disogrid().children().list(surface.layer_idx(layer_id))
 				) {
 					this->notify(surface, pos_child);
 				}
 			}
 
-			for (const VecDi& pos_child : surface.status_change().branch().list())
+			for (const VecDi& pos_child : surface.status_change().children().list())
 			{
 				m_grid_changes.add(pos_child);
 			}
@@ -152,13 +152,13 @@ namespace felt
 
 			if (!is_active)
 			{
-				is_active = surface.status_change().branch().is_active(pos_child);
+				is_active = surface.status_change().children().is_active(pos_child);
 
 				for (
 					UINT layer_idx = 0; layer_idx < surface.isogrid().NUM_LISTS && !is_active;
 					layer_idx++
 				) {
-					is_active = surface.isogrid().branch().is_active(pos_child, layer_idx);
+					is_active = surface.isogrid().children().is_active(pos_child, layer_idx);
 				}
 			}
 
@@ -237,7 +237,7 @@ namespace felt
 			) {
 				for (
 					const VecDi& pos_child
-					: surface.isogrid().branch().list(layer_idx)
+					: surface.isogrid().children().list(layer_idx)
 				) {
 					m_grid_changes.add(pos_child);
 				}

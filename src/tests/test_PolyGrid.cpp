@@ -420,7 +420,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		// ==== Confirm ====
 
-		BOOST_CHECK_EQUAL(surface.isogrid().branch().data().size(), 1u);
+		BOOST_CHECK_EQUAL(surface.isogrid().children().data().size(), 1u);
 
 		UINT num_spxs_after = 0;
 		UINT num_vtxs_after = 0;
@@ -493,7 +493,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		// ==== Confirm ====
 
-		BOOST_CHECK_EQUAL(surface.isogrid().branch().data().size(), 1);
+		BOOST_CHECK_EQUAL(surface.isogrid().children().data().size(), 1);
 
 		UINT num_spxs_after = 0;
 		UINT num_vtxs_after = 0;

@@ -54,14 +54,14 @@ BOOST_AUTO_TEST_CASE(layers)
 {
 	// 3D surface with default (=2) number of layers.
 	Surface<3> surface(Vec3u(7, 7, 7));
-	Surface<3>::IsoGrid::BranchGrid branch;
+	Surface<3>::IsoGrid::ChildrenGrid children;
 	Vec3i pos = Vec3i(0, 0, 0);
 
-	BOOST_CHECK_EQUAL(branch.list(surface.layer_idx(-2)).size(), 0);
-	BOOST_CHECK_EQUAL(branch.list(surface.layer_idx(-1)).size(), 0);
-	BOOST_CHECK_EQUAL(branch.list(surface.layer_idx(0)).size(), 0);
-	BOOST_CHECK_EQUAL(branch.list(surface.layer_idx(1)).size(), 0);
-	BOOST_CHECK_EQUAL(branch.list(surface.layer_idx(2)).size(), 0);
+	BOOST_CHECK_EQUAL(children.list(surface.layer_idx(-2)).size(), 0);
+	BOOST_CHECK_EQUAL(children.list(surface.layer_idx(-1)).size(), 0);
+	BOOST_CHECK_EQUAL(children.list(surface.layer_idx(0)).size(), 0);
+	BOOST_CHECK_EQUAL(children.list(surface.layer_idx(1)).size(), 0);
+	BOOST_CHECK_EQUAL(children.list(surface.layer_idx(2)).size(), 0);
 
 	// Add a single zero-layer point.
 	surface.isogrid(pos) = 0;
@@ -231,7 +231,7 @@ BOOST_AUTO_TEST_CASE(delta_isogrid_update)
 	surface.disogrid(Vec3i(0, 0, 0), 0.5f);
 
 	// ==== Confirm ====
-	BOOST_CHECK_EQUAL(surface.disogrid().branch().list(surface.layer_idx(0)).size(), 1);
+	BOOST_CHECK_EQUAL(surface.disogrid().children().list(surface.layer_idx(0)).size(), 1);
 	BOOST_CHECK_EQUAL(surface.disogrid().get(Vec3i(0, 0, 0)), 0.5f);
 
 	// ==== Action ====
@@ -240,7 +240,7 @@ BOOST_AUTO_TEST_CASE(delta_isogrid_update)
 
 	// ==== Confirm ====
 	// Check update_start cleared the above surface.disogrid changes.
-	BOOST_CHECK_EQUAL(surface.disogrid().branch().list(surface.layer_idx(0)).size(), 0);
+	BOOST_CHECK_EQUAL(surface.disogrid().children().list(surface.layer_idx(0)).size(), 0);
 	BOOST_CHECK_EQUAL(surface.disogrid().get(Vec3i(0, 0, 0)), 0.0f);
 
 	// ==== Action ====
@@ -318,8 +318,8 @@ BOOST_AUTO_TEST_CASE(distance_transform)
 		surface.update_start();
 		{
 			// Check update_start cleared the above surface.disogrid changes.
-			for (const Vec2i& pos_child : surface.disogrid().branch())
-				for (const Vec2i& pos : surface.disogrid().child(pos_child))
+			for (const Vec2i& pos_child : surface.disogrid().children())
+				for (const Vec2i& pos : surface.disogrid().children().get(pos_child))
 					BOOST_CHECK_EQUAL(surface.disogrid().get(pos), 0);
 
 		}

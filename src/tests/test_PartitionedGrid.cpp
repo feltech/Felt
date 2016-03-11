@@ -25,7 +25,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		{
 			// ==== Setup/action ====
 			PartitionedGrid<FLOAT, 3> grid(Vec3u(4,4,4), Vec3i(-2, -2,-2), Vec3u(2, 2, 2));
-			PartitionedGrid<FLOAT, 3>::BranchGrid& parent = grid.branch();
+			PartitionedGrid<FLOAT, 3>::ChildrenGrid& parent = grid.children();
 
 			// ==== Confirm ====
 			BOOST_CHECK_EQUAL(
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		{
 			// ==== Setup/action ====
 			PartitionedGrid<FLOAT, 3> grid(Vec3u(9,9,9), Vec3i(-4, -4, -4), Vec3u(3, 3, 3));
-			PartitionedGrid<FLOAT, 3>::BranchGrid& parent = grid.branch();
+			PartitionedGrid<FLOAT, 3>::ChildrenGrid& parent = grid.children();
 
 			// ==== Confirm ====
 			BOOST_CHECK_EQUAL(grid.size(), Vec3u(9,9,9));
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 		{
 			// ==== Setup/action ====
 			PartitionedGrid<FLOAT, 3>  grid(Vec3u(8,8,8), Vec3i(-3,-3,-3), Vec3u(2, 2, 2));
-			const PartitionedGrid<FLOAT, 3> ::BranchGrid& parent = grid.branch();
+			const PartitionedGrid<FLOAT, 3> ::ChildrenGrid& parent = grid.children();
 
 			// ==== Confirm ====
 			BOOST_CHECK_EQUAL(grid.size(), Vec3u(8,8,8));
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 	{
 		// ==== Setup ====
 		PartitionedGrid<FLOAT, 3> grid(Vec3u(4,4,4), Vec3i(-2, -2,-2));
-		PartitionedGrid<FLOAT, 3>::BranchGrid& parent = grid.branch();
+		PartitionedGrid<FLOAT, 3>::ChildrenGrid& parent = grid.children();
 
 		// ==== Action ====
 		grid.fill(-1.0f);
@@ -195,12 +195,12 @@ BOOST_AUTO_TEST_SUITE(test_LookupPartitionedGrid)
 	BOOST_AUTO_TEST_CASE(initialise_and_populate)
 	{
 		typedef LookupPartitionedGrid<3, 3> GridType;
-		typedef LookupPartitionedGrid<3, 3>::BranchGrid BranchGrid;
-		typedef LookupPartitionedGrid<3, 3>::BranchGrid::Lookup LookupGrid;
+		typedef LookupPartitionedGrid<3, 3>::ChildrenGrid ChildrenGrid;
+		typedef LookupPartitionedGrid<3, 3>::ChildrenGrid::Lookup LookupGrid;
 
 		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
-		BranchGrid& branch = grid.branch();
-		LookupGrid& lookup = branch.lookup();
+		ChildrenGrid& children = grid.children();
+		LookupGrid& lookup = children.lookup();
 
 
 		for (INT x = -4; x <= 4; x++)
@@ -236,23 +236,23 @@ BOOST_AUTO_TEST_SUITE(test_LookupPartitionedGrid)
 		BOOST_CHECK_EQUAL((UINT)grid(pos2)(0), 0);
 		BOOST_CHECK_EQUAL((UINT)grid(pos3)(0), 1);
 		BOOST_CHECK_EQUAL((UINT)grid(pos4)(2), 0);
-		BOOST_CHECK_EQUAL(branch(part1).list(0).size(), 1);
-		BOOST_CHECK_EQUAL(branch(part2_3).list(0).size(), 2);
-		BOOST_CHECK_EQUAL(branch(part4).list(2).size(), 1);
-		BOOST_CHECK_EQUAL((UINT)branch(part4)(pos4)(2), 0);
-		BOOST_CHECK_EQUAL(branch.list(0).size(), 2);
-		BOOST_CHECK_EQUAL(branch.list(2).size(), 1);
-		BOOST_CHECK_EQUAL(branch.list(0)[0], part1);
-		BOOST_CHECK_EQUAL(branch.list(0)[1], part2_3);
-		BOOST_CHECK_EQUAL(branch.list(2)[0], part4);
+		BOOST_CHECK_EQUAL(children(part1).list(0).size(), 1);
+		BOOST_CHECK_EQUAL(children(part2_3).list(0).size(), 2);
+		BOOST_CHECK_EQUAL(children(part4).list(2).size(), 1);
+		BOOST_CHECK_EQUAL((UINT)children(part4)(pos4)(2), 0);
+		BOOST_CHECK_EQUAL(children.list(0).size(), 2);
+		BOOST_CHECK_EQUAL(children.list(2).size(), 1);
+		BOOST_CHECK_EQUAL(children.list(0)[0], part1);
+		BOOST_CHECK_EQUAL(children.list(0)[1], part2_3);
+		BOOST_CHECK_EQUAL(children.list(2)[0], part4);
 		BOOST_CHECK_EQUAL((UINT)lookup(part1)(0), 0);
 		BOOST_CHECK_EQUAL((UINT)lookup(part2_3)(0), 1);
 		BOOST_CHECK_EQUAL((UINT)lookup(part4)(2), 0);
 
 		std::vector<Vec3i> apos;
 		for (UINT i = 0; i < 3; i++)
-			for (const Vec3i& pos_child : branch.list(i))
-				for (const Vec3i pos : branch(pos_child).list(i))
+			for (const Vec3i& pos_child : children.list(i))
+				for (const Vec3i pos : children(pos_child).list(i))
 					apos.push_back(pos);
 
 		BOOST_CHECK_EQUAL(apos[0], pos1);
@@ -262,28 +262,28 @@ BOOST_AUTO_TEST_SUITE(test_LookupPartitionedGrid)
 
 		grid.reset(2);
 
-		BOOST_CHECK_EQUAL(branch.list(2).size(), 0);
-		BOOST_CHECK_EQUAL(branch(part4).list(2).size(), 0);
+		BOOST_CHECK_EQUAL(children.list(2).size(), 0);
+		BOOST_CHECK_EQUAL(children(part4).list(2).size(), 0);
 		BOOST_CHECK_EQUAL(grid(pos4), GridType::MixinType::Traits::NULL_IDX_DATA);
 		BOOST_CHECK_EQUAL(lookup(part4), GridType::MixinType::Traits::NULL_IDX_DATA);
 
 		grid.remove(pos2, 0);
 
-		BOOST_CHECK_EQUAL(branch(part2_3).list(0).size(), 1);
+		BOOST_CHECK_EQUAL(children(part2_3).list(0).size(), 1);
 		BOOST_CHECK_EQUAL(grid(pos2), GridType::MixinType::Traits::NULL_IDX_DATA);
 		BOOST_CHECK_EQUAL((UINT)lookup(part2_3)(0), 1);
 
 		grid.remove(pos1, 0);
 
-		BOOST_CHECK_EQUAL(branch.list(0).size(), 1);
-		BOOST_CHECK_EQUAL(branch(part1).list(0).size(), 0);
+		BOOST_CHECK_EQUAL(children.list(0).size(), 1);
+		BOOST_CHECK_EQUAL(children(part1).list(0).size(), 0);
 		BOOST_CHECK_EQUAL(grid(pos1), GridType::MixinType::Traits::NULL_IDX_DATA);
 		BOOST_CHECK_EQUAL(lookup(part1), GridType::MixinType::Traits::NULL_IDX_DATA);
 
 		grid.remove(pos3, 0);
 
 		for (UINT i = 0; i < 3; i++)
-			BOOST_CHECK_EQUAL(branch.list(i).size(), 0);
+			BOOST_CHECK_EQUAL(children.list(i).size(), 0);
 
 		for (INT x = -4; x <= 4; x++)
 			for (INT y = -4; y <= 4; y++)
@@ -299,7 +299,7 @@ BOOST_AUTO_TEST_SUITE(test_LookupPartitionedGrid)
 					Vec3i pos(x, y, z);
 					BOOST_CHECK_EQUAL(lookup(pos), GridType::MixinType::Traits::NULL_IDX_DATA);
 					for (UINT i = 0; i < 3; i++)
-						BOOST_CHECK_EQUAL(branch(pos).list(i).size(), 0);
+						BOOST_CHECK_EQUAL(children(pos).list(i).size(), 0);
 				}
 	}
 BOOST_AUTO_TEST_SUITE_END()
@@ -309,14 +309,14 @@ BOOST_AUTO_TEST_SUITE(test_SharedLookupPartitionedGrid)
 	BOOST_AUTO_TEST_CASE(initialise_and_populate)
 	{
 		typedef SharedLookupPartitionedGrid<3, 3> GridType;
-		typedef GridType::BranchGrid BranchGrid;
-		typedef BranchGrid::Lookup LookupGrid;
+		typedef GridType::ChildrenGrid ChildrenGrid;
+		typedef ChildrenGrid::Lookup LookupGrid;
 		const Vec3u& BRANCH_NULL_IDX = LookupGrid::Traits::NULL_IDX_DATA;
 		const UINT CHILD_NULL_IDX = GridType::NULL_IDX;
 
 		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
-		BranchGrid& branch = grid.branch();
-		LookupGrid& lookup = branch.lookup();
+		ChildrenGrid& children = grid.children();
+		LookupGrid& lookup = children.lookup();
 
 
 		for (INT x = -4; x <= 4; x++)
@@ -352,23 +352,23 @@ BOOST_AUTO_TEST_SUITE(test_SharedLookupPartitionedGrid)
 		BOOST_CHECK_EQUAL((UINT)grid(pos2), 0);
 		BOOST_CHECK_EQUAL((UINT)grid(pos3), 1);
 		BOOST_CHECK_EQUAL((UINT)grid(pos4), 0);
-		BOOST_CHECK_EQUAL(branch(part1).list(0).size(), 1);
-		BOOST_CHECK_EQUAL(branch(part2_3).list(0).size(), 2);
-		BOOST_CHECK_EQUAL(branch(part4).list(2).size(), 1);
-		BOOST_CHECK_EQUAL((UINT)branch(part4)(pos4), 0);
-		BOOST_CHECK_EQUAL(branch.list(0).size(), 2);
-		BOOST_CHECK_EQUAL(branch.list(2).size(), 1);
-		BOOST_CHECK_EQUAL(branch.list(0)[0], part1);
-		BOOST_CHECK_EQUAL(branch.list(0)[1], part2_3);
-		BOOST_CHECK_EQUAL(branch.list(2)[0], part4);
+		BOOST_CHECK_EQUAL(children(part1).list(0).size(), 1);
+		BOOST_CHECK_EQUAL(children(part2_3).list(0).size(), 2);
+		BOOST_CHECK_EQUAL(children(part4).list(2).size(), 1);
+		BOOST_CHECK_EQUAL((UINT)children(part4)(pos4), 0);
+		BOOST_CHECK_EQUAL(children.list(0).size(), 2);
+		BOOST_CHECK_EQUAL(children.list(2).size(), 1);
+		BOOST_CHECK_EQUAL(children.list(0)[0], part1);
+		BOOST_CHECK_EQUAL(children.list(0)[1], part2_3);
+		BOOST_CHECK_EQUAL(children.list(2)[0], part4);
 		BOOST_CHECK_EQUAL((UINT)lookup(part1)(0), 0);
 		BOOST_CHECK_EQUAL((UINT)lookup(part2_3)(0), 1);
 		BOOST_CHECK_EQUAL((UINT)lookup(part4)(2), 0);
 
 		std::vector<Vec3i> apos;
 		for (UINT i = 0; i < 3; i++)
-			for (const Vec3i& pos_child : branch.list(i))
-				for (const Vec3i pos : branch(pos_child).list(i))
+			for (const Vec3i& pos_child : children.list(i))
+				for (const Vec3i pos : children(pos_child).list(i))
 					apos.push_back(pos);
 
 		BOOST_CHECK_EQUAL(apos[0], pos1);
@@ -378,28 +378,28 @@ BOOST_AUTO_TEST_SUITE(test_SharedLookupPartitionedGrid)
 
 		grid.reset(2);
 
-		BOOST_CHECK_EQUAL(branch.list(2).size(), 0);
-		BOOST_CHECK_EQUAL(branch(part4).list(2).size(), 0);
+		BOOST_CHECK_EQUAL(children.list(2).size(), 0);
+		BOOST_CHECK_EQUAL(children(part4).list(2).size(), 0);
 		BOOST_CHECK_EQUAL(grid(pos4), CHILD_NULL_IDX);
 		BOOST_CHECK_EQUAL(lookup(part4), BRANCH_NULL_IDX);
 
 		grid.remove(pos2, 0);
 
-		BOOST_CHECK_EQUAL(branch(part2_3).list(0).size(), 1);
+		BOOST_CHECK_EQUAL(children(part2_3).list(0).size(), 1);
 		BOOST_CHECK_EQUAL(grid(pos2), CHILD_NULL_IDX);
 		BOOST_CHECK_EQUAL((UINT)lookup(part2_3)(0), 1);
 
 		grid.remove(pos1, 0);
 
-		BOOST_CHECK_EQUAL(branch.list(0).size(), 1);
-		BOOST_CHECK_EQUAL(branch(part1).list(0).size(), 0);
+		BOOST_CHECK_EQUAL(children.list(0).size(), 1);
+		BOOST_CHECK_EQUAL(children(part1).list(0).size(), 0);
 		BOOST_CHECK_EQUAL(grid(pos1), CHILD_NULL_IDX);
 		BOOST_CHECK_EQUAL(lookup(part1), BRANCH_NULL_IDX);
 
 		grid.remove(pos3, 0);
 
 		for (UINT i = 0; i < 3; i++)
-			BOOST_CHECK_EQUAL(branch.list(i).size(), 0);
+			BOOST_CHECK_EQUAL(children.list(i).size(), 0);
 
 		for (INT x = -4; x <= 4; x++)
 			for (INT y = -4; y <= 4; y++)
@@ -415,7 +415,7 @@ BOOST_AUTO_TEST_SUITE(test_SharedLookupPartitionedGrid)
 					Vec3i pos(x, y, z);
 					BOOST_CHECK_EQUAL(lookup(pos), BRANCH_NULL_IDX);
 					for (UINT i = 0; i < 3; i++)
-						BOOST_CHECK_EQUAL(branch(pos).list(i).size(), 0);
+						BOOST_CHECK_EQUAL(children(pos).list(i).size(), 0);
 				}
 	}
 BOOST_AUTO_TEST_SUITE_END()
@@ -425,14 +425,14 @@ BOOST_AUTO_TEST_SUITE(test_SharedTrackedPartitionedGrid)
 	BOOST_AUTO_TEST_CASE(initialise_and_populate)
 	{
 		typedef SharedTrackedPartitionedGrid<FLOAT, 3, 3> GridType;
-		typedef GridType::BranchGrid BranchGrid;
-		typedef BranchGrid::Lookup LookupGrid;
+		typedef GridType::ChildrenGrid ChildrenGrid;
+		typedef ChildrenGrid::Lookup LookupGrid;
 		const Vec3u& BRANCH_NULL_IDX = LookupGrid::Traits::NULL_IDX_DATA;
 		const UINT CHILD_NULL_IDX = GridType::Child::Lookup::NULL_IDX;
 
 		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
-		BranchGrid& branch = grid.branch();
-		LookupGrid& lookup = branch.lookup();
+		ChildrenGrid& children = grid.children();
+		LookupGrid& lookup = children.lookup();
 
 		grid.fill(-1.0f);
 
@@ -444,7 +444,7 @@ BOOST_AUTO_TEST_SUITE(test_SharedTrackedPartitionedGrid)
 					const Vec3i pos_child = grid.pos_child(pos);
 					BOOST_CHECK_EQUAL(grid(pos), -1.0f);
 					BOOST_CHECK_EQUAL(
-						grid.child(pos_child).lookup()(pos), CHILD_NULL_IDX
+						grid.children().get(pos_child).lookup()(pos), CHILD_NULL_IDX
 					);
 				}
 		for (INT x = -1; x <= 1; x++)
@@ -473,23 +473,23 @@ BOOST_AUTO_TEST_SUITE(test_SharedTrackedPartitionedGrid)
 		BOOST_CHECK_EQUAL((UINT)grid(pos2), 2.0f);
 		BOOST_CHECK_EQUAL((UINT)grid(pos3), 3.0f);
 		BOOST_CHECK_EQUAL((UINT)grid(pos4), 4.0f);
-		BOOST_CHECK_EQUAL(branch(part1).list(0).size(), 1);
-		BOOST_CHECK_EQUAL(branch(part2_3).list(0).size(), 2);
-		BOOST_CHECK_EQUAL(branch(part4).list(2).size(), 1);
-		BOOST_CHECK_EQUAL((UINT)branch(part4)(pos4), 4.0f);
-		BOOST_CHECK_EQUAL(branch.list(0).size(), 2);
-		BOOST_CHECK_EQUAL(branch.list(2).size(), 1);
-		BOOST_CHECK_EQUAL(branch.list(0)[0], part1);
-		BOOST_CHECK_EQUAL(branch.list(0)[1], part2_3);
-		BOOST_CHECK_EQUAL(branch.list(2)[0], part4);
+		BOOST_CHECK_EQUAL(children(part1).list(0).size(), 1);
+		BOOST_CHECK_EQUAL(children(part2_3).list(0).size(), 2);
+		BOOST_CHECK_EQUAL(children(part4).list(2).size(), 1);
+		BOOST_CHECK_EQUAL((UINT)children(part4)(pos4), 4.0f);
+		BOOST_CHECK_EQUAL(children.list(0).size(), 2);
+		BOOST_CHECK_EQUAL(children.list(2).size(), 1);
+		BOOST_CHECK_EQUAL(children.list(0)[0], part1);
+		BOOST_CHECK_EQUAL(children.list(0)[1], part2_3);
+		BOOST_CHECK_EQUAL(children.list(2)[0], part4);
 		BOOST_CHECK_EQUAL((UINT)lookup(part1)(0), 0);
 		BOOST_CHECK_EQUAL((UINT)lookup(part2_3)(0), 1);
 		BOOST_CHECK_EQUAL((UINT)lookup(part4)(2), 0);
 
 		std::vector<Vec3i> apos;
 		for (UINT i = 0; i < 3; i++)
-			for (const Vec3i& pos_child : branch.list(i))
-				for (const Vec3i pos : branch(pos_child).list(i))
+			for (const Vec3i& pos_child : children.list(i))
+				for (const Vec3i pos : children(pos_child).list(i))
 					apos.push_back(pos);
 
 		BOOST_CHECK_EQUAL(apos[0], pos1);
@@ -500,31 +500,31 @@ BOOST_AUTO_TEST_SUITE(test_SharedTrackedPartitionedGrid)
 		grid.reset(-2.0f, 2);
 
 		BOOST_CHECK_EQUAL(grid(pos4), -2.0f);
-		BOOST_CHECK_EQUAL(branch.list(2).size(), 0);
-		BOOST_CHECK_EQUAL(branch(part4).list(2).size(), 0);
-		BOOST_CHECK_EQUAL(branch(part4).lookup()(pos4), CHILD_NULL_IDX);
+		BOOST_CHECK_EQUAL(children.list(2).size(), 0);
+		BOOST_CHECK_EQUAL(children(part4).list(2).size(), 0);
+		BOOST_CHECK_EQUAL(children(part4).lookup()(pos4), CHILD_NULL_IDX);
 		BOOST_CHECK_EQUAL(lookup(part4), BRANCH_NULL_IDX);
 
 		grid.remove(pos2, 0);
 
 		BOOST_CHECK_EQUAL(grid(pos2), 2.0f);
-		BOOST_CHECK_EQUAL(branch.list(0).size(), 2);
-		BOOST_CHECK_EQUAL(branch(part2_3).list(0).size(), 1);
-		BOOST_CHECK_EQUAL(branch(part2_3).lookup()(pos2), CHILD_NULL_IDX);
+		BOOST_CHECK_EQUAL(children.list(0).size(), 2);
+		BOOST_CHECK_EQUAL(children(part2_3).list(0).size(), 1);
+		BOOST_CHECK_EQUAL(children(part2_3).lookup()(pos2), CHILD_NULL_IDX);
 		BOOST_CHECK_EQUAL((UINT)lookup(part2_3)(0), 1);
 
 		grid.remove(pos1, 0);
 
 		BOOST_CHECK_EQUAL(grid(pos1), 1.0f);
-		BOOST_CHECK_EQUAL(branch.list(0).size(), 1);
-		BOOST_CHECK_EQUAL(branch(part1).list(0).size(), 0);
-		BOOST_CHECK_EQUAL(branch(part1).lookup()(pos1), CHILD_NULL_IDX);
+		BOOST_CHECK_EQUAL(children.list(0).size(), 1);
+		BOOST_CHECK_EQUAL(children(part1).list(0).size(), 0);
+		BOOST_CHECK_EQUAL(children(part1).lookup()(pos1), CHILD_NULL_IDX);
 		BOOST_CHECK_EQUAL(lookup(part1), BRANCH_NULL_IDX);
 
 		grid.remove(pos3, 0);
 
 		for (UINT i = 0; i < 3; i++)
-			BOOST_CHECK_EQUAL(branch.list(i).size(), 0);
+			BOOST_CHECK_EQUAL(children.list(i).size(), 0);
 
 		for (INT x = -1; x <= 1; x++)
 			for (INT y = -1; y <= 1; y++)
@@ -533,7 +533,7 @@ BOOST_AUTO_TEST_SUITE(test_SharedTrackedPartitionedGrid)
 					Vec3i pos(x, y, z);
 					BOOST_CHECK_EQUAL(lookup(pos), BRANCH_NULL_IDX);
 					for (UINT i = 0; i < 3; i++)
-						BOOST_CHECK_EQUAL(branch(pos).list(i).size(), 0);
+						BOOST_CHECK_EQUAL(children(pos).list(i).size(), 0);
 				}
 	}
 BOOST_AUTO_TEST_SUITE_END()
@@ -559,22 +559,22 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedArray)
 		grid.add(pos3, 3.0f);
 		grid.add(pos4, 4.0f);
 
-		BOOST_CHECK_EQUAL(grid.branch().list().size(), 3);
-		BOOST_CHECK_EQUAL(grid.child(part1).size(), 1);
-		BOOST_CHECK_EQUAL(grid.child(part2_3).size(), 2);
-		BOOST_CHECK_EQUAL(grid.child(part4).size(), 1);
+		BOOST_CHECK_EQUAL(grid.children().list().size(), 3);
+		BOOST_CHECK_EQUAL(grid.children().get(part1).size(), 1);
+		BOOST_CHECK_EQUAL(grid.children().get(part2_3).size(), 2);
+		BOOST_CHECK_EQUAL(grid.children().get(part4).size(), 1);
 
-		BOOST_CHECK_EQUAL(grid.child(part1)[0], 1.0f);
-		BOOST_CHECK_EQUAL(grid.child(part2_3)[0], 2.0f);
-		BOOST_CHECK_EQUAL(grid.child(part2_3)[1], 3.0f);
-		BOOST_CHECK_EQUAL(grid.child(part4)[0], 4.0f);
+		BOOST_CHECK_EQUAL(grid.children().get(part1)[0], 1.0f);
+		BOOST_CHECK_EQUAL(grid.children().get(part2_3)[0], 2.0f);
+		BOOST_CHECK_EQUAL(grid.children().get(part2_3)[1], 3.0f);
+		BOOST_CHECK_EQUAL(grid.children().get(part4)[0], 4.0f);
 
 		grid.reset();
 
-		BOOST_CHECK_EQUAL(grid.branch().list().size(), 0);
-		BOOST_CHECK_EQUAL(grid.child(part1).size(), 0);
-		BOOST_CHECK_EQUAL(grid.child(part2_3).size(), 0);
-		BOOST_CHECK_EQUAL(grid.child(part4).size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().list().size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(part1).size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(part2_3).size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(part4).size(), 0);
 	}
 BOOST_AUTO_TEST_SUITE_END()
 
@@ -588,10 +588,39 @@ BOOST_AUTO_TEST_SUITE(test_LazySharedLookupPartitionedGrid)
 		const UINT NULL_IDX_DATA = LazySharedLookupPartitionedGrid<3, 3>::NULL_IDX;
 
 		// ==== Confirm ====
-		BOOST_CHECK_EQUAL((bool)grid.child(Vec3i(1,1,1)).is_active(), false);
-		BOOST_CHECK_EQUAL(grid.child(Vec3i(1,1,1)).data().size(), 0);
-		BOOST_CHECK_EQUAL(grid.child(Vec3i(1,1,1)).background(), NULL_IDX_DATA);
-		BOOST_CHECK_EQUAL(grid.child(Vec3i(1,1,1)).get(Vec3i(1,1,1)), NULL_IDX_DATA);
+		BOOST_CHECK_EQUAL((bool)grid.children().get(Vec3i(1,1,1)).is_active(), false);
+		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).data().size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).background(), NULL_IDX_DATA);
+		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).get(Vec3i(1,1,1)), NULL_IDX_DATA);
 		/// [LazySharedLookupPartitionedGrid initialisation]
+	}
+
+	BOOST_AUTO_TEST_CASE(masked_reset)
+	{
+		/// [LazySharedLookupPartitionedGrid masked_reset]
+		// ==== Setup ====
+		PartitionedGrid<FLOAT, 3> grid_master(
+			Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3)
+		);
+		grid_master.add_child(Vec3i(-1, 0, 1));
+
+		LazySharedLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
+		const UINT NULL_IDX_DATA = LazySharedLookupPartitionedGrid<3, 3>::NULL_IDX;
+
+		// (-1, 0, 1) -> should stay active
+		grid.add(Vec3i(-4, 0, 4));
+		// (0, 0, 0) -> should deactivate
+		grid.add(Vec3i(0, 0, 0));
+
+		// ==== Action ====
+		grid.reset(grid_master);
+
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.get(Vec3i(-4, 0, 4)), NULL_IDX_DATA);
+		BOOST_CHECK_EQUAL(grid.get(Vec3i(0, 0, 0)), NULL_IDX_DATA);
+
+		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(-1, 0, 1)).is_active(), true);
+		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(0, 0, 0)).is_active(), false);
+		/// [LazySharedLookupPartitionedGrid masked_reset]
 	}
 BOOST_AUTO_TEST_SUITE_END()

@@ -1300,10 +1300,8 @@ public:
 	 * @param offset_ spatial offset of grid.
 	 * @param background_ default value to use when grid is inactive.
 	 */
-	LazyGridBase (
-		const VecDu& size_, const VecDi& offset_,
-		const LeafType& background_
-	) : Base(size_, offset_)
+	LazyGridBase (const VecDu& size_, const VecDi& offset_, const LeafType& background_)
+	: Base(size_, offset_)
 	{
 		init(size_, offset_, background_);
 	}
