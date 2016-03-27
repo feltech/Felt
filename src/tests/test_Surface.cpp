@@ -204,14 +204,14 @@ BOOST_AUTO_TEST_CASE(delta_isogrid_clamping)
 
 	// ==== Action ====
 	// Apply a delta to the surface.
-	surface.disogrid(pos, -2);
+	surface.delta(pos, -2);
 
 	// ==== Confirm ====
 	// Check delta was stored in underlying grid - will be clamped to -1.
-	BOOST_CHECK_EQUAL(surface.disogrid(pos), -1);
+	BOOST_CHECK_EQUAL(surface.delta(pos), -1);
 	// Check position vector of point in surface grid that delta was
 	// applied to is stored in a corresponding list to be iterated over.
-	BOOST_CHECK_EQUAL(surface.disogrid().leafs(surface.layer_idx(0)).size(), 1);
+	BOOST_CHECK_EQUAL(surface.delta().leafs(surface.layer_idx(0)).size(), 1);
 	//! [Delta isogrid clamping]
 }
 
@@ -224,24 +224,24 @@ BOOST_AUTO_TEST_CASE(delta_isogrid_update)
 	// ==== Setup ====
 	Surface<3, 2> surface(Vec3u(5, 5, 5));
 	Surface<3, 2>::IsoGrid& isogrid = surface.isogrid();
-	Surface<3, 2>::DeltaIsoGrid& disogrid = surface.disogrid();
+	Surface<3, 2>::DeltaIsoGrid& delta = surface.delta();
 
 	// ==== Action ====
 	// Put in 'dirty' state, to check update_start is doing it's job.
-	surface.disogrid(Vec3i(0, 0, 0), 0.5f);
+	surface.delta(Vec3i(0, 0, 0), 0.5f);
 
 	// ==== Confirm ====
-	BOOST_CHECK_EQUAL(surface.disogrid().children().list(surface.layer_idx(0)).size(), 1);
-	BOOST_CHECK_EQUAL(surface.disogrid().get(Vec3i(0, 0, 0)), 0.5f);
+	BOOST_CHECK_EQUAL(surface.delta().children().list(surface.layer_idx(0)).size(), 1);
+	BOOST_CHECK_EQUAL(surface.delta().get(Vec3i(0, 0, 0)), 0.5f);
 
 	// ==== Action ====
 	// Clear delta isogrid.
 	surface.update_start();
 
 	// ==== Confirm ====
-	// Check update_start cleared the above surface.disogrid changes.
-	BOOST_CHECK_EQUAL(surface.disogrid().children().list(surface.layer_idx(0)).size(), 0);
-	BOOST_CHECK_EQUAL(surface.disogrid().get(Vec3i(0, 0, 0)), 0.0f);
+	// Check update_start cleared the above surface.delta changes.
+	BOOST_CHECK_EQUAL(surface.delta().children().list(surface.layer_idx(0)).size(), 0);
+	BOOST_CHECK_EQUAL(surface.delta().get(Vec3i(0, 0, 0)), 0.0f);
 
 	// ==== Action ====
 	// Add a zero-layer point.
@@ -250,7 +250,7 @@ BOOST_AUTO_TEST_CASE(delta_isogrid_update)
 	// Clear delta isogrid.
 	surface.update_start();
 	// Do nothing.
-	surface.disogrid(Vec3i(0, 0, 0), 0);
+	surface.delta(Vec3i(0, 0, 0), 0);
 	// Apply delta isogrid.
 	surface.update_end();
 
@@ -258,15 +258,15 @@ BOOST_AUTO_TEST_CASE(delta_isogrid_update)
 	// Ensure nothing was changed.  Every point in 5x5x5 grid == 3, except centre which == 0.
 	BOOST_CHECK_EQUAL(isogrid.data().sum(), 3 * 5 * 5 * 5 - 3);
 	// Delta isogrid position vector list should still contain one point.
-	BOOST_CHECK_EQUAL(surface.disogrid().leafs(surface.layer_idx(0)).size(), 1);
+	BOOST_CHECK_EQUAL(surface.delta().leafs(surface.layer_idx(0)).size(), 1);
 	// Delta isogrid grid itself should have reset back to zero.
-	BOOST_CHECK_EQUAL(disogrid(Vec3i(0, 0, 0)), 0);
+	BOOST_CHECK_EQUAL(delta(Vec3i(0, 0, 0)), 0);
 
 	// ==== Action ====
 	// Clear delta isogrid.
 	surface.update_start();
 	// Apply small update.
-	surface.disogrid(Vec3i(0, 0, 0), 0.4f);
+	surface.delta(Vec3i(0, 0, 0), 0.4f);
 	// Apply delta isogrid.
 	surface.update_end();
 
@@ -311,16 +311,16 @@ BOOST_AUTO_TEST_CASE(distance_transform)
 
 		surface.update_start();
 		{
-			surface.disogrid(Vec2i(0, 0), -0.4f);
+			surface.delta(Vec2i(0, 0), -0.4f);
 		}
 		surface.update_end();
 
 		surface.update_start();
 		{
-			// Check update_start cleared the above surface.disogrid changes.
-			for (const Vec2i& pos_child : surface.disogrid().children())
-				for (const Vec2i& pos : surface.disogrid().children().get(pos_child))
-					BOOST_CHECK_EQUAL(surface.disogrid().get(pos), 0);
+			// Check update_start cleared the above surface.delta changes.
+			for (const Vec2i& pos_child : surface.delta().children())
+				for (const Vec2i& pos : surface.delta().children().get(pos_child))
+					BOOST_CHECK_EQUAL(surface.delta().get(pos), 0);
 
 		}
 		surface.update_end();
@@ -348,7 +348,7 @@ BOOST_AUTO_TEST_CASE(layer_update)
 	surface.seed(Vec2i(0, 0));
 	surface.update_start();
 	{
-		surface.disogrid(Vec2i(0, 0), -0.6f);
+		surface.delta(Vec2i(0, 0), -0.6f);
 	}
 	surface.update_end();
 
@@ -376,7 +376,7 @@ BOOST_AUTO_TEST_CASE(layer_update)
 //	surface.update_start();
 //	{
 //		for (const Vec2i& pos : surface.layer(0))
-//			surface.disogrid(pos, 0.6f);
+//			surface.delta(pos, 0.6f);
 //	}
 //	surface.update_end();
 
@@ -403,7 +403,7 @@ BOOST_AUTO_TEST_CASE(layer_update)
 	surface.update_start();
 	{
 		for (const Vec2i& pos : surface.layer(0))
-			surface.disogrid(pos, 1.0f);
+			surface.delta(pos, 1.0f);
 	}
 	surface.update_end();
 
@@ -431,7 +431,7 @@ BOOST_AUTO_TEST_CASE(layer_update)
 	{
 		// Has no effect, since zero-layer is gone size is 0.
 		for (const Vec2i& pos : surface.layer(0))
-			surface.disogrid(pos, 1.0f);
+			surface.delta(pos, 1.0f);
 	}
 	surface.update_end();
 
@@ -459,7 +459,7 @@ BOOST_AUTO_TEST_CASE(layer_update)
 	{
 		// Has no effect, since zero-layer is gone size is 0.
 		for (const Vec2i& pos : surface.layer(0))
-			surface.disogrid(pos, 1.0f);
+			surface.delta(pos, 1.0f);
 	}
 	surface.update_end();
 
@@ -487,7 +487,7 @@ BOOST_AUTO_TEST_CASE(layer_update)
 	{
 		// Has no effect, since zero-layer is gone size is 0.
 		for (const Vec2i& pos : surface.layer(0))
-			surface.disogrid(pos, 1.0f);
+			surface.delta(pos, 1.0f);
 	}
 	surface.update_end();
 
@@ -529,7 +529,7 @@ BOOST_AUTO_TEST_CASE(iterate_layers)
 	surface.seed(Vec3i(0, 0, 0));
 	surface.update_start();
 	{
-		surface.disogrid(Vec3i(0, 0, 0), -1.0f);
+		surface.delta(Vec3i(0, 0, 0), -1.0f);
 	}
 	surface.update_end();
 
@@ -628,7 +628,7 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 	{
 		for (auto pos : surface.layer(0))
 		{
-			surface.disogrid(pos, -1.0f);
+			surface.delta(pos, -1.0f);
 		}
 	}
 	surface.update_end();
@@ -639,7 +639,7 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 	{
 		for (auto pos : surface.layer(0))
 		{
-			surface.disogrid(pos, -1.0f);
+			surface.delta(pos, -1.0f);
 		}
 	}
 	surface.update_end();
@@ -650,7 +650,7 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 	{
 		for (auto pos : surface.layer(0))
 		{
-			surface.disogrid(pos, -1.0f);
+			surface.delta(pos, -1.0f);
 		}
 	}
 	surface.update_end();
@@ -681,99 +681,118 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 	}
 }
 
+template <typename... Args>
+auto s(Args&&... args) -> decltype(std::to_string(std::forward<Args>(args)...)) {
+  return std::to_string(std::forward<Args>(args)...);
+}
+
 BOOST_AUTO_TEST_CASE(affected_outer_layers)
 {
+	//![Calculate affected outer layers for localised narrow band updates]
+	// ==== Setup ====
+	using PosArray = Surface<2, 2>::IsoGrid::PosArray;
 	Surface<2, 2> surface(Vec2u(9, 9));
 	// Grid to set values of manually, for checking against.
 	Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9));
-
 	// Create seed point and expand the narrow band.
 	surface.seed(Vec2i(0, 0));
 	surface.update_start();
 	{
 		for (auto pos : surface.layer(0))
 		{
-			surface.disogrid(pos, -1.0f);
+			surface.delta(pos, -1.0f);
 		}
 	}
 	surface.update_end();
-
+	// Clean up from previous update.
 	surface.update_start();
+	// Add a couple of points that could affect the narrow band.
+	surface.delta(Vec2i(0, 1), 0.3f);
+	surface.delta(Vec2i(1, 0), 0.3f);
+	//		3.0,	3.0,	3.0,	 2.0,	3.0,	3.0,	3.0,
+	//		3.0,	3.0,	2.0,	 1.0,	2.0,	3.0,	3.0,
+	//		3.0,	2.0,	1.0,	 0.0,	1.0,	2.0,	3.0,
+	//		2.0,	1.0,	0.0,	-1.0,	0.3,	1.0,	2.0,
+	//		3.0,	2.0,	1.0,	 0.3,	1.0,	2.0,	3.0,
+	//		3.0,	3.0,	2.0,	 1.0,	2.0,	3.0,	3.0,
+	//		3.0,	3.0,	3.0,	 2.0,	3.0,	3.0,	3.0;
+
+	// ==== Action ====
+
+	surface.calc_affected();
+
+	// ==== Confirm ====
+
+	PosArray check_layers_pos[5];
+	check_layers_pos[2 + -2] = PosArray();
+	check_layers_pos[2 + -1] = PosArray({
+		Vec2i(0, 0)
+	});
+	check_layers_pos[2 + 0] = PosArray({
+	// We don't care for now about zero-layer points.
+//		Vec2i(0,1),
+//		Vec2i(1,0)
+	});
+	check_layers_pos[2 + 1] = PosArray({
+		// For (0,1):
+		Vec2i(-1, 1), Vec2i(1, 1), Vec2i(0, 2),
+		// For (1,0):
+		Vec2i(2, 0), Vec2i(1, -1)
+	});
+
+	check_layers_pos[2 + 2] = PosArray({
+		// For (0,1):
+		Vec2i(-2, 1), Vec2i(2, 1),
+		Vec2i(-1, 2), Vec2i(1, 2),
+		Vec2i(0, 3),
+		// For (1,0):
+		Vec2i(3, 0), Vec2i(1, -2), Vec2i(2, -1)
+	});
+
+	for (INT layer_id = -2; layer_id <= 2; layer_id++)
 	{
-		surface.disogrid(Vec2i(0, 1), 0.3f);
-		surface.disogrid(Vec2i(1, 0), 0.3f);
+		if (layer_id == 0)
+			continue;
 
-		typedef typename Surface<2, 2>::IsoGrid::PosArray PosArray;
-		surface.calc_affected();
+		const INT layer_idx = 2 + layer_id;
 
-//		3.0,	3.0,	3.0,	 2.0,	3.0,	3.0,	3.0,
-//		3.0,	3.0,	2.0,	 1.0,	2.0,	3.0,	3.0,
-//		3.0,	2.0,	1.0,	 0.0,	1.0,	2.0,	3.0,
-//		2.0,	1.0,	0.0,	-1.0,	0.3,	1.0,	2.0,
-//		3.0,	2.0,	1.0,	 0.3,	1.0,	2.0,	3.0,
-//		3.0,	3.0,	2.0,	 1.0,	2.0,	3.0,	3.0,
-//		3.0,	3.0,	3.0,	 2.0,	3.0,	3.0,	3.0;
+		BOOST_CHECK_MESSAGE(
+			surface.affected().leafs(layer_idx).size() == check_layers_pos[layer_idx].size(),
+			"Layer " + s(layer_id) + " at index " + s(layer_idx) +
+			" number of leafs " +
+			s(surface.affected().leafs(layer_idx).size()) + " == " +
+			s(check_layers_pos[layer_idx].size())
+		);
 
-		PosArray aposCheck[5];
-		aposCheck[2 + -2] = PosArray();
-		aposCheck[2 + -1] = PosArray({
-			Vec2i(0, 0)
-		});
-		aposCheck[2 + 0] = PosArray({
-		// We don't care for now about zero-layer points.
-//			Vec2i(0,1),
-//			Vec2i(1,0)
-		});
-		aposCheck[2 + 1] = PosArray({
-			// For (0,1):
-			Vec2i(-1, 1), Vec2i(1, 1), Vec2i(0, 2),
-
-			// For (1,0):
-			Vec2i(2, 0), Vec2i(1, -1)
-		});
-
-		aposCheck[2 + 2] = PosArray({
-			// For (0,1):
-			Vec2i(-2, 1), Vec2i(2, 1),
-
-			Vec2i(-1, 2), Vec2i(1, 2),
-
-			Vec2i(0, 3),
-
-			// For (1,0):
-			Vec2i(3, 0), Vec2i(1, -2), Vec2i(2, -1)
-		});
-
-		for (INT layer_id = -2; layer_id <= 2; layer_id++)
+		for (auto pos : check_layers_pos[layer_idx])
 		{
-			if (layer_id == 0)
-				continue;
-
-			const INT layer_idx = 2 + layer_id;
-//			std::cerr << "Affected points: layer " << layer_id << std::endl;
-			BOOST_CHECK_EQUAL(
-				(UINT)surface.affected().leafs(layer_idx).size(),
-				(UINT)aposCheck[layer_idx].size()
+			auto iter = std::find(
+				surface.affected().leafs(layer_idx).begin(),
+				surface.affected().leafs(layer_idx).end(), pos
 			);
 
+			BOOST_CHECK_MESSAGE(
+				iter != surface.affected().leafs(layer_idx).end(),
+				"Affected grid layer " + s(layer_id) + " at index " + s(layer_idx) +
+				" should contain (" + s(pos(0)) + "," + s(pos(1)) + ")"
+			);
+		}
 
-			for (auto pos : aposCheck[layer_idx])
-			{
-				auto iter = std::find(
-					surface.affected().leafs(layer_idx).begin(),
-					surface.affected().leafs(layer_idx).end(), pos
-				);
+		for (auto pos : surface.affected().leafs(layer_idx))
+		{
+			auto iter = std::find(
+				check_layers_pos[layer_idx].begin(),
+				check_layers_pos[layer_idx].end(), pos
+			);
 
-				BOOST_CHECK_MESSAGE(
-					iter != surface.affected().leafs(layer_idx).end(),
-					"Layer " + std::to_string(layer_id) + " expected ("
-					+ std::to_string(pos(0)) + "," + std::to_string(pos(1))
-					+ ")"
-				);
-			}
+			BOOST_CHECK_MESSAGE(
+				iter != check_layers_pos[layer_idx].end(),
+				"Checking list layer " + s(layer_id) + " at index " + s(layer_idx) +
+				" should contain (" + s(pos(0)) + "," + s(pos(1)) + ")"
+			);
 		}
 	}
-	surface.update_end();
+	//![Calculate affected outer layers for localised narrow band updates]
 }
 
 /*
@@ -798,7 +817,7 @@ BOOST_AUTO_TEST_CASE(local_update)
 //	3,	3,	3,	3,	3,	3,	3;
 	surface.update_start();
 	{
-		surface.disogrid(Vec2i(0, 0), -0.6f);
+		surface.delta(Vec2i(0, 0), -0.6f);
 	}
 	// Using localised update, which will only update outer layers that are
 	// affected by changes to the modified zero layer points.  In this test
@@ -806,7 +825,6 @@ BOOST_AUTO_TEST_CASE(local_update)
 	surface.update_end_local();
 
 	{
-//		std::cerr << surface.isogrid().data() << std::endl;
 		isogrid_check.data() <<
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3,
 			2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3,
@@ -829,12 +847,11 @@ BOOST_AUTO_TEST_CASE(local_update)
 	surface.update_start();
 	{
 		for (const Vec2i& pos : surface.layer(0))
-			surface.disogrid(pos, 0.6f);
+			surface.delta(pos, 0.6f);
 	}
 	surface.update_end_local();
 
 	{
-//		std::cerr << surface.isogrid().data() << std::endl;
 		isogrid_check.data() <<
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 2, 1, 0, 1, 2, 3,
@@ -1014,7 +1031,7 @@ BOOST_AUTO_TEST_CASE(gaussian_from_list)
 
 	// ==== Action ====
 	surface.update_start();
-	surface.disogrid_gauss(
+	surface.delta_gauss(
 		lookup.list(surface.layer_idx(0)), Vec2f(-3.5f, 0), 0.5f, 0.2f
 	);
 	surface.update_end();
@@ -1023,20 +1040,20 @@ BOOST_AUTO_TEST_CASE(gaussian_from_list)
 	// === Confirm ===
 
 	BOOST_CHECK_CLOSE(
-		surface.disogrid().get(Vec2i(-3, 0))
-		+ surface.disogrid().get(Vec2i(-2, 1))
-		+ surface.disogrid().get(Vec2i(-2, -1)),
+		surface.delta().get(Vec2i(-3, 0))
+		+ surface.delta().get(Vec2i(-2, 1))
+		+ surface.delta().get(Vec2i(-2, -1)),
 		0.5f, 0.0000001f
 	);
 
 	BOOST_CHECK_CLOSE_FRACTION(
-		surface.disogrid().get(Vec2i(-3, 0)), 0.3457f, 0.0001f
+		surface.delta().get(Vec2i(-3, 0)), 0.3457f, 0.0001f
 	);
 	BOOST_CHECK_CLOSE_FRACTION(
-		surface.disogrid().get(Vec2i(-2, -1)), 0.07714f, 0.0001f
+		surface.delta().get(Vec2i(-2, -1)), 0.07714f, 0.0001f
 	);
 	BOOST_CHECK_CLOSE_FRACTION(
-		surface.disogrid().get(Vec2i(-2, 1)), 0.07714f, 0.0001f
+		surface.delta().get(Vec2i(-2, 1)), 0.07714f, 0.0001f
 	);
 }
 
@@ -1064,7 +1081,7 @@ BOOST_AUTO_TEST_CASE(gaussian_from_dist)
 
 	// ==== Action ====
 	surface.update_start();
-	surface.disogrid_gauss<2>(
+	surface.delta_gauss<2>(
 		Vec2f(-3.0f, 0), 0.5f, 0.2f
 	);
 	surface.update_end();
@@ -1073,20 +1090,20 @@ BOOST_AUTO_TEST_CASE(gaussian_from_dist)
 	// === Confirm ===
 
 	BOOST_CHECK_CLOSE_FRACTION(
-		surface.disogrid().get(Vec2i(-3, 0))
-		+ surface.disogrid().get(Vec2i(-2, 1))
-		+ surface.disogrid().get(Vec2i(-2, -1)),
+		surface.delta().get(Vec2i(-3, 0))
+		+ surface.delta().get(Vec2i(-2, 1))
+		+ surface.delta().get(Vec2i(-2, -1)),
 		0.5f, 0.0000001f
 	);
 
 	BOOST_CHECK_CLOSE_FRACTION(
-		surface.disogrid().get(Vec2i(-3, 0)), 0.28805843f, 0.0001f
+		surface.delta().get(Vec2i(-3, 0)), 0.28805843f, 0.0001f
 	);
 	BOOST_CHECK_CLOSE_FRACTION(
-		surface.disogrid().get(Vec2i(-2, -1)), 0.105970778f, 0.0001f
+		surface.delta().get(Vec2i(-2, -1)), 0.105970778f, 0.0001f
 	);
 	BOOST_CHECK_CLOSE_FRACTION(
-		surface.disogrid().get(Vec2i(-2, 1)), 0.105970778f, 0.0001f
+		surface.delta().get(Vec2i(-2, 1)), 0.105970778f, 0.0001f
 	);
 }
 
@@ -1313,7 +1330,7 @@ BOOST_AUTO_TEST_CASE(gaussian_from_ray)
 
 	// ==== Action ====
 	surface.update_start();
-	leftover = surface.disogrid_gauss<2>(
+	leftover = surface.delta_gauss<2>(
 		Vec2f(-2.4f, -10.0f), Vec2f(0, 1), 0.5f, 0.2f
 	);
 	surface.update_end();
@@ -1342,26 +1359,26 @@ BOOST_AUTO_TEST_CASE(gaussian_from_ray)
 
 */
 	BOOST_CHECK_CLOSE_FRACTION(
-		surface.disogrid().get(Vec2i(-3, 0))
-		+ surface.disogrid().get(Vec2i(-2, 1))
-		+ surface.disogrid().get(Vec2i(-2, -1))
-		+ surface.disogrid().get(Vec2i(-1, -2)),
+		surface.delta().get(Vec2i(-3, 0))
+		+ surface.delta().get(Vec2i(-2, 1))
+		+ surface.delta().get(Vec2i(-2, -1))
+		+ surface.delta().get(Vec2i(-1, -2)),
 		0.5f, 0.000001f
 	);
 
 	BOOST_CHECK_LE(leftover, 0.000001f);
 
 //	BOOST_CHECK_CLOSE_FRACTION(
-//		surface.disogrid().get(Vec2i(-3, 0)), 0.152139202f, 0.0001f
+//		surface.delta().get(Vec2i(-3, 0)), 0.152139202f, 0.0001f
 //	);
 //	BOOST_CHECK_CLOSE_FRACTION(
-//		surface.disogrid().get(Vec2i(-2, -1)), 0.24048205f, 0.0001f
+//		surface.delta().get(Vec2i(-2, -1)), 0.24048205f, 0.0001f
 //	);
 //	BOOST_CHECK_CLOSE_FRACTION(
-//		surface.disogrid().get(Vec2i(-2, 1)), 0.0559686795, 0.0001f
+//		surface.delta().get(Vec2i(-2, 1)), 0.0559686795, 0.0001f
 //	);
 //	BOOST_CHECK_CLOSE_FRACTION(
-//		surface.disogrid().get(Vec2i(-1, -2)), 0.0514338501, 0.0001f
+//		surface.delta().get(Vec2i(-1, -2)), 0.0514338501, 0.0001f
 //	);
 }
 

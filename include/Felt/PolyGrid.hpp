@@ -128,7 +128,7 @@ namespace felt
 			{
 				for (
 					const VecDi& pos_child
-					: surface.disogrid().children().list(surface.layer_idx(layer_id))
+					: surface.delta().children().list(surface.layer_idx(layer_id))
 				) {
 					this->notify(surface, pos_child);
 				}

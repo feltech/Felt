@@ -181,7 +181,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		// Initialise a seed.
 		surface.seed(Vec3i(0,0,0));
 		surface.update_start();
-		surface.disogrid(Vec3i(0,0,0), -1.0f);
+		surface.delta(Vec3i(0,0,0), -1.0f);
 		surface.update_end();
 
 		// ==== Action ====
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		surface.update_start();
 		for (auto pos : surface.layer(0))
-			surface.disogrid(pos, -1);
+			surface.delta(pos, -1);
 		surface.update_end();
 
 		poly.notify(surface);
@@ -261,11 +261,11 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		surface.update_start();
 		for (auto pos : surface.layer(0))
-			surface.disogrid(pos, -0.3);
+			surface.delta(pos, -0.3);
 		surface.update_end();
 		poly.notify(surface);
 		surface.update_start();
-		surface.disogrid(Vec3i(0,-2,0), 1);
+		surface.delta(Vec3i(0,-2,0), 1);
 		surface.update_end();
 		poly.notify(surface);
 
@@ -337,14 +337,14 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		surface.update_start();
 		for (auto pos : surface.layer(0))
-			surface.disogrid(pos, -1.0);
+			surface.delta(pos, -1.0);
 		surface.update_end();
 
 		polys.notify(surface);
 
 		surface.update_start();
 		for (auto pos : surface.layer(0))
-			surface.disogrid(pos, -1.0);
+			surface.delta(pos, -1.0);
 		surface.update_end();
 
 		polys.notify(surface);
@@ -469,7 +469,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		// Expand.
 		surface.update_start();
-		surface.disogrid(Vec3i(-1,0,0), -1.0f);
+		surface.delta(Vec3i(-1,0,0), -1.0f);
 		surface.update_end();
 		polys.notify(surface);
 		polys.poly_cubes(surface);
@@ -479,11 +479,11 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		// Contract
 		surface.update_start();
-		surface.disogrid(Vec3i(-2,0,0), 1.0f);
-		surface.disogrid(Vec3i(-1,-1,0), 1.0f);
-		surface.disogrid(Vec3i(-1,1,0), 1.0f);
-		surface.disogrid(Vec3i(-1,0,-1), 1.0f);
-		surface.disogrid(Vec3i(-1,0,1), 1.0f);
+		surface.delta(Vec3i(-2,0,0), 1.0f);
+		surface.delta(Vec3i(-1,-1,0), 1.0f);
+		surface.delta(Vec3i(-1,1,0), 1.0f);
+		surface.delta(Vec3i(-1,0,-1), 1.0f);
+		surface.delta(Vec3i(-1,0,1), 1.0f);
 		surface.update_end();
 		polys.notify(surface);
 		polys.poly_cubes(surface);
@@ -545,7 +545,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		// Expand - expanding across to other partition.
 		surface.update_start();
-		surface.disogrid(Vec3i(0,1,0), -1.0f);
+		surface.delta(Vec3i(0,1,0), -1.0f);
 		surface.update_end();
 		polys.notify(surface);
 		polys.poly_cubes(surface);
@@ -555,11 +555,11 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		// Contract.
 		surface.update_start();
-		surface.disogrid(Vec3i(0,0,0), 1.0f);
-		surface.disogrid(Vec3i(-1,1,0), 1.0f);
-		surface.disogrid(Vec3i(1,1,0), 1.0f);
-		surface.disogrid(Vec3i(0,1,-1), 1.0f);
-		surface.disogrid(Vec3i(0,1,1), 1.0f);
+		surface.delta(Vec3i(0,0,0), 1.0f);
+		surface.delta(Vec3i(-1,1,0), 1.0f);
+		surface.delta(Vec3i(1,1,0), 1.0f);
+		surface.delta(Vec3i(0,1,-1), 1.0f);
+		surface.delta(Vec3i(0,1,1), 1.0f);
 		surface.update_end();
 		polys.notify(surface);
 		polys.poly_cubes(surface);
@@ -616,7 +616,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		// Expand - expanding across to other partition.
 		surface.update_start();
-		surface.disogrid(Vec3i(0,3,0), -1.0f);
+		surface.delta(Vec3i(0,3,0), -1.0f);
 		surface.update_end();
 		polys.notify(surface);
 		polys.poly_cubes(surface);
@@ -638,7 +638,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		// ==== Action ====
 
 		surface.update_start();
-		surface.disogrid(Vec3i(0,5,0), 0.0f);
+		surface.delta(Vec3i(0,5,0), 0.0f);
 		surface.update_end();
 
 //		BOOST_TEST_MESSAGE(stringifyGridSlice(surface.isogrid()));
@@ -685,13 +685,13 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 
 		surface.update_start();
 		for (auto pos : surface.layer(0))
-			surface.disogrid(pos, -1.0);
+			surface.delta(pos, -1.0);
 		surface.update_end();
 
 
 		surface.update_start();
 		for (auto pos : surface.layer(0))
-			surface.disogrid(pos, -1.0);
+			surface.delta(pos, -1.0);
 		surface.update_end();
 
 		polys.surf(surface);

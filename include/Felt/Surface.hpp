@@ -9,7 +9,8 @@
 #include <eigen3/Eigen/Dense>
 #include <omp.h>
 
-#include "PartitionedGrid.hpp"
+#include "LookupPartitionedGrid.hpp"
+#include "TrackedPartitionedGrid.hpp"
 
 
 namespace felt
@@ -62,7 +63,7 @@ public:
 	/**
 	 * Grid to track positions that require an update.
 	 */
-	using AffectedLookupGrid = SharedLookupPartitionedGrid<D, 2*L+1>;
+	using AffectedLookupGrid = LazySharedLookupPartitionedGrid<D, 2*L+1>;
 
 	/// D-dimensional hyperplane type (using Eigen library), for raycasting.
 	using Plane = Eigen::Hyperplane<FLOAT, D>;
@@ -95,6 +96,9 @@ public:
 	};
 
 protected:
+	/**
+	 * Structure to store raycast intermediate results.
+	 */
 	struct ChildHit
 	{
 		ChildHit(const VecDf& pos_intersect_, const VecDi& pos_child_)
@@ -146,7 +150,7 @@ protected:
 	 *
 	 * Used to allow for asynchronous updating.
 	 */
-	DeltaIsoGrid 		m_grid_disogrid;
+	DeltaIsoGrid 		m_grid_delta;
 
 	/**
 	 * The (spatially partitioned) status change list.
@@ -175,7 +179,7 @@ public:
 	Surface (const VecDu& size_, const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION))
 	:	m_grid_isogrid(),
 		m_grid_status_change(),
-		m_grid_disogrid()
+		m_grid_delta()
 	{
 		this->init(size_, size_partition_);
 	}
@@ -245,7 +249,7 @@ public:
 		m_grid_isogrid.init(usize_, offset, size_partition);
 
 		// Configure delta isogrid embedding.
-		m_grid_disogrid.init(usize_, offset, size_partition);
+		m_grid_delta.init(usize_, offset, size_partition);
 		// Configure status change partitioned lists.
 		m_grid_status_change.init(usize_, offset, size_partition);
 
@@ -263,7 +267,7 @@ public:
 		// Fill isogrid grid with 'outside' value.
 		m_grid_isogrid.fill(L+1);
 		// Initialise delta isogrid to zero.
-		m_grid_disogrid.fill(0);
+		m_grid_delta.fill(0);
 	}
 
 	/**
@@ -527,9 +531,9 @@ public:
 	 *
 	 * @return
 	 */
-	DeltaIsoGrid& disogrid ()
+	DeltaIsoGrid& delta ()
 	{
-		return m_grid_disogrid;
+		return m_grid_delta;
 	}
 
 	/**
@@ -537,9 +541,9 @@ public:
 	 *
 	 * @return
 	 */
-	const DeltaIsoGrid& disogrid () const
+	const DeltaIsoGrid& delta () const
 	{
-		return m_grid_disogrid;
+		return m_grid_delta;
 	}
 
 	/**
@@ -548,9 +552,9 @@ public:
 	 * @param pos
 	 * @return
 	 */
-	FLOAT& disogrid (const VecDi& pos)
+	FLOAT& delta (const VecDi& pos)
 	{
-		return m_grid_disogrid(pos);
+		return m_grid_delta(pos);
 	}
 
 	/**
@@ -560,9 +564,9 @@ public:
 	 * @param pos
 	 * @return
 	 */
-	const FLOAT disogrid (const VecDi& pos) const
+	const FLOAT delta (const VecDi& pos) const
 	{
-		return m_grid_disogrid(pos);
+		return m_grid_delta(pos);
 	}
 
 	/**
@@ -575,7 +579,7 @@ public:
 	 * @param pos
 	 * @param val
 	 */
-	void disogrid (const VecDi& pos_, FLOAT val_, const INT layer_id_ = 0)
+	void delta (const VecDi& pos_, FLOAT val_, const INT layer_id_ = 0)
 	{
 		if (layer_id_ == 0)
 			val_ = clamp(pos_, val_);
@@ -596,7 +600,7 @@ public:
 
 		#endif
 		
-		this->disogrid().add(pos_, val_, this->layer_idx(layer_id_));
+		this->delta().add(pos_, val_, this->layer_idx(layer_id_));
 	}
 
 	/**
@@ -646,13 +650,13 @@ public:
 	 * @param stddev standard deviation of Gaussian.
 	 */	
 	template <UINT Distance>
-	FLOAT disogrid_gauss (
+	FLOAT delta_gauss (
 		const VecDf& pos_centre, const FLOAT val, const FLOAT stddev
 	) {
 		const SharedLookupGrid<D, NUM_LAYERS>& lookup = this->walk_band<Distance>(
 			round(pos_centre)
 		);
-		return this->disogrid_gauss(lookup.list(this->layer_idx(0)), pos_centre, val, stddev);
+		return this->delta_gauss(lookup.list(this->layer_idx(0)), pos_centre, val, stddev);
 
 //		PosArray list;
 //		const INT w = Distance;
@@ -667,7 +671,7 @@ public:
 //				list.push_back(pos_neigh);
 //		}
 //
-//		return this->disogrid_gauss(list, pos_centre, val, stddev);
+//		return this->delta_gauss(list, pos_centre, val, stddev);
 	}
 
 //	std::set<std::mutex*> lock_children(const PosArray& list_pos_leafs_)
@@ -677,7 +681,7 @@ public:
 //
 //		MutexSet mutexes;
 //		for (const VecDi& pos : list_pos_leafs_)
-//			mutexes.insert(&m_grid_disogrid.children().get(m_grid_disogrid.pos_child(pos)).lookup().mutex());
+//			mutexes.insert(&m_grid_delta.children().get(m_grid_delta.pos_child(pos)).lookup().mutex());
 //
 //		MutexIter first(mutexes.begin()), last(mutexes.end());
 //		boost::lock(first, last);
@@ -700,7 +704,7 @@ public:
 	 * @param val amount to spread over the points.
 	 * @param stddev standard deviation of Gaussian.
 	 */
-	FLOAT disogrid_gauss (
+	FLOAT delta_gauss (
 		const typename DeltaIsoGrid::PosArray& list, const VecDf& pos_centre,
 		const FLOAT val, const FLOAT stddev
 	) {
@@ -712,7 +716,7 @@ public:
 		for (UINT idx = 0; idx < list.size(); idx++)
 		{
 			const VecDf& pos = list[idx].template cast<FLOAT>();
-			if (this->disogrid(list[idx]) != 0)
+			if (this->delta(list[idx]) != 0)
 			{
 				weights(idx) = 0;
 				continue;
@@ -737,7 +741,7 @@ public:
 			for (UINT idx = 0; idx < list.size(); idx++)
 			{
 				const VecDi& pos = list[idx];
-				const VecDi& pos_child = m_grid_disogrid.pos_child(pos);
+				const VecDi& pos_child = m_grid_delta.pos_child(pos);
 
 				if (pos_child_current != pos_child)
 				{
@@ -746,11 +750,11 @@ public:
 						pmutex_current->unlock();
 					}
 					pos_child_current = pos_child;
-					pmutex_current = &m_grid_disogrid.children().get(pos_child_current).lookup().mutex();
+					pmutex_current = &m_grid_delta.children().get(pos_child_current).lookup().mutex();
 					pmutex_current->lock();
 				}
 
-				const FLOAT amount = this->clamp(pos, weights(idx) + m_grid_disogrid(pos));
+				const FLOAT amount = this->clamp(pos, weights(idx) + m_grid_delta(pos));
 
 				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
@@ -775,7 +779,7 @@ public:
 				
 				weights(idx) -= (weights(idx) - amount);
 
-				this->disogrid().add(pos, amount, this->layer_idx(0));
+				this->delta().add(pos, amount, this->layer_idx(0));
 			} // End for list of leafs.
 		} // End if weights > 0
 
@@ -798,7 +802,7 @@ public:
 	 * @param stddev
 	 */
 	template <UINT Distance>
-	FLOAT disogrid_gauss (
+	FLOAT delta_gauss (
 		const VecDf& pos_origin, const VecDf& dir,
 		const FLOAT val, const float stddev
 	) {
@@ -809,7 +813,7 @@ public:
 //			std::cout << "MISS" << std::endl;
 			return val;
 		}
-		return this->disogrid_gauss<Distance>(pos_hit, val, stddev);
+		return this->delta_gauss<Distance>(pos_hit, val, stddev);
 	}
 
 	/**
@@ -1098,18 +1102,18 @@ public:
 	{
 		for (UINT layer_idx = 0; layer_idx < 2*L+1; layer_idx++)
 		{
-			m_grid_disogrid.reset(0, layer_idx);
-			m_grid_affected.reset(layer_idx);
+			m_grid_delta.reset(0, layer_idx);
+			m_grid_affected.reset(m_grid_isogrid, layer_idx);
 		}
 
 		m_grid_status_change.reset();
 		
 		#if false
 		
-		for (const VecDi& pos_child : m_grid_disogrid.children())
-			for (const VecDi& pos : m_grid_disogrid.children().get(pos_child))
+		for (const VecDi& pos_child : m_grid_delta.children())
+			for (const VecDi& pos : m_grid_delta.children().get(pos_child))
 			{
-				if (m_grid_disogrid(pos) != 0)
+				if (m_grid_delta(pos) != 0)
 				{
 					throw std::domain_error(std::string("Delta isogrid not reset!"));
 				}
@@ -1124,7 +1128,7 @@ public:
 	void update_zero_layer ()
 	{
 		const typename DeltaIsoGrid::ChildrenGrid&
-		children = this->disogrid().children();
+		children = this->delta().children();
 
 		const UINT layer_idx = this->layer_idx(0);
 
@@ -1137,8 +1141,8 @@ public:
 			for (const VecDi& pos : children(pos_child).list(layer_idx))
 			{
 				const FLOAT fisogrid = this->isogrid(pos);
-				const FLOAT fdisogrid = this->disogrid(pos);
-				const FLOAT fval = fisogrid + fdisogrid;
+				const FLOAT fdelta = this->delta(pos);
+				const FLOAT fval = fisogrid + fdelta;
 
 				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
@@ -1146,7 +1150,7 @@ public:
 				{
 					std::stringstream strs;
 					strs << "Zero layer updated attempted at non-zero layer point "
-						<< felt::format(pos) << ": " << fisogrid << " + " << fdisogrid << " = " << fval;
+						<< felt::format(pos) << ": " << fisogrid << " + " << fdelta << " = " << fval;
 					std::string str = strs.str();
 					throw std::domain_error(str);
 				}
@@ -1154,7 +1158,7 @@ public:
 				{
 					std::stringstream strs;
 					strs << "Zero layer isogrid value out of bounds at " << felt::format(pos)
-						<< ": " << fisogrid << " + " << fdisogrid << " = " << fval;
+						<< ": " << fisogrid << " + " << fdelta << " = " << fval;
 					std::string str = strs.str();
 					throw std::domain_error(str);
 				}
@@ -1226,10 +1230,10 @@ public:
 		{
 			const VecDi& pos_child = lookup_.children().list(layer_idx)[pos_idx];
 
-			m_grid_disogrid.add_child(pos_child, layer_idx);
+			m_grid_delta.add_child(pos_child, layer_idx);
 
 			IsoChild& grid_isogrid_child = m_grid_isogrid.children().get(pos_child);
-			DeltaIsoChild& grid_disogrid_child = m_grid_disogrid.children().get(pos_child);
+			DeltaIsoChild& grid_delta_child = m_grid_delta.children().get(pos_child);
 
 			const PosArray& apos_leafs = lookup_.children().get(pos_child).list(layer_idx);
 
@@ -1261,7 +1265,7 @@ public:
 
 
 				// Update delta isogrid grid.
-				grid_disogrid_child.add(pos, dist, layer_idx);
+				grid_delta_child.add(pos, dist, layer_idx);
 			}
 		}
 		
@@ -1271,7 +1275,7 @@ public:
 			const VecDi& pos_child = lookup_.children().list(layer_idx)[pos_idx];
 
 			IsoChild& grid_isogrid_child = m_grid_isogrid.children().get(pos_child);
-			DeltaIsoChild& grid_disogrid_child = m_grid_disogrid.children().get(pos_child);
+			DeltaIsoChild& grid_delta_child = m_grid_delta.children().get(pos_child);
 
 			const PosArray& apos_leafs = lookup_.children().get(pos_child).list(layer_idx);
 
@@ -1280,7 +1284,7 @@ public:
 			for (const VecDi& pos : apos_leafs)
 			{
 				// Distance calculated above.
-				const FLOAT dist = grid_disogrid_child(pos);
+				const FLOAT dist = grid_delta_child(pos);
 
 				grid_isogrid_child(pos) = dist;
 
@@ -1427,8 +1431,10 @@ public:
 	}
 
 	/**
-	 * Find all outer layer points who's distance transform is
-	 * affected by modified zero-layer points.
+	 * Find all outer layer points who's distance transform is affected by modified zero-layer
+	 * points.
+	 *
+	 * @snippet test_Surface.cpp Calculate affected outer layers for localised narrow band updates
 	 *
 	 * TODO: several options for optimisation of removing duplicates:
 	 * - Use a boolean flag grid to construct a de-duped vector (used
@@ -1447,15 +1453,15 @@ public:
 		// Loop over delta isogrid modified zero-layer points adding to
 		// tracking grid.
 
-		// Loop spatial partitions of disogrid for zero-layer.
+		// Loop spatial partitions of delta for zero-layer.
 		for (
 			const VecDi& pos_child
-			: this->disogrid().children().list(layer_idxZero))
+			: this->delta().children().list(layer_idxZero))
 		{
 			// Loop leaf grid nodes with spatial partition
 			for (
 				const VecDi& pos_leaf
-				: this->disogrid().children().get(pos_child).list(layer_idxZero)
+				: this->delta().children().get(pos_child).list(layer_idxZero)
 			)
 				// Add zero-layer point to tracking grid.
 				m_grid_affected.add(pos_leaf, layer_idxZero);
@@ -1603,7 +1609,7 @@ public:
 		{
 			const VecDi& pos_part = this->parts()[part_idx];
 			for (const VecDi& pos : this->layer(pos_part))
-				this->disogrid(pos, fn_(pos, m_grid_isogrid));
+				this->delta(pos, fn_(pos, m_grid_isogrid));
 		}
 		this->update_end();
 	}

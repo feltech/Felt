@@ -1,4 +1,3 @@
-
 #include <boost/test/unit_test.hpp>
 #include <boost/test/output_test_stream.hpp>
 
@@ -102,10 +101,10 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		surface2D.seed(Vec2i(0,0));
 		surface3D.seed(Vec3i(0,0,0));
 		surface2D.update_start();
-		surface2D.disogrid(Vec2i(0,0), -1);
+		surface2D.delta(Vec2i(0,0), -1);
 		surface2D.update_end();
 		surface3D.update_start();
-		surface3D.disogrid(Vec3i(0,0,0), -1);
+		surface3D.delta(Vec3i(0,0,0), -1);
 		surface3D.update_end();
 
 		// Index in vertex array of vertex along edge from centre to +x.
@@ -220,7 +219,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 			// Initialise a seed and expand it.
 			surface.seed(Vec3i(0,0,0));
 			surface.update_start();
-			surface.disogrid(Vec3i(0,0,0), -1);
+			surface.delta(Vec3i(0,0,0), -1);
 			surface.update_end();
 
 			// Relative position of corners in bitmask order (LSB first,
@@ -254,11 +253,11 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 			// Expand the surface outwards twice.
 			surface.update_start();;
 			for (auto pos : surface.layer(0))
-				surface.disogrid(pos, -1);
+				surface.delta(pos, -1);
 			surface.update_end();
 			surface.update_start();;
 			for (auto pos : surface.layer(0))
-				surface.disogrid(pos, -1);
+				surface.delta(pos, -1);
 			surface.update_end();
 
 			// The central cube is now completely inside the surface.
@@ -398,7 +397,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 
 		// Expand the surface outward.
 		surface.update_start();
-		surface.disogrid(Vec3i(0,0,0), -1);
+		surface.delta(Vec3i(0,0,0), -1);
 		surface.update_end();
 
 
@@ -541,7 +540,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		// corner, so no degenerate triangles.
 		surface.update_start();
 		for (auto pos : surface.layer(0))
-			surface.disogrid(pos, -0.3);
+			surface.delta(pos, -0.3);
 		surface.update_end();
 
 		// Check that the corner inside/outside status mask is indeed still
@@ -572,7 +571,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		// Initialise a seed and expand it.
 		surface.seed(Vec3i(0,0,0));
 		surface.update_start();
-		surface.disogrid(Vec3i(0,0,0), -1.3f);
+		surface.delta(Vec3i(0,0,0), -1.3f);
 		surface.update_end();
 
 		// Polygonise zero-layer.

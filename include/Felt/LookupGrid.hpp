@@ -505,8 +505,10 @@ struct GridTraits< LazyLookupGridBase<Derived> > : GridTraits<Derived>
 template <UINT D, UINT N>
 struct DefaultLookupGridTraits : DefaultGridTraits<VecDu<N>, D >
 {
+	/// Null index data type.
+	using NULL_IDX_TYPE = VecDu<N>;
 	/// Null index grid value in data array.
-	static const VecDu<N> NULL_IDX_DATA;
+	static const NULL_IDX_TYPE NULL_IDX_DATA;
 	/// Number of tracking lists taken from template parameter.
 	static const UINT NumLists = N;
 };
