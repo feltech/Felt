@@ -290,7 +290,7 @@ public:
 		Child& child = this->children().get(pos_child);
 		child.remove(pos_, arr_idx_);
 		if (child.list(arr_idx_).size() == 0)
-			this->remove_child(pos_child, arr_idx_);
+			self->remove_child(pos_child, arr_idx_);
 	}
 
 	/**

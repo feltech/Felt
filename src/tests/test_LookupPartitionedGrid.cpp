@@ -294,6 +294,40 @@ BOOST_AUTO_TEST_SUITE(test_LazySharedLookupPartitionedGrid)
 		BOOST_CHECK_EQUAL(grid.children().get(pos_child).list(1).size(), 1);
 	}
 
+	BOOST_FIXTURE_TEST_CASE(remove_should_deactivate_when_child_is_inactive, Fixture)
+	{
+		// ==== Setup ====
+		const Vec3i pos1(-4, -4, -4);
+		const Vec3i pos2(-3, -4, -4);
+		const Vec3i pos_child(-1, -1, -1);
+		grid.add(pos1, 0);
+		grid.add(pos2, 1);
+
+		// ==== Action ====
+		grid.remove(pos1, 0);
+
+		// ==== Confirm ====
+		BOOST_CHECK(grid.children().get(pos_child).is_active());
+		BOOST_CHECK_EQUAL(grid.children().list(0).size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().list(1).size(), 1);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).get(pos1), NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).get(pos2), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).list(0).size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).list(1).size(), 1);
+
+		// ==== Action ====
+		grid.remove(pos2, 1);
+
+		// ==== Confirm ====
+		BOOST_CHECK(!grid.children().get(pos_child).is_active());
+		BOOST_CHECK_EQUAL(grid.children().list(0).size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().list(1).size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).get(pos1), NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).get(pos2), NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).list(0).size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).list(1).size(), 0);
+	}
+
 	BOOST_FIXTURE_TEST_CASE(reset_shouldnt_deactivate_when_other_list_still_active, ResetFixture)
 	{
 		// ==== Setup ====
