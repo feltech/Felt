@@ -79,11 +79,23 @@ public:
 		for (const VecDi& pos_child : this->children().list(list_idx_))
 		{
 			Child& child = this->children().get(pos_child);
-			child.reset(list_idx_);
-			const bool is_child_active_master = grid_master_.is_child_active(pos_child);
-			if (!is_child_active_master)
+			// If the master grid is not tracking this child, then remove it from tracking under
+			// this list id, potentially destroying it.
+			if (!grid_master_.is_child_active(pos_child))
 			{
 				this->remove_child(pos_child, list_idx_);
+			}
+			// If the child has not been destroyed by the above, then reset as normal (loop over
+			// tracking list resetting values in grid, before resizing list to 0).
+			if (child.is_active())
+			{
+				child.reset(list_idx_);
+			}
+			// If the child was destroyed above, then no need to loop over grid resetting values,
+			// so just reset list.
+			else
+			{
+				child.list(list_idx_).clear();
 			}
 		}
 	}

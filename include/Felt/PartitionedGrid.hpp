@@ -268,8 +268,9 @@ public:
 	 */
 	bool is_child_active(const VecDi& pos_child_) const
 	{
-		const typename ChildrenGrid::Lookup::Traits::NULL_IDX_TYPE idxs
-			= this->children().lookup().get(pos_child_);
+		using NULL_IDX_TYPE = typename ChildrenGrid::Lookup::Traits::NULL_IDX_TYPE;
+
+		const NULL_IDX_TYPE idxs = this->children().lookup().get(pos_child_);
 
 		return idxs != ChildrenGrid::Lookup::Traits::NULL_IDX_DATA;
 	}

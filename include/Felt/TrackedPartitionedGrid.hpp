@@ -161,7 +161,7 @@ public:
 		for (const VecDi& pos_child : children.list(arr_idx_))
 			children(pos_child).reset(val_, arr_idx_);
 
-		Base::reset(arr_idx_);
+		Base::Base::reset(arr_idx_);
 	}
 };
 
