@@ -1103,9 +1103,9 @@ public:
 		for (UINT layer_idx = 0; layer_idx < 2*L+1; layer_idx++)
 		{
 			m_grid_delta.reset(0, layer_idx);
-			m_grid_affected.reset(m_grid_isogrid, layer_idx);
 		}
 
+		m_grid_affected.reset_all(m_grid_isogrid);
 		m_grid_status_change.reset();
 		
 		#if false

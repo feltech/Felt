@@ -63,15 +63,16 @@ public:
 	/**
 	 * Reset and conditionally deactivate children.
 	 *
-	 * @snippet test_PartitionedGrid.cpp LazySharedLookupPartitionedGrid reset_mixed_cases
-	 *
 	 * All child grids will be reset, but they will not be deactivated and removed from tracking
 	 * if the given master grid is currently tracking them.
 	 *
 	 * This is an optimisation to ensure spatial partitions that are 'paired' do not get
 	 * constantly created and destroyed unnecessarily.
 	 *
-	 * @param grid_master
+	 * @snippet test_PartitionedGrid.cpp LazySharedLookupPartitionedGrid reset_mixed_cases
+	 * @param grid_master_ `PartitionedGrid`-like grid to use as a "master"/"mask".
+	 * @param list_idx_ the tracking list id to reset.
+	 * @tparam Derived child class of `PartitionedGridBase`.
 	 */
 	template<class Derived>
 	void reset(const PartitionedGridBase<Derived>& grid_master_, const UINT list_idx_)
@@ -98,6 +99,21 @@ public:
 				child.list(list_idx_).clear();
 			}
 		}
+	}
+
+	/**
+	 * Reset all tracking lists and data, deactivating all children except those active in given
+	 * master grid.
+	 *
+	 * @snippet test_PartitionedGrid.cpp LazySharedLookupPartitionedGrid reset_all
+
+	 * @param grid_master_
+	 */
+	template<class Derived>
+	void reset_all(const PartitionedGridBase<Derived>& grid_master_)
+	{
+		for (UINT idx = 0; idx < this->children().lookup().NUM_LISTS; idx++)
+			reset<Derived>(grid_master_, idx);
 	}
 
 	/**

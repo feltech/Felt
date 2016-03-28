@@ -423,4 +423,56 @@ BOOST_AUTO_TEST_SUITE(test_LazySharedLookupPartitionedGrid)
 		);
 		/// [LazySharedLookupPartitionedGrid reset_mixed_cases]
 	}
+
+	BOOST_AUTO_TEST_CASE(reset_all)
+	{
+		/// [LazySharedLookupPartitionedGrid reset_all]
+		// ==== Setup ====
+
+		const UINT NULL_IDX = LazySharedLookupPartitionedGrid<3, 3>::NULL_IDX;
+		PartitionedGrid<FLOAT, 3> grid_master(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
+		LazySharedLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
+
+		const Vec3i pos_list_0(0, 0, 0);
+		const Vec3i pos_active_because_master(-4, 0, 4);
+		const Vec3i pos_list_1(4, 0, 0);
+		const Vec3i pos_child_list_0(0, 0, 0);
+		const Vec3i pos_child_active_because_master(-1, 0, 1);
+		const Vec3i pos_child_list_1(1, 0, 0);
+
+		grid_master.add_child(pos_child_active_because_master);
+		grid.add(pos_active_because_master);
+		grid.add(pos_list_0);
+		grid.add(pos_list_1, 1);
+
+		// ==== Action ====
+
+		grid.reset_all(grid_master);
+
+		// ==== Confirm ====
+
+		// Resets all children.
+		BOOST_CHECK_EQUAL(grid.get(pos_active_because_master), NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.get(pos_list_0), NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.get(pos_list_1), NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child_active_because_master).list().size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child_list_0).list().size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child_list_1).list(1).size(), 0);
+
+		// Deactivates partitions not being tracked by the master.
+		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(pos_child_list_0)).is_active(), false);
+		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(pos_child_list_0)).data().size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child_list_1).is_active(), false);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child_list_1).data().size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().list(1).size(), 0);
+
+		// Leaves active those partitions being tracked by the master grid.
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child_active_because_master).is_active(), true);
+		BOOST_CHECK_EQUAL(
+			grid.children().get(pos_child_active_because_master).data().size(), 3*3*3
+		);
+		BOOST_CHECK_EQUAL(grid.children().list(0).size(), 1);
+		/// [LazySharedLookupPartitionedGrid reset_all]
+	}
+
 BOOST_AUTO_TEST_SUITE_END()

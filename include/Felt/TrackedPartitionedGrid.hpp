@@ -199,7 +199,7 @@ struct GridTraits<TrackedPartitionedGrid<T, D, N> > : DefaultGridTraits<T, D>
 template <typename T, UINT D, UINT N>
 struct GridTraits<SharedTrackedPartitionedGrid<T, D, N> > : DefaultGridTraits<T, D>
 {
-	/// The class inheriting from TrackedGridBase.
+	/// The class inheriting from the base.
 	using ThisType = SharedTrackedPartitionedGrid<T, D, N>;
 	/// The type of lookup grid to use for tracking active grid nodes.
 	using LookupType = SharedLookupGrid<D, N>;

@@ -1465,9 +1465,6 @@ class Grid : public GridBase<Grid<T, D>, false>
 public:
 	using ThisType = Grid<T, D>;
 	using Base = GridBase<ThisType, false>;
-	using typename Base::VecDu;
-	using typename Base::VecDi;
-	using typename Base::VecDf;
 	using Base::GridBase;
 };
 
