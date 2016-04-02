@@ -176,12 +176,16 @@ public:
 	 * @param size_ size of the isogrid.
 	 * @param size_partition_ size of each spatial partition of the isogrid.
 	 */
-	Surface (const VecDu& size_, const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION))
-	:	m_grid_isogrid(),
+	Surface (const VecDu& size_, const VecDu& size_partition_ = VecDu::Constant(0)) :
+		m_grid_isogrid(),
 		m_grid_status_change(),
-		m_grid_delta()
+		m_grid_delta(),
+		m_grid_affected()
 	{
-		this->init(size_, size_partition_);
+		if (size_partition_ == VecDu::Constant(0))
+			this->init(size_, size_);
+		else
+			this->init(size_, size_partition_);
 	}
 
 	/**
@@ -190,9 +194,8 @@ public:
 	 * @param size_ size of the isogrid.
 	 * @param size_partition_ size of each spatial partition of the isogrid.
 	 */
-	void init (
-		const VecDu& size_, const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION)
-	) {
+	void init (const VecDu& size_, const VecDu& size_partition_)
+	{
 		this->size(size_, size_partition_);
 	}
 
@@ -246,13 +249,12 @@ public:
 		const VecDi isize = usize_.template cast<INT>();
 		const VecDi offset = -isize/2;
 
-		m_grid_isogrid.init(usize_, offset, size_partition);
-
-		// Configure delta isogrid embedding.
-		m_grid_delta.init(usize_, offset, size_partition);
+		// Configure isogrid embedding, initialising to all outside values.
+		m_grid_isogrid.init(usize_, offset, LAYER_MAX+1, size_partition);
+		// Configure delta isogrid embedding, initialising to zero delta.
+		m_grid_delta.init(usize_, offset, 0, size_partition);
 		// Configure status change partitioned lists.
 		m_grid_status_change.init(usize_, offset, size_partition);
-
 		// Configure de-dupe grid for neighbourhood queries.
 		m_grid_affected.init(usize_, offset, size_partition);
 
@@ -264,10 +266,6 @@ public:
 			(isize - VecDi::Constant(L + 1))
 			+ m_grid_isogrid.offset() - VecDi::Constant(1)
 		);
-		// Fill isogrid grid with 'outside' value.
-		m_grid_isogrid.fill(L+1);
-		// Initialise delta isogrid to zero.
-		m_grid_delta.fill(0);
 	}
 
 	/**

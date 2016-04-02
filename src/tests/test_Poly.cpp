@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		// Initialise a 2D grid for testing.
 		Surface<2> surface(Vec2u(9,9));
 		Poly<2> poly(surface.isogrid().size(), surface.isogrid().offset());
-		surface.isogrid().data() <<
+		surface.isogrid().data() = {
 			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3,
 			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
 			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
@@ -165,7 +165,9 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 			 3,	 2,	 1,	 0,	-1,	 0,	 1,	 2,	 3,
 			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
 			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
-			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3;
+			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3
+		};
+
 		surface.isogrid().flush_snapshot();
 
 		unsigned short mask;
@@ -282,7 +284,7 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 	{
 		Surface<2> surface(Vec2u(9,9));
 		Poly<2> poly(surface.isogrid().size(), surface.isogrid().offset());
-		surface.isogrid().data() <<
+		surface.isogrid().data() = {
 			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3,
 			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
 			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
@@ -291,7 +293,8 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 			 3,	 2,	 1,	 0,	-1,	 0,	 1,	 2,	 3,
 			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
 			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
-			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3;
+			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3
+		};
 		surface.isogrid().flush_snapshot();
 
 		unsigned short mask, vtx_mask;

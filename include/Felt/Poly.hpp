@@ -128,6 +128,12 @@ namespace felt
 			m_grid_vtx()
 		{}
 
+		Poly (const Poly<D>& other)
+		{
+			m_a_spx = other.m_a_spx;
+			m_a_vtx = other.m_a_vtx;
+			m_grid_vtx = other.m_grid_vtx;
+		}
 
 		/**
 		 * Construct a new polygonisation enclosing a signed distance grid.
@@ -147,8 +153,7 @@ namespace felt
 		 */
 		void init (const VecDu& size_, const VecDi& offset_)
 		{
-			m_grid_vtx.init(size_, offset_);
-			m_grid_vtx.fill(NULL_VTX_TUPLE);
+			m_grid_vtx.init(size_, offset_, NULL_VTX_TUPLE);
 		}
 
 		/**

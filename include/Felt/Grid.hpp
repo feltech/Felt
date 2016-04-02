@@ -213,14 +213,16 @@ public:
 	/**
 	 * Dynamic 1D vector (a resizeable array of data) for storage of grid data.
 	 */
-	using ArrayData = Eigen::Array<LeafType, 1, Eigen::Dynamic>;
+	using ArrayData = std::vector<LeafType>;
+
+	using VArrayData = Eigen::Map< Eigen::Array<LeafType, 1, Eigen::Dynamic> >;
+
 	/**
 	 * Resizeable array of VecDi (grid locations).
 	 *
 	 * Uses Eigen::aligned_allocator for optimal address alignment.
 	 */
 	using PosArray = std::vector<VecDi, Eigen::aligned_allocator<VecDi> >;
-
 
 	/**
 	 * Iterator for contiguous cycling over entire grid.
@@ -313,6 +315,9 @@ protected:
 	 */
 	ArrayData m_data;
 
+	/// The background value used to initialise the grid.
+	LeafType m_background;
+
 public:
 	/**
 	 * Trivial destructor.
@@ -327,43 +332,77 @@ public:
 	 * and call init() in the derived class.
 	 */
 	StaticGridBase () :
-	m_offset(VecDi::Zero()),
-	m_size(VecDu::Zero()),
-	m_dx(1)
-	{
-	}
+		m_data(),
+		m_offset(VecDi::Zero()),
+		m_size(VecDu::Zero()),
+		m_dx(1),
+		m_background()
+	{}
 
 	/**
-	 * Initialise a grid with given dimension, offset and delta x.
+	 * Initialise a zero-size grid with background value to use for eventual initialisation.
+	 *
+	 */
+	StaticGridBase (const LeafType background_) :
+		m_data(),
+		m_offset(VecDi::Zero()),
+		m_size(VecDu::Zero()),
+		m_dx(1),
+		m_background(background_)
+	{}
+
+	/**
+	 *
+	 * Initialise a grid with given dimension, offset, and background value.
 	 *
 	 * @snippet test_Grid.cpp Initialsing grid size
 	 * @snippet test_Grid.cpp Offsetting the grid
 	 * @snippet test_Grid.cpp Divergence
+	 * @snippet test_Grid.cpp LazyGrid initialisation
 	 *
 	 * @param size_ size of grid.
 	 * @param offset_ spatial offset of grid.
-	 * @param delta_ spatial size of a leaf node, for spatial derivative calculation.
+	 * @param background_ default value to use when grid is inactive.
 	 */
 	StaticGridBase (
-		const VecDu& size_, const VecDi& offset_ = VecDi::Zero()
-	) :
-	m_dx(1)
+		const VecDu& size_, const VecDi& offset_, const LeafType& background_
+	):
+		m_data(),
+		m_dx(1)
 	{
-		this->init(size_, offset_);
+		this->init(size_, offset_, background_);
 	}
 
 	/**
-	 * Initialise the grid dimensions and offset.
+	 * Initialise the grid dimensions, offset, and background value.
+	 *
+	 * @snippet test_Grid.cpp LazyGrid initialisation
 	 *
 	 * @param size_ size of grid.
 	 * @param offset_ spatial offset of grid.
-	 * @param delta_ representative spatial size of a leaf node, for spatial derivative calculation.
+	 * @param background_ default value to use when grid is inactive.
 	 */
-	void init (
-		const VecDu& size_, const VecDi& offset_ = VecDi::Zero()
-	) {
+	void init (const VecDu& size_, const VecDi& offset_, const LeafType& background_)
+	{
+		m_background = background_;
 		self->size(size_);
 		self->offset(offset_);
+	}
+
+	/**
+	 * Get the background value returned when grid is inactive.
+	 */
+	LeafType& background()
+	{
+		return m_background;
+	}
+
+	/**
+	 * @copydoc LazyGrid::background()
+	 */
+	const LeafType& background() const
+	{
+		return m_background;
 	}
 
 	/**
@@ -626,6 +665,16 @@ x = (idx/Dz)/Dy % Dx
 	}
 
 	/**
+	 * Map the raw data to an Eigen::Map, which can be used for BLAS arithmetic.
+	 *
+	 * @return Eigen compatible vector of data array.
+	 */
+	VArrayData vdata()
+	{
+		return VArrayData(this->data().data(), this->data().size());
+	}
+
+	/**
 	 * Retrieve a reference to the raw grid data array (const version).
 	 *
 	 * @return the array of data representing nodes in the grid.
@@ -677,7 +726,7 @@ x = (idx/Dz)/Dy % Dx
 		INT arr_size = m_size(0);
 		for (INT i = 1; i < m_size.size(); i++)
 			arr_size *= m_size(i);
-		m_data.resize(arr_size);
+		m_data.resize(arr_size, m_background);
 	}
 
 	/**
@@ -695,9 +744,9 @@ x = (idx/Dz)/Dy % Dx
 	 *
 	 * @param val_ value to fill the grid with.
 	 */
-	void fill (const LeafType& val_)
+	void fill (const LeafType val_)
 	{
-		m_data.fill(val_);
+		std::fill(this->data().begin(), this->data().end(), val_);
 	}
 
 	/**
@@ -946,7 +995,7 @@ x = (idx/Dz)/Dy % Dx
 				vec_grad(axis) = 0;
 		}
 
-		return vec_grad / this->dx();
+		return vec_grad / m_dx;
 	}
 
 	/**
@@ -1168,7 +1217,7 @@ x = (idx/Dz)/Dy % Dx
 		assert_pos_bounds(pos_, "get_internal: ");
 		#endif
 		const UINT idx = this->index(pos_);
-		return this->data()(idx);
+		return this->data()[idx];
 	}
 
 	/**
@@ -1184,7 +1233,7 @@ x = (idx/Dz)/Dy % Dx
 		assert_pos_bounds(pos, "get_internal: ");
 		#endif
 		const UINT idx = this->index(pos);
-		return this->data()(idx);
+		return this->data()[idx];
 	}
 
 	/**
@@ -1280,63 +1329,13 @@ public:
 	using typename Base::VecDf;
 	using typename Base::LeafType;
 	using Base::StaticGridBase;
-protected:
-	/// The background value to return when grid is inactive.
-	LeafType m_background;
 public:
 
 	/**
 	 * Default constructor
 	 */
-	LazyGridBase () : Base(), m_background()
+	LazyGridBase () : Base()
 	{}
-
-	/**
-	 * Initialise a grid with given dimension, offset, and background value.
-	 *
-	 * @snippet test_Grid.cpp LazyGrid initialisation
-	 *
-	 * @param size_ size of grid.
-	 * @param offset_ spatial offset of grid.
-	 * @param background_ default value to use when grid is inactive.
-	 */
-	LazyGridBase (const VecDu& size_, const VecDi& offset_, const LeafType& background_)
-	: Base(size_, offset_)
-	{
-		init(size_, offset_, background_);
-	}
-
-	/**
-	 * Initialise the grid dimensions, offset, and background value.
-	 *
-	 * @snippet test_Grid.cpp LazyGrid initialisation
-	 *
-	 * @param size_ size of grid.
-	 * @param offset_ spatial offset of grid.
-	 * @param background_ default value to use when grid is inactive.
-	 */
-	void init (const VecDu& size_, const VecDi& offset_, const LeafType& background_ = LeafType())
-	{
-		self->size(size_);
-		self->offset(offset_);
-		m_background = background_;
-	}
-
-	/**
-	 * Get the background value returned when grid is inactive.
-	 */
-	LeafType& background()
-	{
-		return m_background;
-	}
-
-	/**
-	 * @copydoc LazyGrid::background()
-	 */
-	const LeafType& background() const
-	{
-		return m_background;
-	}
 
 	/**
 	 * Get whether this grid is active or not.
@@ -1370,7 +1369,6 @@ public:
 	void activate()
 	{
 		Base::activate();
-		this->fill(m_background);
 	}
 
 	/**
@@ -1380,7 +1378,8 @@ public:
 	 */
 	void deactivate()
 	{
-		this->m_data.resize(0);
+		this->m_data.clear();
+		this->m_data.shrink_to_fit();
 	}
 
 	/**
@@ -1396,7 +1395,7 @@ public:
 	{
 		if (is_active())
 			return this->get_internal(pos_);
-		return m_background;
+		return this->m_background;
 	}
 
 	/**
@@ -1407,7 +1406,7 @@ public:
 	{
 		if (is_active())
 			return this->get_internal(pos_);
-		return m_background;
+		return this->m_background;
 	}
 };
 

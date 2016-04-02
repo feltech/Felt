@@ -203,7 +203,7 @@ public:
 	using DerivedType = typename GridTraits<Derived>::ThisType;
 	/// Base class.
 	using Base = PartitionedGridBase<ThisType>;
-
+	/// Allow full access to iterator over leaf grid nodes.
 	friend class LeafsContainer<ThisType>;
 
 	using typename Base::Child;
@@ -299,10 +299,10 @@ public:
 	 * @param list_idx_ tracking list id.
 	 * @return
 	 */
-	const LeafsContainer<Derived> leafs(const UINT list_idx_ = 0) const
+	const LeafsContainer<DerivedType> leafs(const UINT list_idx_ = 0) const
 	{
-		return LeafsContainer<Derived>(
-			static_cast<const Derived*>(this), list_idx_
+		return LeafsContainer<DerivedType>(
+			static_cast<const DerivedType*>(this), list_idx_
 		);
 	}
 

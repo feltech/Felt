@@ -52,6 +52,7 @@ protected:
 	/// Mutex for use by other classes where multiple threads hold a reference to this grid.
 	std::mutex						m_mutex;
 public:
+	using Base::init;
 
 	/**
 	 * Default (empty) destructor.
@@ -61,7 +62,8 @@ public:
 	/**
 	 * Explicitly defined default constructor.
 	 */
-	LookupGridBase () = default;
+	LookupGridBase () : Base(Traits::NULL_IDX_DATA)
+	{};
 
 	/**
 	 * Construct a lookup grid of given size and spatial offset.
@@ -71,7 +73,7 @@ public:
 	 */
 	LookupGridBase (const VecDu& size_, const VecDi& offset_ = VecDi::Zero()) : Base()
 	{
-		this->init(size_, offset_);
+		this->init(size_, offset_, Traits::NULL_IDX_DATA);
 	}
 
 	/**
@@ -81,12 +83,9 @@ public:
 	 *
 	 * @param other_ grid to copy.
 	 */
-	LookupGridBase(const ThisType& other_)
+	LookupGridBase(const ThisType& other_) : Base(other_)
 	{
-		m_a_pos = other_.m_a_pos;
-		this->m_data = other_.m_data;
-		this->m_offset = other_.m_offset;
-		this->m_size = other_.m_size;
+ 		m_a_pos = other_.m_a_pos;
 	}
 
 	/**
@@ -96,12 +95,9 @@ public:
 	 *
 	 * @param other_ grid to move.
 	 */
-	LookupGridBase(ThisType&& other_)
+	LookupGridBase(ThisType&& other_) : Base(other_)
 	{
-		m_a_pos = std::move(other_.m_a_pos);
-		this->m_data = std::move(other_.m_data);
-		this->m_offset = std::move(other_.m_offset);
-		this->m_size = std::move(other_.m_size);
+ 		m_a_pos = other_.m_a_pos;
 	}
 
 	/**
@@ -113,11 +109,9 @@ public:
 	 */
 	ThisType& operator=(const ThisType& other_)
 	{
-		m_a_pos = other_.m_a_pos;
-		this->m_data = other_.m_data;
-		this->m_offset = other_.m_offset;
-		this->m_size = other_.m_size;
-		return *this;
+		ThisType& me = static_cast<ThisType&>(Base::operator=(other_));
+ 		me.m_a_pos = other_.m_a_pos;
+ 		return me;
 	}
 
 	/**
@@ -129,11 +123,22 @@ public:
 	 */
 	ThisType& operator=(ThisType&& other_)
 	{
-		m_a_pos = std::move(other_.m_a_pos);
-		this->m_data = std::move(other_.m_data);
-		this->m_offset = std::move(other_.m_offset);
-		this->m_size = std::move(other_.m_size);
-		return *this;
+		ThisType& me = static_cast<ThisType&>(Base::operator=(other_));
+ 		me.m_a_pos = other_.m_a_pos;
+ 		return me;
+	}
+
+	/**
+	 * Initialise the grid dimensions and offset.
+	 *
+	 * Background value is NULL_IDX_DATA.
+	 *
+	 * @param size_ size of grid.
+	 * @param offset_ spatial offset of grid.
+	 */
+	void init (const VecDu& size_, const VecDi& offset_)
+	{
+		Base::init(size_, offset_, Traits::NULL_IDX_DATA);
 	}
 
 	/**
@@ -157,7 +162,6 @@ public:
 	void size (const VecDu& size_)
 	{
 		Base::size(size_);
-		self->clear();
 	}
 
 	using Base::size;
@@ -252,14 +256,6 @@ public:
 	}
 
 protected:
-
-	/**
-	 * Reset the entire grid to null indices.
-	 */
-	void clear ()
-	{
-		this->fill(LeafType::Constant(NULL_IDX));
-	}
 
 	/**
 	 * Add pos to tracking list and set pos in grid to index in tracking list.
@@ -399,19 +395,26 @@ public:
 	using Base = LookupGridBase<LazyLookupGridBase<Derived>, true>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
-	using Base::Base::is_active;
-	using Base::is_active;
+	using typename Base::PosArray;
 	using Traits = GridTraits<LazyLookupGridBase<Derived> >;
 
+	using Base::LookupGridBase;
+	using Base::Base::is_active;
+	using Base::is_active;
+
 	/**
-	 * Construct lazy lookup grid, initialising the background value to NULL index.
+	 * @copydoc LazyGridBase::deactivate
 	 *
-	 * @param size_ size of grid.
-	 * @param offset_ spatial offset of grid.
+	 * Additionally frees the tracking list(s).
 	 */
-	LazyLookupGridBase(const VecDu& size_, const VecDi& offset_)
+	void deactivate()
 	{
-		this->init(size_, offset_, Traits::NULL_IDX_DATA);
+		Base::deactivate();
+		for (PosArray& list : this->m_a_pos)
+		{
+			list.clear();
+			list.shrink_to_fit();
+		}
 	}
 };
 

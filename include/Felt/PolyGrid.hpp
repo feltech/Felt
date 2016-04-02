@@ -74,7 +74,8 @@ namespace felt
 		void init(const PolySurface& surface)
 		{
 			Base::init(
-				surface.isogrid().children().size(), surface.isogrid().children().offset()
+				surface.isogrid().children().size(), surface.isogrid().children().offset(),
+				PolyLeaf()
 			);
 			m_grid_changes.init(
 				surface.isogrid().size(), surface.isogrid().offset()
@@ -254,7 +255,6 @@ namespace felt
 	public:
 		using Base = PolyGridBase<PolyGrid<D> >;
 		using Base::PolyGridBase;
-
 	};
 
 

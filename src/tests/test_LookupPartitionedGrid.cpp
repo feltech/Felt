@@ -74,6 +74,7 @@ BOOST_AUTO_TEST_SUITE(test_LookupPartitionedGrid)
 				for (const Vec3i pos : children(pos_child).list(i))
 					apos.push_back(pos);
 
+		BOOST_REQUIRE_EQUAL(apos.size(), 4);
 		BOOST_CHECK_EQUAL(apos[0], pos1);
 		BOOST_CHECK_EQUAL(apos[1], pos2);
 		BOOST_CHECK_EQUAL(apos[2], pos3);
@@ -127,17 +128,19 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE(test_SharedLookupPartitionedGrid)
 	BOOST_AUTO_TEST_CASE(initialise_and_populate)
 	{
+		// ==== Setup ====
 		typedef SharedLookupPartitionedGrid<3, 3> GridType;
 		typedef GridType::ChildrenGrid ChildrenGrid;
 		typedef ChildrenGrid::Lookup LookupGrid;
 		const Vec3u& BRANCH_NULL_IDX = LookupGrid::Traits::NULL_IDX_DATA;
 		const UINT CHILD_NULL_IDX = GridType::NULL_IDX;
 
+		// ==== Action ====
 		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
 		ChildrenGrid& children = grid.children();
 		LookupGrid& lookup = children.lookup();
 
-
+		// ==== Confirm ====
 		for (INT x = -4; x <= 4; x++)
 			for (INT y = -4; y <= 4; y++)
 				for (INT z = -4; z <= 4; z++)
@@ -246,7 +249,7 @@ BOOST_AUTO_TEST_SUITE(test_LazySharedLookupPartitionedGrid)
 		const UINT NULL_IDX = LazySharedLookupPartitionedGrid<3, 3>::NULL_IDX;
 		LazySharedLookupPartitionedGrid<3, 3> grid;
 		Fixture()
-		: grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3))
+			: grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3))
 		{}
 	};
 
@@ -255,7 +258,7 @@ BOOST_AUTO_TEST_SUITE(test_LazySharedLookupPartitionedGrid)
 		PartitionedGrid<FLOAT, 3> grid_master;
 		ResetFixture()
 		: Fixture(),
-		  grid_master(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3))
+		  grid_master(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), 0, Vec3u(3, 3, 3))
 		{}
 	};
 
@@ -372,7 +375,7 @@ BOOST_AUTO_TEST_SUITE(test_LazySharedLookupPartitionedGrid)
 		/// [LazySharedLookupPartitionedGrid reset_mixed_cases]
 		// ==== Setup ====
 		const UINT NULL_IDX = LazySharedLookupPartitionedGrid<3, 3>::NULL_IDX;
-		PartitionedGrid<FLOAT, 3> grid_master(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
+		PartitionedGrid<FLOAT, 3> grid_master(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), 0, Vec3u(3, 3, 3));
 		LazySharedLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
 
 		const Vec3i pos_deactivated(0, 0, 0);
@@ -430,7 +433,7 @@ BOOST_AUTO_TEST_SUITE(test_LazySharedLookupPartitionedGrid)
 		// ==== Setup ====
 
 		const UINT NULL_IDX = LazySharedLookupPartitionedGrid<3, 3>::NULL_IDX;
-		PartitionedGrid<FLOAT, 3> grid_master(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
+		PartitionedGrid<FLOAT, 3> grid_master(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), 0, Vec3u(3, 3, 3));
 		LazySharedLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
 
 		const Vec3i pos_list_0(0, 0, 0);

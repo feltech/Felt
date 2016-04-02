@@ -29,12 +29,12 @@ namespace felt
  *
  * @See TrackedGrid and SharedTrackedGrid.
  */
-template <class Derived>
-class TrackedGridBase : public GridBase<TrackedGridBase<Derived> >
+template <class Derived, bool IsLazy=false>
+class TrackedGridBase : public GridBase<TrackedGridBase<Derived>, IsLazy>
 {
 public:
 	/// GridBase base class.
-	using Base = GridBase<TrackedGridBase<Derived> >;
+	using Base = GridBase<TrackedGridBase<Derived>, IsLazy>;
 	/// Lookup grid type to use for tracking active grid positions.
 	using Lookup = typename GridTraits<Derived>::LookupType;
 	/// Type of data to store in the main grid.
@@ -51,21 +51,36 @@ protected:
 public:
 	using Base::offset;
 	using Base::size;
+	using Base::GridBase;
 
 	/**
 	 * Explicitly defined default constructor.
 	 */
-	TrackedGridBase() = default;
+	TrackedGridBase() : Base() {}
 
-	/**
-	 * Construct a grid with given size and spatial offset.
-	 *
-	 * @param size_ size of grid.
-	 * @param offset_ spatial offset of grid.
-	 */
-	TrackedGridBase(const VecDu& size_, const VecDi& offset_) : Base(), m_grid_lookup()
+	TrackedGridBase (
+		const VecDu& size_, const VecDi& offset_, const LeafType& background_
+	):
+		Base(size_, offset_, background_),
+		m_grid_lookup()
 	{
-		this->init(size_, offset_);
+		this->init(size_, offset_, background_);
+	}
+
+	TrackedGridBase(const TrackedGridBase&& other) : Base(other)
+	{
+		m_grid_lookup = std::move(other.m_grid_lookup);
+	}
+
+	TrackedGridBase(const TrackedGridBase& other) : Base(other)
+	{
+		m_grid_lookup = other.m_grid_lookup;
+	}
+
+	void operator=(const TrackedGridBase& other)
+	{
+		Base::operator=(other);
+		m_grid_lookup = other.m_grid_lookup;
 	}
 
 	/**
@@ -247,16 +262,6 @@ public:
 
 
 /**
- * Traits for GridBase to understand TrackedGridBase.
- *
- * Just forward the traits defined for TrackedGridBase subclasses.
- */
-template <class Derived>
-struct GridTraits<TrackedGridBase<Derived> > : GridTraits<Derived>
-{};
-
-
-/**
  * Standard tracked grid.
  *
  * A grid of arbitrary data, with active positions tracked by an internal LookupGrid.
@@ -280,22 +285,6 @@ public:
 
 
 /**
- * Traits of TrackedGrid for CRTP inheritance from TrackedGridBase.
- *
- * @tparam T the type of data to store in the grid.
- * @tparam D the dimension of the grid.
- * @tparam N the number of tracking lists to use.
- */
-template <typename T, UINT D, UINT N>
-struct GridTraits<TrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
-{
-	using ThisType = TrackedGrid<T, D, N>;
-	/// Type of lookup grid to use.  This is what differentiates this from SharedTrackedGrid.
-	using LookupType = LookupGrid<D, N>;
-};
-
-
-/**
  * A tracked grid that assumes non-overlapping tracking lists.
  *
  * A grid of arbitrary data, with active positions tracked by an internal SharedLookupGrid.
@@ -314,12 +303,87 @@ template <typename T, UINT D, UINT N=1>
 class SharedTrackedGrid : public TrackedGridBase<SharedTrackedGrid<T, D, N> >
 {
 public:
-	using TrackedGridBase<SharedTrackedGrid<T, D, N> >::TrackedGridBase;
+	using ThisType = SharedTrackedGrid<T, D, N>;
+	using Base = TrackedGridBase<ThisType>;
+	using TrackedGridBase<ThisType>::TrackedGridBase;
+};
+
+/**
+ * A lazy tracked grid that assumes non-overlapping tracking lists.
+ *
+ * @copydetails SharedTrackedGrid
+ *
+ * Lazy variant, that can be activated and deactivated (data array destroyed and created).
+ *
+ * @tparam T the type of data to store in the grid.
+ * @tparam D the dimension of the grid.
+ * @tparam N the number of tracking lists to use.
+ */
+template <typename T, UINT D, UINT N=1>
+class LazySharedTrackedGrid : public TrackedGridBase<LazySharedTrackedGrid<T, D, N>, true>
+{
+public:
+	using ThisType = LazySharedTrackedGrid<T, D, N>;
+	using Base = TrackedGridBase<ThisType, true>;
+	using Base::TrackedGridBase;
+	using Base::Base::is_active;
+
+	/**
+	 * Create the internal data array and fill with background value.
+	 *
+	 * Also activates lookup grid.
+	 *
+	 * @snippet test_MappedGrid.cpp LazySharedTrackedGrid activate
+	 */
+	void activate()
+	{
+		Base::activate();
+		this->m_grid_lookup.activate();
+	}
+
+	/**
+	 * Destroy the internal data array.
+	 *
+	 * Also destroys lookup grid.
+	 *
+	 * @snippet test_MappedGrid.cpp LazySharedTrackedGrid deactivate
+	 */
+	void deactivate()
+	{
+		Base::deactivate();
+		this->m_grid_lookup.deactivate();
+	}
 };
 
 
 /**
- * Traits of SharedTrackedGrid for CRTP inheritance from TrackedGridBase.
+ * Traits of TrackedGridBase.
+ *
+ * Just forward the traits defined for TrackedGridBase subclasses.
+ */
+template <class Derived>
+struct GridTraits<TrackedGridBase<Derived> > : GridTraits<Derived>
+{};
+
+
+/**
+ * Traits of TrackedGrid.
+ *
+ * @tparam T the type of data to store in the grid.
+ * @tparam D the dimension of the grid.
+ * @tparam N the number of tracking lists to use.
+ */
+template <typename T, UINT D, UINT N>
+struct GridTraits<TrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
+{
+	using ThisType = TrackedGrid<T, D, N>;
+	/// Type of lookup grid to use.  This is what differentiates this from SharedTrackedGrid.
+	using LookupType = LookupGrid<D, N>;
+};
+
+
+/**
+ * Traits of SharedTrackedGrid.
  *
  * @tparam T the type of data to store in the grid.
  * @tparam D the dimension of the grid.
@@ -332,6 +396,23 @@ struct GridTraits<SharedTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
 	/// Type of lookup grid to use.  This is what differentiates this from TrackedGrid.
 	using LookupType = SharedLookupGrid<D, N>;
 };
+
+
+/**
+ * Traits of LazySharedTrackedGrid.
+ *
+ * @tparam T the type of data to store in the grid.
+ * @tparam D the dimension of the grid.
+ * @tparam N the number of tracking lists to use.
+ */
+template <typename T, UINT D, UINT N>
+struct GridTraits<LazySharedTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
+{
+	using ThisType = LazySharedTrackedGrid<T, D, N>;
+	/// Type of lookup grid to use.  This is what differentiates this from TrackedGrid.
+	using LookupType = LazySharedLookupGrid<D, N>;
+};
+
 
 /** @} */ // End group LookupGrid.
 

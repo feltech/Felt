@@ -177,6 +177,7 @@ class LazySharedLookupGridBase : public SharedLookupGridBase <
 	LazySharedLookupGridBase<Derived>, true
 > {
 public:
+	using ThisType = LazySharedLookupGridBase<Derived>;
 	using Base = SharedLookupGridBase<LazySharedLookupGridBase<Derived>, true>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
@@ -184,10 +185,8 @@ public:
 	using Base::is_active;
 	using Traits = GridTraits< LazySharedLookupGridBase<Derived> >;
 
-	LazySharedLookupGridBase()
-	{
-		this->m_background = Traits::NULL_IDX_DATA;
-	}
+	LazySharedLookupGridBase() : Base()
+	{}
 
 	/**
 	 * Construct lazy lookup grid, initialising the background value to NULL index.
@@ -198,6 +197,48 @@ public:
 	LazySharedLookupGridBase(const VecDu& size_, const VecDi& offset_)
 	{
 		this->init(size_, offset_, Traits::NULL_IDX_DATA);
+	}
+
+	/**
+	 * Copy constructor to augment base class.
+	 *
+	 * @param other_ grid to copy.
+	 */
+	LazySharedLookupGridBase(const ThisType& other_) : Base(other_)
+	{
+		this->m_background = other_.m_background;
+	}
+
+	/**
+	 * Move constructor to augment base class.
+	 *
+	 * @param other_ grid to move.
+	 */
+	LazySharedLookupGridBase(ThisType&& other_) : Base(other_)
+	{
+		this->m_background = std::move(other_.m_background);
+	}
+
+	/**
+	 * Copy assigment to augment base class.
+	 *
+	 * @param other_ grid to copy.
+	 */
+	ThisType& operator=(const ThisType& other_)
+	{
+		this->m_background = std::move(other_.m_background);
+		return static_cast<ThisType&>(Base::operator=(other_));
+	}
+
+	/**
+	 * Move assigment operator to augment base class.
+	 *
+	 * @param other_ grid to move.
+	 */
+	ThisType& operator=(ThisType&& other_)
+	{
+		this->m_background = std::move(other_.m_background);
+		return static_cast<ThisType&>(Base::operator=(other_));
 	}
 };
 

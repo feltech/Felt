@@ -518,7 +518,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		Surface_t surface(Vec3u(16,16,16), Vec3u(16, 8, 16));
 		PolyGrid<3> polys(surface);
 		Poly<3> poly(surface.isogrid().size(), surface.isogrid().offset());
-		Grid<UINT, 3> grid_spxs_before(polys.size(), polys.offset());
+		Grid<UINT, 3> grid_spxs_before(polys.size(), polys.offset(), 0);
 
 		// Initialise a seed.
 		surface.seed(Vec3i(0,-4,0));
@@ -601,7 +601,7 @@ BOOST_AUTO_TEST_SUITE(test_PolyGrid)
 		Surface_t surface(Vec3u(24,24,24), Vec3u(24, 12, 24));
 		PolyGrid<3> polys(surface);
 		Poly<3> poly(surface.isogrid().size(), surface.isogrid().offset());
-		Grid<UINT, 3> grid_spxs_before(polys.size(), polys.offset());
+		Grid<UINT, 3> grid_spxs_before(polys.size(), polys.offset(), 0);
 
 		// Initialise a seed.
 		surface.seed(Vec3i(0,-5,0));

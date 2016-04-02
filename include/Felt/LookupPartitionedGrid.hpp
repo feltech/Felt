@@ -20,7 +20,23 @@ class LookupPartitionedGrid
 public:
 	using ThisType = LookupPartitionedGrid<D, N>;
 	using Base = TrackingPartitionedGridBase<ThisType>;
+	using typename Base::VecDu;
+	using typename Base::VecDi;
+	using typename Base::LeafType;
 	using Base::TrackingPartitionedGridBase;
+
+	/**
+	 * Construct a spatially partitioned LookupGrid.
+	 *
+	 * Initialises grid data to NULL_IDX.
+	 *
+	 * @param size_ size of the grid.
+	 * @param offset_ spatial offset of the grid.
+	 * @param partition_size_ size of a spatial partition.
+	 */
+	LookupPartitionedGrid (const VecDu& size_, const VecDi& offset_, const VecDu& partition_size_) :
+		Base(size_, offset_, Base::Child::Traits::NULL_IDX_DATA, partition_size_)
+	{}
 };
 
 
@@ -39,7 +55,25 @@ class SharedLookupPartitionedGrid
 public:
 	using ThisType = SharedLookupPartitionedGrid<D, N>;
 	using Base = TrackingPartitionedGridBase<ThisType>;
+	using typename Base::VecDu;
+	using typename Base::VecDi;
+
 	using Base::TrackingPartitionedGridBase;
+
+	/**
+	 * Construct a spatially partitioned SharedLookupGrid.
+	 *
+	 * Initialises grid data to NULL_IDX.
+	 *
+	 * @param size_ size of the grid.
+	 * @param offset_ spatial offset of the grid.
+	 * @param partition_size_ size of a spatial partition.
+	 */
+	SharedLookupPartitionedGrid (
+		const VecDu& size_, const VecDi& offset_, const VecDu& partition_size_
+	) :
+		Base(size_, offset_, Base::Child::Traits::NULL_IDX_DATA, partition_size_)
+	{}
 };
 
 
@@ -56,9 +90,42 @@ class LazySharedLookupPartitionedGrid
 public:
 	using ThisType = LazySharedLookupPartitionedGrid<D, N>;
 	using Base = TrackingPartitionedGridBase<ThisType>;
-	using Base::TrackingPartitionedGridBase;
+	using typename Base::VecDu;
 	using typename Base::VecDi;
 	using typename Base::Child;
+
+	LazySharedLookupPartitionedGrid() : Base()
+	{}
+
+	/**
+	 * Construct a spatially partitioned LazySharedLookupGrid.
+	 *
+	 * Initialises grid data to NULL_IDX.
+	 *
+	 * @param size_ size of the grid.
+	 * @param offset_ spatial offset of the grid.
+	 * @param partition_size_ size of a spatial partition.
+	 */
+	LazySharedLookupPartitionedGrid (
+		const VecDu& size_, const VecDi& offset_, const VecDu& partition_size_
+	) : Base()
+	{
+		this->init(size_, offset_, partition_size_);
+	}
+
+	/**
+	 * Initialise a spatially partitioned LazySharedLookupGrid.
+	 *
+	 * Initialises grid data to NULL_IDX.
+	 *
+	 * @param size_ size of the grid.
+	 * @param offset_ spatial offset of the grid.
+	 * @param partition_size_ size of a spatial partition.
+	 */
+	void init (const VecDu& size_, const VecDi& offset_, const VecDu& partition_size_)
+	{
+		Base::init(size_, offset_, Base::Child::Traits::NULL_IDX_DATA, partition_size_);
+	}
 
 	/**
 	 * Reset and conditionally deactivate children.

@@ -28,6 +28,19 @@ public:
 	/// Use constructor of std::vector.
 	using Base::vector;
 
+	AlignedArray() = default;
+
+	AlignedArray(const AlignedArray&& other) : Base(other)
+	{}
+
+	AlignedArray(const AlignedArray& other) : Base(other)
+	{}
+
+	void operator=(const AlignedArray& other)
+	{
+		Base::operator=(other);
+	}
+
 	/// Get mutex member.
 	std::mutex& mutex()
 	{
@@ -47,8 +60,6 @@ public:
  * @defgroup Classes
  * @defgroup Traits
  */
-/// Default size of a spatial partition (in each dimension).
-static const UINT DEFAULT_PARTITION = 4;
 
 /** @addtogroup Classes
  *  @{
@@ -138,10 +149,7 @@ public:
 	 * @param partition_size_ spatial size of the child data structure.
 
 	 */
-	void init (
-		const VecDu& size_, const VecDi& offset_,
-		const VecDu& partition_size_ = VecDu::Constant(DEFAULT_PARTITION)
-	) {
+	void init (const VecDu& size_, const VecDi& offset_, const VecDu& partition_size_) {
 		self->init(partition_size_);
 		self->size(size_);
 		self->offset(offset_);
@@ -302,6 +310,8 @@ public:
 	using Base = PartitionBase<ThisType>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
+	using Base::Traits;
+	using LeafType = typename Base::Traits::LeafType;
 protected:
 	/// Spatial offset of 'imaginary' grid containing the list.
 	VecDi	m_offset;
@@ -366,10 +376,8 @@ public:
 	 * @param offset_ spatial offset of 'imaginary' grid.
 	 * @param size_partition_ spatial size of a single partition.
 	 */
-	PartitionedArray (
-		const VecDu& size_, const VecDi& offset_,
-		const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION)
-	) : Base()
+	PartitionedArray (const VecDu& size_, const VecDi& offset_, const VecDu& size_partition_) :
+		Base()
 	{
 		this->init(size_, offset_, size_partition_);
 	}
@@ -424,6 +432,7 @@ protected:
 	using typename Base::Child;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
+	using typename Base::LeafType;
 
 public:
 	/// Explicitly defined default constructor.
@@ -436,10 +445,8 @@ public:
 	 * @param offset_ spatial offset of 'imaginary' grid.
 	 * @param size_partition_ spatial size of a single partition.
 	 */
-	PartitionedArray (
-		const VecDu& size_, const VecDi& offset_,
-		const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION)
-	) : Base()
+	PartitionedArray (const VecDu& size_, const VecDi& offset_, const VecDu& size_partition_) :
+		Base()
 	{
 		this->init(size_, offset_, size_partition_);
 	}
@@ -539,7 +546,8 @@ public:
 	using MixinType::offset;
 
 	/// Explicitly defined default constructor.
-	PartitionedGridBase () = default;
+	PartitionedGridBase () : Base(), MixinType()
+	{}
 
 	/**
 	 * Constructor
@@ -549,11 +557,10 @@ public:
 	 * @param size_partition_ size of each spatial partition.
 	 */
 	PartitionedGridBase (
-		const VecDu& size_, const VecDi& offset_,
-		const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION)
-	) : Base()
-	{
-		self->init(size_, offset_, size_partition_);
+		const VecDu& size_, const VecDi& offset_, const LeafType& background_,
+		const VecDu& size_partition_
+	) {
+		this->init(size_, offset_, background_, size_partition_);
 	}
 
 	/**
@@ -565,11 +572,11 @@ public:
 	 * @param size_partition the dimensions of each spatial partition.
 	 */
 	void init (
-		const VecDu& size, const VecDi& offset,
-		const VecDu& size_partition = VecDu::Constant(DEFAULT_PARTITION)
+		const VecDu& size, const VecDi& offset, const LeafType& background_,
+		const VecDu& size_partition
 	) {
 		Base::init(size_partition);
-		MixinType::init(size, offset);
+		MixinType::init(size, offset, background_);
 	}
 
 	/**
@@ -585,7 +592,8 @@ public:
 
 		for (UINT idx = 0; idx < this->children().data().size(); idx++)
 		{
-			Child& child = this->children().data()(idx);
+			Child& child = this->children().data()[idx];
+			child.background() = this->m_background;
 			child.size(this->m_usize_child);
 		}
 	}
@@ -602,7 +610,7 @@ public:
 
 		for (UINT idx = 0; idx < this->children().data().size(); idx++)
 		{
-			Child& child = this->children().data()(idx);
+			Child& child = this->children().data()[idx];
 			const VecDi& pos_child = this->children().index(idx);
 			const VecDi& offset_child = (
 				(
@@ -639,7 +647,7 @@ public:
 	{
 		for (UINT idx = 0; idx < this->children().data().size(); idx++)
 		{
-			Child& child = this->children().data()(idx);
+			Child& child = this->children().data()[idx];
 			child.fill(val_);
 		}
 	}
@@ -682,7 +690,7 @@ public:
 	 */
 	typename SnapshotGrid::ArrayData& data()
 	{
-		m_pgrid_snapshot.reset(new SnapshotGrid(this->size(), this->offset()));
+		m_pgrid_snapshot.reset(new SnapshotGrid(this->size(), this->offset(), LeafType()));
 
 		for (UINT branch_idx = 0; branch_idx < this->children().data().size(); branch_idx++)
 		{

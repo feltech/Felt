@@ -7,7 +7,6 @@
 
 using namespace felt;
 
-
 BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 	/**
 	 * Basic initialisation.
@@ -24,7 +23,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 
 		{
 			// ==== Setup/action ====
-			PartitionedGrid<FLOAT, 3> grid(Vec3u(4,4,4), Vec3i(-2, -2,-2), Vec3u(2, 2, 2));
+			PartitionedGrid<FLOAT, 3> grid(Vec3u(4,4,4), Vec3i(-2, -2,-2), 0, Vec3u(2, 2, 2));
 			PartitionedGrid<FLOAT, 3>::ChildrenGrid& parent = grid.children();
 
 			// ==== Confirm ====
@@ -81,7 +80,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 
 		{
 			// ==== Setup/action ====
-			PartitionedGrid<FLOAT, 3> grid(Vec3u(9,9,9), Vec3i(-4, -4, -4), Vec3u(3, 3, 3));
+			PartitionedGrid<FLOAT, 3> grid(Vec3u(9,9,9), Vec3i(-4, -4, -4), 0, Vec3u(3, 3, 3));
 			PartitionedGrid<FLOAT, 3>::ChildrenGrid& parent = grid.children();
 
 			// ==== Confirm ====
@@ -107,7 +106,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 
 		{
 			// ==== Setup/action ====
-			PartitionedGrid<FLOAT, 3>  grid(Vec3u(8,8,8), Vec3i(-3,-3,-3), Vec3u(2, 2, 2));
+			PartitionedGrid<FLOAT, 3>  grid(Vec3u(8,8,8), Vec3i(-3,-3,-3), 0, Vec3u(2, 2, 2));
 			const PartitionedGrid<FLOAT, 3> ::ChildrenGrid& parent = grid.children();
 
 			// ==== Confirm ====
@@ -142,7 +141,7 @@ BOOST_AUTO_TEST_SUITE(test_PartitionedGrid)
 	BOOST_AUTO_TEST_CASE(get_and_set_simple)
 	{
 		// ==== Setup ====
-		PartitionedGrid<FLOAT, 3> grid(Vec3u(4,4,4), Vec3i(-2, -2,-2));
+		PartitionedGrid<FLOAT, 3> grid(Vec3u(4,4,4), Vec3i(-2, -2,-2), 0, Vec3u(4, 4, 4));
 		PartitionedGrid<FLOAT, 3>::ChildrenGrid& parent = grid.children();
 
 		// ==== Action ====

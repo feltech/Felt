@@ -295,7 +295,19 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE(test_TrackedGrid)
 	BOOST_AUTO_TEST_CASE(initialisation)
 	{
-		TrackedGrid<FLOAT, 3, 3> grid(Vec3u(9,9,9), Vec3i(-4,-4,-4));
+		// ==== Setup/Action ====
+		TrackedGrid<FLOAT, 3, 3> grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), 0);
+
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.data().size(), 9*9*9);
+		BOOST_CHECK_EQUAL(grid.lookup().data().size(), 9*9*9);
+
+		for (const FLOAT val : grid.data())
+			BOOST_CHECK_EQUAL(val, 0);
+
+		for (const Vec3u& val : grid.lookup().data())
+			BOOST_CHECK_EQUAL(val, Vec3u::Constant(grid.lookup().NULL_IDX));
+
 	}
 BOOST_AUTO_TEST_SUITE_END()
 
@@ -315,6 +327,46 @@ BOOST_AUTO_TEST_SUITE(test_LazyLookupGrid)
 		BOOST_CHECK_EQUAL(grid.get(Vec3i(1,1,1)), NULL_IDX_DATA);
 		/// [LazyLookupGrid initialisation]
 	}
+
+	BOOST_AUTO_TEST_CASE(activate_then_deactivate)
+	{
+		/// [LazyLookupGrid activate then deactivate]
+		// ==== Setup ====
+		LazyLookupGrid<3, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1));
+		using LeafType = typename LazyLookupGrid<3, 3>::LeafType;
+		const LeafType NULL_IDX = LazyLookupGrid<3, 3>::Traits::NULL_IDX_DATA;
+
+		// ==== Action ====
+		grid.activate();
+		grid.add(Vec3i(1,0,-1), 1);
+		grid.add(Vec3i(1,0, 0), 1);
+		grid.add(Vec3i(1,0, 1), 1);
+
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.is_active(), true);
+		BOOST_CHECK_EQUAL(grid.data().size(), 3*3*3);
+		BOOST_CHECK_EQUAL(grid.list(0).size(), 0);
+		BOOST_CHECK_EQUAL(grid.list(1).size(), 3);
+		BOOST_CHECK_EQUAL(grid.list(2).size(), 0);
+		BOOST_CHECK_EQUAL(grid.list(0).capacity(), 0);
+		BOOST_CHECK_EQUAL(grid.list(1).capacity(), 4);
+		BOOST_CHECK_EQUAL(grid.list(2).capacity(), 0);
+
+		// ==== Action ====
+		grid.deactivate();
+
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.is_active(), false);
+		BOOST_CHECK_EQUAL(grid.data().size(), 0);
+		BOOST_CHECK_EQUAL(grid.data().capacity(), 0);
+		BOOST_CHECK_EQUAL(grid.list(0).size(), 0);
+		BOOST_CHECK_EQUAL(grid.list(1).size(), 0);
+		BOOST_CHECK_EQUAL(grid.list(2).size(), 0);
+		BOOST_CHECK_EQUAL(grid.list(0).capacity(), 0);
+		BOOST_CHECK_EQUAL(grid.list(1).capacity(), 0);
+		BOOST_CHECK_EQUAL(grid.list(2).capacity(), 0);
+		/// [LazyLookupGrid activate then deactivate]
+	}
 BOOST_AUTO_TEST_SUITE_END()
 
 
@@ -332,6 +384,51 @@ BOOST_AUTO_TEST_SUITE(test_LazySharedLookupGrid)
 		BOOST_CHECK_EQUAL(grid.background(), NULL_IDX_DATA);
 		BOOST_CHECK_EQUAL(grid.get(Vec3i(1,1,1)), NULL_IDX_DATA);
 		/// [LazySharedLookupGrid initialisation]
+	}
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE(test_LazySharedTrackedGrid)
+	BOOST_AUTO_TEST_CASE(initialisation)
+	{
+		/// [LazySharedTrackedGrid initialisation]
+		// ==== Setup ====
+		LazySharedTrackedGrid<FLOAT, 3, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1), 3);
+		const UINT NULL_IDX = LazySharedTrackedGrid<FLOAT, 3, 3>::Lookup::NULL_IDX;
+
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.is_active(), false);
+		BOOST_CHECK_EQUAL(grid.data().size(), 0);
+		BOOST_CHECK_EQUAL(grid.background(), 3);
+		BOOST_CHECK_EQUAL(grid.get(Vec3i(1,1,1)), 3);
+		BOOST_CHECK_EQUAL(grid.lookup().is_active(), false);
+		BOOST_CHECK_EQUAL(grid.lookup().data().size(), 0);
+		BOOST_CHECK_EQUAL(grid.lookup().background(), NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.lookup().get(Vec3i(1,1,1)), NULL_IDX);
+		/// [LazySharedTrackedGrid initialisation]
+	}
+
+	struct Fixture {
+		const UINT NULL_IDX = LazySharedTrackedGrid<FLOAT, 3, 3>::Lookup::NULL_IDX;
+		LazySharedTrackedGrid<FLOAT, 3, 3> grid;
+		Fixture()
+			: grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1), 3)
+		{}
+	};
+
+	BOOST_FIXTURE_TEST_CASE(activate_should_activate_lookup, Fixture)
+	{
+		/// [LazySharedTrackedGrid activate]
+		// ==== Action ====
+		grid.activate();
+
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.is_active(), true);
+		BOOST_CHECK_EQUAL(grid.data().size(), 3*3*3);
+		BOOST_CHECK_EQUAL(grid.get(Vec3i(1,1,1)), 3);
+		BOOST_CHECK_EQUAL(grid.lookup().is_active(), true);
+		BOOST_CHECK_EQUAL(grid.lookup().data().size(), 3*3*3);
+		BOOST_CHECK_EQUAL(grid.lookup().get(Vec3i(1,1,1)), NULL_IDX);
+		/// [LazySharedTrackedGrid activate]
 	}
 BOOST_AUTO_TEST_SUITE_END()
 

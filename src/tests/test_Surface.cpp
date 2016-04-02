@@ -18,33 +18,21 @@ BOOST_AUTO_TEST_CASE(init)
 	// ==== Setup ====
 	// Basic initialisation of 2D surface with 2 layers in a 5x5 embedding.
 	Surface<2, 2> surface(Vec2u(7, 7));
-	const Vec2u size = surface.isogrid().size();
 
-	BOOST_CHECK_EQUAL((UINT)size(0), 7);
-	BOOST_CHECK_EQUAL((UINT)size(1), 7);
-
+	// ==== Confirm ====
+	BOOST_CHECK_EQUAL(surface.isogrid().size(), Vec2u(7, 7));
+	BOOST_CHECK_EQUAL(surface.isogrid().children().data().size(), 1);
+	BOOST_CHECK_EQUAL(surface.isogrid().children().get(Vec2i(0, 0)).size(), Vec2u(7, 7));
+	BOOST_CHECK_EQUAL(surface.isogrid().children().get(Vec2i(0, 0)).data().size(), 7*7);
 	// Usable isogrid should have size=size-layers and be offset by half grid width.
 	// In this test case, only the centre point is actually usable, all other points are
 	// reserved for outer layers.
-
-	const Vec2i pos_min = surface.pos_min();
-	const Vec2i pos_max = surface.pos_max();
-
-	BOOST_CHECK_EQUAL(pos_min, Vec2i(0, 0));
-	BOOST_CHECK_EQUAL(pos_max, Vec2i(0, 0));
-
+	BOOST_CHECK_EQUAL(surface.pos_min(), Vec2i(0, 0));
+	BOOST_CHECK_EQUAL(surface.pos_min(), Vec2i(0, 0));
 	// But actual isogrid isogrid should have size equal to size.
-
-	Surface<2, 2>::IsoGrid& isogrid = surface.isogrid();
-
-	const Vec2u isogrid_size = isogrid.size();
-	BOOST_CHECK_EQUAL(isogrid_size, Vec2u(7, 7));
-
-	// Grid is initialised to all points 'outside' the surface (since there
-	// is no surface yet).
-
-	const FLOAT val_centre = isogrid(Vec2i(0, 0));
-	BOOST_CHECK_EQUAL(val_centre, 3);
+	BOOST_CHECK_EQUAL(surface.isogrid().size(), Vec2u(7, 7));
+	// Grid is initialised to all points 'outside' the surface (since there is no surface yet).
+	BOOST_CHECK_EQUAL(surface.isogrid().get(Vec2i(0, 0)), 3);
 }
 
 /*
@@ -101,7 +89,7 @@ BOOST_AUTO_TEST_CASE(layers)
 BOOST_AUTO_TEST_CASE(seed)
 {
 	Surface<2, 2> surface(Vec2u(5, 5));
-	Surface<2, 2>::IsoGrid& isogrid = surface.isogrid();
+	Surface<2, 2>::IsoGrid::Child& isogrid = surface.isogrid().children().get(Vec2i(0, 0));
 
 	surface.seed(Vec2i(0, 0));
 
@@ -113,19 +101,21 @@ BOOST_AUTO_TEST_CASE(seed)
 
 	// A 2D 2-layer singularity (seed) point should look like the following.
 
-	Grid<FLOAT, 2> isogrid_check(Vec2u(5, 5));
-	isogrid_check.data() <<
+	Grid<FLOAT, 2> isogrid_check(Vec2u(5, 5), Vec2i::Zero(), 0);
+	isogrid_check.data() = {
 		3, 3, 2, 3, 3,	// |
 		3, 2, 1, 2, 3,	// -
 		2, 1, 0, 1, 2,	// x
 		3, 2, 1, 2, 3,	// +
-		3, 3, 2, 3, 3;	// |
+		3, 3, 2, 3, 3	// |
 	//	|____ - y + ____|
+	};
 //	std::cerr << isogrid.data() << std::endl << std::endl;
 //	std::cerr << isogrid_check.data() << std::endl << std::endl;
 
-	isogrid_check.data() = isogrid_check.data() - isogrid.data();
-	const FLOAT diff = isogrid_check.data().sum();
+	isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+
+	const FLOAT diff = isogrid_check.vdata().sum();
 
 	BOOST_CHECK_EQUAL(diff, 0);
 
@@ -170,9 +160,9 @@ BOOST_AUTO_TEST_CASE(next_closest_grid_point)
 
 	// Ensure it also works with negative distances.
 	// NOTE: row-major (y,x) element ordering...
-	surface.isogrid().data() <<
+	surface.isogrid().data() = {
 		2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -2,
-		-2, -2, -2, -2;
+		-2, -2, -2, -2 };
 	surface.isogrid().flush_snapshot();
 	// NOTE: ...but accessed as (x,y)
 	pos_next = Vec2i(2, 0);
@@ -223,7 +213,7 @@ BOOST_AUTO_TEST_CASE(delta_isogrid_update)
 	//! [Simple delta isogrid update]
 	// ==== Setup ====
 	Surface<3, 2> surface(Vec3u(5, 5, 5));
-	Surface<3, 2>::IsoGrid& isogrid = surface.isogrid();
+	Surface<3, 2>::IsoGrid::Child& isogrid = surface.isogrid().children().get(Vec3i(0,0,0));
 	Surface<3, 2>::DeltaIsoGrid& delta = surface.delta();
 
 	// ==== Action ====
@@ -256,7 +246,7 @@ BOOST_AUTO_TEST_CASE(delta_isogrid_update)
 
 	// ==== Confirm ====
 	// Ensure nothing was changed.  Every point in 5x5x5 grid == 3, except centre which == 0.
-	BOOST_CHECK_EQUAL(isogrid.data().sum(), 3 * 5 * 5 * 5 - 3);
+	BOOST_CHECK_EQUAL(isogrid.vdata().sum(), 3 * 5 * 5 * 5 - 3);
 	// Delta isogrid position vector list should still contain one point.
 	BOOST_CHECK_EQUAL(surface.delta().leafs(surface.layer_idx(0)).size(), 1);
 	// Delta isogrid grid itself should have reset back to zero.
@@ -272,7 +262,7 @@ BOOST_AUTO_TEST_CASE(delta_isogrid_update)
 
 	// ==== Confirm ====
 	// Ensure change applied.  Every point in grid == 3, except centre which == 0.4.
-	BOOST_CHECK_EQUAL(isogrid.data().sum(), 3 * 5 * 5 * 5 - 3 + 0.4f);
+	BOOST_CHECK_EQUAL(isogrid.vdata().sum(), 3 * 5 * 5 * 5 - 3 + 0.4f);
 	BOOST_CHECK_EQUAL(isogrid.get(Vec3i(0, 0, 0)), 0.4f);
 	//! [Simple delta isogrid update]
 }
@@ -300,14 +290,14 @@ BOOST_AUTO_TEST_CASE(distance_transform)
 	{
 		typedef Surface<2, 2> SurfaceT;
 		SurfaceT surface(Vec2u(5, 5));
-		SurfaceT::IsoGrid& isogrid = surface.isogrid();
+		SurfaceT::IsoGrid::Child& isogrid = surface.isogrid().children().get(Vec2i(0, 0));
 
 		surface.seed(Vec2i(0, 0));
 
-		Grid<FLOAT, 2> isogrid_check(Vec2u(5, 5));
-		isogrid_check.data() <<
+		Grid<FLOAT, 2> isogrid_check(Vec2u(5, 5), Vec2i::Zero(), 0);
+		isogrid_check.data() = {
 			3, 3, 1.6, 3, 3, 3, 1.6, 0.6, 1.6, 3, 1.6, 0.6, -0.4, 0.6, 1.6, 3,
-			1.6, 0.6, 1.6, 3, 3, 3, 1.6, 3, 3;
+			1.6, 0.6, 1.6, 3, 3, 3, 1.6, 3, 3};
 
 		surface.update_start();
 		{
@@ -326,8 +316,8 @@ BOOST_AUTO_TEST_CASE(distance_transform)
 		surface.update_end();
 
 
-		isogrid_check.data() = isogrid_check.data() - isogrid.data();
-		const FLOAT diff = isogrid_check.data().sum();
+		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		const FLOAT diff = isogrid_check.vdata().sum();
 
 		BOOST_CHECK_EQUAL(diff, 0);
 	}
@@ -340,9 +330,9 @@ BOOST_AUTO_TEST_CASE(layer_update)
 {
 	typedef Surface<2, 2> Surface_t;
 	Surface_t surface(Vec2u(9, 9));
-	Surface_t::IsoGrid& isogrid = surface.isogrid();
+	Surface_t::IsoGrid::Child& isogrid = surface.isogrid().children().get(Vec2i(0, 0));
 	// Grid to set values of manually, for checking against.
-	Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9));
+	Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
 
 	// Create seed point and expand the narrow band.
 	surface.seed(Vec2i(0, 0));
@@ -354,15 +344,15 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.isogrid().data() << std::endl;
-		isogrid_check.data() <<
+		isogrid_check.data() = {
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3,
 			2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3,
 			2.4, 1.4, 0.4, -0.6, 0.4, 1.4, 2.4, 3, 3, 3, 2.4, 1.4, 0.4, 1.4,
 			2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3};
 
-		isogrid_check.data() = isogrid_check.data() - isogrid.data();
-		const FLOAT diff = isogrid_check.data().sum();
+		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		const FLOAT diff = isogrid_check.vdata().sum();
 		BOOST_CHECK_SMALL(diff, 0.000001f);
 
 		BOOST_CHECK_EQUAL(surface.layer(0).size(), 4);
@@ -388,14 +378,14 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.isogrid().data() << std::endl;
-		isogrid_check.data() <<
+		isogrid_check.data() = {
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 2, 1, 0, 1, 2, 3,
 			3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3};
 
-		isogrid_check.data() = isogrid_check.data() - isogrid.data();
-		const FLOAT diff = isogrid_check.data().sum();
+		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		const FLOAT diff = isogrid_check.vdata().sum();
 		BOOST_CHECK_SMALL(diff, 0.000001f);
 	}
 
@@ -409,11 +399,11 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.isogrid().data() << std::endl;
-		isogrid_check.data() <<
+		isogrid_check.data() = {
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3,
 			3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3};
 
 		BOOST_CHECK_EQUAL(surface.layer(0).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(-1).size(), 0);
@@ -421,8 +411,8 @@ BOOST_AUTO_TEST_CASE(layer_update)
 		BOOST_CHECK_EQUAL(surface.layer(1).size(), 1);
 		BOOST_CHECK_EQUAL(surface.layer(2).size(), 4);
 
-		isogrid_check.data() = isogrid_check.data() - isogrid.data();
-		const FLOAT diff = isogrid_check.data().sum();
+		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		const FLOAT diff = isogrid_check.vdata().sum();
 		BOOST_CHECK_SMALL(diff, 0.000001f);
 	}
 
@@ -437,11 +427,11 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.isogrid().data() << std::endl;
-		isogrid_check.data() <<
+		isogrid_check.data() = {
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3};
 
 		BOOST_CHECK_EQUAL(surface.layer(0).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(-1).size(), 0);
@@ -449,8 +439,8 @@ BOOST_AUTO_TEST_CASE(layer_update)
 		BOOST_CHECK_EQUAL(surface.layer(1).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(2).size(), 1);
 
-		isogrid_check.data() = isogrid_check.data() - isogrid.data();
-		const FLOAT diff = isogrid_check.data().sum();
+		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		const FLOAT diff = isogrid_check.vdata().sum();
 		BOOST_CHECK_SMALL(diff, 0.000001f);
 	}
 
@@ -465,11 +455,11 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.isogrid().data() << std::endl;
-		isogrid_check.data() <<
+		isogrid_check.data() = {
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3};
 
 		BOOST_CHECK_EQUAL(surface.layer(0).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(-1).size(), 0);
@@ -477,8 +467,8 @@ BOOST_AUTO_TEST_CASE(layer_update)
 		BOOST_CHECK_EQUAL(surface.layer(1).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(2).size(), 0);
 
-		isogrid_check.data() = isogrid_check.data() - isogrid.data();
-		const FLOAT diff = isogrid_check.data().sum();
+		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		const FLOAT diff = isogrid_check.vdata().sum();
 		BOOST_CHECK_SMALL(diff, 0.000001f);
 	}
 
@@ -493,11 +483,11 @@ BOOST_AUTO_TEST_CASE(layer_update)
 
 	{
 //		std::cerr << surface.isogrid().data() << std::endl << std::endl;
-		isogrid_check.data() <<
+		isogrid_check.data() = {
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3};
 
 		BOOST_CHECK_EQUAL(surface.layer(0).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(-1).size(), 0);
@@ -505,8 +495,8 @@ BOOST_AUTO_TEST_CASE(layer_update)
 		BOOST_CHECK_EQUAL(surface.layer(1).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(2).size(), 0);
 
-		isogrid_check.data() = isogrid_check.data() - isogrid.data();
-		const FLOAT diff = isogrid_check.data().sum();
+		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		const FLOAT diff = isogrid_check.vdata().sum();
 		BOOST_CHECK_SMALL(diff, 0.000001f);
 	}
 }
@@ -517,9 +507,6 @@ BOOST_AUTO_TEST_CASE(layer_update)
 BOOST_AUTO_TEST_CASE(iterate_layers)
 {
 	Surface<3> surface(Vec3u(9, 9, 9));
-
-	// Grid to set values of manually, for checking against.
-	Grid<FLOAT, 3> isogrid_check(Vec3u(9, 9, 9));
 
 	// Values to compute for testing against.
 	int counter;
@@ -618,9 +605,9 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 {
 	typedef Surface<2, 2> SurfaceT;
 	SurfaceT surface(Vec2u(9, 9));
-	SurfaceT::IsoGrid& isogrid = surface.isogrid();
+	SurfaceT::IsoGrid::Child& isogrid = surface.isogrid().children().get(Vec2i(0, 0));
 	// Grid to set values of manually, for checking against.
-	Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9));
+	Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
 
 	// Create seed point and expand the narrow band.
 	surface.seed(Vec2i(0, 0));
@@ -658,15 +645,15 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 	// Test it.
 	{
 //		std::cerr << surface.isogrid().data() << std::endl;
-		isogrid_check.data() <<
+		isogrid_check.data() = {
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1.5, 3, 3, 3, 3, 3, 3, 3,
 			1.5, 0.5, 1.5, 3, 3, 3, 3, 3, 1.5, 0.5, -0.5, 0.5, 1.5, 3, 3, 3,
 			1.5, 0.5, -0.5, -1.5, -0.5, 0.5, 1.5, 3, 3, 3, 1.5, 0.5, -0.5, 0.5,
 			1.5, 3, 3, 3, 3, 3, 1.5, 0.5, 1.5, 3, 3, 3, 3, 3, 3, 3, 1.5, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
 
-		isogrid_check.data() = isogrid_check.data() - isogrid.data();
-		const FLOAT diff = isogrid_check.data().sum();
+		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		const FLOAT diff = isogrid_check.vdata().sum();
 		// isogrid_check uses 'whole' 0.5s, but internally, to prevent rounding,
 		// max isogrid at grid boundary is 0.5-epsilon*2.
 		BOOST_CHECK_SMALL(
@@ -692,8 +679,6 @@ BOOST_AUTO_TEST_CASE(affected_outer_layers)
 	// ==== Setup ====
 	using PosArray = Surface<2, 2>::IsoGrid::PosArray;
 	Surface<2, 2> surface(Vec2u(9, 9));
-	// Grid to set values of manually, for checking against.
-	Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9));
 	// Create seed point and expand the narrow band.
 	surface.seed(Vec2i(0, 0));
 	surface.update_start();
@@ -802,9 +787,9 @@ BOOST_AUTO_TEST_CASE(local_update)
 {
 	typedef Surface<2, 2> SurfaceT;
 	SurfaceT surface(Vec2u(9, 9));
-	SurfaceT::IsoGrid& isogrid = surface.isogrid();
+	SurfaceT::IsoGrid::Child& isogrid = surface.isogrid().children().get(Vec2i(0, 0));
 	// Grid to set values of manually, for checking against.
-	Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9));
+	Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
 
 	// Create seed point and expand the narrow band.
 	surface.seed(Vec2i(0, 0));
@@ -825,15 +810,15 @@ BOOST_AUTO_TEST_CASE(local_update)
 	surface.update_end_local();
 
 	{
-		isogrid_check.data() <<
+		isogrid_check.data() = {
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3,
 			2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3,
 			2.4, 1.4, 0.4, -0.6, 0.4, 1.4, 2.4, 3, 3, 3, 2.4, 1.4, 0.4, 1.4,
 			2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
 
-		isogrid_check.data() = isogrid_check.data() - isogrid.data();
-		const FLOAT diff = isogrid_check.data().sum();
+		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		const FLOAT diff = isogrid_check.vdata().sum();
 		BOOST_CHECK_SMALL(diff, 0.000001f);
 
 		BOOST_CHECK_EQUAL(surface.layer(0).size(), 4);
@@ -852,14 +837,14 @@ BOOST_AUTO_TEST_CASE(local_update)
 	surface.update_end_local();
 
 	{
-		isogrid_check.data() <<
+		isogrid_check.data() = {
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 			2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 2, 1, 0, 1, 2, 3,
 			3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3;
+			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
 
-		isogrid_check.data() = isogrid_check.data() - isogrid.data();
-		const FLOAT diff = isogrid_check.data().sum();
+		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		const FLOAT diff = isogrid_check.vdata().sum();
 		BOOST_CHECK_SMALL(diff, 0.000001f);
 	}
 }
