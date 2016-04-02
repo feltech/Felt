@@ -11,7 +11,7 @@
 
 #include "LookupPartitionedGrid.hpp"
 #include "TrackedPartitionedGrid.hpp"
-
+#include "PartitionedArray.hpp"
 
 namespace felt
 {

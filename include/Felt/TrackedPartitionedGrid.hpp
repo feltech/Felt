@@ -2,6 +2,7 @@
 #define INCLUDE_FELT_TRACKEDPARTITIONEDGRID_HPP_
 
 #include "TrackingPartitionedGridBase.hpp"
+#include "SharedTrackedGrid.hpp"
 
 namespace felt
 {
