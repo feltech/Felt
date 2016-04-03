@@ -12,13 +12,13 @@ BOOST_AUTO_TEST_SUITE(test_SingleTrackedPartitionedGrid)
 	{
 		typedef SingleTrackedPartitionedGrid<FLOAT, 3, 3> GridType;
 		typedef GridType::ChildrenGrid ChildrenGrid;
-		typedef ChildrenGrid::MultiLookup MultiLookupGrid;
-		const Vec3u& BRANCH_NULL_IDX = MultiLookupGrid::Traits::NULL_IDX_DATA;
-		const UINT CHILD_NULL_IDX = GridType::Child::MultiLookup::NULL_IDX;
+		typedef ChildrenGrid::Lookup LookupGrid;
+		const Vec3u& BRANCH_NULL_IDX = LookupGrid::Traits::NULL_IDX_DATA;
+		const UINT CHILD_NULL_IDX = GridType::Child::Lookup::NULL_IDX;
 
 		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), 0, Vec3u(3, 3, 3));
 		ChildrenGrid& children = grid.children();
-		MultiLookupGrid& lookup = children.lookup();
+		LookupGrid& lookup = children.lookup();
 
 		grid.fill(-1.0f);
 
@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_SUITE_END()
 //		LazySingleTrackedPartitionedGrid<3, 3> grid(
 //			Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3), 3
 //		);
-//		const UINT NULL_IDX = LazySingleTrackedPartitionedGrid<3, 3>::MultiLookup::NULL_IDX;
+//		const UINT NULL_IDX = LazySingleTrackedPartitionedGrid<3, 3>::Lookup::NULL_IDX;
 //
 //		// ==== Confirm ====
 //		BOOST_CHECK_EQUAL((bool)grid.children().get(Vec3i(1,1,1)).is_active(), false);

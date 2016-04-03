@@ -23,18 +23,18 @@ public:
 	/// GridBase base class.
 	using Base = GridBase<TrackedGridBase<Derived>, IsLazy>;
 	/// MultiLookup grid type to use for tracking active grid positions.
-	using MultiLookup = typename GridTraits<Derived>::MultiLookupType;
+	using Lookup = typename GridTraits<Derived>::MultiLookupType;
 	/// Type of data to store in the main grid.
 	using LeafType = typename GridTraits<Derived>::LeafType;
 	/// Tracking list of grid positions.
-	using PosArray = typename MultiLookup::PosArray;
+	using PosArray = typename Lookup::PosArray;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 protected:
 	/// Mutex for use by other classes where multiple threads hold a reference to this grid.
 	std::mutex	m_mutex;
 	/// Internal lookup grid to track active grid positions.
-	MultiLookup		m_grid_lookup;
+	Lookup		m_grid_lookup;
 public:
 	using Base::offset;
 	using Base::size;
@@ -112,7 +112,7 @@ public:
 	 *
 	 * @return the internal lookup grid tracking active grid positions.
 	 */
-	MultiLookup& lookup()
+	Lookup& lookup()
 	{
 		return m_grid_lookup;
 	}
@@ -122,7 +122,7 @@ public:
 	 *
 	 * @return the internal lookup grid tracking active grid positions.
 	 */
-	const MultiLookup& lookup() const
+	const Lookup& lookup() const
 	{
 		return m_grid_lookup;
 	}

@@ -11,7 +11,7 @@ BOOST_AUTO_TEST_SUITE(test_LazySingleTrackedGrid)
 	{
 		// ==== Setup ====
 		LazySingleTrackedGrid<FLOAT, 3, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1), 3);
-		const UINT NULL_IDX = LazySingleTrackedGrid<FLOAT, 3, 3>::MultiLookup::NULL_IDX;
+		const UINT NULL_IDX = LazySingleTrackedGrid<FLOAT, 3, 3>::Lookup::NULL_IDX;
 
 		// ==== Confirm ====
 		BOOST_CHECK_EQUAL(grid.is_active(), false);
@@ -25,7 +25,7 @@ BOOST_AUTO_TEST_SUITE(test_LazySingleTrackedGrid)
 	}
 
 	struct Fixture {
-		const UINT NULL_IDX = LazySingleTrackedGrid<FLOAT, 3, 3>::MultiLookup::NULL_IDX;
+		const UINT NULL_IDX = LazySingleTrackedGrid<FLOAT, 3, 3>::Lookup::NULL_IDX;
 		LazySingleTrackedGrid<FLOAT, 3, 3> grid;
 		Fixture()
 			: grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1), 3)

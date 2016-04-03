@@ -15,11 +15,11 @@ BOOST_AUTO_TEST_SUITE(test_MultiLookupPartitionedGrid)
 	{
 		typedef MultiLookupPartitionedGrid<3, 3> GridType;
 		typedef MultiLookupPartitionedGrid<3, 3>::ChildrenGrid ChildrenGrid;
-		typedef MultiLookupPartitionedGrid<3, 3>::ChildrenGrid::MultiLookup MultiLookupGrid;
+		typedef MultiLookupPartitionedGrid<3, 3>::ChildrenGrid::Lookup LookupGrid;
 
 		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
 		ChildrenGrid& children = grid.children();
-		MultiLookupGrid& lookup = children.lookup();
+		LookupGrid& lookup = children.lookup();
 
 
 		for (INT x = -4; x <= 4; x++)
@@ -131,14 +131,14 @@ BOOST_AUTO_TEST_SUITE(test_SingleLookupPartitionedGrid)
 		// ==== Setup ====
 		typedef SingleLookupPartitionedGrid<3, 3> GridType;
 		typedef GridType::ChildrenGrid ChildrenGrid;
-		typedef ChildrenGrid::MultiLookup MultiLookupGrid;
-		const Vec3u& BRANCH_NULL_IDX = MultiLookupGrid::Traits::NULL_IDX_DATA;
+		typedef ChildrenGrid::Lookup LookupGrid;
+		const Vec3u& BRANCH_NULL_IDX = LookupGrid::Traits::NULL_IDX_DATA;
 		const UINT CHILD_NULL_IDX = GridType::NULL_IDX;
 
 		// ==== Action ====
 		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
 		ChildrenGrid& children = grid.children();
-		MultiLookupGrid& lookup = children.lookup();
+		LookupGrid& lookup = children.lookup();
 
 		// ==== Confirm ====
 		for (INT x = -4; x <= 4; x++)
