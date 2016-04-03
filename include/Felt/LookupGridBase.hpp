@@ -363,6 +363,56 @@ protected:
 
 
 /**
+ * Base class for static lookup grid.
+ *
+ * @tparam Derived CRTP derived class.
+ */
+template <class Derived>
+class StaticLookupGridBase : public LookupGridBase<StaticLookupGridBase<Derived>, false>
+{
+public:
+	using Base = LookupGridBase<StaticLookupGridBase<Derived>, false>;
+	using Base::LookupGridBase;
+};
+
+
+/**
+ * Base class for lazy lookup grid.
+ *
+ * @tparam Derived CRTP derived class.
+ */
+template <class Derived>
+class LazyLookupGridBase : public LookupGridBase<LazyLookupGridBase<Derived>, true>
+{
+public:
+	using Base = LookupGridBase<LazyLookupGridBase<Derived>, true>;
+	using typename Base::VecDu;
+	using typename Base::VecDi;
+	using typename Base::PosArray;
+	using Traits = GridTraits<LazyLookupGridBase<Derived> >;
+
+	using Base::LookupGridBase;
+	using Base::Base::is_active;
+	using Base::is_active;
+
+	/**
+	 * @copydoc LazyGridBase::deactivate
+	 *
+	 * Additionally frees the tracking list(s).
+	 */
+	void deactivate()
+	{
+		Base::deactivate();
+		for (PosArray& list : this->m_a_pos)
+		{
+			list.clear();
+			list.shrink_to_fit();
+		}
+	}
+};
+
+
+/**
  * Traits for LookupGridBase.
  *
  * Just forward the traits defined for LookupGridBase subclasses.

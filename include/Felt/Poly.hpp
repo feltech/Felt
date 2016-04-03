@@ -1,5 +1,6 @@
 #ifndef POLY_H
 #define POLY_H
+
 #include <eigen3/Eigen/Dense>
 #include <omp.h>
 #include <array>
@@ -8,8 +9,8 @@
 
 #include "PolyBase.hpp"
 #include "Grid.hpp"
-#include "LookupGrid.hpp"
-#include "TrackedGrid.hpp"
+#include "MultiLookupGrid.hpp"
+#include "MultiTrackedGrid.hpp"
 #include "Surface.hpp"
 
 namespace felt 
@@ -46,7 +47,7 @@ namespace felt
 		/// Vertex array type for primary vertex storage.
 		using VtxArray = std::vector<Vertex>;
 		/// Vertex spatial lookup type.
-		using VtxGrid = TrackedGrid<VtxTuple, D>;
+		using VtxGrid = MultiTrackedGrid<VtxTuple, D>;
 		/// Simplex type (line or triangle).
 		using typename PolyBase<D, void>::Simplex;
 		/// Simplex array type for primary simplex (line or triangle) storage.
@@ -72,8 +73,8 @@ namespace felt
 		static const VtxTuple NULL_VTX_TUPLE;
 
 	protected:
-		/// Lookup grid type used for avoiding duplicates.
-		using LookupGrid_t = LookupGrid<D>;
+		/// MultiLookup grid type used for avoiding duplicates.
+		using MultiLookupGrid_t = MultiLookupGrid<D>;
 
 		/**
 		 * List of interpolated vertices.
@@ -188,7 +189,7 @@ namespace felt
 
 
 		/**
-		 * Lookup, or calculate then store, and return the index into the vertex
+		 * MultiLookup, or calculate then store, and return the index into the vertex
 		 * array of a vertex at the zero-crossing of isogrid at pos_a along axis.
 		 *
          * @return
@@ -311,7 +312,7 @@ namespace felt
 			// Array of indices of zero-crossing vertices along each axis from
 			// this corner.
 			UINT vtx_idxs[this->num_edges];
-			// Lookup the edges that are crossed from the corner mask.
+			// MultiLookup the edges that are crossed from the corner mask.
 			unsigned short vtx_mask = this->vtx_mask[mask];
 			const short* vtx_order = this->vtx_order[mask];
 
@@ -329,7 +330,7 @@ namespace felt
 				if ((vtx_mask >> edge_idx) & 1) {
 					const Edge& edge = this->edges[edge_idx];
 					// Edges are defined as an axis and an offset.
-					// Lookup index of vertex along current edge.
+					// MultiLookup index of vertex along current edge.
 					vtx_idxs[edge_idx] = this->idx(
 						pos_calc + edge.offset, edge.axis, grid_isogrid
 					);
@@ -401,7 +402,7 @@ namespace felt
 		template <UINT L>
 		void surf(const Surface<D, L>& surface)
 		{
-			LookupGrid_t grid_dupe(m_grid_vtx.size(), m_grid_vtx.offset());
+			MultiLookupGrid_t grid_dupe(m_grid_vtx.size(), m_grid_vtx.offset());
 			for (VecDi pos_centre : surface.layer(0))
 				for (const VecDi& pos_offset : corners)
 				{

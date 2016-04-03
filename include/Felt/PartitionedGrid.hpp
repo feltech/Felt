@@ -34,7 +34,7 @@ public:
 	/// Dimension of overall grid.
 	static const UINT Dims = Traits::Dims;
 	/**
-	 * TrackedGrid type storing spatial partitions.
+	 * MultiTrackedGrid type storing spatial partitions.
 	 *
 	 * Each grid node stores a Child grid and tracks active nodes using one or more tracking lists.
 	 */

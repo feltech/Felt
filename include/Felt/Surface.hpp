@@ -38,12 +38,12 @@ public:
 	/**
 	 * A delta isogrid update grid with active (non-zero) grid points tracked.
 	 */
-	using DeltaIsoGrid = SharedTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
+	using DeltaIsoGrid = SingleTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
 	/**
 	 * A level set embedding isogrid grid, with active grid points (the narrow
 	 * band) tracked.
 	 */
-	using IsoGrid = SharedTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
+	using IsoGrid = SingleTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
 	/**
 	 * A resizable array of D-dimensional grid positions.
 	 */
@@ -63,7 +63,7 @@ public:
 	/**
 	 * Grid to track positions that require an update.
 	 */
-	using AffectedLookupGrid = LazySharedLookupPartitionedGrid<D, 2*L+1>;
+	using AffectedMultiLookupGrid = LazySingleLookupPartitionedGrid<D, 2*L+1>;
 
 	/// D-dimensional hyperplane type (using Eigen library), for raycasting.
 	using Plane = Eigen::Hyperplane<FLOAT, D>;
@@ -138,7 +138,7 @@ protected:
 	/**
 	 * Grid for preventing duplicates when doing neighbourhood queries.
 	 */
-	AffectedLookupGrid 	m_grid_affected;
+	AffectedMultiLookupGrid 	m_grid_affected;
 
 	/**
 	 * The main level set embedding isogrid.
@@ -365,7 +365,7 @@ public:
 		return (UINT)std::abs(val) <= L;
 	}
 
-	const AffectedLookupGrid& affected ()
+	const AffectedMultiLookupGrid& affected ()
 	{
 		return m_grid_affected;
 	}
@@ -651,7 +651,7 @@ public:
 	FLOAT delta_gauss (
 		const VecDf& pos_centre, const FLOAT val, const FLOAT stddev
 	) {
-		const SharedLookupGrid<D, NUM_LAYERS>& lookup = this->walk_band<Distance>(
+		const SingleLookupGrid<D, NUM_LAYERS>& lookup = this->walk_band<Distance>(
 			round(pos_centre)
 		);
 		return this->delta_gauss(lookup.list(this->layer_idx(0)), pos_centre, val, stddev);
@@ -1347,17 +1347,17 @@ public:
 	 *
 	 * @param pos_
 	 * @param distance_
-	 * @return SharedLookupGrid with tracking lists for visited points, one list
+	 * @return SingleLookupGrid with tracking lists for visited points, one list
 	 * for each layer.
 	 */
 	template <UINT Distance>
-	SharedLookupGrid<D, NUM_LAYERS>& walk_band (const VecDi& pos_)
+	SingleLookupGrid<D, NUM_LAYERS>& walk_band (const VecDi& pos_)
 	{
-		using Lookup = SharedLookupGrid<D, 2*L+1>;
-		using PosArray = typename Lookup::PosArray;
+		using MultiLookup = SingleLookupGrid<D, 2*L+1>;
+		using PosArray = typename MultiLookup::PosArray;
 
 		// Box size is: (Distance * 2 directions) + 1 central.
-		static Lookup lookup(VecDu::Constant(Distance * 2 + 1));
+		static MultiLookup lookup(VecDu::Constant(Distance * 2 + 1));
 		lookup.reset_all();
 		lookup.offset(pos_ - VecDi::Constant(Distance));
 

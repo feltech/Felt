@@ -2,15 +2,15 @@
 
 #define _TESTING
 
-#include "Felt/TrackedGrid.hpp"
+#include <Felt/MultiTrackedGrid.hpp>
 
 using namespace felt;
 
-BOOST_AUTO_TEST_SUITE(test_TrackedGrid)
+BOOST_AUTO_TEST_SUITE(test_MultiTrackedGrid)
 	BOOST_AUTO_TEST_CASE(initialisation)
 	{
 		// ==== Setup/Action ====
-		TrackedGrid<FLOAT, 3, 3> grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), 0);
+		MultiTrackedGrid<FLOAT, 3, 3> grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), 0);
 
 		// ==== Confirm ====
 		BOOST_CHECK_EQUAL(grid.data().size(), 9*9*9);

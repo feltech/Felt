@@ -7,19 +7,18 @@
 
 using namespace felt;
 
-
-BOOST_AUTO_TEST_SUITE(test_SharedTrackedPartitionedGrid)
+BOOST_AUTO_TEST_SUITE(test_SingleTrackedPartitionedGrid)
 	BOOST_AUTO_TEST_CASE(initialise_and_populate)
 	{
-		typedef SharedTrackedPartitionedGrid<FLOAT, 3, 3> GridType;
+		typedef SingleTrackedPartitionedGrid<FLOAT, 3, 3> GridType;
 		typedef GridType::ChildrenGrid ChildrenGrid;
-		typedef ChildrenGrid::Lookup LookupGrid;
-		const Vec3u& BRANCH_NULL_IDX = LookupGrid::Traits::NULL_IDX_DATA;
-		const UINT CHILD_NULL_IDX = GridType::Child::Lookup::NULL_IDX;
+		typedef ChildrenGrid::MultiLookup MultiLookupGrid;
+		const Vec3u& BRANCH_NULL_IDX = MultiLookupGrid::Traits::NULL_IDX_DATA;
+		const UINT CHILD_NULL_IDX = GridType::Child::MultiLookup::NULL_IDX;
 
 		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), 0, Vec3u(3, 3, 3));
 		ChildrenGrid& children = grid.children();
-		LookupGrid& lookup = children.lookup();
+		MultiLookupGrid& lookup = children.lookup();
 
 		grid.fill(-1.0f);
 
@@ -126,16 +125,16 @@ BOOST_AUTO_TEST_SUITE(test_SharedTrackedPartitionedGrid)
 BOOST_AUTO_TEST_SUITE_END()
 
 
-//BOOST_AUTO_TEST_SUITE(test_LazySharedTrackedPartitionedGrid)
+//BOOST_AUTO_TEST_SUITE(test_LazySingleTrackedPartitionedGrid)
 //
 //	BOOST_AUTO_TEST_CASE(initialisation)
 //	{
-//		/// [LazySharedTrackedPartitionedGrid initialisation]
+//		/// [LazySingleTrackedPartitionedGrid initialisation]
 //		// ==== Setup ====
-//		LazySharedTrackedPartitionedGrid<3, 3> grid(
+//		LazySingleTrackedPartitionedGrid<3, 3> grid(
 //			Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3), 3
 //		);
-//		const UINT NULL_IDX = LazySharedTrackedPartitionedGrid<3, 3>::Lookup::NULL_IDX;
+//		const UINT NULL_IDX = LazySingleTrackedPartitionedGrid<3, 3>::MultiLookup::NULL_IDX;
 //
 //		// ==== Confirm ====
 //		BOOST_CHECK_EQUAL((bool)grid.children().get(Vec3i(1,1,1)).is_active(), false);
@@ -144,7 +143,7 @@ BOOST_AUTO_TEST_SUITE_END()
 //		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).get(Vec3i(1,1,1)), 3);
 //		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).lookup().data().size(), 0);
 //		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).lookup().get(Vec3i(1,1,1)), NULL_IDX);
-//		/// [LazySharedTrackedPartitionedGrid initialisation]
+//		/// [LazySingleTrackedPartitionedGrid initialisation]
 //	}
 //BOOST_AUTO_TEST_SUITE_END()
 

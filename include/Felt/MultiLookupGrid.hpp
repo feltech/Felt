@@ -6,55 +6,6 @@
 namespace felt
 {
 
-/**
- * Base class for static lookup grid.
- *
- * @tparam Derived CRTP derived class.
- */
-template <class Derived>
-class StaticLookupGridBase : public LookupGridBase<StaticLookupGridBase<Derived>, false>
-{
-public:
-	using Base = LookupGridBase<StaticLookupGridBase<Derived>, false>;
-	using Base::LookupGridBase;
-};
-
-/**
- * Base class for lazy lookup grid.
- *
- * @tparam Derived CRTP derived class.
- */
-template <class Derived>
-class LazyLookupGridBase : public LookupGridBase<LazyLookupGridBase<Derived>, true>
-{
-public:
-	using Base = LookupGridBase<LazyLookupGridBase<Derived>, true>;
-	using typename Base::VecDu;
-	using typename Base::VecDi;
-	using typename Base::PosArray;
-	using Traits = GridTraits<LazyLookupGridBase<Derived> >;
-
-	using Base::LookupGridBase;
-	using Base::Base::is_active;
-	using Base::is_active;
-
-	/**
-	 * @copydoc LazyGridBase::deactivate
-	 *
-	 * Additionally frees the tracking list(s).
-	 */
-	void deactivate()
-	{
-		Base::deactivate();
-		for (PosArray& list : this->m_a_pos)
-		{
-			list.clear();
-			list.shrink_to_fit();
-		}
-	}
-};
-
-
 template <class Derived, bool IsLazy> const UINT
 LookupGridBase<Derived, IsLazy>::NULL_IDX = std::numeric_limits<UINT>::max();
 
@@ -69,10 +20,10 @@ LookupGridBase<Derived, IsLazy>::NULL_IDX = std::numeric_limits<UINT>::max();
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N=1>
-class LookupGrid : public StaticLookupGridBase<LookupGrid<D, N> >
+class MultiLookupGrid : public StaticLookupGridBase<MultiLookupGrid<D, N> >
 {
 public:
-	using ThisType = LookupGrid<D, N>;
+	using ThisType = MultiLookupGrid<D, N>;
 	using Base = StaticLookupGridBase<ThisType>;
 	using Base::StaticLookupGridBase;
 };
@@ -81,16 +32,16 @@ public:
 /**
  * Lazy lookup grid - only initialised on activation, otherwise returns NULL_IDX when queried.
  *
- * @snippet test_MappedGrid.cpp LazyLookupGrid initialisation
+ * @snippet test_MappedGrid.cpp LazyMultiLookupGrid initialisation
  *
  * @tparam D the dimension of the grid.
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N=1>
-class LazyLookupGrid : public LazyLookupGridBase<LazyLookupGrid<D, N> >
+class LazyMultiLookupGrid : public LazyLookupGridBase<LazyMultiLookupGrid<D, N> >
 {
 public:
-	using ThisType = LazyLookupGrid<D, N>;
+	using ThisType = LazyMultiLookupGrid<D, N>;
 	using Base = LazyLookupGridBase<ThisType>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
@@ -130,7 +81,7 @@ struct GridTraits< LazyLookupGridBase<Derived> > : GridTraits<Derived>
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N>
-struct DefaultLookupGridTraits : DefaultGridTraits<VecDu<N>, D >
+struct DefaultMultiLookupGridTraits : DefaultGridTraits<VecDu<N>, D >
 {
 	/// Null index data type.
 	using NULL_IDX_TYPE = VecDu<N>;
@@ -141,34 +92,34 @@ struct DefaultLookupGridTraits : DefaultGridTraits<VecDu<N>, D >
 };
 
 template <UINT D, UINT N>
-const VecDu<N> DefaultLookupGridTraits<D, N>::NULL_IDX_DATA = (
+const VecDu<N> DefaultMultiLookupGridTraits<D, N>::NULL_IDX_DATA = (
 	VecDu<N>::Constant(std::numeric_limits<UINT>::max())
 );
 
 
 /**
- * Traits for LookupGrid.
+ * Traits for MultiLookupGrid.
  *
  * @tparam D the dimension of the grid.
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N>
-struct GridTraits<LookupGrid<D, N> > : DefaultLookupGridTraits<D, N>
+struct GridTraits<MultiLookupGrid<D, N> > : DefaultMultiLookupGridTraits<D, N>
 {
-	using ThisType = LookupGrid<D, N>;
+	using ThisType = MultiLookupGrid<D, N>;
 };
 
 
 /**
- * Traits for LazyLookupGrid.
+ * Traits for LazyMultiLookupGrid.
  *
  * @tparam D the dimension of the grid.
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N>
-struct GridTraits<LazyLookupGrid<D, N> > : DefaultLookupGridTraits<D, N>
+struct GridTraits<LazyMultiLookupGrid<D, N> > : DefaultMultiLookupGridTraits<D, N>
 {
-	using ThisType = LazyLookupGrid<D, N>;
+	using ThisType = LazyMultiLookupGrid<D, N>;
 };
 
 

@@ -1,7 +1,8 @@
 #ifndef INCLUDE_FELT_POLYGRID_HPP_
+
 #define INCLUDE_FELT_POLYGRID_HPP_
 
-#include "LookupGrid.hpp"
+#include <Felt/MultiLookupGrid.hpp>
 #include "PartitionedGrid.hpp"
 #include "Surface.hpp"
 #include "Poly.hpp"
@@ -39,11 +40,11 @@ namespace felt
 		/// Standard 3-layer signed-distance surface (either 2D or 3D).
 		using PolySurface = Surface<Dims, 3>;
 
-		/// Lookup grid to track partitions containing zero-layer points.
-		using PolyChanges = LookupGrid<Dims>;
+		/// MultiLookup grid to track partitions containing zero-layer points.
+		using PolyChanges = MultiLookupGrid<Dims>;
 		
 	protected:
-		/// Lookup grid to track partitions containing zero-layer points.
+		/// MultiLookup grid to track partitions containing zero-layer points.
 		PolyChanges		m_grid_changes;
 
 	public:

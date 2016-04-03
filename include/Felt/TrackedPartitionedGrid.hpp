@@ -2,7 +2,7 @@
 #define INCLUDE_FELT_TRACKEDPARTITIONEDGRID_HPP_
 
 #include "TrackingPartitionedGridBase.hpp"
-#include "SharedTrackedGrid.hpp"
+#include "SingleTrackedGrid.hpp"
 
 namespace felt
 {
@@ -52,7 +52,7 @@ public:
 	 * Set every active grid node (i.e. those referenced by lookup grid)
 	 * to given value and reset the lookup grid.
 	 *
-	 * Lookup grid will then be full of NULL indices for given tracking list
+	 * MultiLookup grid will then be full of NULL indices for given tracking list
 	 * and the relevant tracking list(s) will be empty.
 	 *
 	 * @param val_ value to set in main grid.
@@ -70,19 +70,19 @@ public:
 
 
 /**
- * Spatially partitioned wrapper for TrackedGrid.
+ * Spatially partitioned wrapper for MultiTrackedGrid.
  *
  * @tparam T type of value stored in leaf grid nodes.
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N>
-class TrackedPartitionedGrid
-	: public TrackedPartitionedGridBase <TrackedPartitionedGrid<T, D, N>>
+class MultiTrackedPartitionedGrid
+	: public TrackedPartitionedGridBase <MultiTrackedPartitionedGrid<T, D, N>>
 {
 public:
 	/// This class.
-	using ThisType = TrackedPartitionedGrid<T, D, N>;
+	using ThisType = MultiTrackedPartitionedGrid<T, D, N>;
 	/// Base class
 	using Base = TrackedPartitionedGridBase<ThisType>;
 	using Traits = GridTraits<ThisType>;
@@ -122,18 +122,18 @@ public:
 
 
 /**
- * Spatially partitioned wrapper for SharedTrackedGrid.
+ * Spatially partitioned wrapper for SingleTrackedGrid.
  *
  * @tparam T type of value stored in leaf grid nodes.
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N>
-class SharedTrackedPartitionedGrid
-	: public TrackedPartitionedGridBase<SharedTrackedPartitionedGrid<T, D, N> >
+class SingleTrackedPartitionedGrid
+	: public TrackedPartitionedGridBase<SingleTrackedPartitionedGrid<T, D, N> >
 {
 public:
-	using ThisType = SharedTrackedPartitionedGrid<T, D, N>;
+	using ThisType = SingleTrackedPartitionedGrid<T, D, N>;
 	using Base = TrackedPartitionedGridBase<ThisType>;
 	using Traits = GridTraits<ThisType>;
 
@@ -142,28 +142,28 @@ public:
 
 
 /**
- * Traits for common base class of partitioned TrackedGrids.
+ * Traits for common base class of partitioned MultiTrackedGrids.
  */
 template <class Derived>
 struct GridTraits< TrackedPartitionedGridBase<Derived> > :  GridTraits<Derived> {};
 
 
 /**
- * Traits for TrackedPartitionedGrid.
+ * Traits for MultiTrackedPartitionedGrid.
  *
  * @tparam T type of value stored in leaf grid nodes.
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N>
-struct GridTraits<TrackedPartitionedGrid<T, D, N> > : DefaultGridTraits<T, D>
+struct GridTraits<MultiTrackedPartitionedGrid<T, D, N> > : DefaultGridTraits<T, D>
 {
 	/// The class inheriting from the base.
-	using ThisType = TrackedPartitionedGrid<T, D, N>;
+	using ThisType = MultiTrackedPartitionedGrid<T, D, N>;
 	/// The type of lookup grid to use for tracking active grid nodes.
-	using LookupType = LookupGrid<D, N>;
-	/// Child grid class, in this case a TrackedGrid.
-	using ChildType = TrackedGrid<T, D, N>;
+	using MultiLookupType = MultiLookupGrid<D, N>;
+	/// Child grid class, in this case a MultiTrackedGrid.
+	using ChildType = MultiTrackedGrid<T, D, N>;
 	/// Base grid class to partition, in this case TrackedGridBase.
 	using MixinType = TrackedGridBase<ThisType>;
 	/// Number of tracking lists, from template parameter.
@@ -172,21 +172,21 @@ struct GridTraits<TrackedPartitionedGrid<T, D, N> > : DefaultGridTraits<T, D>
 
 
 /**
- * Traits for SharedTrackedPartitionedGrid.
+ * Traits for SingleTrackedPartitionedGrid.
  *
  * @tparam T type of value stored in leaf grid nodes.
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N>
-struct GridTraits<SharedTrackedPartitionedGrid<T, D, N> > : DefaultGridTraits<T, D>
+struct GridTraits<SingleTrackedPartitionedGrid<T, D, N> > : DefaultGridTraits<T, D>
 {
 	/// The class inheriting from the base.
-	using ThisType = SharedTrackedPartitionedGrid<T, D, N>;
+	using ThisType = SingleTrackedPartitionedGrid<T, D, N>;
 	/// The type of lookup grid to use for tracking active grid nodes.
-	using LookupType = SharedLookupGrid<D, N>;
-	/// Child grid class, in this case SharedTrackedGrid.
-	using ChildType = SharedTrackedGrid<T, D, N>;
+	using MultiLookupType = SingleLookupGrid<D, N>;
+	/// Child grid class, in this case SingleTrackedGrid.
+	using ChildType = SingleTrackedGrid<T, D, N>;
 	/// Base grid class to partition, in this case TrackedGridBase.
 	using MixinType = TrackedGridBase<ThisType>;
 	/// Number of tracking lists, from template parameter.

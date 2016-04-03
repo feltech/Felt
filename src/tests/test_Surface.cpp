@@ -871,7 +871,7 @@ BOOST_AUTO_TEST_CASE(walk)
 		});
 
 		// ==== Action ====
-		SharedLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band<2>(
+		SingleLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band<2>(
 			Vec2i(-3,0)
 		);
 
@@ -889,13 +889,13 @@ BOOST_AUTO_TEST_CASE(walk)
 	{
 		// ==== Setup ====
 		Surface<3, 2> surface(Vec3u(9, 9, 9));
-		using Lookup = SharedLookupGrid<3, surface.NUM_LAYERS>;
+		using MultiLookup = SingleLookupGrid<3, surface.NUM_LAYERS>;
 
 		// Create seed point and expand the narrow band.
 		surface.seed(Vec3i(0, 0, 0));
 
 		// ==== Action ====
-		Lookup& lookup1 = surface.walk_band<1>(Vec3i(0,0,0));
+		MultiLookup& lookup1 = surface.walk_band<1>(Vec3i(0,0,0));
 
 		// ==== Contirm ====
 		BOOST_CHECK_EQUAL(lookup1.list(surface.layer_idx(-2)).size(), 0);
@@ -905,13 +905,13 @@ BOOST_AUTO_TEST_CASE(walk)
 		BOOST_CHECK_EQUAL(lookup1.list(surface.layer_idx(2)).size(), 0);
 
 		// ==== Action ====
-		Lookup& lookup2 = surface.walk_band<1>(Vec3i(0,0,0));
+		MultiLookup& lookup2 = surface.walk_band<1>(Vec3i(0,0,0));
 
 		// ==== Contirm ====
 		BOOST_CHECK_EQUAL(&lookup1, &lookup2);
 
 		// ==== Action ====
-		Lookup& lookup3 = surface.walk_band<2>(Vec3i(0,0,0));
+		MultiLookup& lookup3 = surface.walk_band<2>(Vec3i(0,0,0));
 
 		// ==== Contirm ====
 		BOOST_CHECK_EQUAL(&lookup1, &lookup2);
@@ -956,7 +956,7 @@ BOOST_AUTO_TEST_CASE(walk)
 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
 */
 		// ==== Action ====
-		SharedLookupGrid<3, surface.NUM_LAYERS> lookup = surface.walk_band<1>(
+		SingleLookupGrid<3, surface.NUM_LAYERS> lookup = surface.walk_band<1>(
 			Vec3i(0,0,0)
 		);
 
@@ -1010,7 +1010,7 @@ BOOST_AUTO_TEST_CASE(gaussian_from_list)
 		return -1.0f;
 	});
 
-	SharedLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band<2>(
+	SingleLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band<2>(
 		Vec2i(-3,0)
 	);
 
@@ -1297,7 +1297,7 @@ BOOST_AUTO_TEST_CASE(ray)
 BOOST_AUTO_TEST_CASE(gaussian_from_ray)
 {
 	// ==== Setup ====
-	Surface<2, 2> surface(Vec2u(16, 16));
+	Surface<2, 2> surface(Vec2u(16, 16), Vec2u(3, 3));
 
 	// Create seed point and expand the narrow band.
 	surface.seed(Vec2i(0, 0));

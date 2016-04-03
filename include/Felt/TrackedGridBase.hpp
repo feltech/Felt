@@ -1,17 +1,10 @@
-/*
- * TrackedGrid.hpp
- *
- *  Created on: 10 Jan 2016
- *      Author: dave
- */
-
-#ifndef INCLUDE_FELT_TRACKEDGRID_HPP_
-#define INCLUDE_FELT_TRACKEDGRID_HPP_
+#ifndef INCLUDE_FELT_TRACKEDGRIDBASE_HPP_
+#define INCLUDE_FELT_TRACKEDGRIDBASE_HPP_
 
 #include <array>
 #include <sstream>
 #include <mutex>
-#include "SharedLookupGrid.hpp"
+#include "SingleLookupGrid.hpp"
 
 namespace felt
 {
@@ -19,9 +12,9 @@ namespace felt
 /**
  * Base class for a tracking grid
  *
- * Grid nodes store arbitrary values and active nodes are tracked by a LookupGrid.
+ * Grid nodes store arbitrary values and active nodes are tracked by a MultiLookupGrid.
  *
- * @See TrackedGrid and SharedTrackedGrid.
+ * @See MultiTrackedGrid and SingleTrackedGrid.
  */
 template <class Derived, bool IsLazy=false>
 class TrackedGridBase : public GridBase<TrackedGridBase<Derived>, IsLazy>
@@ -29,19 +22,19 @@ class TrackedGridBase : public GridBase<TrackedGridBase<Derived>, IsLazy>
 public:
 	/// GridBase base class.
 	using Base = GridBase<TrackedGridBase<Derived>, IsLazy>;
-	/// Lookup grid type to use for tracking active grid positions.
-	using Lookup = typename GridTraits<Derived>::LookupType;
+	/// MultiLookup grid type to use for tracking active grid positions.
+	using MultiLookup = typename GridTraits<Derived>::MultiLookupType;
 	/// Type of data to store in the main grid.
 	using LeafType = typename GridTraits<Derived>::LeafType;
 	/// Tracking list of grid positions.
-	using PosArray = typename Lookup::PosArray;
+	using PosArray = typename MultiLookup::PosArray;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 protected:
 	/// Mutex for use by other classes where multiple threads hold a reference to this grid.
 	std::mutex	m_mutex;
 	/// Internal lookup grid to track active grid positions.
-	Lookup		m_grid_lookup;
+	MultiLookup		m_grid_lookup;
 public:
 	using Base::offset;
 	using Base::size;
@@ -93,7 +86,7 @@ public:
 	/**
 	 * Reshape both grid of values and lookup grid.
 	 *
-	 * Lookup grid nodes will be reset to NULL.
+	 * MultiLookup grid nodes will be reset to NULL.
 	 *
 	 * @param size_ new size of the grid.
 	 */
@@ -119,7 +112,7 @@ public:
 	 *
 	 * @return the internal lookup grid tracking active grid positions.
 	 */
-	Lookup& lookup()
+	MultiLookup& lookup()
 	{
 		return m_grid_lookup;
 	}
@@ -129,7 +122,7 @@ public:
 	 *
 	 * @return the internal lookup grid tracking active grid positions.
 	 */
-	const Lookup& lookup() const
+	const MultiLookup& lookup() const
 	{
 		return m_grid_lookup;
 	}
@@ -193,7 +186,7 @@ public:
 	 * Set every active grid node (those referenced by lookup grid)
 	 * to given value and reset the lookup grid.
 	 *
-	 * Lookup grid will then be full of NULL indices and it's tracking
+	 * MultiLookup grid will then be full of NULL indices and it's tracking
 	 * list(s) will be empty.
 	 *
 	 * @param val_ value to set in main grid.
@@ -256,29 +249,6 @@ public:
 
 
 /**
- * Standard tracked grid.
- *
- * A grid of arbitrary data, with active positions tracked by an internal LookupGrid.
- *
- * Supports multiple tracking lists that can overlap (the same grid position can be found in
- * multiple lists).
- *
- * This is just a stub exposing TrackedGridBase, relying on the associated traits to differentiate
- * behaviour.
- *
- * @tparam T the type of data to store in the grid.
- * @tparam D the dimension of the grid.
- * @tparam N the number of tracking lists to use.
- */
-template <typename T, UINT D, UINT N=1>
-class TrackedGrid : public TrackedGridBase<TrackedGrid<T, D, N> >
-{
-public:
-	using TrackedGridBase<TrackedGrid<T, D, N> >::TrackedGridBase;
-};
-
-
-/**
  * Traits of TrackedGridBase.
  *
  * Just forward the traits defined for TrackedGridBase subclasses.
@@ -287,22 +257,6 @@ template <class Derived>
 struct GridTraits<TrackedGridBase<Derived> > : GridTraits<Derived>
 {};
 
-
-/**
- * Traits of TrackedGrid.
- *
- * @tparam T the type of data to store in the grid.
- * @tparam D the dimension of the grid.
- * @tparam N the number of tracking lists to use.
- */
-template <typename T, UINT D, UINT N>
-struct GridTraits<TrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
-{
-	using ThisType = TrackedGrid<T, D, N>;
-	/// Type of lookup grid to use.  This is what differentiates this from SharedTrackedGrid.
-	using LookupType = LookupGrid<D, N>;
-};
-
 }
 
-#endif /* INCLUDE_FELT_TRACKEDGRID_HPP_ */
+#endif /* INCLUDE_FELT_TRACKEDGRIDBASE_HPP_ */

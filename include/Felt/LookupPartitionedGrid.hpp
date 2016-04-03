@@ -8,17 +8,17 @@ namespace felt
 {
 
 /**
- * Spatially partitioned wrapper for LookupGrid.
+ * Spatially partitioned wrapper for MultiLookupGrid.
  *
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
  */
 template <UINT D, UINT N=1>
-class LookupPartitionedGrid
-	: public TrackingPartitionedGridBase<LookupPartitionedGrid<D, N> >
+class MultiLookupPartitionedGrid
+	: public TrackingPartitionedGridBase<MultiLookupPartitionedGrid<D, N> >
 {
 public:
-	using ThisType = LookupPartitionedGrid<D, N>;
+	using ThisType = MultiLookupPartitionedGrid<D, N>;
 	using Base = TrackingPartitionedGridBase<ThisType>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
@@ -26,7 +26,7 @@ public:
 	using Base::TrackingPartitionedGridBase;
 
 	/**
-	 * Construct a spatially partitioned LookupGrid.
+	 * Construct a spatially partitioned MultiLookupGrid.
 	 *
 	 * Initialises grid data to NULL_IDX.
 	 *
@@ -34,26 +34,26 @@ public:
 	 * @param offset_ spatial offset of the grid.
 	 * @param partition_size_ size of a spatial partition.
 	 */
-	LookupPartitionedGrid (const VecDu& size_, const VecDi& offset_, const VecDu& partition_size_) :
+	MultiLookupPartitionedGrid (const VecDu& size_, const VecDi& offset_, const VecDu& partition_size_) :
 		Base(size_, offset_, Base::Child::Traits::NULL_IDX_DATA, partition_size_)
 	{}
 };
 
 
 /**
- * Spatially partitioned wrapper for SharedLookupGrid.
+ * Spatially partitioned wrapper for SingleLookupGrid.
  *
- * @snippet test_PartitionedGrid.cpp LazySharedLookupPartitionedGrid initialisation
+ * @snippet test_PartitionedGrid.cpp LazySingleLookupPartitionedGrid initialisation
  *
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
  */
 template <UINT D, UINT N>
-class SharedLookupPartitionedGrid
-	: public TrackingPartitionedGridBase<SharedLookupPartitionedGrid<D, N> >
+class SingleLookupPartitionedGrid
+	: public TrackingPartitionedGridBase<SingleLookupPartitionedGrid<D, N> >
 {
 public:
-	using ThisType = SharedLookupPartitionedGrid<D, N>;
+	using ThisType = SingleLookupPartitionedGrid<D, N>;
 	using Base = TrackingPartitionedGridBase<ThisType>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
@@ -61,7 +61,7 @@ public:
 	using Base::TrackingPartitionedGridBase;
 
 	/**
-	 * Construct a spatially partitioned SharedLookupGrid.
+	 * Construct a spatially partitioned SingleLookupGrid.
 	 *
 	 * Initialises grid data to NULL_IDX.
 	 *
@@ -69,7 +69,7 @@ public:
 	 * @param offset_ spatial offset of the grid.
 	 * @param partition_size_ size of a spatial partition.
 	 */
-	SharedLookupPartitionedGrid (
+	SingleLookupPartitionedGrid (
 		const VecDu& size_, const VecDi& offset_, const VecDu& partition_size_
 	) :
 		Base(size_, offset_, Base::Child::Traits::NULL_IDX_DATA, partition_size_)
@@ -78,27 +78,27 @@ public:
 
 
 /**
- * Spatially partitioned wrapper for LazySharedLookupGrid.
+ * Spatially partitioned wrapper for LazySingleLookupGrid.
  *
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
  */
 template <UINT D, UINT N>
-class LazySharedLookupPartitionedGrid
-	: public TrackingPartitionedGridBase<LazySharedLookupPartitionedGrid<D, N> >
+class LazySingleLookupPartitionedGrid
+	: public TrackingPartitionedGridBase<LazySingleLookupPartitionedGrid<D, N> >
 {
 public:
-	using ThisType = LazySharedLookupPartitionedGrid<D, N>;
+	using ThisType = LazySingleLookupPartitionedGrid<D, N>;
 	using Base = TrackingPartitionedGridBase<ThisType>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 	using typename Base::Child;
 
-	LazySharedLookupPartitionedGrid() : Base()
+	LazySingleLookupPartitionedGrid() : Base()
 	{}
 
 	/**
-	 * Construct a spatially partitioned LazySharedLookupGrid.
+	 * Construct a spatially partitioned LazySingleLookupGrid.
 	 *
 	 * Initialises grid data to NULL_IDX.
 	 *
@@ -106,7 +106,7 @@ public:
 	 * @param offset_ spatial offset of the grid.
 	 * @param partition_size_ size of a spatial partition.
 	 */
-	LazySharedLookupPartitionedGrid (
+	LazySingleLookupPartitionedGrid (
 		const VecDu& size_, const VecDi& offset_, const VecDu& partition_size_
 	) : Base()
 	{
@@ -114,7 +114,7 @@ public:
 	}
 
 	/**
-	 * Initialise a spatially partitioned LazySharedLookupGrid.
+	 * Initialise a spatially partitioned LazySingleLookupGrid.
 	 *
 	 * Initialises grid data to NULL_IDX.
 	 *
@@ -136,7 +136,7 @@ public:
 	 * This is an optimisation to ensure spatial partitions that are 'paired' do not get
 	 * constantly created and destroyed unnecessarily.
 	 *
-	 * @snippet test_PartitionedGrid.cpp LazySharedLookupPartitionedGrid reset_mixed_cases
+	 * @snippet test_PartitionedGrid.cpp LazySingleLookupPartitionedGrid reset_mixed_cases
 	 * @param grid_master_ `PartitionedGrid`-like grid to use as a "master"/"mask".
 	 * @param list_idx_ the tracking list id to reset.
 	 * @tparam Derived child class of `PartitionedGridBase`.
@@ -172,7 +172,7 @@ public:
 	 * Reset all tracking lists and data, deactivating all children except those active in given
 	 * master grid.
 	 *
-	 * @snippet test_PartitionedGrid.cpp LazySharedLookupPartitionedGrid reset_all
+	 * @snippet test_PartitionedGrid.cpp LazySingleLookupPartitionedGrid reset_all
 
 	 * @param grid_master_
 	 */
@@ -224,56 +224,56 @@ public:
 
 
 /**
- * Traits for LookupPartitionedGrid.
+ * Traits for MultiLookupPartitionedGrid.
  *
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
  */
 template <UINT D, UINT N>
-struct GridTraits<LookupPartitionedGrid<D, N> > : DefaultLookupGridTraits<D, N>
+struct GridTraits<MultiLookupPartitionedGrid<D, N> > : DefaultMultiLookupGridTraits<D, N>
 {
 	/// The class inheriting from TrackingPartitionedGrid.
-	using ThisType = LookupPartitionedGrid<D, N>;
-	/// Child grid class, in this case LookupGrid.
-	using ChildType = LookupGrid<D, N>;
+	using ThisType = MultiLookupPartitionedGrid<D, N>;
+	/// Child grid class, in this case MultiLookupGrid.
+	using ChildType = MultiLookupGrid<D, N>;
 	/// Base grid class to partition, in this case LookupGridBase.
 	using MixinType = LookupGridBase<ThisType>;
 };
 
 
 /**
- * Traits for SharedLookupPartitionedGrid.
+ * Traits for SingleLookupPartitionedGrid.
  *
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
  */
 template <UINT D, UINT N>
-struct GridTraits<SharedLookupPartitionedGrid<D, N> > : DefaultSharedLookupGridTraits<D, N>
+struct GridTraits<SingleLookupPartitionedGrid<D, N> > : DefaultSingleLookupGridTraits<D, N>
 {
 	/// The class inheriting from TrackingPartitionedGrid.
-	using ThisType = SharedLookupPartitionedGrid<D, N>;
-	/// Child grid class, in this case SharedLookupGrid.
-	using ChildType = SharedLookupGrid<D, N>;
+	using ThisType = SingleLookupPartitionedGrid<D, N>;
+	/// Child grid class, in this case SingleLookupGrid.
+	using ChildType = SingleLookupGrid<D, N>;
 	/// Grid class whose interface to copy via CRTP mixin.
-	using MixinType = SharedLookupGridBase<ThisType>;
+	using MixinType = SingleLookupGridBase<ThisType>;
 };
 
 
 /**
- * Traits for LazySharedLookupPartitionedGrid.
+ * Traits for LazySingleLookupPartitionedGrid.
  *
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
  */
 template <UINT D, UINT N>
-struct GridTraits<LazySharedLookupPartitionedGrid<D, N> > : DefaultSharedLookupGridTraits<D, N>
+struct GridTraits<LazySingleLookupPartitionedGrid<D, N> > : DefaultSingleLookupGridTraits<D, N>
 {
 	/// The class inheriting from TrackingPartitionedGrid.
-	using ThisType = LazySharedLookupPartitionedGrid<D, N>;
-	/// Child grid class, in this case LazySharedLookupGrid.
-	using ChildType = LazySharedLookupGrid<D, N>;
+	using ThisType = LazySingleLookupPartitionedGrid<D, N>;
+	/// Child grid class, in this case LazySingleLookupGrid.
+	using ChildType = LazySingleLookupGrid<D, N>;
 	/// Grid class whose interface to copy via CRTP mixin.
-	using MixinType = SharedLookupGridBase<ThisType>;
+	using MixinType = SingleLookupGridBase<ThisType>;
 };
 
 } // End namespace felt

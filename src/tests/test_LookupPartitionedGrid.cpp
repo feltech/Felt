@@ -7,19 +7,19 @@
 
 using namespace felt;
 
-BOOST_AUTO_TEST_SUITE(test_LookupPartitionedGrid)
+BOOST_AUTO_TEST_SUITE(test_MultiLookupPartitionedGrid)
 	/**
 	 * Simple lookup get and set values.
 	 */
 	BOOST_AUTO_TEST_CASE(initialise_and_populate)
 	{
-		typedef LookupPartitionedGrid<3, 3> GridType;
-		typedef LookupPartitionedGrid<3, 3>::ChildrenGrid ChildrenGrid;
-		typedef LookupPartitionedGrid<3, 3>::ChildrenGrid::Lookup LookupGrid;
+		typedef MultiLookupPartitionedGrid<3, 3> GridType;
+		typedef MultiLookupPartitionedGrid<3, 3>::ChildrenGrid ChildrenGrid;
+		typedef MultiLookupPartitionedGrid<3, 3>::ChildrenGrid::MultiLookup MultiLookupGrid;
 
 		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
 		ChildrenGrid& children = grid.children();
-		LookupGrid& lookup = children.lookup();
+		MultiLookupGrid& lookup = children.lookup();
 
 
 		for (INT x = -4; x <= 4; x++)
@@ -125,20 +125,20 @@ BOOST_AUTO_TEST_SUITE(test_LookupPartitionedGrid)
 BOOST_AUTO_TEST_SUITE_END()
 
 
-BOOST_AUTO_TEST_SUITE(test_SharedLookupPartitionedGrid)
+BOOST_AUTO_TEST_SUITE(test_SingleLookupPartitionedGrid)
 	BOOST_AUTO_TEST_CASE(initialise_and_populate)
 	{
 		// ==== Setup ====
-		typedef SharedLookupPartitionedGrid<3, 3> GridType;
+		typedef SingleLookupPartitionedGrid<3, 3> GridType;
 		typedef GridType::ChildrenGrid ChildrenGrid;
-		typedef ChildrenGrid::Lookup LookupGrid;
-		const Vec3u& BRANCH_NULL_IDX = LookupGrid::Traits::NULL_IDX_DATA;
+		typedef ChildrenGrid::MultiLookup MultiLookupGrid;
+		const Vec3u& BRANCH_NULL_IDX = MultiLookupGrid::Traits::NULL_IDX_DATA;
 		const UINT CHILD_NULL_IDX = GridType::NULL_IDX;
 
 		// ==== Action ====
 		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
 		ChildrenGrid& children = grid.children();
-		LookupGrid& lookup = children.lookup();
+		MultiLookupGrid& lookup = children.lookup();
 
 		// ==== Confirm ====
 		for (INT x = -4; x <= 4; x++)
@@ -243,18 +243,18 @@ BOOST_AUTO_TEST_SUITE(test_SharedLookupPartitionedGrid)
 BOOST_AUTO_TEST_SUITE_END()
 
 
-BOOST_AUTO_TEST_SUITE(test_LazySharedLookupPartitionedGrid)
+BOOST_AUTO_TEST_SUITE(test_LazySingleLookupPartitionedGrid)
 
 	struct Fixture {
-		const UINT NULL_IDX = LazySharedLookupPartitionedGrid<3, 3>::NULL_IDX;
-		LazySharedLookupPartitionedGrid<3, 3> grid;
+		const UINT NULL_IDX = LazySingleLookupPartitionedGrid<3, 3>::NULL_IDX;
+		LazySingleLookupPartitionedGrid<3, 3> grid;
 		Fixture()
 			: grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3))
 		{}
 	};
 
 	struct ResetFixture : Fixture {
-		const UINT NULL_IDX = LazySharedLookupPartitionedGrid<3, 3>::NULL_IDX;
+		const UINT NULL_IDX = LazySingleLookupPartitionedGrid<3, 3>::NULL_IDX;
 		PartitionedGrid<FLOAT, 3> grid_master;
 		ResetFixture()
 		: Fixture(),
@@ -264,17 +264,17 @@ BOOST_AUTO_TEST_SUITE(test_LazySharedLookupPartitionedGrid)
 
 	BOOST_AUTO_TEST_CASE(initialisation)
 	{
-		/// [LazySharedLookupPartitionedGrid initialisation]
+		/// [LazySingleLookupPartitionedGrid initialisation]
 		// ==== Setup ====
-		LazySharedLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
-		const UINT NULL_IDX = LazySharedLookupPartitionedGrid<3, 3>::NULL_IDX;
+		LazySingleLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
+		const UINT NULL_IDX = LazySingleLookupPartitionedGrid<3, 3>::NULL_IDX;
 
 		// ==== Confirm ====
 		BOOST_CHECK_EQUAL((bool)grid.children().get(Vec3i(1,1,1)).is_active(), false);
 		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).data().size(), 0);
 		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).background(), NULL_IDX);
 		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).get(Vec3i(1,1,1)), NULL_IDX);
-		/// [LazySharedLookupPartitionedGrid initialisation]
+		/// [LazySingleLookupPartitionedGrid initialisation]
 	}
 
 	BOOST_FIXTURE_TEST_CASE(add_should_activate_once, Fixture)
@@ -372,11 +372,11 @@ BOOST_AUTO_TEST_SUITE(test_LazySharedLookupPartitionedGrid)
 
 	BOOST_AUTO_TEST_CASE(reset_mixed_cases)
 	{
-		/// [LazySharedLookupPartitionedGrid reset_mixed_cases]
+		/// [LazySingleLookupPartitionedGrid reset_mixed_cases]
 		// ==== Setup ====
-		const UINT NULL_IDX = LazySharedLookupPartitionedGrid<3, 3>::NULL_IDX;
+		const UINT NULL_IDX = LazySingleLookupPartitionedGrid<3, 3>::NULL_IDX;
 		PartitionedGrid<FLOAT, 3> grid_master(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), 0, Vec3u(3, 3, 3));
-		LazySharedLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
+		LazySingleLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
 
 		const Vec3i pos_deactivated(0, 0, 0);
 		const Vec3i pos_active_because_master(-4, 0, 4);
@@ -424,17 +424,17 @@ BOOST_AUTO_TEST_SUITE(test_LazySharedLookupPartitionedGrid)
 		BOOST_CHECK_EQUAL(
 			grid.children().get(pos_child_active_because_other_list).data().size(), 3*3*3
 		);
-		/// [LazySharedLookupPartitionedGrid reset_mixed_cases]
+		/// [LazySingleLookupPartitionedGrid reset_mixed_cases]
 	}
 
 	BOOST_AUTO_TEST_CASE(reset_all)
 	{
-		/// [LazySharedLookupPartitionedGrid reset_all]
+		/// [LazySingleLookupPartitionedGrid reset_all]
 		// ==== Setup ====
 
-		const UINT NULL_IDX = LazySharedLookupPartitionedGrid<3, 3>::NULL_IDX;
+		const UINT NULL_IDX = LazySingleLookupPartitionedGrid<3, 3>::NULL_IDX;
 		PartitionedGrid<FLOAT, 3> grid_master(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), 0, Vec3u(3, 3, 3));
-		LazySharedLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
+		LazySingleLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
 
 		const Vec3i pos_list_0(0, 0, 0);
 		const Vec3i pos_active_because_master(-4, 0, 4);
@@ -475,7 +475,7 @@ BOOST_AUTO_TEST_SUITE(test_LazySharedLookupPartitionedGrid)
 			grid.children().get(pos_child_active_because_master).data().size(), 3*3*3
 		);
 		BOOST_CHECK_EQUAL(grid.children().list(0).size(), 1);
-		/// [LazySharedLookupPartitionedGrid reset_all]
+		/// [LazySingleLookupPartitionedGrid reset_all]
 	}
 
 BOOST_AUTO_TEST_SUITE_END()

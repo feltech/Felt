@@ -2,15 +2,15 @@
 
 #define _TESTING
 
-#include "Felt/LookupGrid.hpp"
+#include <Felt/MultiLookupGrid.hpp>
 
 using namespace felt;
 
-BOOST_AUTO_TEST_SUITE(test_LookupGrid)
+BOOST_AUTO_TEST_SUITE(test_MultiLookupGrid)
 
 	BOOST_AUTO_TEST_CASE(initialise_and_populate_single_tracking_list)
 	{
-		typedef LookupGrid<3> Grid_t;
+		typedef MultiLookupGrid<3> Grid_t;
 		Grid_t grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
 
 		Vec3i pos1(1, 0, -1);
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_SUITE(test_LookupGrid)
 
 	BOOST_AUTO_TEST_CASE(initialise_and_populatate_multiple_tracking_lists)
 	{
-		typedef LookupGrid<3, 3> Grid_t;
+		typedef MultiLookupGrid<3, 3> Grid_t;
 		Grid_t grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
 
 		const Vec3i pos1(1, 0, -1);
@@ -190,29 +190,29 @@ BOOST_AUTO_TEST_SUITE(test_LookupGrid)
 BOOST_AUTO_TEST_SUITE_END()
 
 
-BOOST_AUTO_TEST_SUITE(test_LazyLookupGrid)
+BOOST_AUTO_TEST_SUITE(test_LazyMultiLookupGrid)
 	BOOST_AUTO_TEST_CASE(initialisation)
 	{
-		/// [LazyLookupGrid initialisation]
+		/// [LazyMultiLookupGrid initialisation]
 		// ==== Setup ====
-		LazyLookupGrid<3, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1));
-		const Vec3u NULL_IDX_DATA = LazyLookupGrid<3, 3>::Traits::NULL_IDX_DATA;
+		LazyMultiLookupGrid<3, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1));
+		const Vec3u NULL_IDX_DATA = LazyMultiLookupGrid<3, 3>::Traits::NULL_IDX_DATA;
 
 		// ==== Confirm ====
 		BOOST_CHECK_EQUAL(grid.is_active(), false);
 		BOOST_CHECK_EQUAL(grid.data().size(), 0);
 		BOOST_CHECK_EQUAL(grid.background(), NULL_IDX_DATA);
 		BOOST_CHECK_EQUAL(grid.get(Vec3i(1,1,1)), NULL_IDX_DATA);
-		/// [LazyLookupGrid initialisation]
+		/// [LazyMultiLookupGrid initialisation]
 	}
 
 	BOOST_AUTO_TEST_CASE(activate_then_deactivate)
 	{
-		/// [LazyLookupGrid activate then deactivate]
+		/// [LazyMultiLookupGrid activate then deactivate]
 		// ==== Setup ====
-		LazyLookupGrid<3, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1));
-		using LeafType = typename LazyLookupGrid<3, 3>::LeafType;
-		const LeafType NULL_IDX = LazyLookupGrid<3, 3>::Traits::NULL_IDX_DATA;
+		LazyMultiLookupGrid<3, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1));
+		using LeafType = typename LazyMultiLookupGrid<3, 3>::LeafType;
+		const LeafType NULL_IDX = LazyMultiLookupGrid<3, 3>::Traits::NULL_IDX_DATA;
 
 		// ==== Action ====
 		grid.activate();
@@ -243,6 +243,6 @@ BOOST_AUTO_TEST_SUITE(test_LazyLookupGrid)
 		BOOST_CHECK_EQUAL(grid.list(0).capacity(), 0);
 		BOOST_CHECK_EQUAL(grid.list(1).capacity(), 0);
 		BOOST_CHECK_EQUAL(grid.list(2).capacity(), 0);
-		/// [LazyLookupGrid activate then deactivate]
+		/// [LazyMultiLookupGrid activate then deactivate]
 	}
 BOOST_AUTO_TEST_SUITE_END()

@@ -1,21 +1,17 @@
-#ifndef INCLUDE_FELT_SHAREDLOOKUPGRID_HPP_
-#define INCLUDE_FELT_SHAREDLOOKUPGRID_HPP_
+#ifndef INCLUDE_FELT_SingleLOOKUPGrid_HPP_
+
+#define INCLUDE_FELT_SingleLOOKUPGrid_HPP_
 
 #include <array>
 #include <sstream>
 #include <mutex>
-#include "LookupGrid.hpp"
+#include <Felt/MultiLookupGrid.hpp>
 
 namespace felt
 {
 
-/** @addtogroup LookupGrids
- *  @{
- */
-
-
 /**
- * Similar to LookupGrid but grid nodes store only a single list index.
+ * Similar to MultiLookupGrid but grid nodes store only a single list index.
  *
  * Useful in cases where grid nodes cannot be in more than one list.
  *
@@ -23,11 +19,11 @@ namespace felt
  * @tparam N the number of tracking lists to use.
  */
 template <class Derived, bool IsLazy=false>
-class SharedLookupGridBase : public LookupGridBase<SharedLookupGridBase<Derived>, IsLazy>
+class SingleLookupGridBase : public LookupGridBase<SingleLookupGridBase<Derived>, IsLazy>
 {
 public:
-	friend class LookupGridBase<SharedLookupGridBase<Derived>, IsLazy>;
-	using ThisType = SharedLookupGridBase<Derived>;
+	friend class LookupGridBase<SingleLookupGridBase<Derived>, IsLazy>;
+	using ThisType = SingleLookupGridBase<Derived>;
 	using Base = LookupGridBase<ThisType, IsLazy>;
 	using Base::NULL_IDX;
 	using typename Base::LeafType;
@@ -158,12 +154,12 @@ protected:
  * @tparam Derived CRTP derived class.
  */
 template <class Derived>
-class StaticSharedLookupGridBase : public SharedLookupGridBase <
-	StaticSharedLookupGridBase<Derived>, false
+class StaticSingleLookupGridBase : public SingleLookupGridBase <
+	StaticSingleLookupGridBase<Derived>, false
 > {
 public:
-	using Base = SharedLookupGridBase<StaticSharedLookupGridBase<Derived>, false>;
-	using Base::SharedLookupGridBase;
+	using Base = SingleLookupGridBase<StaticSingleLookupGridBase<Derived>, false>;
+	using Base::SingleLookupGridBase;
 };
 
 
@@ -173,19 +169,19 @@ public:
  * @tparam Derived CRTP derived class.
  */
 template <class Derived>
-class LazySharedLookupGridBase : public SharedLookupGridBase <
-	LazySharedLookupGridBase<Derived>, true
+class LazySingleLookupGridBase : public SingleLookupGridBase <
+	LazySingleLookupGridBase<Derived>, true
 > {
 public:
-	using ThisType = LazySharedLookupGridBase<Derived>;
-	using Base = SharedLookupGridBase<LazySharedLookupGridBase<Derived>, true>;
+	using ThisType = LazySingleLookupGridBase<Derived>;
+	using Base = SingleLookupGridBase<LazySingleLookupGridBase<Derived>, true>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 	using Base::Base::Base::is_active;
 	using Base::is_active;
-	using Traits = GridTraits< LazySharedLookupGridBase<Derived> >;
+	using Traits = GridTraits< LazySingleLookupGridBase<Derived> >;
 
-	LazySharedLookupGridBase() : Base()
+	LazySingleLookupGridBase() : Base()
 	{}
 
 	/**
@@ -194,7 +190,7 @@ public:
 	 * @param size_ size of grid.
 	 * @param offset_ spatial offset of grid.
 	 */
-	LazySharedLookupGridBase(const VecDu& size_, const VecDi& offset_)
+	LazySingleLookupGridBase(const VecDu& size_, const VecDi& offset_)
 	{
 		this->init(size_, offset_, Traits::NULL_IDX_DATA);
 	}
@@ -204,7 +200,7 @@ public:
 	 *
 	 * @param other_ grid to copy.
 	 */
-	LazySharedLookupGridBase(const ThisType& other_) : Base(other_)
+	LazySingleLookupGridBase(const ThisType& other_) : Base(other_)
 	{
 		this->m_background = other_.m_background;
 	}
@@ -214,7 +210,7 @@ public:
 	 *
 	 * @param other_ grid to move.
 	 */
-	LazySharedLookupGridBase(ThisType&& other_) : Base(other_)
+	LazySingleLookupGridBase(ThisType&& other_) : Base(other_)
 	{
 		this->m_background = std::move(other_.m_background);
 	}
@@ -250,7 +246,7 @@ public:
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N>
-struct DefaultSharedLookupGridTraits : DefaultGridTraits<UINT, D >
+struct DefaultSingleLookupGridTraits : DefaultGridTraits<UINT, D >
 {
 	/// Null index grid value in data array.
 	static const UINT NULL_IDX_DATA;
@@ -259,110 +255,107 @@ struct DefaultSharedLookupGridTraits : DefaultGridTraits<UINT, D >
 };
 
 template <UINT D, UINT N>
-const UINT DefaultSharedLookupGridTraits<D, N>::NULL_IDX_DATA = std::numeric_limits<UINT>::max();
+const UINT DefaultSingleLookupGridTraits<D, N>::NULL_IDX_DATA = std::numeric_limits<UINT>::max();
 
 
 /**
- * Concrete definition of standard SharedLookupGrid from SharedLookupGridBase.
+ * Concrete definition of standard SingleLookupGrid from SingleLookupGridBase.
  *
- * A simple stub to expose SharedLookupGridBase, which is also CRTP derived from elsewhere
- * - @see SharedTrackedPartitionedGrid.
+ * A simple stub to expose SingleLookupGridBase, which is also CRTP derived from elsewhere
+ * - @see SingleTrackedPartitionedGrid.
  *
  * @tparam D the dimension of the grid.
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N=1>
-class SharedLookupGrid : public StaticSharedLookupGridBase<SharedLookupGrid<D, N> >
+class SingleLookupGrid : public StaticSingleLookupGridBase<SingleLookupGrid<D, N> >
 {
 public:
-	using ThisType = SharedLookupGrid<D, N>;
-	using Base = StaticSharedLookupGridBase<ThisType>;
-	using Base::StaticSharedLookupGridBase;
+	using ThisType = SingleLookupGrid<D, N>;
+	using Base = StaticSingleLookupGridBase<ThisType>;
+	using Base::StaticSingleLookupGridBase;
 };
 
 
 /**
- * Concrete definition of LazySharedLookupGrid from LazySharedLookupGridBase.
+ * Concrete definition of LazySingleLookupGrid from LazySingleLookupGridBase.
  *
- * A simple stub to expose LazySharedLookupGridBase, which is also CRTP derived from elsewhere
- * - @see LazySharedTrackedPartitionedGrid.
+ * A simple stub to expose LazySingleLookupGridBase, which is also CRTP derived from elsewhere
+ * - @see LazySingleTrackedPartitionedGrid.
  *
- * @snippet test_MappedGrid.cpp LazySharedLookupGrid initialisation
+ * @snippet test_MappedGrid.cpp LazySingleLookupGrid initialisation
  *
  * @tparam D the dimension of the grid.
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N=1>
-class LazySharedLookupGrid : public LazySharedLookupGridBase<LazySharedLookupGrid<D, N> >
+class LazySingleLookupGrid : public LazySingleLookupGridBase<LazySingleLookupGrid<D, N> >
 {
 public:
-	using ThisType = LazySharedLookupGrid<D, N>;
-	using Base = LazySharedLookupGridBase<ThisType>;
-	using Base::LazySharedLookupGridBase;
+	using ThisType = LazySingleLookupGrid<D, N>;
+	using Base = LazySingleLookupGridBase<ThisType>;
+	using Base::LazySingleLookupGridBase;
 };
 
 
 /**
- * Traits for SharedLookupGridBase.
+ * Traits for SingleLookupGridBase.
  *
- * Just forward the traits defined for SharedLookupGridBase subclasses.
+ * Just forward the traits defined for SingleLookupGridBase subclasses.
  */
 template <class Derived, bool IsLazy>
-struct GridTraits< SharedLookupGridBase<Derived, IsLazy> > : GridTraits<Derived>
+struct GridTraits< SingleLookupGridBase<Derived, IsLazy> > : GridTraits<Derived>
 {};
 
 
 /**
- * Traits for LazySharedLookupGridBase.
+ * Traits for LazySingleLookupGridBase.
  *
- * Just forward the traits defined for SharedLookupGridBase subclasses.
+ * Just forward the traits defined for SingleLookupGridBase subclasses.
  */
 template <class Derived>
-struct GridTraits<LazySharedLookupGridBase<Derived> > : GridTraits<Derived>
+struct GridTraits<LazySingleLookupGridBase<Derived> > : GridTraits<Derived>
 {};
 
 
 /**
- * Traits for LazySharedLookupGridBase.
+ * Traits for LazySingleLookupGridBase.
  *
- * Just forward the traits defined for SharedLookupGridBase subclasses.
+ * Just forward the traits defined for SingleLookupGridBase subclasses.
  */
 template <class Derived>
-struct GridTraits<StaticSharedLookupGridBase<Derived> > : GridTraits<Derived>
+struct GridTraits<StaticSingleLookupGridBase<Derived> > : GridTraits<Derived>
 {};
 
 
 /**
- * Traits for SharedLookupGrid.
+ * Traits for SingleLookupGrid.
  *
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
  */
 template <UINT D, UINT N>
-struct GridTraits<SharedLookupGrid<D, N> > : DefaultSharedLookupGridTraits<D, N>
+struct GridTraits<SingleLookupGrid<D, N> > : DefaultSingleLookupGridTraits<D, N>
 {
 	/// The derived type.
-	using ThisType = SharedLookupGrid<D, N>;
+	using ThisType = SingleLookupGrid<D, N>;
 };
 
 
 /**
- * Traits for LazySharedLookupGrid.
+ * Traits for LazySingleLookupGrid.
  *
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
  */
 template <UINT D, UINT N>
-struct GridTraits<LazySharedLookupGrid<D, N> > : DefaultSharedLookupGridTraits<D, N>
+struct GridTraits<LazySingleLookupGrid<D, N> > : DefaultSingleLookupGridTraits<D, N>
 {
 	/// The derived type.
-	using ThisType = LazySharedLookupGrid<D, N>;
+	using ThisType = LazySingleLookupGrid<D, N>;
 };
-
-
-/** @} */ // End group LookupGrid.
 
 } // End namespace felt
 
 
-#endif /* INCLUDE_FELT_SHAREDLOOKUPGRID_HPP_ */
+#endif /* INCLUDE_FELT_SingleLOOKUPGrid_HPP_ */

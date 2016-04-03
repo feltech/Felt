@@ -1,7 +1,7 @@
-#ifndef INCLUDE_FELT_SHAREDTRACKEDGRID_HPP_
-#define INCLUDE_FELT_SHAREDTRACKEDGRID_HPP_
+#ifndef INCLUDE_FELT_SingleTRACKEDGrid_HPP_
+#define INCLUDE_FELT_SingleTRACKEDGrid_HPP_
 
-#include "TrackedGrid.hpp"
+#include "TrackedGridBase.hpp"
 
 namespace felt
 {
@@ -9,7 +9,7 @@ namespace felt
 /**
  * A tracked grid that assumes non-overlapping tracking lists.
  *
- * A grid of arbitrary data, with active positions tracked by an internal SharedLookupGrid.
+ * A grid of arbitrary data, with active positions tracked by an internal SingleLookupGrid.
  *
  * Each node of the associated lookup grid stores only a single list index. A significant memory
  * saving when a grid node can only be in one of the tracking lists.
@@ -22,10 +22,10 @@ namespace felt
  * @tparam N the number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N=1>
-class SharedTrackedGrid : public TrackedGridBase<SharedTrackedGrid<T, D, N> >
+class SingleTrackedGrid : public TrackedGridBase< SingleTrackedGrid<T, D, N> >
 {
 public:
-	using ThisType = SharedTrackedGrid<T, D, N>;
+	using ThisType = SingleTrackedGrid<T, D, N>;
 	using Base = TrackedGridBase<ThisType>;
 	using TrackedGridBase<ThisType>::TrackedGridBase;
 };
@@ -33,7 +33,7 @@ public:
 /**
  * A lazy tracked grid that assumes non-overlapping tracking lists.
  *
- * @copydetails SharedTrackedGrid
+ * @copydetails SingleTrackedGrid
  *
  * Lazy variant, that can be activated and deactivated (data array destroyed and created).
  *
@@ -42,10 +42,10 @@ public:
  * @tparam N the number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N=1>
-class LazySharedTrackedGrid : public TrackedGridBase<LazySharedTrackedGrid<T, D, N>, true>
+class LazySingleTrackedGrid : public TrackedGridBase<LazySingleTrackedGrid<T, D, N>, true>
 {
 public:
-	using ThisType = LazySharedTrackedGrid<T, D, N>;
+	using ThisType = LazySingleTrackedGrid<T, D, N>;
 	using Base = TrackedGridBase<ThisType, true>;
 	using Base::TrackedGridBase;
 	using Base::Base::is_active;
@@ -55,7 +55,7 @@ public:
 	 *
 	 * Also activates lookup grid.
 	 *
-	 * @snippet test_MappedGrid.cpp LazySharedTrackedGrid activate
+	 * @snippet test_SingleTrackedGrid.cpp LazySingleTrackedGrid activate
 	 */
 	void activate()
 	{
@@ -68,7 +68,7 @@ public:
 	 *
 	 * Also destroys lookup grid.
 	 *
-	 * @snippet test_MappedGrid.cpp LazySharedTrackedGrid deactivate
+	 * @snippet test_SingleTrackedGrid.cpp LazySingleTrackedGrid deactivate
 	 */
 	void deactivate()
 	{
@@ -79,35 +79,35 @@ public:
 
 
 /**
- * Traits of SharedTrackedGrid.
+ * Traits of SingleTrackedGrid.
  *
  * @tparam T the type of data to store in the grid.
  * @tparam D the dimension of the grid.
  * @tparam N the number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N>
-struct GridTraits<SharedTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
+struct GridTraits<SingleTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
 {
-	using ThisType = SharedTrackedGrid<T, D, N>;
-	/// Type of lookup grid to use.  This is what differentiates this from TrackedGrid.
-	using LookupType = SharedLookupGrid<D, N>;
+	using ThisType = SingleTrackedGrid<T, D, N>;
+	/// Type of lookup grid to use.  This is what differentiates this from MultiTrackedGrid.
+	using MultiLookupType = SingleLookupGrid<D, N>;
 };
 
 
 /**
- * Traits of LazySharedTrackedGrid.
+ * Traits of LazySingleTrackedGrid.
  *
  * @tparam T the type of data to store in the grid.
  * @tparam D the dimension of the grid.
  * @tparam N the number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N>
-struct GridTraits<LazySharedTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
+struct GridTraits<LazySingleTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
 {
-	using ThisType = LazySharedTrackedGrid<T, D, N>;
-	/// Type of lookup grid to use.  This is what differentiates this from TrackedGrid.
-	using LookupType = LazySharedLookupGrid<D, N>;
+	using ThisType = LazySingleTrackedGrid<T, D, N>;
+	/// Type of lookup grid to use.  This is what differentiates this from MultiTrackedGrid.
+	using MultiLookupType = LazySingleLookupGrid<D, N>;
 };
 
 }
-#endif /* INCLUDE_FELT_SHAREDTRACKEDGRID_HPP_ */
+#endif /* INCLUDE_FELT_SingleTRACKEDGrid_HPP_ */

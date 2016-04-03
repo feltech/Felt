@@ -2,15 +2,15 @@
 #define INCLUDE_FELT_PARTITIONBASE_HPP_
 
 #include <mutex>
-#include "TrackedGrid.hpp"
+#include <Felt/MultiTrackedGrid.hpp>
 
 namespace felt
 {
 /**
  * Base class for spatially partitioned structures.
  *
- * A TrackedGrid is used to store and track arbitrary Child structures. The grid as a whole has a
- * size, which is the size of a Child multiplied by the size of the TrackedGrid.  The Child might
+ * A MultiTrackedGrid is used to store and track arbitrary Child structures. The grid as a whole has a
+ * size, which is the size of a Child multiplied by the size of the MultiTrackedGrid.  The Child might
  * not be another grid type (e.g. see PartitionedArray).
  *
  * @tparam Derived the CRTP subclass type.
@@ -30,7 +30,7 @@ public:
 	static const UINT NUM_LISTS = Traits::NumLists;
 
 	/// Grid of partitions with tracking list(s) of active partitions.
-	using ChildrenGrid = TrackedGrid<Child, Traits::Dims, NUM_LISTS>;
+	using ChildrenGrid = MultiTrackedGrid<Child, Traits::Dims, NUM_LISTS>;
 	/// D-dimensional unsigned int vector.
 	using VecDu = typename ChildrenGrid::VecDu;
 	/// D-dimensional signed int vector.
@@ -115,10 +115,10 @@ public:
 	}
 
 	/**
-	 * Get TrackedGrid children grid - the spatial partition grid that stores the PartitionBase::Child
+	 * Get MultiTrackedGrid children grid - the spatial partition grid that stores the PartitionBase::Child
 	 * objects.
 	 *
-	 * @return TrackedGrid storing/tracking Child objects.
+	 * @return MultiTrackedGrid storing/tracking Child objects.
 	 */
 	ChildrenGrid& children ()
 	{
@@ -126,10 +126,10 @@ public:
 	}
 
 	/**
-	 * Get TrackedGrid children grid - the spatial partition grid that stores the PartitionBase::Child
+	 * Get MultiTrackedGrid children grid - the spatial partition grid that stores the PartitionBase::Child
 	 * objects.
 	 *
-	 * @return TrackedGrid storing/tracking Child objects.
+	 * @return MultiTrackedGrid storing/tracking Child objects.
 	 */
 	const ChildrenGrid& children () const
 	{
@@ -216,11 +216,11 @@ public:
 	 */
 	bool is_child_active(const VecDi& pos_child_) const
 	{
-		using NULL_IDX_TYPE = typename ChildrenGrid::Lookup::Traits::NULL_IDX_TYPE;
+		using NULL_IDX_TYPE = typename ChildrenGrid::MultiLookup::Traits::NULL_IDX_TYPE;
 
 		const NULL_IDX_TYPE idxs = this->children().lookup().get(pos_child_);
 
-		return idxs != ChildrenGrid::Lookup::Traits::NULL_IDX_DATA;
+		return idxs != ChildrenGrid::MultiLookup::Traits::NULL_IDX_DATA;
 	}
 
 	/**
