@@ -43,7 +43,7 @@ public:
 	 * A level set embedding isogrid grid, with active grid points (the narrow
 	 * band) tracked.
 	 */
-	using IsoGrid = SingleTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
+	using IsoGrid = LazySingleTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
 	/**
 	 * A resizable array of D-dimensional grid positions.
 	 */
@@ -176,16 +176,13 @@ public:
 	 * @param size_ size of the isogrid.
 	 * @param size_partition_ size of each spatial partition of the isogrid.
 	 */
-	Surface (const VecDu& size_, const VecDu& size_partition_ = VecDu::Constant(0)) :
+	Surface (const VecDu& size_, const VecDu& size_partition_ = VecDu::Constant(8)) :
 		m_grid_isogrid(),
 		m_grid_status_change(),
 		m_grid_delta(),
 		m_grid_affected()
 	{
-		if (size_partition_ == VecDu::Constant(0))
-			this->init(size_, size_);
-		else
-			this->init(size_, size_partition_);
+		this->init(size_, size_partition_);
 	}
 
 	/**
@@ -411,6 +408,7 @@ public:
 	void add_neighs(const VecDi& pos, const INT side)
 	{
 		// Get neighbouring points.
+		using Child = typename IsoGrid::Child;
 		PosArray neighs;
 		m_grid_isogrid.neighs(pos, neighs);
 
@@ -421,7 +419,10 @@ public:
 		for (UINT neighIdx = 0; neighIdx < neighs.size(); neighIdx++)
 		{
 			const VecDi& pos_neigh = neighs[neighIdx];
-			typename IsoGrid::Child& child = m_grid_isogrid.children().get(m_grid_isogrid.pos_child(pos_neigh));
+			const VecDi pos_child = m_grid_isogrid.pos_child(pos_neigh);
+
+			m_grid_isogrid.add_child(pos_child);
+			Child& child = m_grid_isogrid.children().get(pos_child);
 			
 			const INT from_layer_id = this->layer_id(pos_neigh);
 
@@ -895,8 +896,11 @@ public:
 	 */
 	void layer_add (const FLOAT val, const VecDi& pos)
 	{
-		const INT id = this->layer_id(val);
-		this->layer_add(pos, id);
+		const INT layer_id = this->layer_id(val);
+		// Do nothing if position is outside narrow band.
+		if (!this->inside_band(layer_id))
+			return;
+		m_grid_isogrid.add(pos, val, this->layer_idx(layer_id));
 	}
 
 	/**
@@ -1011,8 +1015,6 @@ public:
 			// Check distance indicates that this point is within the narrow band.
 			if ((UINT)std::abs(this->layer_id(f_dist)) <= L)
 			{
-				// Set distance as value in isogrid grid.
-				isogrid(pos) = f_dist;
 				// Append point to a narrow band layer (if applicable).
 				this->layer_add(f_dist, pos);
 			}
@@ -1132,6 +1134,9 @@ public:
 			idx_child++
 		) {
 			const VecDi& pos_child = children.list(layer_idx)[idx_child];
+
+			m_grid_isogrid.add_child(pos_child);
+
 			for (const VecDi& pos : children(pos_child).list(layer_idx))
 			{
 				const FLOAT fisogrid = this->isogrid(pos);

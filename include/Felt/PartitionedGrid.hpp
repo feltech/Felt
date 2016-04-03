@@ -202,21 +202,19 @@ public:
 	 *
 	 * @return non-partitioned contiguous grid containing a copy of the data.
 	 */
-	typename SnapshotGrid::ArrayData& data()
+	SnapshotGrid& snapshot()
 	{
 		m_pgrid_snapshot.reset(new SnapshotGrid(this->size(), this->offset(), LeafType()));
 
-		for (UINT branch_idx = 0; branch_idx < this->children().data().size(); branch_idx++)
+		const VecDi pos_max = this->m_size.template cast<INT>() - VecDi::Constant(1);
+
+		for (UINT idx = 0; idx <= this->index(pos_max); idx++)
 		{
-			const Child& child = this->children().data()[branch_idx];
-			for (UINT leaf_idx = 0; leaf_idx < child.data().size(); leaf_idx++)
-			{
-				const VecDi& pos = child.index(leaf_idx);
-				if (m_pgrid_snapshot->inside(pos))
-					m_pgrid_snapshot->get(pos) = child.get(pos);
-			}
+			const VecDi pos = this->index(idx);
+			m_pgrid_snapshot->get(pos) = this->get(pos);
 		}
-		return m_pgrid_snapshot->data();
+
+		return *m_pgrid_snapshot;
 	}
 
 	/**

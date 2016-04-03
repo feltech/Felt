@@ -17,13 +17,13 @@ BOOST_AUTO_TEST_CASE(init)
 {
 	// ==== Setup ====
 	// Basic initialisation of 2D surface with 2 layers in a 5x5 embedding.
-	Surface<2, 2> surface(Vec2u(7, 7));
+	Surface<2, 2> surface(Vec2u(7, 7), Vec2u(3, 3));
 
 	// ==== Confirm ====
 	BOOST_CHECK_EQUAL(surface.isogrid().size(), Vec2u(7, 7));
-	BOOST_CHECK_EQUAL(surface.isogrid().children().data().size(), 1);
-	BOOST_CHECK_EQUAL(surface.isogrid().children().get(Vec2i(0, 0)).size(), Vec2u(7, 7));
-	BOOST_CHECK_EQUAL(surface.isogrid().children().get(Vec2i(0, 0)).data().size(), 7*7);
+	BOOST_CHECK_EQUAL(surface.isogrid().children().data().size(), 9);
+	BOOST_CHECK_EQUAL(surface.isogrid().children().get(Vec2i(0, 0)).size(), Vec2u(3, 3));
+	BOOST_CHECK_EQUAL(surface.isogrid().children().get(Vec2i(0, 0)).data().size(), 0);
 	// Usable isogrid should have size=size-layers and be offset by half grid width.
 	// In this test case, only the centre point is actually usable, all other points are
 	// reserved for outer layers.
@@ -89,14 +89,13 @@ BOOST_AUTO_TEST_CASE(layers)
 BOOST_AUTO_TEST_CASE(seed)
 {
 	Surface<2, 2> surface(Vec2u(5, 5));
-	Surface<2, 2>::IsoGrid::Child& isogrid = surface.isogrid().children().get(Vec2i(0, 0));
 
 	surface.seed(Vec2i(0, 0));
 
 	// Trivially check centre of seed is indeed a zero-level point (i.e. point
 	// on the surface).
 
-	const FLOAT val_centre = isogrid(Vec2i(0, 0));
+	const FLOAT val_centre = surface.isogrid().get(Vec2i(0, 0));
 	BOOST_CHECK_EQUAL(val_centre, 0);
 
 	// A 2D 2-layer singularity (seed) point should look like the following.
@@ -113,7 +112,9 @@ BOOST_AUTO_TEST_CASE(seed)
 //	std::cerr << isogrid.data() << std::endl << std::endl;
 //	std::cerr << isogrid_check.data() << std::endl << std::endl;
 
-	isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+	isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
+	BOOST_TEST_MESSAGE(stringifyGridSlice(surface.isogrid().snapshot()));
+	BOOST_TEST_MESSAGE(stringifyGridSlice(isogrid_check));
 
 	const FLOAT diff = isogrid_check.vdata().sum();
 
@@ -160,7 +161,7 @@ BOOST_AUTO_TEST_CASE(next_closest_grid_point)
 
 	// Ensure it also works with negative distances.
 	// NOTE: row-major (y,x) element ordering...
-	surface.isogrid().data() = {
+	surface.isogrid().snapshot().data() = {
 		2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -2,
 		-2, -2, -2, -2 };
 	surface.isogrid().flush_snapshot();
@@ -213,7 +214,6 @@ BOOST_AUTO_TEST_CASE(delta_isogrid_update)
 	//! [Simple delta isogrid update]
 	// ==== Setup ====
 	Surface<3, 2> surface(Vec3u(5, 5, 5));
-	Surface<3, 2>::IsoGrid::Child& isogrid = surface.isogrid().children().get(Vec3i(0,0,0));
 	Surface<3, 2>::DeltaIsoGrid& delta = surface.delta();
 
 	// ==== Action ====
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE(delta_isogrid_update)
 
 	// ==== Action ====
 	// Add a zero-layer point.
-	surface.isogrid(Vec3i(0, 0, 0), 0.0f);
+	surface.layer_add(0.0f, Vec3i(0, 0, 0));
 
 	// Clear delta isogrid.
 	surface.update_start();
@@ -246,7 +246,7 @@ BOOST_AUTO_TEST_CASE(delta_isogrid_update)
 
 	// ==== Confirm ====
 	// Ensure nothing was changed.  Every point in 5x5x5 grid == 3, except centre which == 0.
-	BOOST_CHECK_EQUAL(isogrid.vdata().sum(), 3 * 5 * 5 * 5 - 3);
+	BOOST_CHECK_EQUAL(surface.isogrid().snapshot().vdata().sum(), 3 * 5 * 5 * 5 - 3);
 	// Delta isogrid position vector list should still contain one point.
 	BOOST_CHECK_EQUAL(surface.delta().leafs(surface.layer_idx(0)).size(), 1);
 	// Delta isogrid grid itself should have reset back to zero.
@@ -262,8 +262,8 @@ BOOST_AUTO_TEST_CASE(delta_isogrid_update)
 
 	// ==== Confirm ====
 	// Ensure change applied.  Every point in grid == 3, except centre which == 0.4.
-	BOOST_CHECK_EQUAL(isogrid.vdata().sum(), 3 * 5 * 5 * 5 - 3 + 0.4f);
-	BOOST_CHECK_EQUAL(isogrid.get(Vec3i(0, 0, 0)), 0.4f);
+	BOOST_CHECK_EQUAL(surface.isogrid().snapshot().vdata().sum(), 3 * 5 * 5 * 5 - 3 + 0.4f);
+	BOOST_CHECK_EQUAL(surface.isogrid().get(Vec3i(0, 0, 0)), 0.4f);
 	//! [Simple delta isogrid update]
 }
 
@@ -289,8 +289,7 @@ BOOST_AUTO_TEST_CASE(distance_transform)
 	// distances are updated.
 	{
 		typedef Surface<2, 2> SurfaceT;
-		SurfaceT surface(Vec2u(5, 5));
-		SurfaceT::IsoGrid::Child& isogrid = surface.isogrid().children().get(Vec2i(0, 0));
+		SurfaceT surface(Vec2u(5, 5), Vec2u(5, 5));
 
 		surface.seed(Vec2i(0, 0));
 
@@ -316,7 +315,7 @@ BOOST_AUTO_TEST_CASE(distance_transform)
 		surface.update_end();
 
 
-		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
 		const FLOAT diff = isogrid_check.vdata().sum();
 
 		BOOST_CHECK_EQUAL(diff, 0);
@@ -330,7 +329,6 @@ BOOST_AUTO_TEST_CASE(layer_update)
 {
 	typedef Surface<2, 2> Surface_t;
 	Surface_t surface(Vec2u(9, 9));
-	Surface_t::IsoGrid::Child& isogrid = surface.isogrid().children().get(Vec2i(0, 0));
 	// Grid to set values of manually, for checking against.
 	Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
 
@@ -351,7 +349,7 @@ BOOST_AUTO_TEST_CASE(layer_update)
 			2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3};
 
-		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
 		const FLOAT diff = isogrid_check.vdata().sum();
 		BOOST_CHECK_SMALL(diff, 0.000001f);
 
@@ -384,7 +382,7 @@ BOOST_AUTO_TEST_CASE(layer_update)
 			3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3};
 
-		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
 		const FLOAT diff = isogrid_check.vdata().sum();
 		BOOST_CHECK_SMALL(diff, 0.000001f);
 	}
@@ -411,7 +409,7 @@ BOOST_AUTO_TEST_CASE(layer_update)
 		BOOST_CHECK_EQUAL(surface.layer(1).size(), 1);
 		BOOST_CHECK_EQUAL(surface.layer(2).size(), 4);
 
-		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
 		const FLOAT diff = isogrid_check.vdata().sum();
 		BOOST_CHECK_SMALL(diff, 0.000001f);
 	}
@@ -439,7 +437,7 @@ BOOST_AUTO_TEST_CASE(layer_update)
 		BOOST_CHECK_EQUAL(surface.layer(1).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(2).size(), 1);
 
-		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
 		const FLOAT diff = isogrid_check.vdata().sum();
 		BOOST_CHECK_SMALL(diff, 0.000001f);
 	}
@@ -467,7 +465,7 @@ BOOST_AUTO_TEST_CASE(layer_update)
 		BOOST_CHECK_EQUAL(surface.layer(1).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(2).size(), 0);
 
-		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
 		const FLOAT diff = isogrid_check.vdata().sum();
 		BOOST_CHECK_SMALL(diff, 0.000001f);
 	}
@@ -495,7 +493,7 @@ BOOST_AUTO_TEST_CASE(layer_update)
 		BOOST_CHECK_EQUAL(surface.layer(1).size(), 0);
 		BOOST_CHECK_EQUAL(surface.layer(2).size(), 0);
 
-		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
 		const FLOAT diff = isogrid_check.vdata().sum();
 		BOOST_CHECK_SMALL(diff, 0.000001f);
 	}
@@ -605,7 +603,6 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 {
 	typedef Surface<2, 2> SurfaceT;
 	SurfaceT surface(Vec2u(9, 9));
-	SurfaceT::IsoGrid::Child& isogrid = surface.isogrid().children().get(Vec2i(0, 0));
 	// Grid to set values of manually, for checking against.
 	Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
 
@@ -652,7 +649,7 @@ BOOST_AUTO_TEST_CASE(check_bounded)
 			1.5, 3, 3, 3, 3, 3, 1.5, 0.5, 1.5, 3, 3, 3, 3, 3, 3, 3, 1.5, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
 
-		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
 		const FLOAT diff = isogrid_check.vdata().sum();
 		// isogrid_check uses 'whole' 0.5s, but internally, to prevent rounding,
 		// max isogrid at grid boundary is 0.5-epsilon*2.
@@ -787,7 +784,6 @@ BOOST_AUTO_TEST_CASE(local_update)
 {
 	typedef Surface<2, 2> SurfaceT;
 	SurfaceT surface(Vec2u(9, 9));
-	SurfaceT::IsoGrid::Child& isogrid = surface.isogrid().children().get(Vec2i(0, 0));
 	// Grid to set values of manually, for checking against.
 	Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
 
@@ -817,7 +813,7 @@ BOOST_AUTO_TEST_CASE(local_update)
 			2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
 
-		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
 		const FLOAT diff = isogrid_check.vdata().sum();
 		BOOST_CHECK_SMALL(diff, 0.000001f);
 
@@ -843,7 +839,7 @@ BOOST_AUTO_TEST_CASE(local_update)
 			3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3,
 			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
 
-		isogrid_check.vdata() = isogrid_check.vdata() - isogrid.vdata();
+		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
 		const FLOAT diff = isogrid_check.vdata().sum();
 		BOOST_CHECK_SMALL(diff, 0.000001f);
 	}
