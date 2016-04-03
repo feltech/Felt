@@ -125,25 +125,196 @@ BOOST_AUTO_TEST_SUITE(test_SingleTrackedPartitionedGrid)
 BOOST_AUTO_TEST_SUITE_END()
 
 
-//BOOST_AUTO_TEST_SUITE(test_LazySingleTrackedPartitionedGrid)
-//
-//	BOOST_AUTO_TEST_CASE(initialisation)
-//	{
-//		/// [LazySingleTrackedPartitionedGrid initialisation]
-//		// ==== Setup ====
-//		LazySingleTrackedPartitionedGrid<3, 3> grid(
-//			Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3), 3
-//		);
-//		const UINT NULL_IDX = LazySingleTrackedPartitionedGrid<3, 3>::Lookup::NULL_IDX;
-//
-//		// ==== Confirm ====
-//		BOOST_CHECK_EQUAL((bool)grid.children().get(Vec3i(1,1,1)).is_active(), false);
-//		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).background(), 3);
-//		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).data().size(), 0);
-//		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).get(Vec3i(1,1,1)), 3);
-//		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).lookup().data().size(), 0);
-//		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).lookup().get(Vec3i(1,1,1)), NULL_IDX);
-//		/// [LazySingleTrackedPartitionedGrid initialisation]
-//	}
-//BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE(test_LazySingleTrackedPartitionedGrid)
+
+	BOOST_AUTO_TEST_CASE(initialisation)
+	{
+		/// [LazySingleTrackedPartitionedGrid initialisation]
+		// ==== Setup ====
+		using GridType = LazySingleTrackedPartitionedGrid<FLOAT, 3, 3>;
+		const UINT NULL_IDX = GridType::Child::Lookup::NULL_IDX;
+
+		// ==== Action ====
+		GridType grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), 7.0f, Vec3u(3, 3, 3));
+
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL((bool)grid.children().get(Vec3i(1,1,1)).is_active(), false);
+		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).background(), 7);
+		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).data().size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).get(Vec3i(1,1,1)), 7);
+		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).lookup().data().size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).lookup().get(Vec3i(1,1,1)), NULL_IDX);
+		/// [LazySingleTrackedPartitionedGrid initialisation]
+	}
+
+	struct Fixture
+	{
+		using GridType = LazySingleTrackedPartitionedGrid<FLOAT, 3, 3>;
+		const UINT NULL_IDX = GridType::Lookup::NULL_IDX;
+		GridType grid;
+		Fixture()
+			: grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), 7, Vec3u(3, 3, 3))
+		{}
+	};
+
+	BOOST_FIXTURE_TEST_CASE(add_should_activate_once, Fixture)
+	{
+		// ==== Setup ====
+		const Vec3i pos1(-4, -4, -4);
+		const Vec3i pos2(-3, -4, -4);
+		const Vec3i pos_child(-1, -1, -1);
+
+		// ==== Action ====
+		grid.add(pos1, 3, 0);
+		grid.add(pos2, 4, 1);
+
+		// ==== Confirm ====
+		BOOST_CHECK(grid.children().get(pos_child).is_active());
+		BOOST_CHECK_EQUAL(grid.children().list().size(), 1);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).get(pos1), 3);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).get(pos2), 4);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().list(0).size(), 1);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().list(1).size(), 1);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().get(pos1), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().get(pos2), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).get(Vec3i(1,1,1)), 7);
+		BOOST_CHECK_EQUAL(grid.children().get(Vec3i(1,1,1)).lookup().get(Vec3i(1,1,1)), NULL_IDX);
+	}
+
+	BOOST_FIXTURE_TEST_CASE(remove_should_deactivate_when_child_is_inactive, Fixture)
+	{
+		// ==== Setup ====
+		const Vec3i pos1(-4, -4, -4);
+		const Vec3i pos2(-3, -4, -4);
+		const Vec3i pos_child(-1, -1, -1);
+		grid.add(pos1, 3, 0);
+		grid.add(pos2, 4, 1);
+
+		// ==== Action ====
+		grid.remove(pos1, 0);
+
+		// ==== Confirm ====
+		BOOST_CHECK(grid.children().get(pos_child).is_active());
+		BOOST_CHECK(grid.children().get(pos_child).lookup().is_active());
+		BOOST_CHECK_EQUAL(grid.children().list(0).size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().list(1).size(), 1);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().get(pos1), NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().get(pos2), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).list(0).size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).list(1).size(), 1);
+
+		// ==== Action ====
+		grid.remove(pos2, 1);
+
+		// ==== Confirm ====
+		BOOST_CHECK(!grid.children().get(pos_child).is_active());
+		BOOST_CHECK(!grid.children().get(pos_child).lookup().is_active());
+		BOOST_CHECK_EQUAL(grid.children().list(0).size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().list(1).size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().get(pos1), NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().get(pos2), NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).list(0).size(), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).list(1).size(), 0);
+	}
+
+
+	struct ResetFixture : Fixture {
+		PartitionedGrid<FLOAT, 3> grid_master;
+		ResetFixture()
+		: Fixture(),
+		  grid_master(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), 0, Vec3u(3, 3, 3))
+		{}
+	};
+
+	BOOST_FIXTURE_TEST_CASE(reset_should_deactivate, ResetFixture)
+	{
+		// ==== Setup ====
+
+		const Vec3i pos_child(-1, -1, -1);
+		const Vec3i pos(-4, -4, -4);
+		grid.add(pos, 4, 0);
+
+		// ==== Action ====
+
+		grid.reset(grid_master, 0);
+
+		// ==== Confirm ====
+
+		// Value reset.
+		BOOST_CHECK_EQUAL(grid.get(pos), 7);
+		// Child still tracked.
+		BOOST_CHECK_EQUAL(
+			grid.children().lookup().get(pos_child), Vec3u(NULL_IDX, NULL_IDX, NULL_IDX)
+		);
+		// Child inactive.
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).is_active(), false);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).data().size(), 0);
+		// Child lookup inactive.
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().is_active(), false);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().data().size(), 0);
+		// Position no longer tracked in child.
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().get(pos), NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().list(0).size(), 0);
+	}
+
+	BOOST_FIXTURE_TEST_CASE(reset_shouldnt_deactivate_when_other_list_still_active, ResetFixture)
+	{
+		// ==== Setup ====
+
+		const Vec3i pos_child(-1, -1, -1);
+		const Vec3i pos(-4, -4, -4);
+		grid.add(pos, 4, 0);
+
+		// ==== Action ====
+
+		grid.reset(grid_master, 1);
+
+		// ==== Confirm ====
+
+		// Value unchanged.
+		BOOST_CHECK_EQUAL(grid.get(pos), 4);
+		// Child still tracked.
+		BOOST_CHECK_EQUAL(grid.children().lookup().get(pos_child), Vec3u(0, NULL_IDX, NULL_IDX));
+		// Child still active.
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).is_active(), true);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).data().size(), 3*3*3);
+		// Child lookup still active.
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().is_active(), true);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().data().size(), 3*3*3);
+		// Position still tracked in child.
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().get(pos), 0);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().list(0).size(), 1);
+	}
+
+	BOOST_FIXTURE_TEST_CASE(reset_shouldnt_deactivate_when_master_grid_is_tracking, ResetFixture)
+	{
+		// ==== Setup ====
+
+		const Vec3i pos_child(-1, -1, -1);
+		const Vec3i pos(-4, -4, -4);
+
+		grid_master.add_child(pos_child);
+		grid.add(pos, 4, 0);
+
+		// ==== Action ====
+
+		grid.reset(grid_master, 0);
+
+		// ==== Confirm ====
+
+		// Value reset.
+		BOOST_CHECK_EQUAL(grid.get(pos), 7);
+		// Child still tracked.
+		BOOST_CHECK_EQUAL(grid.children().lookup().get(pos_child), Vec3u(0, NULL_IDX, NULL_IDX));
+		// Child still active.
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).is_active(), true);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).data().size(), 3*3*3);
+		// Child lookup still active.
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().is_active(), true);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().data().size(), 3*3*3);
+		// Position no longer tracked in child.
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().get(pos), NULL_IDX);
+		BOOST_CHECK_EQUAL(grid.children().get(pos_child).lookup().list(0).size(), 0);
+	}
+BOOST_AUTO_TEST_SUITE_END()
 

@@ -226,13 +226,13 @@ public:
 	/**
 	 * Reset the tracking list at given index in the children grid.
 	 *
-	 * Removes all spatial partitions from the tracking subgrid for given list index.
+	 * Stops tracking all children, but does not affect the data in the child grids.
 	 *
 	 * @param arr_idx_ index of tracking list to reset.
 	 */
-	void reset(const UINT arr_idx_ = 0)
+	void reset(const UINT list_idx_ = 0)
 	{
-		this->children().reset(arr_idx_);
+		this->children().lookup().reset(list_idx_);
 	}
 };
 

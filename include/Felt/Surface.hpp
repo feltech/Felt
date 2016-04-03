@@ -38,7 +38,7 @@ public:
 	/**
 	 * A delta isogrid update grid with active (non-zero) grid points tracked.
 	 */
-	using DeltaIsoGrid = SingleTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
+	using DeltaIsoGrid = LazySingleTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
 	/**
 	 * A level set embedding isogrid grid, with active grid points (the narrow
 	 * band) tracked.
@@ -1098,11 +1098,7 @@ public:
 	 */
 	void update_start ()
 	{
-		for (UINT layer_idx = 0; layer_idx < 2*L+1; layer_idx++)
-		{
-			m_grid_delta.reset(0, layer_idx);
-		}
-
+		m_grid_delta.reset_all(m_grid_isogrid);
 		m_grid_affected.reset_all(m_grid_isogrid);
 		m_grid_status_change.reset();
 		

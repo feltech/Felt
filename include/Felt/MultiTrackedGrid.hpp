@@ -41,7 +41,7 @@ struct GridTraits<MultiTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
 {
 	using ThisType = MultiTrackedGrid<T, D, N>;
 	/// Type of lookup grid to use.  This is what differentiates this from SingleTrackedGrid.
-	using MultiLookupType = MultiLookupGrid<D, N>;
+	using LookupType = MultiLookupGrid<D, N>;
 };
 
 }

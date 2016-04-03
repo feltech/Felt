@@ -23,7 +23,7 @@ public:
 	/// GridBase base class.
 	using Base = GridBase<TrackedGridBase<Derived>, IsLazy>;
 	/// MultiLookup grid type to use for tracking active grid positions.
-	using Lookup = typename GridTraits<Derived>::MultiLookupType;
+	using Lookup = typename GridTraits<Derived>::LookupType;
 	/// Type of data to store in the main grid.
 	using LeafType = typename GridTraits<Derived>::LeafType;
 	/// Tracking list of grid positions.
@@ -130,23 +130,23 @@ public:
 	/**
 	 * Get list of active grid points from lookup grid.
 	 *
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 * @return the tracking list of active grid positions from the internal lookup grid.
 	 */
-	PosArray& list(const UINT arr_idx_ = 0)
+	PosArray& list(const UINT list_idx_ = 0)
 	{
-		return m_grid_lookup.list(arr_idx_);
+		return m_grid_lookup.list(list_idx_);
 	}
 
 	/**
 	 * Get list of active grid points from lookup grid.
 	 *
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 * @return the tracking list of active grid positions from the internal lookup grid.
 	 */
-	const PosArray& list(const UINT arr_idx_ = 0) const
+	const PosArray& list(const UINT list_idx_ = 0) const
 	{
-		return m_grid_lookup.list(arr_idx_);
+		return m_grid_lookup.list(list_idx_);
 	}
 
 	/**
@@ -157,29 +157,29 @@ public:
 	 *
 	 * @param pos_ position in grid.
 	 * @param val_ value to set.
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 * @return true if grid node set in lookup grid and position added to
 	 * tracking list, false if grid node was already set so position already
 	 * in a list.
 	 */
-	bool add(const VecDi& pos_, const LeafType& val_, const UINT arr_idx_ = 0)
+	bool add(const VecDi& pos_, const LeafType& val_, const UINT list_idx_ = 0)
 	{
 		this->get(pos_) = val_;
-		return add(pos_, arr_idx_);
+		return add(pos_, list_idx_);
 	}
 
 	/**
 	 * Add a position to the lookup grid.
 	 *
 	 * @param pos_ position in the grid to add.
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 * @return true if grid node set in lookup grid and position added to
 	 * tracking list, false if grid node was already set so position already
 	 * in a list.
 	 */
-	bool add(const VecDi& pos_, const UINT arr_idx_ = 0)
+	bool add(const VecDi& pos_, const UINT list_idx_ = 0)
 	{
-		return m_grid_lookup.add(pos_, arr_idx_);
+		return m_grid_lookup.add(pos_, list_idx_);
 	}
 
 	/**
@@ -190,23 +190,23 @@ public:
 	 * list(s) will be empty.
 	 *
 	 * @param val_ value to set in main grid.
-	 * @param arr_idx_ tracking list id to cycle over and clear.
+	 * @param list_idx_ tracking list id to cycle over and clear.
 	 */
-	void reset(const LeafType& val_, const UINT arr_idx_ = 0)
+	void reset(const LeafType& val_, const UINT list_idx_)
 	{
-		for (VecDi pos : m_grid_lookup.list(arr_idx_))
+		for (VecDi pos : m_grid_lookup.list(list_idx_))
 			this->get(pos) = val_;
-		reset(arr_idx_);
+		m_grid_lookup.reset(list_idx_);
 	}
 
 	/**
 	 * Reset a tracking list on the lookup grid.
 	 *
-	 * @param arr_idx_ tracking list to clear.
+	 * @param list_idx_ tracking list to clear.
 	 */
-	void reset(const UINT arr_idx_ = 0)
+	void reset(const UINT list_idx_ = 0)
 	{
-		m_grid_lookup.reset(arr_idx_);
+		reset(this->m_background, list_idx_);
 	}
 
 	/**
@@ -214,11 +214,11 @@ public:
 	 * corresponding grid node in the tracking grid to NULL index.
 	 *
 	 * @param idx_ index in tracking list.
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 */
-	void remove(const UINT idx_, const UINT arr_idx_ = 0)
+	void remove(const UINT idx_, const UINT list_idx_ = 0)
 	{
-		m_grid_lookup.remove(idx_, arr_idx_);
+		m_grid_lookup.remove(idx_, list_idx_);
 	}
 
 	/**
@@ -226,11 +226,11 @@ public:
 	 * grid node to NULL index.
 	 *
 	 * @param pos_ position in lookup grid.
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 */
-	void remove (const VecDi& pos_, const UINT arr_idx_ = 0)
+	void remove (const VecDi& pos_, const UINT list_idx_ = 0)
 	{
-		m_grid_lookup.remove(pos_, arr_idx_);
+		m_grid_lookup.remove(pos_, list_idx_);
 	}
 
 	/**
@@ -238,12 +238,12 @@ public:
 	 * otherwise.
 	 *
 	 * @param pos_ position in grid to query.
-	 * @param arr_idx_ tracking list id to query.
+	 * @param list_idx_ tracking list id to query.
 	 * @return true if position currently tracked, false otherwise.
 	 */
-	const bool is_active (const VecDi& pos_, const UINT arr_idx_ = 0) const
+	const bool is_active (const VecDi& pos_, const UINT list_idx_ = 0) const
 	{
-		return m_grid_lookup.is_active(pos_, arr_idx_);
+		return m_grid_lookup.is_active(pos_, list_idx_);
 	}
 };
 

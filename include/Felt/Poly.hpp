@@ -47,7 +47,7 @@ namespace felt
 		/// Vertex array type for primary vertex storage.
 		using VtxArray = std::vector<Vertex>;
 		/// Vertex spatial lookup type.
-		using VtxGrid = MultiTrackedGrid<VtxTuple, D>;
+		using VtxGrid = SingleTrackedGrid<VtxTuple, D>;
 		/// Simplex type (line or triangle).
 		using typename PolyBase<D, void>::Simplex;
 		/// Simplex array type for primary simplex (line or triangle) storage.
@@ -424,7 +424,8 @@ namespace felt
 		void reset()
 		{
 			// Fill vertex grid with null values.
-			m_grid_vtx.reset(NULL_VTX_TUPLE);
+			m_grid_vtx.reset();
+
 			// Clear vertex and simplex arrays.
 			this->vtx().resize(0);
 			this->spx().resize(0);

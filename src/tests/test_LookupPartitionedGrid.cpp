@@ -253,15 +253,6 @@ BOOST_AUTO_TEST_SUITE(test_LazySingleLookupPartitionedGrid)
 		{}
 	};
 
-	struct ResetFixture : Fixture {
-		const UINT NULL_IDX = LazySingleLookupPartitionedGrid<3, 3>::NULL_IDX;
-		PartitionedGrid<FLOAT, 3> grid_master;
-		ResetFixture()
-		: Fixture(),
-		  grid_master(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), 0, Vec3u(3, 3, 3))
-		{}
-	};
-
 	BOOST_AUTO_TEST_CASE(initialisation)
 	{
 		/// [LazySingleLookupPartitionedGrid initialisation]
@@ -330,6 +321,15 @@ BOOST_AUTO_TEST_SUITE(test_LazySingleLookupPartitionedGrid)
 		BOOST_CHECK_EQUAL(grid.children().get(pos_child).list(0).size(), 0);
 		BOOST_CHECK_EQUAL(grid.children().get(pos_child).list(1).size(), 0);
 	}
+
+	struct ResetFixture : Fixture {
+		const UINT NULL_IDX = LazySingleLookupPartitionedGrid<3, 3>::NULL_IDX;
+		PartitionedGrid<FLOAT, 3> grid_master;
+		ResetFixture()
+		: Fixture(),
+		  grid_master(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), 0, Vec3u(3, 3, 3))
+		{}
+	};
 
 	BOOST_FIXTURE_TEST_CASE(reset_shouldnt_deactivate_when_other_list_still_active, ResetFixture)
 	{

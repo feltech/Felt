@@ -46,6 +46,7 @@ class LazySingleTrackedGrid : public TrackedGridBase<LazySingleTrackedGrid<T, D,
 {
 public:
 	using ThisType = LazySingleTrackedGrid<T, D, N>;
+	using Traits = GridTraits<ThisType>;
 	using Base = TrackedGridBase<ThisType, true>;
 	using Base::TrackedGridBase;
 	using Base::Base::is_active;
@@ -90,7 +91,7 @@ struct GridTraits<SingleTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
 {
 	using ThisType = SingleTrackedGrid<T, D, N>;
 	/// Type of lookup grid to use.  This is what differentiates this from MultiTrackedGrid.
-	using MultiLookupType = SingleLookupGrid<D, N>;
+	using LookupType = SingleLookupGrid<D, N>;
 };
 
 
@@ -106,7 +107,7 @@ struct GridTraits<LazySingleTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
 {
 	using ThisType = LazySingleTrackedGrid<T, D, N>;
 	/// Type of lookup grid to use.  This is what differentiates this from MultiTrackedGrid.
-	using MultiLookupType = LazySingleLookupGrid<D, N>;
+	using LookupType = LazySingleLookupGrid<D, N>;
 };
 
 }

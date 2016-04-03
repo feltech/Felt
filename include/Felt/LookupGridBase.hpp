@@ -362,6 +362,10 @@ protected:
 };
 
 
+template <class Derived, bool IsLazy> const UINT
+LookupGridBase<Derived, IsLazy>::NULL_IDX = std::numeric_limits<UINT>::max();
+
+
 /**
  * Base class for static lookup grid.
  *

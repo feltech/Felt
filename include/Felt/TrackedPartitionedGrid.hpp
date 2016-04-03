@@ -7,15 +7,15 @@
 namespace felt
 {
 
-template <class Derived>
+template <class Derived, bool IsLazy=false>
 class TrackedPartitionedGridBase
-	: public TrackingPartitionedGridBase <TrackedPartitionedGridBase<Derived> >
+	: public TrackingPartitionedGridBase <TrackedPartitionedGridBase<Derived>, IsLazy>
 {
 public:
 	/// This class.
 	using ThisType = TrackedPartitionedGridBase<Derived>;
 	/// Base class
-	using Base = TrackingPartitionedGridBase<ThisType>;
+	using Base = TrackingPartitionedGridBase<ThisType, IsLazy>;
 	using DerivedType = Derived;
 
 	using typename Base::VecDu;
@@ -142,6 +142,27 @@ public:
 
 
 /**
+ * Spatially partitioned wrapper for LazySingleTrackedGrid.
+ *
+ * @tparam T type of value stored in leaf grid nodes.
+ * @tparam D dimension of the grid.
+ * @tparam N number of tracking lists to use.
+ */
+template <typename T, UINT D, UINT N>
+class LazySingleTrackedPartitionedGrid
+	: public TrackedPartitionedGridBase<LazySingleTrackedPartitionedGrid<T, D, N>, true>
+{
+public:
+	using ThisType = LazySingleTrackedPartitionedGrid<T, D, N>;
+	using Base = TrackedPartitionedGridBase<ThisType, true>;
+	using Traits = GridTraits<ThisType>;
+public:
+	using Base::TrackedPartitionedGridBase;
+	using Base::Base::reset;
+ };
+
+
+/**
  * Traits for common base class of partitioned MultiTrackedGrids.
  */
 template <class Derived>
@@ -161,7 +182,7 @@ struct GridTraits<MultiTrackedPartitionedGrid<T, D, N> > : DefaultGridTraits<T, 
 	/// The class inheriting from the base.
 	using ThisType = MultiTrackedPartitionedGrid<T, D, N>;
 	/// The type of lookup grid to use for tracking active grid nodes.
-	using MultiLookupType = MultiLookupGrid<D, N>;
+	using LookupType = MultiLookupGrid<D, N>;
 	/// Child grid class, in this case a MultiTrackedGrid.
 	using ChildType = MultiTrackedGrid<T, D, N>;
 	/// Base grid class to partition, in this case TrackedGridBase.
@@ -184,9 +205,32 @@ struct GridTraits<SingleTrackedPartitionedGrid<T, D, N> > : DefaultGridTraits<T,
 	/// The class inheriting from the base.
 	using ThisType = SingleTrackedPartitionedGrid<T, D, N>;
 	/// The type of lookup grid to use for tracking active grid nodes.
-	using MultiLookupType = SingleLookupGrid<D, N>;
+	using LookupType = SingleLookupGrid<D, N>;
 	/// Child grid class, in this case SingleTrackedGrid.
 	using ChildType = SingleTrackedGrid<T, D, N>;
+	/// Base grid class to partition, in this case TrackedGridBase.
+	using MixinType = TrackedGridBase<ThisType>;
+	/// Number of tracking lists, from template parameter.
+	static const UINT NumLists = N;
+};
+
+
+/**
+ * Traits for LazySingleTrackedPartitionedGrid.
+ *
+ * @tparam T type of value stored in leaf grid nodes.
+ * @tparam D dimension of the grid.
+ * @tparam N number of tracking lists to use.
+ */
+template <typename T, UINT D, UINT N>
+struct GridTraits<LazySingleTrackedPartitionedGrid<T, D, N> > : DefaultGridTraits<T, D>
+{
+	/// The class inheriting from the base.
+	using ThisType = LazySingleTrackedPartitionedGrid<T, D, N>;
+	/// Child grid class, in this case LazySingleTrackedGrid.
+	using ChildType = LazySingleTrackedGrid<T, D, N>;
+	/// The type of lookup grid to use for tracking active grid nodes.
+	using LookupType = typename ChildType::Traits::LookupType;
 	/// Base grid class to partition, in this case TrackedGridBase.
 	using MixinType = TrackedGridBase<ThisType>;
 	/// Number of tracking lists, from template parameter.
