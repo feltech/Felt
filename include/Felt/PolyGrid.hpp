@@ -9,8 +9,6 @@
 
 namespace felt
 {
-	template <class Derived> struct PolyGridBaseTraits {};
-
 	/**
 	 * Container for a grid of Poly objects polygonising a spatially partitioned
 	 * signed distance grid.
@@ -22,20 +20,18 @@ namespace felt
 	 * spatial partitions.
 	 */
 	template <class Derived>
-	class PolyGridBase : public Grid <
-		typename PolyGridBaseTraits<Derived>::LeafType, PolyGridBaseTraits<Derived>::Dims
-	>
+	class PolyGridBase : public GridBase < PolyGridBase<Derived> >
 	{
 	public:
 		/// Polygonisation of a single surface spatial partition.
-		using DerivedType = typename PolyGridBaseTraits<Derived>::ThisType;
-		using PolyLeaf = typename PolyGridBaseTraits<Derived>::LeafType;
-		static const UINT Dims = PolyGridBaseTraits<Derived>::Dims;
+		using DerivedType = typename GridTraits<Derived>::ThisType;
+		using PolyLeaf = typename GridTraits<Derived>::LeafType;
+		static const UINT Dims = GridTraits<Derived>::Dims;
 
 		using VecDu = typename PolyLeaf::VecDu;
 		using VecDi = typename PolyLeaf::VecDi;
 
-		using Base = Grid<PolyLeaf, Dims>;
+		using Base = GridBase< PolyGridBase<Derived> >;
 
 		/// Standard 3-layer signed-distance surface (either 2D or 3D).
 		using PolySurface = Surface<Dims, 3>;
@@ -249,7 +245,6 @@ namespace felt
 		}
 	};
 
-
 	template <UINT D>
 	class PolyGrid : public PolyGridBase<PolyGrid<D> >
 	{
@@ -259,7 +254,17 @@ namespace felt
 	};
 
 
-	template <UINT D> struct PolyGridBaseTraits<PolyGrid<D> >
+	/**
+	 * Traits for PolyGridBase.
+	 *
+	 * Just pass along the traits for the derived class.
+	 */
+	template <class Derived>
+	struct GridTraits< PolyGridBase<Derived> > : GridTraits<Derived> {};
+
+
+	template <UINT D>
+	struct GridTraits< PolyGrid<D> >
 	{
 		using ThisType = PolyGrid<D>;
 		using LeafType = Poly<D>;

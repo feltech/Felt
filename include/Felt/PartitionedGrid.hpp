@@ -1,6 +1,7 @@
 #ifndef PARTITIONEDGRID_HPP_
 #define PARTITIONEDGRID_HPP_
 
+#include <memory>
 #include "PartitionBase.hpp"
 
 namespace felt
