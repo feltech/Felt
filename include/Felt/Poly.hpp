@@ -1,5 +1,6 @@
 #ifndef POLY_H
 #define POLY_H
+
 #include <eigen3/Eigen/Dense>
 #include <omp.h>
 #include <array>
@@ -8,7 +9,8 @@
 
 #include "PolyBase.hpp"
 #include "Grid.hpp"
-#include "MappedGrid.hpp"
+#include "MultiLookupGrid.hpp"
+#include "MultiTrackedGrid.hpp"
 #include "Surface.hpp"
 
 namespace felt 
@@ -45,7 +47,7 @@ namespace felt
 		/// Vertex array type for primary vertex storage.
 		using VtxArray = std::vector<Vertex>;
 		/// Vertex spatial lookup type.
-		using VtxGrid = TrackedGrid<VtxTuple, D>;
+		using VtxGrid = SingleTrackedGrid<VtxTuple, D>;
 		/// Simplex type (line or triangle).
 		using typename PolyBase<D, void>::Simplex;
 		/// Simplex array type for primary simplex (line or triangle) storage.
@@ -71,8 +73,8 @@ namespace felt
 		static const VtxTuple NULL_VTX_TUPLE;
 
 	protected:
-		/// Lookup grid type used for avoiding duplicates.
-		using LookupGrid_t = LookupGrid<D>;
+		/// MultiLookup grid type used for avoiding duplicates.
+		using MultiLookupGrid_t = MultiLookupGrid<D>;
 
 		/**
 		 * List of interpolated vertices.
@@ -127,6 +129,12 @@ namespace felt
 			m_grid_vtx()
 		{}
 
+		Poly (const Poly<D>& other)
+		{
+			m_a_spx = other.m_a_spx;
+			m_a_vtx = other.m_a_vtx;
+			m_grid_vtx = other.m_grid_vtx;
+		}
 
 		/**
 		 * Construct a new polygonisation enclosing a signed distance grid.
@@ -146,8 +154,7 @@ namespace felt
 		 */
 		void init (const VecDu& size_, const VecDi& offset_)
 		{
-			m_grid_vtx.init(size_, offset_);
-			m_grid_vtx.fill(NULL_VTX_TUPLE);
+			m_grid_vtx.init(size_, offset_, NULL_VTX_TUPLE);
 		}
 
 		/**
@@ -175,25 +182,25 @@ namespace felt
 		 *
          * @return
          */
-		const Vertex& vtx(const UINT& idx) const
+		const Vertex& vtx(const UINT idx) const
 		{
 			return this->vtx()[idx];
 		}
 
 
 		/**
-		 * Lookup, or calculate then store, and return the index into the vertex
+		 * MultiLookup, or calculate then store, and return the index into the vertex
 		 * array of a vertex at the zero-crossing of isogrid at pos_a along axis.
 		 *
          * @return
          */
 		template <class Derived>
 		UINT idx(
-			const VecDi& pos_a, const UINT& axis, const IsoGrid<Derived>& grid_isogrid
+			const VecDi& pos_a, const UINT axis, const IsoGrid<Derived>& grid_isogrid
 		)
 		{
 			// Check lookup to see if vertex has already been calculated.
-			const UINT& idx_lookup = m_grid_vtx(pos_a)(axis);
+			const UINT idx_lookup = m_grid_vtx(pos_a)(axis);
 			if (idx_lookup != NULL_IDX) {
 				return idx_lookup;
 			}
@@ -272,7 +279,7 @@ namespace felt
 		 *
          * @return
          */
-		const Simplex& spx(const UINT& idx) const
+		const Simplex& spx(const UINT idx) const
 		{
 			return this->spx()[idx];
 		}
@@ -305,7 +312,7 @@ namespace felt
 			// Array of indices of zero-crossing vertices along each axis from
 			// this corner.
 			UINT vtx_idxs[this->num_edges];
-			// Lookup the edges that are crossed from the corner mask.
+			// MultiLookup the edges that are crossed from the corner mask.
 			unsigned short vtx_mask = this->vtx_mask[mask];
 			const short* vtx_order = this->vtx_order[mask];
 
@@ -323,7 +330,7 @@ namespace felt
 				if ((vtx_mask >> edge_idx) & 1) {
 					const Edge& edge = this->edges[edge_idx];
 					// Edges are defined as an axis and an offset.
-					// Lookup index of vertex along current edge.
+					// MultiLookup index of vertex along current edge.
 					vtx_idxs[edge_idx] = this->idx(
 						pos_calc + edge.offset, edge.axis, grid_isogrid
 					);
@@ -395,7 +402,7 @@ namespace felt
 		template <UINT L>
 		void surf(const Surface<D, L>& surface)
 		{
-			LookupGrid_t grid_dupe(m_grid_vtx.size(), m_grid_vtx.offset());
+			MultiLookupGrid_t grid_dupe(m_grid_vtx.size(), m_grid_vtx.offset());
 			for (VecDi pos_centre : surface.layer(0))
 				for (const VecDi& pos_offset : corners)
 				{
@@ -417,7 +424,8 @@ namespace felt
 		void reset()
 		{
 			// Fill vertex grid with null values.
-			m_grid_vtx.reset(NULL_VTX_TUPLE);
+			m_grid_vtx.reset();
+
 			// Clear vertex and simplex arrays.
 			this->vtx().resize(0);
 			this->spx().resize(0);

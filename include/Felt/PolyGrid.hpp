@@ -1,15 +1,14 @@
 #ifndef INCLUDE_FELT_POLYGRID_HPP_
+
 #define INCLUDE_FELT_POLYGRID_HPP_
 
-#include "MappedGrid.hpp"
+#include <Felt/MultiLookupGrid.hpp>
 #include "PartitionedGrid.hpp"
 #include "Surface.hpp"
 #include "Poly.hpp"
 
 namespace felt
 {
-	template <class Derived> struct PolyGridBaseTraits {};
-
 	/**
 	 * Container for a grid of Poly objects polygonising a spatially partitioned
 	 * signed distance grid.
@@ -21,29 +20,27 @@ namespace felt
 	 * spatial partitions.
 	 */
 	template <class Derived>
-	class PolyGridBase : public Grid <
-		typename PolyGridBaseTraits<Derived>::LeafType, PolyGridBaseTraits<Derived>::Dims
-	>
+	class PolyGridBase : public GridBase < PolyGridBase<Derived> >
 	{
 	public:
 		/// Polygonisation of a single surface spatial partition.
-		using DerivedType = typename PolyGridBaseTraits<Derived>::ThisType;
-		using PolyLeaf = typename PolyGridBaseTraits<Derived>::LeafType;
-		static const UINT Dims = PolyGridBaseTraits<Derived>::Dims;
+		using DerivedType = typename GridTraits<Derived>::ThisType;
+		using PolyLeaf = typename GridTraits<Derived>::LeafType;
+		static const UINT Dims = GridTraits<Derived>::Dims;
 
 		using VecDu = typename PolyLeaf::VecDu;
 		using VecDi = typename PolyLeaf::VecDi;
 
-		using Base = Grid<PolyLeaf, Dims>;
+		using Base = GridBase< PolyGridBase<Derived> >;
 
 		/// Standard 3-layer signed-distance surface (either 2D or 3D).
 		using PolySurface = Surface<Dims, 3>;
 
-		/// Lookup grid to track partitions containing zero-layer points.
-		using PolyChanges = LookupGrid<Dims>;
+		/// MultiLookup grid to track partitions containing zero-layer points.
+		using PolyChanges = MultiLookupGrid<Dims>;
 		
 	protected:
-		/// Lookup grid to track partitions containing zero-layer points.
+		/// MultiLookup grid to track partitions containing zero-layer points.
 		PolyChanges		m_grid_changes;
 
 	public:
@@ -74,15 +71,16 @@ namespace felt
 		void init(const PolySurface& surface)
 		{
 			Base::init(
-				surface.isogrid().branch().size(), surface.isogrid().branch().offset()
+				surface.isogrid().children().size(), surface.isogrid().children().offset(),
+				PolyLeaf()
 			);
 			m_grid_changes.init(
 				surface.isogrid().size(), surface.isogrid().offset()
 			);
-			for (const VecDi& pos_child : surface.isogrid().branch())
-				self->init_child(
-					pos_child, surface.isogrid().child(pos_child).size(),
-					surface.isogrid().child(pos_child).offset()
+			for (const VecDi& pos_child : surface.isogrid().children())
+				nself->init_child(
+					pos_child, surface.isogrid().children().get(pos_child).size(),
+					surface.isogrid().children().get(pos_child).offset()
 				);
 		}
 
@@ -128,13 +126,13 @@ namespace felt
 			{
 				for (
 					const VecDi& pos_child
-					: surface.disogrid().branch().list(surface.layer_idx(layer_id))
+					: surface.delta().children().list(surface.layer_idx(layer_id))
 				) {
 					this->notify(surface, pos_child);
 				}
 			}
 
-			for (const VecDi& pos_child : surface.status_change().branch().list())
+			for (const VecDi& pos_child : surface.status_change().children().list())
 			{
 				m_grid_changes.add(pos_child);
 			}
@@ -152,13 +150,13 @@ namespace felt
 
 			if (!is_active)
 			{
-				is_active = surface.status_change().branch().is_active(pos_child);
+				is_active = surface.status_change().children().is_active(pos_child);
 
 				for (
 					UINT layer_idx = 0; layer_idx < surface.isogrid().NUM_LISTS && !is_active;
 					layer_idx++
 				) {
-					is_active = surface.isogrid().branch().is_active(pos_child, layer_idx);
+					is_active = surface.isogrid().children().is_active(pos_child, layer_idx);
 				}
 			}
 
@@ -237,7 +235,7 @@ namespace felt
 			) {
 				for (
 					const VecDi& pos_child
-					: surface.isogrid().branch().list(layer_idx)
+					: surface.isogrid().children().list(layer_idx)
 				) {
 					m_grid_changes.add(pos_child);
 				}
@@ -247,18 +245,26 @@ namespace felt
 		}
 	};
 
-
 	template <UINT D>
 	class PolyGrid : public PolyGridBase<PolyGrid<D> >
 	{
 	public:
 		using Base = PolyGridBase<PolyGrid<D> >;
 		using Base::PolyGridBase;
-
 	};
 
 
-	template <UINT D> struct PolyGridBaseTraits<PolyGrid<D> >
+	/**
+	 * Traits for PolyGridBase.
+	 *
+	 * Just pass along the traits for the derived class.
+	 */
+	template <class Derived>
+	struct GridTraits< PolyGridBase<Derived> > : GridTraits<Derived> {};
+
+
+	template <UINT D>
+	struct GridTraits< PolyGrid<D> >
 	{
 		using ThisType = PolyGrid<D>;
 		using LeafType = Poly<D>;

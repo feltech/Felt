@@ -1,73 +1,16 @@
 #include <boost/test/unit_test.hpp>
-#include <omp.h>
 
 #define _TESTING
 
-#include "Felt/MappedGrid.hpp"
+#include <Felt/MultiLookupGrid.hpp>
 
 using namespace felt;
 
-/*
- * Test the Grid library.
- */
-BOOST_AUTO_TEST_SUITE(test_MappedGrid)
-	/*
-	 * MappedGrid.
-	 */
-//	BOOST_AUTO_TEST_CASE(test_MappedGrid)
-//	{
-//		typedef MappedGrid<FLOAT, 3> Grid_t;
-//
-//		Grid_t grid(Vec3u(5,5,5), Vec3i(-2,-2,-2));
-//
-//		Vec3i pos1(0, 0, 1);
-//		Vec3i pos2(1, 1, 0);
-//		Vec3i pos3(2, 0, -1);
-//		grid.add(pos1, 3.0f);
-//		grid.add(pos2, -1.0f);
-//		grid(pos2) = 5.0f;
-//		grid.add(pos3, 7.0f);
-//
-//
-//		BOOST_CHECK_EQUAL(grid.list().size(), 3);
-//		BOOST_CHECK_EQUAL(grid(pos1), 3.0f);
-//		BOOST_CHECK_EQUAL(grid(pos2), 5.0f);
-//		BOOST_CHECK_EQUAL(grid(pos3), 7.0f);
-//		BOOST_CHECK_EQUAL(grid.list()[0], pos1);
-//		BOOST_CHECK_EQUAL(grid.list()[1], pos2);
-//		BOOST_CHECK_EQUAL(grid.list()[2], pos3);
-//
-//		for (Vec3i pos : grid.list())
-//			grid(pos) = 4.0f;
-//
-//		BOOST_CHECK_EQUAL(grid(pos1), 4.0f);
-//		BOOST_CHECK_EQUAL(grid(pos2), 4.0f);
-//		BOOST_CHECK_EQUAL(grid(pos3), 4.0f);
-//
-//		grid.remove(1);
-//		BOOST_CHECK_EQUAL(grid.list().size(), 2);
-//		BOOST_CHECK_EQUAL(grid.list()[0], pos1);
-//		BOOST_CHECK_EQUAL(grid.list()[1], pos3);
-//
-//		grid.reset(-1.0f);
-//		BOOST_CHECK_EQUAL(grid.list().size(), 0);
-//		BOOST_CHECK_EQUAL(grid(pos1), -1.0f);
-//		BOOST_CHECK_EQUAL(grid(pos2), 4.0f);
-//		BOOST_CHECK_EQUAL(grid(pos3), -1.0f);
-//
-//		grid.add(pos1, 3.0f);
-//		grid.add(pos2, 5.0f);
-//		grid.list().clear();
-//
-//		BOOST_CHECK_EQUAL(grid.list().size(), 0);
-//		BOOST_CHECK_EQUAL(grid(pos1), 3.0f);
-//		BOOST_CHECK_EQUAL(grid(pos2), 5.0f);
-//	}
+BOOST_AUTO_TEST_SUITE(test_MultiLookupGrid)
 
-
-	BOOST_AUTO_TEST_CASE(test_LookupGrid)
+	BOOST_AUTO_TEST_CASE(initialise_and_populate_single_tracking_list)
 	{
-		typedef LookupGrid<3> Grid_t;
+		typedef MultiLookupGrid<3> Grid_t;
 		Grid_t grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
 
 		Vec3i pos1(1, 0, -1);
@@ -153,10 +96,9 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL((UINT)grid(pos4)(0), Grid_t::NULL_IDX);
 	}
 
-
-	BOOST_AUTO_TEST_CASE(test_multi_LookupGrid)
+	BOOST_AUTO_TEST_CASE(initialise_and_populatate_multiple_tracking_lists)
 	{
-		typedef LookupGrid<3, 3> Grid_t;
+		typedef MultiLookupGrid<3, 3> Grid_t;
 		Grid_t grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
 
 		const Vec3i pos1(1, 0, -1);
@@ -245,102 +187,62 @@ BOOST_AUTO_TEST_SUITE(test_MappedGrid)
 		BOOST_CHECK_EQUAL((UINT)grid(pos4)(2), Grid_t::NULL_IDX);
 		BOOST_CHECK_EQUAL((UINT)grid(pos5)(2), Grid_t::NULL_IDX);
 	}
+BOOST_AUTO_TEST_SUITE_END()
 
 
-	BOOST_AUTO_TEST_CASE(test_multi_shared_LookupGrid)
+BOOST_AUTO_TEST_SUITE(test_LazyMultiLookupGrid)
+	BOOST_AUTO_TEST_CASE(initialisation)
 	{
-		typedef SharedLookupGrid<3, 3> Grid_t;
-		Grid_t grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
+		/// [LazyMultiLookupGrid initialisation]
+		// ==== Setup ====
+		LazyMultiLookupGrid<3, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1));
+		const Vec3u NULL_IDX_DATA = LazyMultiLookupGrid<3, 3>::Traits::NULL_IDX_DATA;
 
-		const Vec3i pos1(1, 0, -1);
-		const Vec3i pos2(2, 1, 0);
-		const Vec3i pos3(3, -1, 0);
-		const Vec3i pos4(4, -1, 2);
-		const Vec3i pos5(5, -2, 1);
-		const Vec3i pos6(6, -2, 2);
-
-		// Add the positions to the array and set index lookup values.
-		grid.add(pos1, 0);
-		grid.add(pos2, 1);
-		grid.add(pos3, 1);
-		grid.add(pos4, 2);
-
-		BOOST_CHECK_EQUAL(grid.list(0).size(), 1);
-		BOOST_CHECK_EQUAL(grid.list(1).size(), 2);
-		BOOST_CHECK_EQUAL(grid.list(2).size(), 1);
-		BOOST_CHECK_EQUAL(grid.list(0)[0], pos1);
-		BOOST_CHECK_EQUAL(grid.list(1)[0], pos2);
-		BOOST_CHECK_EQUAL(grid.list(1)[1], pos3);
-		BOOST_CHECK_EQUAL(grid.list(2)[0], pos4);
-		BOOST_CHECK_EQUAL((UINT)grid(pos1), 0);
-		BOOST_CHECK_EQUAL((UINT)grid(pos2), 0);
-		BOOST_CHECK_EQUAL((UINT)grid(pos3), 1);
-		BOOST_CHECK_EQUAL((UINT)grid(pos4), 0);
-
-		grid.remove(pos2, 1);
-
-		BOOST_CHECK_EQUAL(grid.list(0).size(), 1);
-		BOOST_CHECK_EQUAL(grid.list(1).size(), 1);
-		BOOST_CHECK_EQUAL(grid.list(2).size(), 1);
-		BOOST_CHECK_EQUAL(grid.list(0)[0], pos1);
-		BOOST_CHECK_EQUAL(grid.list(1)[0], pos3);
-		BOOST_CHECK_EQUAL(grid.list(2)[0], pos4);
-		BOOST_CHECK_EQUAL((UINT)grid(pos1), 0);
-		BOOST_CHECK_EQUAL((UINT)grid(pos2), Grid_t::NULL_IDX);
-		BOOST_CHECK_EQUAL((UINT)grid(pos3), 0);
-		BOOST_CHECK_EQUAL((UINT)grid(pos4), 0);
-
-		grid.add(pos5, 2);
-		grid.add(pos6, 2);
-
-		BOOST_CHECK_EQUAL(grid.list(0).size(), 1);
-		BOOST_CHECK_EQUAL(grid.list(1).size(), 1);
-		BOOST_CHECK_EQUAL(grid.list(2).size(), 3);
-		BOOST_CHECK_EQUAL(grid.list(0)[0], pos1);
-		BOOST_CHECK_EQUAL(grid.list(1)[0], pos3);
-		BOOST_CHECK_EQUAL(grid.list(2)[0], pos4);
-		BOOST_CHECK_EQUAL(grid.list(2)[1], pos5);
-		BOOST_CHECK_EQUAL(grid.list(2)[2], pos6);
-		BOOST_CHECK_EQUAL((UINT)grid(pos1), 0);
-		BOOST_CHECK_EQUAL((UINT)grid(pos2), Grid_t::NULL_IDX);
-		BOOST_CHECK_EQUAL((UINT)grid(pos3), 0);
-		BOOST_CHECK_EQUAL((UINT)grid(pos4), 0);
-		BOOST_CHECK_EQUAL((UINT)grid(pos5), 1);
-		BOOST_CHECK_EQUAL((UINT)grid(pos6), 2);
-
-		grid.remove(pos4, 2);
-		grid.remove(0, 0);
-
-		BOOST_CHECK_EQUAL(grid.list(0).size(), 0);
-		BOOST_CHECK_EQUAL(grid.list(1).size(), 1);
-		BOOST_CHECK_EQUAL(grid.list(2).size(), 2);
-		BOOST_CHECK_EQUAL(grid.list(0)[0], pos1);
-		BOOST_CHECK_EQUAL(grid.list(1)[0], pos3);
-		BOOST_CHECK_EQUAL(grid.list(2)[1], pos5);
-		BOOST_CHECK_EQUAL(grid.list(2)[0], pos6);
-		BOOST_CHECK_EQUAL((UINT)grid(pos1), Grid_t::NULL_IDX);
-		BOOST_CHECK_EQUAL((UINT)grid(pos2), Grid_t::NULL_IDX);
-		BOOST_CHECK_EQUAL((UINT)grid(pos3), 0);
-		BOOST_CHECK_EQUAL((UINT)grid(pos4), Grid_t::NULL_IDX);
-		BOOST_CHECK_EQUAL((UINT)grid(pos5), 1);
-		BOOST_CHECK_EQUAL((UINT)grid(pos6), 0);
-
-		grid.reset(2);
-
-		BOOST_CHECK_EQUAL(grid.list(0).size(), 0);
-		BOOST_CHECK_EQUAL(grid.list(1).size(), 1);
-		BOOST_CHECK_EQUAL(grid.list(2).size(), 0);
-		BOOST_CHECK_EQUAL(grid.list(1)[0], pos3);
-		BOOST_CHECK_EQUAL((UINT)grid(pos1), Grid_t::NULL_IDX);
-		BOOST_CHECK_EQUAL((UINT)grid(pos2), Grid_t::NULL_IDX);
-		BOOST_CHECK_EQUAL((UINT)grid(pos3), 0);
-		BOOST_CHECK_EQUAL((UINT)grid(pos4), Grid_t::NULL_IDX);
-		BOOST_CHECK_EQUAL((UINT)grid(pos5), Grid_t::NULL_IDX);
-
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.is_active(), false);
+		BOOST_CHECK_EQUAL(grid.data().size(), 0);
+		BOOST_CHECK_EQUAL(grid.background(), NULL_IDX_DATA);
+		BOOST_CHECK_EQUAL(grid.get(Vec3i(1,1,1)), NULL_IDX_DATA);
+		/// [LazyMultiLookupGrid initialisation]
 	}
 
-	BOOST_AUTO_TEST_CASE(test_TrackedGrid)
+	BOOST_AUTO_TEST_CASE(activate_then_deactivate)
 	{
-		TrackedGrid<FLOAT, 3, 3> grid(Vec3u(9,9,9), Vec3i(-4,-4,-4));
+		/// [LazyMultiLookupGrid activate then deactivate]
+		// ==== Setup ====
+		LazyMultiLookupGrid<3, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1));
+		using LeafType = typename LazyMultiLookupGrid<3, 3>::LeafType;
+		const LeafType NULL_IDX = LazyMultiLookupGrid<3, 3>::Traits::NULL_IDX_DATA;
+
+		// ==== Action ====
+		grid.activate();
+		grid.add(Vec3i(1,0,-1), 1);
+		grid.add(Vec3i(1,0, 0), 1);
+		grid.add(Vec3i(1,0, 1), 1);
+
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.is_active(), true);
+		BOOST_CHECK_EQUAL(grid.data().size(), 3*3*3);
+		BOOST_CHECK_EQUAL(grid.list(0).size(), 0);
+		BOOST_CHECK_EQUAL(grid.list(1).size(), 3);
+		BOOST_CHECK_EQUAL(grid.list(2).size(), 0);
+		BOOST_CHECK_EQUAL(grid.list(0).capacity(), 0);
+		BOOST_CHECK_EQUAL(grid.list(1).capacity(), 4);
+		BOOST_CHECK_EQUAL(grid.list(2).capacity(), 0);
+
+		// ==== Action ====
+		grid.deactivate();
+
+		// ==== Confirm ====
+		BOOST_CHECK_EQUAL(grid.is_active(), false);
+		BOOST_CHECK_EQUAL(grid.data().size(), 0);
+		BOOST_CHECK_EQUAL(grid.data().capacity(), 0);
+		BOOST_CHECK_EQUAL(grid.list(0).size(), 0);
+		BOOST_CHECK_EQUAL(grid.list(1).size(), 0);
+		BOOST_CHECK_EQUAL(grid.list(2).size(), 0);
+		BOOST_CHECK_EQUAL(grid.list(0).capacity(), 0);
+		BOOST_CHECK_EQUAL(grid.list(1).capacity(), 0);
+		BOOST_CHECK_EQUAL(grid.list(2).capacity(), 0);
+		/// [LazyMultiLookupGrid activate then deactivate]
 	}
 BOOST_AUTO_TEST_SUITE_END()

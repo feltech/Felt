@@ -19,12 +19,6 @@ add_definitions(-std=c++14 -fopenmp -Wfatal-errors)
 
 
 # C++ unit tests
-
-add_executable(
-	tests 
-	${TESTS_ROOT}/test_all.cpp ${TESTS_ROOT}/test_Grid.cpp 
-	${TESTS_ROOT}/test_MappedGrid.cpp ${TESTS_ROOT}/test_PartitionedGrid.cpp 
-	${TESTS_ROOT}/test_Poly.cpp ${TESTS_ROOT}/test_Surface.cpp
-	${TESTS_ROOT}/test_PolyGrid.cpp ${TESTS_ROOT}/Utils.cpp
-)
+file(GLOB TEST_CPPS "${TESTS_ROOT}/*.cpp")
+add_executable(tests ${TEST_CPPS})
 target_link_libraries(tests boost_unit_test_framework gomp)

@@ -273,7 +273,7 @@ template<class Dummy>
 const Vec2i PolyBase<2, Dummy>::SpxGridPosOffset(0,0);
 
 /*
- * Lookup from corner mask to edge mask.
+ * MultiLookup from corner mask to edge mask.
  */
 template<class Dummy>
 const short PolyBase<2, Dummy>::vtx_mask [] ={
@@ -326,7 +326,7 @@ const short PolyBase<2, Dummy>::vtx_order [][4] = {
 ////////////////////////////////////////////////////////////////////////
 	
 /*
- * Lookup from corner mask to edge mask.
+ * MultiLookup from corner mask to edge mask.
  */
 template<class Dummy>
 const short PolyBase<3, Dummy>::vtx_mask [] = {

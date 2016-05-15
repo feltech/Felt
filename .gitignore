@@ -12,3 +12,9 @@
 **/.fuse_hidden*
 /CMakeLists.txt~
 /.idea/
+/[Source directory]/
+/doc/
+/[Source directory]/
+/perf.data
+/perf.data.old
+/oprofile_data/

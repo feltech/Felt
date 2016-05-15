@@ -5,12 +5,15 @@
 #include <functional>
 #include <limits>
 #include <set>
+#include <iostream>
 #include <boost/math/special_functions/round.hpp>
+#include <boost/math/constants/constants.hpp>
 #include <eigen3/Eigen/Dense>
 #include <omp.h>
 
-#include "PartitionedGrid.hpp"
-
+#include "LookupPartitionedGrid.hpp"
+#include "TrackedPartitionedGrid.hpp"
+#include "PartitionedArray.hpp"
 
 namespace felt
 {
@@ -37,12 +40,12 @@ public:
 	/**
 	 * A delta isogrid update grid with active (non-zero) grid points tracked.
 	 */
-	using DeltaIsoGrid = SharedTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
+	using DeltaIsoGrid = LazySingleTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
 	/**
 	 * A level set embedding isogrid grid, with active grid points (the narrow
 	 * band) tracked.
 	 */
-	using IsoGrid = SharedTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
+	using IsoGrid = LazySingleTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
 	/**
 	 * A resizable array of D-dimensional grid positions.
 	 */
@@ -62,7 +65,7 @@ public:
 	/**
 	 * Grid to track positions that require an update.
 	 */
-	using AffectedLookupGrid = SharedLookupPartitionedGrid<D, 2*L+1>;
+	using AffectedMultiLookupGrid = LazySingleLookupPartitionedGrid<D, 2*L+1>;
 
 	/// D-dimensional hyperplane type (using Eigen library), for raycasting.
 	using Plane = Eigen::Hyperplane<FLOAT, D>;
@@ -76,15 +79,15 @@ public:
 	struct StatusChange
 	{
 		StatusChange(
-			const VecDi& pos_, const INT& from_layer_, const INT& to_layer_
+			const VecDi& pos_, const INT from_layer_, const INT to_layer_
 		) : pos(pos_), from_layer(from_layer_), to_layer(to_layer_) {}
 
-		static UINT layer_idx(const INT& layer_id_)
+		static UINT layer_idx(const INT layer_id_)
 		{
 			return layer_id_ + (L + 1);
 		}
 
-		static INT layer_id(const INT& layer_idx_)
+		static INT layer_id(const INT layer_idx_)
 		{
 			return layer_idx_ - (L + 1);
 		}
@@ -95,6 +98,9 @@ public:
 	};
 
 protected:
+	/**
+	 * Structure to store raycast intermediate results.
+	 */
 	struct ChildHit
 	{
 		ChildHit(const VecDf& pos_intersect_, const VecDi& pos_child_)
@@ -134,7 +140,7 @@ protected:
 	/**
 	 * Grid for preventing duplicates when doing neighbourhood queries.
 	 */
-	AffectedLookupGrid 	m_grid_affected;
+	AffectedMultiLookupGrid 	m_grid_affected;
 
 	/**
 	 * The main level set embedding isogrid.
@@ -146,7 +152,7 @@ protected:
 	 *
 	 * Used to allow for asynchronous updating.
 	 */
-	DeltaIsoGrid 		m_grid_disogrid;
+	DeltaIsoGrid 		m_grid_delta;
 
 	/**
 	 * The (spatially partitioned) status change list.
@@ -172,10 +178,11 @@ public:
 	 * @param size_ size of the isogrid.
 	 * @param size_partition_ size of each spatial partition of the isogrid.
 	 */
-	Surface (const VecDu& size_, const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION))
-	:	m_grid_isogrid(),
+	Surface (const VecDu& size_, const VecDu& size_partition_ = VecDu::Constant(8)) :
+		m_grid_isogrid(),
 		m_grid_status_change(),
-		m_grid_disogrid()
+		m_grid_delta(),
+		m_grid_affected()
 	{
 		this->init(size_, size_partition_);
 	}
@@ -186,9 +193,8 @@ public:
 	 * @param size_ size of the isogrid.
 	 * @param size_partition_ size of each spatial partition of the isogrid.
 	 */
-	void init (
-		const VecDu& size_, const VecDu& size_partition_ = VecDu::Constant(DEFAULT_PARTITION)
-	) {
+	void init (const VecDu& size_, const VecDu& size_partition_)
+	{
 		this->size(size_, size_partition_);
 	}
 
@@ -223,7 +229,7 @@ public:
 	 * @param pos
 	 * @return
 	 */
-	const FLOAT& operator() (const VecDi& pos) const
+	const FLOAT operator() (const VecDi& pos) const
 	{
 		return this->isogrid()(pos);
 	}
@@ -242,13 +248,12 @@ public:
 		const VecDi isize = usize_.template cast<INT>();
 		const VecDi offset = -isize/2;
 
-		m_grid_isogrid.init(usize_, offset, size_partition);
-
-		// Configure delta isogrid embedding.
-		m_grid_disogrid.init(usize_, offset, size_partition);
+		// Configure isogrid embedding, initialising to all outside values.
+		m_grid_isogrid.init(usize_, offset, LAYER_MAX+1, size_partition);
+		// Configure delta isogrid embedding, initialising to zero delta.
+		m_grid_delta.init(usize_, offset, 0, size_partition);
 		// Configure status change partitioned lists.
 		m_grid_status_change.init(usize_, offset, size_partition);
-
 		// Configure de-dupe grid for neighbourhood queries.
 		m_grid_affected.init(usize_, offset, size_partition);
 
@@ -260,16 +265,12 @@ public:
 			(isize - VecDi::Constant(L + 1))
 			+ m_grid_isogrid.offset() - VecDi::Constant(1)
 		);
-		// Fill isogrid grid with 'outside' value.
-		m_grid_isogrid.fill(L+1);
-		// Initialise delta isogrid to zero.
-		m_grid_disogrid.fill(0);
 	}
 
 	/**
 	 * Get minimum usable position in isogrid grid.
 	 *
-	 * @return
+	 * @return minimum position a zero layer point could be found.
 	 */
 	const VecDi& pos_min () const
 	{
@@ -279,7 +280,7 @@ public:
 	/**
 	 * Get maximum usable position in isogrid grid.
 	 *
-	 * @return
+	 * @return maximum position a zero layer point could be found.
 	 */
 	const VecDi& pos_max () const
 	{
@@ -335,7 +336,7 @@ public:
 	 * @param pos
 	 * @return
 	 */
-	const FLOAT& isogrid (const VecDi& pos) const
+	const FLOAT isogrid (const VecDi& pos) const
 	{
 		return m_grid_isogrid(pos);
 	}
@@ -363,7 +364,7 @@ public:
 		return (UINT)std::abs(val) <= L;
 	}
 
-	const AffectedLookupGrid& affected ()
+	const AffectedMultiLookupGrid& affected ()
 	{
 		return m_grid_affected;
 	}
@@ -380,7 +381,7 @@ public:
 	 * @param val
 	 * @param layer_id
 	 */
-	void isogrid (const VecDi& pos_, const FLOAT& val_, const INT& layer_id_ = 0)
+	void isogrid (const VecDi& pos_, const FLOAT val_, const INT layer_id_ = 0)
 	{
 		const INT newlayer_id = this->layer_id(val_);
 
@@ -406,20 +407,24 @@ public:
 	}
 
 
-	void add_neighs(const VecDi& pos, const INT& side)
+	void add_neighs(const VecDi& pos, const INT side)
 	{
 		// Get neighbouring points.
+		using Child = typename IsoGrid::Child;
 		PosArray neighs;
 		m_grid_isogrid.neighs(pos, neighs);
 
-		const INT& to_layer_id = side*INT(L);
+		const INT to_layer_id = side*INT(L);
 
 		// Get a mutex lock on affected spatial partitions, since neighbouring points might spill
 		// over into another thread's partition.
 		for (UINT neighIdx = 0; neighIdx < neighs.size(); neighIdx++)
 		{
 			const VecDi& pos_neigh = neighs[neighIdx];
-			typename IsoGrid::Child& child = m_grid_isogrid.child(m_grid_isogrid.pos_child(pos_neigh));
+			const VecDi pos_child = m_grid_isogrid.pos_child(pos_neigh);
+
+			m_grid_isogrid.add_child(pos_child);
+			Child& child = m_grid_isogrid.children().get(pos_child);
 			
 			const INT from_layer_id = this->layer_id(pos_neigh);
 
@@ -428,7 +433,7 @@ public:
 				continue;
 
 			// Get distance of this new point to the zero layer.
-			const FLOAT& dist_neigh = this->distance(pos_neigh, side);
+			const FLOAT dist_neigh = this->distance(pos_neigh, side);
 
 			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
@@ -467,7 +472,7 @@ public:
 	 * @param fromlayer_id
 	 * @param tolayer_id
 	 */
-	bool status_change (const VecDi& pos_, const INT& layer_id_from_, const INT& layer_id_to_)
+	bool status_change (const VecDi& pos_, const INT layer_id_from_, const INT layer_id_to_)
 	{
 		if (layer_id_from_ == layer_id_to_)
 			return false;
@@ -479,8 +484,14 @@ public:
 			if (
 				std::abs(layer_id_from_) != std::abs(layer_id_to_) + 1
 				&& std::abs(layer_id_from_) != std::abs(layer_id_to_) - 1
-			)
-				throw std::domain_error(std::string("Bad status_change"));
+			) {
+
+				std::stringstream strs;
+				strs << "Bad status_change: " << felt::format(pos_) << " from layer " <<
+					layer_id_from_ << " to layer " << layer_id_to_;
+				std::string str = strs.str();
+				throw std::domain_error(str);
+			}
 		}
 		#endif
 
@@ -495,11 +506,11 @@ public:
 	 */
 	void flush_status_change ()
 	{
-		for (const VecDi& pos_child : m_grid_status_change.branch().list())
-			for (const StatusChange& status : m_grid_status_change.child(pos_child))
+		for (const VecDi& pos_child : m_grid_status_change.children().list())
+			for (const StatusChange& status : m_grid_status_change.children().get(pos_child))
 			{
-				const INT& layer_id_to = status.to_layer;
-				const INT& layer_id_from = status.from_layer;
+				const INT layer_id_to = status.to_layer;
+				const INT layer_id_from = status.from_layer;
 				const VecDi& pos_leaf = status.pos;
 
 				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
@@ -527,9 +538,9 @@ public:
 	 *
 	 * @return
 	 */
-	DeltaIsoGrid& disogrid ()
+	DeltaIsoGrid& delta ()
 	{
-		return m_grid_disogrid;
+		return m_grid_delta;
 	}
 
 	/**
@@ -537,9 +548,9 @@ public:
 	 *
 	 * @return
 	 */
-	const DeltaIsoGrid& disogrid () const
+	const DeltaIsoGrid& delta () const
 	{
-		return m_grid_disogrid;
+		return m_grid_delta;
 	}
 
 	/**
@@ -548,9 +559,9 @@ public:
 	 * @param pos
 	 * @return
 	 */
-	FLOAT& disogrid (const VecDi& pos)
+	FLOAT& delta (const VecDi& pos)
 	{
-		return m_grid_disogrid(pos);
+		return m_grid_delta(pos);
 	}
 
 	/**
@@ -560,9 +571,9 @@ public:
 	 * @param pos
 	 * @return
 	 */
-	const FLOAT& disogrid (const VecDi& pos) const
+	const FLOAT delta (const VecDi& pos) const
 	{
-		return m_grid_disogrid(pos);
+		return m_grid_delta(pos);
 	}
 
 	/**
@@ -575,7 +586,7 @@ public:
 	 * @param pos
 	 * @param val
 	 */
-	void disogrid (const VecDi& pos_, FLOAT val_, const INT& layer_id_ = 0)
+	void delta (const VecDi& pos_, FLOAT val_, const INT layer_id_ = 0)
 	{
 		if (layer_id_ == 0)
 			val_ = clamp(pos_, val_);
@@ -596,7 +607,7 @@ public:
 
 		#endif
 		
-		this->disogrid().add(pos_, val_, this->layer_idx(layer_id_));
+		this->delta().add(pos_, val_, this->layer_idx(layer_id_));
 	}
 
 	/**
@@ -621,10 +632,10 @@ public:
 			if (pos_min(d) == pos(d) || pos_max(d) == pos(d))
 			{
 				// Get isogrid at this point.
-				const FLOAT& fisogrid = this->isogrid(pos);
+				const FLOAT fisogrid = this->isogrid(pos);
 				// Max value that will not be rounded and thus trigger
 				// a layer_move.
-				const FLOAT& val_max = -0.5 +
+				const FLOAT val_max = -0.5 +
 					(std::numeric_limits<FLOAT>::epsilon() * 2);
 				// Clamp the value of delta isogrid.
 				val = std::max(val_max - fisogrid, val);
@@ -646,13 +657,13 @@ public:
 	 * @param stddev standard deviation of Gaussian.
 	 */	
 	template <UINT Distance>
-	FLOAT disogrid_gauss (
-		const VecDf& pos_centre, const FLOAT& val, const FLOAT& stddev
+	FLOAT delta_gauss (
+		const VecDf& pos_centre, const FLOAT val, const FLOAT stddev
 	) {
-		const SharedLookupGrid<D, NUM_LAYERS>& lookup = this->walk_band<Distance>(
+		const SingleLookupGrid<D, NUM_LAYERS>& lookup = this->walk_band<Distance>(
 			round(pos_centre)
 		);
-		return this->disogrid_gauss(lookup.list(this->layer_idx(0)), pos_centre, val, stddev);
+		return this->delta_gauss(lookup.list(this->layer_idx(0)), pos_centre, val, stddev);
 
 //		PosArray list;
 //		const INT w = Distance;
@@ -667,7 +678,7 @@ public:
 //				list.push_back(pos_neigh);
 //		}
 //
-//		return this->disogrid_gauss(list, pos_centre, val, stddev);
+//		return this->delta_gauss(list, pos_centre, val, stddev);
 	}
 
 //	std::set<std::mutex*> lock_children(const PosArray& list_pos_leafs_)
@@ -677,7 +688,7 @@ public:
 //
 //		MutexSet mutexes;
 //		for (const VecDi& pos : list_pos_leafs_)
-//			mutexes.insert(&m_grid_disogrid.child(m_grid_disogrid.pos_child(pos)).lookup().mutex());
+//			mutexes.insert(&m_grid_delta.children().get(m_grid_delta.pos_child(pos)).lookup().mutex());
 //
 //		MutexIter first(mutexes.begin()), last(mutexes.end());
 //		boost::lock(first, last);
@@ -700,11 +711,11 @@ public:
 	 * @param val amount to spread over the points.
 	 * @param stddev standard deviation of Gaussian.
 	 */
-	FLOAT disogrid_gauss (
+	FLOAT delta_gauss (
 		const typename DeltaIsoGrid::PosArray& list, const VecDf& pos_centre,
-		const FLOAT& val, const FLOAT& stddev
+		const FLOAT val, const FLOAT stddev
 	) {
-		constexpr FLOAT sqrt2piDinv = 1.0f/sqrt(pow(2*M_PI, D));
+		constexpr FLOAT sqrt2piDinv = 1.0f/sqrt(pow(2*boost::math::constants::pi<FLOAT>(), D));
 
 		Eigen::VectorXf weights(list.size());
 
@@ -712,19 +723,19 @@ public:
 		for (UINT idx = 0; idx < list.size(); idx++)
 		{
 			const VecDf& pos = list[idx].template cast<FLOAT>();
-			if (this->disogrid(list[idx]) != 0)
+			if (this->delta(list[idx]) != 0)
 			{
 				weights(idx) = 0;
 				continue;
 			}
 
-			const FLOAT& dist_sq = (pos - pos_centre).squaredNorm();
-			const FLOAT& weight = sqrt2piDinv * exp(-0.5f * dist_sq);
+			const FLOAT dist_sq = (pos - pos_centre).squaredNorm();
+			const FLOAT weight = sqrt2piDinv * exp(-0.5f * dist_sq);
 			weights(idx) = weight;
 		}
 
 		std::mutex* pmutex_current = NULL;
-		const FLOAT& weights_sum = weights.sum();
+		const FLOAT weights_sum = weights.sum();
 
 		if (weights_sum > 0)
 		{
@@ -737,7 +748,7 @@ public:
 			for (UINT idx = 0; idx < list.size(); idx++)
 			{
 				const VecDi& pos = list[idx];
-				const VecDi& pos_child = m_grid_disogrid.pos_child(pos);
+				const VecDi& pos_child = m_grid_delta.pos_child(pos);
 
 				if (pos_child_current != pos_child)
 				{
@@ -746,11 +757,11 @@ public:
 						pmutex_current->unlock();
 					}
 					pos_child_current = pos_child;
-					pmutex_current = &m_grid_disogrid.child(pos_child_current).lookup().mutex();
+					pmutex_current = &m_grid_delta.children().get(pos_child_current).lookup().mutex();
 					pmutex_current->lock();
 				}
 
-				const FLOAT amount = this->clamp(pos, weights(idx) + m_grid_disogrid(pos));
+				const FLOAT amount = this->clamp(pos, weights(idx) + m_grid_delta(pos));
 
 				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
@@ -775,7 +786,7 @@ public:
 				
 				weights(idx) -= (weights(idx) - amount);
 
-				this->disogrid().add(pos, amount, this->layer_idx(0));
+				this->delta().add(pos, amount, this->layer_idx(0));
 			} // End for list of leafs.
 		} // End if weights > 0
 
@@ -798,9 +809,9 @@ public:
 	 * @param stddev
 	 */
 	template <UINT Distance>
-	FLOAT disogrid_gauss (
+	FLOAT delta_gauss (
 		const VecDf& pos_origin, const VecDf& dir,
-		const FLOAT& val, const float& stddev
+		const FLOAT val, const float stddev
 	) {
 		const VecDf& pos_hit = this->ray(pos_origin, dir);
 
@@ -809,7 +820,7 @@ public:
 //			std::cout << "MISS" << std::endl;
 			return val;
 		}
-		return this->disogrid_gauss<Distance>(pos_hit, val, stddev);
+		return this->delta_gauss<Distance>(pos_hit, val, stddev);
 	}
 
 	/**
@@ -819,9 +830,9 @@ public:
 	 * @param layer_id
 	 * @return
 	 */
-	PosArray& parts (const INT& id = 0)
+	PosArray& parts (const INT id = 0)
 	{
-		return m_grid_isogrid.branch().list(id+L);
+		return m_grid_isogrid.children().list(id+L);
 	}
 
 	/**
@@ -832,9 +843,9 @@ public:
 	 * @param id
 	 * @return
 	 */
-	PosArray& layer (const VecDi& pos_child, const INT& id = 0)
+	PosArray& layer (const VecDi& pos_child, const INT id = 0)
 	{
-		return m_grid_isogrid.child(pos_child).list(id+L);
+		return m_grid_isogrid.children().get(pos_child).list(id+L);
 	}
 
 	/**
@@ -846,10 +857,10 @@ public:
 	 * @return
 	 */
 	const PosArray& layer (
-		const VecDi& pos_child, const INT& id = 0
+		const VecDi& pos_child, const INT id = 0
 	) const
 	{
-		return m_grid_isogrid.child(pos_child).list(id+L);
+		return m_grid_isogrid.children().get(pos_child).list(id+L);
 	}
 
 	/**
@@ -863,7 +874,7 @@ public:
 	 * @param layer_id
 	 * @return
 	 */
-	const LeafsContainer<IsoGrid> layer(const UINT& layer_id) const
+	const LeafsContainer<IsoGrid> layer(const UINT layer_id) const
 	{
 		return m_grid_isogrid.leafs(this->layer_idx(layer_id));
 	}
@@ -874,7 +885,7 @@ public:
 	 * @param id
 	 * @param pos
 	 */
-	void layer_add (const VecDi& pos, const INT& layer_id)
+	void layer_add (const VecDi& pos, const INT layer_id)
 	{
 		// Do nothing if position is outside narrow band.
 		if (!this->inside_band(layer_id))
@@ -891,10 +902,13 @@ public:
 	 * @param pos
 	 * @param val
 	 */
-	void layer_add (const FLOAT& val, const VecDi& pos)
+	void layer_add (const FLOAT val, const VecDi& pos)
 	{
-		const INT& id = this->layer_id(val);
-		this->layer_add(pos, id);
+		const INT layer_id = this->layer_id(val);
+		// Do nothing if position is outside narrow band.
+		if (!this->inside_band(layer_id))
+			return;
+		m_grid_isogrid.add(pos, val, this->layer_idx(layer_id));
 	}
 
 	/**
@@ -905,13 +919,13 @@ public:
 	 * @param pos
 	 * @param layer_id
 	 */
-	void layer_remove(const VecDi& pos, const INT& layer_id)
+	void layer_remove(const VecDi& pos, const INT layer_id)
 	{
 		// Do nothing if position is outside narrow band.
 		if (!this->inside_band(layer_id))
 			return;
 
-		m_grid_isogrid.remove(pos, this->layer_idx(layer_id));
+		m_grid_isogrid.remove(pos, this->layer_idx(layer_id), layer_id + sgn(layer_id));
 	}
 
 	/**
@@ -924,7 +938,7 @@ public:
 	 * @param tolayer_id
 	 */
 	void layer_move(
-		const VecDi& pos, const INT& fromlayer_id, const INT& tolayer_id
+		const VecDi& pos, const INT fromlayer_id, const INT tolayer_id
 	) {
 		this->layer_remove(pos, fromlayer_id);
 		this->layer_add(pos, tolayer_id);
@@ -946,7 +960,7 @@ public:
 	 * @param val
 	 * @return
 	 */
-	INT layer_id(const FLOAT& val) const
+	INT layer_id(const FLOAT val) const
 	{
 		// Round to value+epsilon, to catch cases of precisely +/-0.5.
 		return boost::math::round(
@@ -960,7 +974,7 @@ public:
 	 * @param id
 	 * @return
 	 */
-	UINT layer_idx(const INT& id) const
+	UINT layer_idx(const INT id) const
 	{
 		return id+L;
 	}
@@ -1009,8 +1023,6 @@ public:
 			// Check distance indicates that this point is within the narrow band.
 			if ((UINT)std::abs(this->layer_id(f_dist)) <= L)
 			{
-				// Set distance as value in isogrid grid.
-				isogrid(pos) = f_dist;
 				// Append point to a narrow band layer (if applicable).
 				this->layer_add(f_dist, pos);
 			}
@@ -1025,7 +1037,7 @@ public:
 	 * @param side
 	 * @return
 	 */
-	VecDi next_closest (const VecDi& pos, const FLOAT& side) const
+	VecDi next_closest (const VecDi& pos, const FLOAT side) const
 	{
 		// Trivially return if this is already a zero-layer point.
 		if (this->layer_id(pos) == 0)
@@ -1096,20 +1108,16 @@ public:
 	 */
 	void update_start ()
 	{
-		for (UINT layer_idx = 0; layer_idx < 2*L+1; layer_idx++)
-		{
-			m_grid_disogrid.reset(0, layer_idx);
-			m_grid_affected.reset(layer_idx);
-		}
-
+		m_grid_delta.reset_all(m_grid_isogrid);
+		m_grid_affected.reset_all(m_grid_isogrid);
 		m_grid_status_change.reset();
 		
 		#if false
 		
-		for (const VecDi& pos_child : m_grid_disogrid.branch())
-			for (const VecDi& pos : m_grid_disogrid.child(pos_child))
+		for (const VecDi& pos_child : m_grid_delta.children())
+			for (const VecDi& pos : m_grid_delta.children().get(pos_child))
 			{
-				if (m_grid_disogrid(pos) != 0)
+				if (m_grid_delta(pos) != 0)
 				{
 					throw std::domain_error(std::string("Delta isogrid not reset!"));
 				}
@@ -1123,30 +1131,33 @@ public:
 	 */
 	void update_zero_layer ()
 	{
-		const typename DeltaIsoGrid::BranchGrid&
-		branch = this->disogrid().branch();
+		const typename DeltaIsoGrid::ChildrenGrid&
+		children = this->delta().children();
 
-		const UINT& layer_idx = this->layer_idx(0);
+		const UINT layer_idx = this->layer_idx(0);
 
 		#pragma omp parallel for
 		for (
-			UINT idx_child = 0; idx_child < branch.list(layer_idx).size();
+			UINT idx_child = 0; idx_child < children.list(layer_idx).size();
 			idx_child++
 		) {
-			const VecDi& pos_child = branch.list(layer_idx)[idx_child];
-			for (const VecDi& pos : branch(pos_child).list(layer_idx))
+			const VecDi& pos_child = children.list(layer_idx)[idx_child];
+
+			m_grid_isogrid.add_child(pos_child);
+
+			for (const VecDi& pos : children(pos_child).list(layer_idx))
 			{
-				const FLOAT& fisogrid = this->isogrid(pos);
-				const FLOAT& fdisogrid = this->disogrid(pos);
-				const FLOAT& fval = fisogrid + fdisogrid;
+				const FLOAT fisogrid = this->isogrid(pos);
+				const FLOAT fdelta = this->delta(pos);
+				const FLOAT fval = fisogrid + fdelta;
 
 				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
 				if (this->layer_id(fisogrid) != 0)
 				{
 					std::stringstream strs;
-					strs << "Zero layer updated attempted at non-zero layer point "
-						<< felt::format(pos) << ": " << fisogrid << " + " << fdisogrid << " = " << fval;
+					strs << "Zero layer updated attempted at non-zero layer point " <<
+						felt::format(pos) << ": " << fisogrid << " + " << fdelta << " = " << fval;
 					std::string str = strs.str();
 					throw std::domain_error(str);
 				}
@@ -1154,7 +1165,7 @@ public:
 				{
 					std::stringstream strs;
 					strs << "Zero layer isogrid value out of bounds at " << felt::format(pos)
-						<< ": " << fisogrid << " + " << fdisogrid << " = " << fval;
+						<< ": " << fisogrid << " + " << fdelta << " = " << fval;
 					std::string str = strs.str();
 					throw std::domain_error(str);
 				}
@@ -1215,23 +1226,23 @@ public:
 	 * @param side
 	 */
 	template <typename GridType>
-	void update_distance(const INT& layer_id_, const INT& side_, const GridType& lookup_)
+	void update_distance(const INT layer_id_, const INT side_, const GridType& lookup_)
 	{
 		using DeltaIsoChild = typename DeltaIsoGrid::Child;
 		using IsoChild = typename IsoGrid::Child;
-		const UINT& layer_idx = this->layer_idx(layer_id_);
+		const UINT layer_idx = this->layer_idx(layer_id_);
 
 		#pragma omp parallel for
-		for (UINT pos_idx = 0; pos_idx < lookup_.branch().list(layer_idx).size(); pos_idx++)
+		for (UINT pos_idx = 0; pos_idx < lookup_.children().list(layer_idx).size(); pos_idx++)
 		{
-			const VecDi& pos_child = lookup_.branch().list(layer_idx)[pos_idx];
+			const VecDi& pos_child = lookup_.children().list(layer_idx)[pos_idx];
 
-			m_grid_disogrid.add_child(pos_child, layer_idx);
+			m_grid_delta.add_child(pos_child, layer_idx);
 
-			IsoChild& grid_isogrid_child = m_grid_isogrid.branch().get(pos_child);
-			DeltaIsoChild& grid_disogrid_child = m_grid_disogrid.branch().get(pos_child);
+			IsoChild& grid_isogrid_child = m_grid_isogrid.children().get(pos_child);
+			DeltaIsoChild& grid_delta_child = m_grid_delta.children().get(pos_child);
 
-			const PosArray& apos_leafs = lookup_.child(pos_child).list(layer_idx);
+			const PosArray& apos_leafs = lookup_.children().get(pos_child).list(layer_idx);
 
 			// Calculate distance of every point in this layer to the zero
 			// layer, and store in delta isogrid grid.
@@ -1246,9 +1257,9 @@ public:
 				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
 				if (
-					std::abs(this->layer_id(dist)) != std::abs(layer_id_)
-					&& std::abs(this->layer_id(dist)) != std::abs(layer_id_) + 1
-					&& std::abs(this->layer_id(dist)) != std::abs(layer_id_) - 1
+					this->layer_id(dist) != layer_id_ &&
+					this->layer_id(dist) != layer_id_ + 1 &&
+					this->layer_id(dist) != layer_id_ - 1
 				) {
 					std::stringstream strs;
 					strs << "Outer layer distance update value out of bounds at layer "
@@ -1261,30 +1272,30 @@ public:
 
 
 				// Update delta isogrid grid.
-				grid_disogrid_child.add(pos, dist, layer_idx);
+				grid_delta_child.add(pos, dist, layer_idx);
 			}
 		}
 		
 		#pragma omp parallel for
-		for (UINT pos_idx = 0; pos_idx < lookup_.branch().list(layer_idx).size(); pos_idx++)
+		for (UINT pos_idx = 0; pos_idx < lookup_.children().list(layer_idx).size(); pos_idx++)
 		{
-			const VecDi& pos_child = lookup_.branch().list(layer_idx)[pos_idx];
+			const VecDi& pos_child = lookup_.children().list(layer_idx)[pos_idx];
 
-			IsoChild& grid_isogrid_child = m_grid_isogrid.branch().get(pos_child);
-			DeltaIsoChild& grid_disogrid_child = m_grid_disogrid.branch().get(pos_child);
+			IsoChild& grid_isogrid_child = m_grid_isogrid.children().get(pos_child);
+			DeltaIsoChild& grid_delta_child = m_grid_delta.children().get(pos_child);
 
-			const PosArray& apos_leafs = lookup_.child(pos_child).list(layer_idx);
+			const PosArray& apos_leafs = lookup_.children().get(pos_child).list(layer_idx);
 
 			// Update distance in isogrid from delta isogrid and append any points that
 			// move out of their layer to a status change list.
 			for (const VecDi& pos : apos_leafs)
 			{
 				// Distance calculated above.
-				const FLOAT& dist = grid_disogrid_child(pos);
+				const FLOAT dist = grid_delta_child(pos);
 
 				grid_isogrid_child(pos) = dist;
 
-				const INT& newlayer_id = this->layer_id(dist);
+				const INT newlayer_id = this->layer_id(dist);
 
 				if (this->status_change(pos, layer_id_, newlayer_id))
 				{
@@ -1292,7 +1303,7 @@ public:
 					if (std::abs(layer_id_) == L && std::abs(newlayer_id) == L-1)
 					{
 						// Get which side of the zero-layer this point lies on.
-						const INT& side = sgn(newlayer_id);
+						const INT side = sgn(newlayer_id);
 						this->add_neighs(pos, side);
 					}
 				}
@@ -1308,7 +1319,7 @@ public:
 	 * @param side
 	 * @return
 	 */
-	FLOAT distance (const VecDi& pos_, const FLOAT& side_) const
+	FLOAT distance (const VecDi& pos_, const FLOAT side_) const
 	{
 		const IsoGrid& isogrid = this->isogrid();
 		// Get neighbouring point that is next closest to the zero-layer.
@@ -1325,7 +1336,7 @@ public:
 	{
 		VecDi pos;
 		UINT hash;
-		SortablePos(const VecDi& pos_, const UINT& distance_)
+		SortablePos(const VecDi& pos_, const UINT distance_)
 		: pos(pos_), hash(0)
 		{
 			hash = Grid<UINT, D>::index(
@@ -1345,21 +1356,21 @@ public:
 	 *
 	 * @param pos_
 	 * @param distance_
-	 * @return SharedLookupGrid with tracking lists for visited points, one list
+	 * @return SingleLookupGrid with tracking lists for visited points, one list
 	 * for each layer.
 	 */
 	template <UINT Distance>
-	SharedLookupGrid<D, NUM_LAYERS>& walk_band (const VecDi& pos_)
+	SingleLookupGrid<D, NUM_LAYERS>& walk_band (const VecDi& pos_)
 	{
-		using Lookup = SharedLookupGrid<D, 2*L+1>;
-		using PosArray = typename Lookup::PosArray;
+		using MultiLookup = SingleLookupGrid<D, 2*L+1>;
+		using PosArray = typename MultiLookup::PosArray;
 
 		// Box size is: (Distance * 2 directions) + 1 central.
-		static Lookup lookup(VecDu::Constant(Distance * 2 + 1));
+		static MultiLookup lookup(VecDu::Constant(Distance * 2 + 1));
 		lookup.reset_all();
 		lookup.offset(pos_ - VecDi::Constant(Distance));
 
-		const INT& layer_id = this->layer_id(pos_);
+		const INT layer_id = this->layer_id(pos_);
 		if (!this->inside_band(layer_id))
 			return lookup;
 
@@ -1401,7 +1412,7 @@ public:
 						[this](const VecDi& pos_neigh) {
 							// Calculate layer of this neighbouring
 							// point from the isogrid grid.
-							const INT& layer_id = this->layer_id(pos_neigh);
+							const INT layer_id = this->layer_id(pos_neigh);
 							// If the calculated layer lies within the
 							// narrow band, then we want to track it.
 							if (this->inside_band(layer_id))
@@ -1427,8 +1438,10 @@ public:
 	}
 
 	/**
-	 * Find all outer layer points who's distance transform is
-	 * affected by modified zero-layer points.
+	 * Find all outer layer points who's distance transform is affected by modified zero-layer
+	 * points.
+	 *
+	 * @snippet test_Surface.cpp Calculate affected outer layers for localised narrow band updates
 	 *
 	 * TODO: several options for optimisation of removing duplicates:
 	 * - Use a boolean flag grid to construct a de-duped vector (used
@@ -1442,20 +1455,20 @@ public:
 	 */
 	void calc_affected()
 	{
-		const UINT& layer_idxZero = this->layer_idx(0);
+		const UINT layer_idxZero = this->layer_idx(0);
 
 		// Loop over delta isogrid modified zero-layer points adding to
 		// tracking grid.
 
-		// Loop spatial partitions of disogrid for zero-layer.
+		// Loop spatial partitions of delta for zero-layer.
 		for (
 			const VecDi& pos_child
-			: this->disogrid().branch().list(layer_idxZero))
+			: this->delta().children().list(layer_idxZero))
 		{
 			// Loop leaf grid nodes with spatial partition
 			for (
 				const VecDi& pos_leaf
-				: this->disogrid().child(pos_child).list(layer_idxZero)
+				: this->delta().children().get(pos_child).list(layer_idxZero)
 			)
 				// Add zero-layer point to tracking grid.
 				m_grid_affected.add(pos_leaf, layer_idxZero);
@@ -1475,10 +1488,10 @@ public:
 
 			for (INT layer_id = LAYER_MIN; layer_id <= LAYER_MAX; layer_id++)
 			{
-				const UINT& layer_idx = this->layer_idx(layer_id);
+				const UINT layer_idx = this->layer_idx(layer_id);
 				// Get number of spatial partitions for this layer.
 				const UINT num_childs = (
-					m_grid_affected.branch().list(layer_idx).size()
+					m_grid_affected.children().list(layer_idx).size()
 				);
 				// Resize spatial partition index lists for this layer to
 				// to include any newly added partitions.
@@ -1494,11 +1507,11 @@ public:
 				) {
 					// Get position of this spatial partition in parent
 					// lookup grid.
-					const VecDi& pos_child = m_grid_affected.branch().list(layer_idx)[idx_child];
+					const VecDi& pos_child = m_grid_affected.children().list(layer_idx)[idx_child];
 					// Copy number of active grid nodes for this partition
 					// into relevant index in the list.
 					aidx_last_neigh[layer_idx][idx_child] = (
-						m_grid_affected.child(pos_child).list(layer_idx).size()
+						m_grid_affected.children().get(pos_child).list(layer_idx).size()
 					);
 				}
 			}
@@ -1509,7 +1522,7 @@ public:
 
 			for (INT layer_id = LAYER_MIN; layer_id <= LAYER_MAX; layer_id++)
 			{
-				const UINT& layer_idx = this->layer_idx(layer_id);
+				const UINT layer_idx = this->layer_idx(layer_id);
 
 				// Loop over spatial partitions, ignoring newly added ones
 				// since we're using the cached spatial partition list as
@@ -1522,7 +1535,7 @@ public:
 					// Get position of this spatial partition in this layer (not by-reference since
 					// list will be modified).
 					const VecDi pos_child = (
-						m_grid_affected.branch().list(layer_idx)[idx_child]
+						m_grid_affected.children().list(layer_idx)[idx_child]
 					);
 
 					// Loop over leaf grid nodes within this spatial
@@ -1536,7 +1549,7 @@ public:
 						// Get list of active leaf grid nodes in this
 						// spatial partition.
 						const PosArray& apos_neigh = (
-							m_grid_affected.child(pos_child).list(layer_idx)
+							m_grid_affected.children().get(pos_child).list(layer_idx)
 						);
 						// This leaf grid nodes is the centre to search
 						// about.
@@ -1551,7 +1564,7 @@ public:
 							[this](const VecDi& pos_neigh) {
 								// Calculate layer of this neighbouring
 								// point from the isogrid grid.
-								const INT& layer_id = this->layer_id(pos_neigh);
+								const INT layer_id = this->layer_id(pos_neigh);
 								// If the calculated layer lies within the
 								// narrow band, then we want to track it.
 								if (this->inside_band(layer_id))
@@ -1574,7 +1587,7 @@ public:
 
 			for (INT layer_id = LAYER_MIN; layer_id <= LAYER_MAX; layer_id++)
 			{
-				const UINT& layer_idx = this->layer_idx(layer_id);
+				const UINT layer_idx = this->layer_idx(layer_id);
 				// Loop over spatial partitions.
 				for (UINT idx = 0; idx < aidx_first_neigh[layer_idx].size(); idx++)
 					// Set first index in spatial partition's tracking list
@@ -1603,7 +1616,7 @@ public:
 		{
 			const VecDi& pos_part = this->parts()[part_idx];
 			for (const VecDi& pos : this->layer(pos_part))
-				this->disogrid(pos, fn_(pos, m_grid_isogrid));
+				this->delta(pos, fn_(pos, m_grid_isogrid));
 		}
 		this->update_end();
 	}
@@ -1643,7 +1656,7 @@ public:
 		{
 			const VecDf& pos_hit = ray(
 				pos_origin, dir,
-				m_grid_isogrid.child(
+				m_grid_isogrid.children().get(
 					m_grid_isogrid.pos_child(pos_origin.template cast<INT>())
 				)
 			);
@@ -1717,7 +1730,7 @@ public:
 
 			// Keep marching along planes, casting ray to each and adding any candidate child
 			// grids to the tracking list.
-			const FLOAT& child_size_dim = m_grid_isogrid.child_size()(dim);
+			const FLOAT child_size_dim = m_grid_isogrid.child_size()(dim);
 			while (true)
 			{
 				pos_plane(dim) += dir_dim * child_size_dim;
@@ -1738,7 +1751,7 @@ public:
 		// precisely at the interesction of two or more planes).
 		child_hits.erase(std::unique(
 			child_hits.begin(), child_hits.end(),
-			[&pos_origin](const ChildHit& a, const ChildHit& b) -> bool {
+			[](const ChildHit& a, const ChildHit& b) -> bool {
 				return a.pos_child == b.pos_child;
 			}
 		), child_hits.end());
@@ -1748,7 +1761,7 @@ public:
 		{
 			const VecDf& pos_hit = this->ray(
 				child_hit.pos_intersect, dir,
-				this->isogrid().child(child_hit.pos_child)
+				this->isogrid().children().get(child_hit.pos_child)
 			);
 
 			if (pos_hit != NULL_POS<FLOAT>())
@@ -1780,11 +1793,23 @@ protected:
 
 		while (child.inside(pos_sample))
 		{
-			const INT& layer_id = this->layer_id(pos_sample);
+			const INT layer_id = this->layer_id(pos_sample);
 
 			if (abs(layer_id) == 0)
 			{
 				VecDf normal = this->isogrid().grad(pos_sample);
+
+				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+				if (std::isnan(normal.normalized()[0]))
+				{
+					std::stringstream strs;
+					strs << "ERROR: raycast isosurface gradient normal is NaN " <<
+						"when normalising " << felt::format(normal);
+					std::string str = strs.str();
+					throw std::domain_error(str);
+				}
+				#endif
+
 				normal.normalize();
 
 				if (normal.dot(dir) < 0)
@@ -1849,8 +1874,10 @@ protected:
 		const VecDi& pos_floor = floor(pos_intersect);
 		const VecDi& pos_child = this->m_grid_isogrid.pos_child(pos_floor);
 
-		if (this->layer(pos_child, 0).size())
-		{
+		if (
+			this->layer(pos_child, 0).size() ||
+			this->layer(pos_child, 1).size() || this->layer(pos_child, -1).size()
+		) {
 			child_hits.push_back(ChildHit(pos_intersect, pos_child));
 		}
 		return true;
@@ -1864,7 +1891,7 @@ protected:
 	 * @param pos
 	 * @return
 	 */
-	FLOAT round_to_next_child(const UINT& dim, const FLOAT& dir, const FLOAT& pos) const
+	FLOAT round_to_next_child(const UINT dim, const FLOAT dir, const FLOAT pos) const
 	{
 		// Real-valued child pos translated to [0, 2*childsize) space.
 		FLOAT pos_plane_dim = (

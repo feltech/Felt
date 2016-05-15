@@ -11,7 +11,7 @@ namespace felt
 {
 	/// Utility: turn a vector into a string.
 	template <class T>
-	std::string stringifyVector(const T& p, const INT& prec = 3)
+	std::string stringifyVector(const T& p, const INT prec = 3)
 	{
 		std::stringstream str;
 		str << "(";
@@ -31,7 +31,7 @@ namespace felt
 	/// Utility: take a slice of a 3D grid and return a tabulated string.
 	template <class Derived>
 	std::string stringifyGridSlice(
-		const GridBase<Derived>& grid, UINT axis_plane = 2, INT axis_plane_offset = 0
+		const StaticGridBase<Derived>& grid, UINT axis_plane = 2, INT axis_plane_offset = 0
 	) {
 		using GridType = GridBase<Derived>;
 		using VecDu = typename GridBase<Derived>::VecDu;
@@ -46,7 +46,7 @@ namespace felt
 		for (INT x = offset(axis_1); x < (INT)size(axis_1) + offset(axis_1);
 			x++)
 		{
-			strGrid << std::endl << "|";
+			strGrid << std::endl;
 			for (INT y = offset(axis_2); y < (INT)size(axis_2) + offset(axis_2);
 				y++)
 			{
@@ -55,7 +55,7 @@ namespace felt
 					pos(axis_plane) = axis_plane_offset;
 				pos(axis_1) = x;
 				pos(axis_2) = y;
-				strGrid << std::setw(5) << (FLOAT)grid(pos) << " |";
+				strGrid << std::setw(5) << (FLOAT)grid(pos) << ",";
 			}
 		}
 		strGrid << std::endl;
