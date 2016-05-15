@@ -229,8 +229,8 @@ public:
 	void init (const VecDu& size_, const VecDi& offset_, const LeafType& background_)
 	{
 		m_background = background_;
-		self->size(size_);
-		self->offset(offset_);
+		nself->size(size_);
+		nself->offset(offset_);
 	}
 
 	/**
@@ -311,7 +311,7 @@ public:
 	 */
 	LeafType& operator() (const VecDi& pos_)
 	{
-		return self->get(pos_);
+		return nself->get(pos_);
 	}
 
 	/**
@@ -618,16 +618,15 @@ x = (idx/Dz)/Dy % Dx
 	 * @param pos_max_ one more than the maximum allowed position.
 	 * @return true if position lies inside the grid, false otherwise.
 	 */
-	template <typename PosType>
+	template <typename ElemType>
 	static bool inside (
-		const felt::VecDT<PosType, Dims>& pos_, const VecDi& pos_min_, const VecDi& pos_max_
+		const felt::VecDT<ElemType, Dims>& pos_, const VecDi& pos_min_, const VecDi& pos_max_
 	) {
-
 		for (INT i = 0; i < pos_.size(); i++)
 		{
-			if (pos_(i) >= (PosType)pos_max_(i))
+			if (pos_(i) >= static_cast<ElemType>(pos_max_(i)))
 				return false;
-			if (pos_(i) < (PosType)pos_min_(i))
+			if (pos_(i) < static_cast<ElemType>(pos_min_(i)))
 				return false;
 		}
 		return true;
@@ -904,21 +903,17 @@ x = (idx/Dz)/Dy % Dx
 			// 2 = 10 => (x,y+1)
 			// 3 = 11 => (x+1,y+1)
 
-			VecDi pos_corner(size.size());
-			for (INT dim = 0; dim < pos_corner.size(); dim++)
+			VecDi pos_corner;
+			for (INT axis = 0; axis < pos_corner.size(); axis++)
 			{
-				INT pos = (INT)std::floor(pos_(dim));
-				const INT dir = (i >> dim) & 1;
-				if (dir)
-				{
-					pos += dir;
-					if (m_pos_min(dim) > pos || pos >= m_pos_max(dim))
-						pos -= dir;
-				}
-				pos_corner(dim) = pos;
+				INT pos_axis = static_cast<INT>(std::floor(pos_(axis)));
+				const INT dir = (i >> axis) & 1;
+				if (dir != 0 && m_pos_min(axis) <= pos_axis && pos_axis < m_pos_max(axis))
+					pos_axis += dir;
+				pos_corner(axis) = pos_axis;
 			}
 
-			val_corners[i] = (*this)(pos_corner);
+			val_corners[i] = cself->get(pos_corner);
 		}
 
 		// Translate position vector into 'hypercube space',
@@ -929,7 +924,7 @@ x = (idx/Dz)/Dy % Dx
 		// i.e. hypercube -> cube -> square -> line -> point
 		while (val_corners.size() > 1)
 		{
-			val_corners = this->interp(val_corners, dir);
+			this->interp(val_corners, dir);
 		}
 
 		return val_corners[0];
@@ -1120,37 +1115,32 @@ public:
 	 * @param pos_ real-valued position to interpolate to.
 	 * @return list of interpolated values
 	 */
-	std::vector<LeafType> interp (
-		const std::vector<LeafType>& val_corners_in_, const VecDf& pos_
-	) const
+	void interp (std::vector<LeafType>& val_corners_, const VecDf& pos_) const
 	{
-		const size_t num_corners = val_corners_in_.size();
+		const UINT num_corners = val_corners_.size();
 
 		// Number of values returned.
 		// This is a power of 2 less than input dimensions
 		// (cube becomes square, square becomes line, line becomes point).
-		const size_t num_out = num_corners >> 1;
+		const UINT num_out = num_corners >> 1;
 
 		// The axis along which to interpolate.
 		// This is computed from the dimensions of the original input and
 		// the dimensions of the intended output.
-		const size_t axis_idx = pos_.size() - log2(num_corners);
+		const UINT axis_idx = pos_.size() - log2(num_corners);
 
 		// The weighting to be used in interpolating each pair of points.
 		// This is the position along the axis of interpolation.
 		const FLOAT axis_pos = pos_(axis_idx);
 
-		std::vector<LeafType> val_corners_out(num_out);
-
-		for (size_t i = 0; i < num_out; i++)
+		for (UINT i = 0; i < num_out; i++)
 		{
-			const LeafType low = val_corners_in_[(i << 1)];
-			const LeafType high = val_corners_in_[(i << 1) + 1];
+			const LeafType low = val_corners_[(i << 1)];
+			const LeafType high = val_corners_[(i << 1) + 1];
 			const LeafType val = axis_pos*high + (1.0f-axis_pos)*low;
-			val_corners_out[i] = val;
+			val_corners_[i] = val;
 		}
-
-		return val_corners_out;
+		val_corners_.resize(num_out);
 	}
 
 };

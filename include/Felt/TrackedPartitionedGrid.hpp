@@ -44,7 +44,7 @@ public:
 	bool add(const VecDi& pos_, const LeafType& val_, const UINT arr_idx_)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
-		self->add_child(pos_child, arr_idx_);
+		nself->add_child(pos_child, arr_idx_);
 		return this->children().get(pos_child).add(pos_, val_, arr_idx_);
 	}
 
@@ -156,9 +156,54 @@ public:
 	using ThisType = LazySingleTrackedPartitionedGrid<T, D, N>;
 	using Base = TrackedPartitionedGridBase<ThisType, true>;
 	using Traits = GridTraits<ThisType>;
+	using LeafType = typename Traits::LeafType;
+	using DerivedType = typename Traits::ThisType;
+	using typename Base::VecDi;
+	using typename Base::Child;
 public:
 	using Base::TrackedPartitionedGridBase;
 	using Base::Base::reset;
+	using Base::remove;
+	using Base::remove_child;
+
+	/**
+	 * Remove a leaf position from relevant child tracking structure and
+	 * remove child from tracking list if child's list is now empty.
+	 *
+	 * @param pos_ leaf position to remove.
+	 * @param arr_idx_ tracking list id.
+	 */
+	void remove(const VecDi& pos_, const UINT arr_idx_, const LeafType& background_)
+	{
+		const VecDi& pos_child = this->pos_child(pos_);
+		Child& child = this->children().get(pos_child);
+		child.remove(pos_, arr_idx_);
+		if (child.list(arr_idx_).size() == 0)
+			remove_child(pos_child, arr_idx_, background_);
+	}
+
+	/**
+	 * Remove a spatial partition from children grid's tracking subgrid.
+	 *
+	 * Uses mutex for thread safety. Deactivates the child grid if not being tracked by any list.
+	 *
+	 * @param pos_ position of spatial partition to stop tracking.
+	 * @param arr_idx_ index of tracking list used to track position.
+	 */
+	void remove_child(
+		const VecDi& pos_child_, const UINT arr_idx_, const LeafType& background_
+	) {
+		if (!this->m_grid_children.is_active(pos_child_, arr_idx_))
+			return;
+		std::lock_guard<std::mutex> lock(this->m_mutex_update_branch);
+		this->m_grid_children.remove(pos_child_, arr_idx_);
+		if (!this->is_child_active(pos_child_))
+		{
+			Child& child = this->m_grid_children.get(pos_child_);
+			child.background() = background_;
+			this->m_grid_children.get(pos_child_).deactivate();
+		}
+	}
  };
 
 

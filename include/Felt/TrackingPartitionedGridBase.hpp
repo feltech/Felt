@@ -252,7 +252,7 @@ public:
 	bool add(const VecDi& pos_, const UINT arr_idx_ = 0)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
-		self->add_child(pos_child, arr_idx_);
+		nself->add_child(pos_child, arr_idx_);
 		return this->children().get(pos_child).add(pos_, arr_idx_);
 	}
 
@@ -274,7 +274,7 @@ public:
 	bool add_safe(const VecDi& pos_, const UINT arr_idx_ = 0)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
-		self->add_child(pos_child, arr_idx_);
+		nself->add_child(pos_child, arr_idx_);
 		Child& child = this->children().get(pos_child);
 		if (child.is_active(pos_))
 			return false;
@@ -295,7 +295,7 @@ public:
 		Child& child = this->children().get(pos_child);
 		child.remove(pos_, arr_idx_);
 		if (child.list(arr_idx_).size() == 0)
-			self->remove_child(pos_child, arr_idx_);
+			nself->remove_child(pos_child, arr_idx_);
 	}
 
 	/**

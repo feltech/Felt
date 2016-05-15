@@ -5,7 +5,9 @@
 #include <functional>
 #include <limits>
 #include <set>
+#include <iostream>
 #include <boost/math/special_functions/round.hpp>
+#include <boost/math/constants/constants.hpp>
 #include <eigen3/Eigen/Dense>
 #include <omp.h>
 
@@ -268,7 +270,7 @@ public:
 	/**
 	 * Get minimum usable position in isogrid grid.
 	 *
-	 * @return
+	 * @return minimum position a zero layer point could be found.
 	 */
 	const VecDi& pos_min () const
 	{
@@ -278,7 +280,7 @@ public:
 	/**
 	 * Get maximum usable position in isogrid grid.
 	 *
-	 * @return
+	 * @return maximum position a zero layer point could be found.
 	 */
 	const VecDi& pos_max () const
 	{
@@ -482,8 +484,14 @@ public:
 			if (
 				std::abs(layer_id_from_) != std::abs(layer_id_to_) + 1
 				&& std::abs(layer_id_from_) != std::abs(layer_id_to_) - 1
-			)
-				throw std::domain_error(std::string("Bad status_change"));
+			) {
+
+				std::stringstream strs;
+				strs << "Bad status_change: " << felt::format(pos_) << " from layer " <<
+					layer_id_from_ << " to layer " << layer_id_to_;
+				std::string str = strs.str();
+				throw std::domain_error(str);
+			}
 		}
 		#endif
 
@@ -707,7 +715,7 @@ public:
 		const typename DeltaIsoGrid::PosArray& list, const VecDf& pos_centre,
 		const FLOAT val, const FLOAT stddev
 	) {
-		constexpr FLOAT sqrt2piDinv = 1.0f/sqrt(pow(2*M_PI, D));
+		constexpr FLOAT sqrt2piDinv = 1.0f/sqrt(pow(2*boost::math::constants::pi<FLOAT>(), D));
 
 		Eigen::VectorXf weights(list.size());
 
@@ -917,7 +925,7 @@ public:
 		if (!this->inside_band(layer_id))
 			return;
 
-		m_grid_isogrid.remove(pos, this->layer_idx(layer_id));
+		m_grid_isogrid.remove(pos, this->layer_idx(layer_id), layer_id + sgn(layer_id));
 	}
 
 	/**
@@ -1148,8 +1156,8 @@ public:
 				if (this->layer_id(fisogrid) != 0)
 				{
 					std::stringstream strs;
-					strs << "Zero layer updated attempted at non-zero layer point "
-						<< felt::format(pos) << ": " << fisogrid << " + " << fdelta << " = " << fval;
+					strs << "Zero layer updated attempted at non-zero layer point " <<
+						felt::format(pos) << ": " << fisogrid << " + " << fdelta << " = " << fval;
 					std::string str = strs.str();
 					throw std::domain_error(str);
 				}
@@ -1249,9 +1257,9 @@ public:
 				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
 				if (
-					std::abs(this->layer_id(dist)) != std::abs(layer_id_)
-					&& std::abs(this->layer_id(dist)) != std::abs(layer_id_) + 1
-					&& std::abs(this->layer_id(dist)) != std::abs(layer_id_) - 1
+					this->layer_id(dist) != layer_id_ &&
+					this->layer_id(dist) != layer_id_ + 1 &&
+					this->layer_id(dist) != layer_id_ - 1
 				) {
 					std::stringstream strs;
 					strs << "Outer layer distance update value out of bounds at layer "
@@ -1743,7 +1751,7 @@ public:
 		// precisely at the interesction of two or more planes).
 		child_hits.erase(std::unique(
 			child_hits.begin(), child_hits.end(),
-			[&pos_origin](const ChildHit& a, const ChildHit& b) -> bool {
+			[](const ChildHit& a, const ChildHit& b) -> bool {
 				return a.pos_child == b.pos_child;
 			}
 		), child_hits.end());
@@ -1790,6 +1798,18 @@ protected:
 			if (abs(layer_id) == 0)
 			{
 				VecDf normal = this->isogrid().grad(pos_sample);
+
+				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+				if (std::isnan(normal.normalized()[0]))
+				{
+					std::stringstream strs;
+					strs << "ERROR: raycast isosurface gradient normal is NaN " <<
+						"when normalising " << felt::format(normal);
+					std::string str = strs.str();
+					throw std::domain_error(str);
+				}
+				#endif
+
 				normal.normalize();
 
 				if (normal.dot(dir) < 0)
@@ -1854,8 +1874,10 @@ protected:
 		const VecDi& pos_floor = floor(pos_intersect);
 		const VecDi& pos_child = this->m_grid_isogrid.pos_child(pos_floor);
 
-		if (this->layer(pos_child, 0).size())
-		{
+		if (
+			this->layer(pos_child, 0).size() ||
+			this->layer(pos_child, 1).size() || this->layer(pos_child, -1).size()
+		) {
 			child_hits.push_back(ChildHit(pos_intersect, pos_child));
 		}
 		return true;

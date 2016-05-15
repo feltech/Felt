@@ -144,7 +144,7 @@ public:
 	 * @param pos_leaf_
 	 * @return position of spatial partition in which leaf position lies.
 	 */
-	const VecDi pos_child (const VecDi& pos_leaf_) const
+	VecDi pos_child (const VecDi& pos_leaf_) const
 	{
 		return (
 			(pos_leaf_ - offset()).array() / this->m_isize_child.array()

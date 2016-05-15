@@ -48,7 +48,6 @@ public:
 	TrackedGridBase (
 		const VecDu& size_, const VecDi& offset_, const LeafType& background_
 	):
-		Base(size_, offset_, background_),
 		m_grid_lookup()
 	{
 		this->init(size_, offset_, background_);

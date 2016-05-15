@@ -457,9 +457,9 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 			Eigen::Matrix<FLOAT, 1, 1> pos;
 			pos(0) = 0.3;
 
-			std::vector< FLOAT > out = grid.interp(input, pos);
+			grid.interp(input, pos);
 
-			BOOST_CHECK_EQUAL(out[0], 0.7f);
+			BOOST_CHECK_EQUAL(input[0], 0.7f);
 		}
 	}
 	BOOST_AUTO_TEST_CASE(interpolate2D)
@@ -480,15 +480,13 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 
 			Vec2f pos(0.8f, 0.5f);
 
-			std::vector< FLOAT > output = grid.interp(input, pos);
+			grid.interp(input, pos);
 
-			BOOST_CHECK_CLOSE(output[0], 0.4f, 0.00001f);
-			BOOST_CHECK_CLOSE(output[1], 0.8f, 0.00001f);
+			BOOST_CHECK_CLOSE(input[0], 0.4f, 0.00001f);
+			BOOST_CHECK_CLOSE(input[1], 0.8f, 0.00001f);
 
-			input = output;
-
-			output = grid.interp(input, pos);
-			BOOST_CHECK_CLOSE(output[0], 0.6f, 0.00001f);
+			grid.interp(input, pos);
+			BOOST_CHECK_CLOSE(input[0], 0.6f, 0.00001f);
 		}
 	}
 
@@ -517,21 +515,20 @@ BOOST_AUTO_TEST_SUITE(test_Grid)
 
 			Vec3f pos(0.5f, 0.75f, 0.5f);
 
-			std::vector< FLOAT > output4 = grid.interp(input, pos);
+			grid.interp(input, pos);
 
-			BOOST_CHECK_EQUAL(output4[0 /**00x*/], 0.4f);
-			BOOST_CHECK_EQUAL(output4[1 /**01x*/], 1.0f);
-			BOOST_CHECK_EQUAL(output4[2 /**10x*/], 0.0f);
-			BOOST_CHECK_EQUAL(output4[3 /**11x*/], 1.0f);
+			BOOST_CHECK_EQUAL(input[0 /**00x*/], 0.4f);
+			BOOST_CHECK_EQUAL(input[1 /**01x*/], 1.0f);
+			BOOST_CHECK_EQUAL(input[2 /**10x*/], 0.0f);
+			BOOST_CHECK_EQUAL(input[3 /**11x*/], 1.0f);
 
-			input = output4;
-			std::vector< FLOAT > output2 = grid.interp(input, pos);
-			BOOST_CHECK_CLOSE(output2[0 /**0yx*/], 0.85f, 0.00001f);
-			BOOST_CHECK_CLOSE(output2[1 /**1yx*/], 0.75f, 0.00001f);
+			grid.interp(input, pos);
+			BOOST_CHECK_CLOSE(input[0 /**0yx*/], 0.85f, 0.00001f);
+			BOOST_CHECK_CLOSE(input[1 /**1yx*/], 0.75f, 0.00001f);
 
-			input = output2;
-			std::vector< FLOAT > output1 = grid.interp(input, pos);
-			BOOST_CHECK_CLOSE(output1[0 /**zyx*/], 0.8f, 0.00001f);
+			grid.interp(input, pos);
+			BOOST_CHECK_CLOSE(input[0 /**zyx*/], 0.8f, 0.00001f);
+			BOOST_CHECK_EQUAL(input.size(), 1);
 		}
 	}
 

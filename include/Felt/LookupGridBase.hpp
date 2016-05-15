@@ -268,7 +268,7 @@ protected:
 		this->assert_pos_bounds(pos_, "add: ");
 		#endif
 
-		UINT& idx = self->idx_from_pos(pos_, lookup_idx_);
+		UINT& idx = nself->idx_from_pos(pos_, lookup_idx_);
 		// Do not allow duplicates.
 		if (idx != NULL_IDX)
 			return false;
@@ -299,7 +299,7 @@ protected:
 	void reset(const UINT arr_idx_, const UINT lookup_idx_)
 	{
 		for (VecDi pos : m_a_pos[arr_idx_])
-			self->idx_from_pos(pos, lookup_idx_) = NULL_IDX;
+			nself->idx_from_pos(pos, lookup_idx_) = NULL_IDX;
 		list(arr_idx_).clear();
 	}
 
@@ -341,7 +341,7 @@ protected:
 		#endif
 
 		// Set index lookup to null value.
-		self->idx_from_pos(pos_, lookup_idx_) = NULL_IDX;
+		nself->idx_from_pos(pos_, lookup_idx_) = NULL_IDX;
 
 		// If this is not the last remaining position in the array, then
 		// we must move the last position to this position and update the
@@ -353,7 +353,7 @@ protected:
 			const VecDi& pos_last = this->list(arr_idx_)[size - 1];
 			this->list(arr_idx_)[idx_] = pos_last;
 			// Set the lookup grid to reference the new index in the array.
-			self->idx_from_pos(pos_last, lookup_idx_) = idx_;
+			nself->idx_from_pos(pos_last, lookup_idx_) = idx_;
 		}
 		// Remove the last element in the array (which is at this point
 		// either the last remaining element or a duplicate).

@@ -90,9 +90,9 @@ public:
 
 	 */
 	void init (const VecDu& size_, const VecDi& offset_, const VecDu& partition_size_) {
-		self->init(partition_size_);
-		self->size(size_);
-		self->offset(offset_);
+		nself->init(partition_size_);
+		nself->size(size_);
+		nself->offset(offset_);
 	}
 
 	/**

@@ -78,7 +78,7 @@ namespace felt
 				surface.isogrid().size(), surface.isogrid().offset()
 			);
 			for (const VecDi& pos_child : surface.isogrid().children())
-				self->init_child(
+				nself->init_child(
 					pos_child, surface.isogrid().children().get(pos_child).size(),
 					surface.isogrid().children().get(pos_child).offset()
 				);

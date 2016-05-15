@@ -7,7 +7,7 @@ namespace felt
 {
 
 /// Shorthand cast to CRTP derived type.
-#define self static_cast<DerivedType*>(this)
+#define nself static_cast<DerivedType*>(this)
 /// Shorthand cast to const CRTP derived type.
 #define cself static_cast<const DerivedType*>(this)
 
@@ -131,6 +131,22 @@ VecDi<D> floor(const VecDf<D>& pos_)
 	VecDi<D> pos_rounded;
 	for (UINT dim = 0; dim < pos_.size(); dim++)
 		pos_rounded(dim) = std::floor(pos_(dim));
+	return pos_rounded;
+}
+
+/**
+ * Call std::ceil on each element of float vector to give integer vector.
+ *
+ * @tparam D the dimension of the vector.
+ * @param pos_ float vector
+ * @return ceiling of integer vector (away from zero).
+ */
+template <INT D>
+VecDi<D> ceil(const VecDf<D>& pos_)
+{
+	VecDi<D> pos_rounded;
+	for (UINT dim = 0; dim < pos_.size(); dim++)
+		pos_rounded(dim) = std::ceil(pos_(dim));
 	return pos_rounded;
 }
 

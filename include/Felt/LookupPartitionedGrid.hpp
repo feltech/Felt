@@ -34,8 +34,9 @@ public:
 	 * @param offset_ spatial offset of the grid.
 	 * @param partition_size_ size of a spatial partition.
 	 */
-	MultiLookupPartitionedGrid (const VecDu& size_, const VecDi& offset_, const VecDu& partition_size_) :
-		Base(size_, offset_, Base::Child::Traits::NULL_IDX_DATA, partition_size_)
+	MultiLookupPartitionedGrid (
+		const VecDu& size_, const VecDi& offset_, const VecDu& partition_size_
+	) : Base(size_, offset_, Base::Child::Traits::NULL_IDX_DATA, partition_size_)
 	{}
 };
 
