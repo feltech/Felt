@@ -714,14 +714,14 @@ x = (idx/Dz)/Dy % Dx
 		// Reference to GridBase dimensions.
 		const VecDu& size = this->size();
 		// Vector to store gradient calculation.
-		VecDT vec_grad(size.size());
+		VecDT vec_grad;
 		// Position for look-ahead.
-		Eigen::Matrix<PosType, Dims, 1> vec_dir(pos_);
+		felt::VecDT<PosType, Dims> vec_dir(pos_);
 
 		for (INT axis = 0; axis < size.size(); axis++)
 		{
 			vec_dir(axis) += 1;
-			vec_grad(axis) = (*this)(vec_dir) - val_centre;
+			vec_grad(axis) = val(vec_dir) - val_centre;
 			vec_dir(axis) -= 1;
 		}
 
@@ -743,13 +743,13 @@ x = (idx/Dz)/Dy % Dx
 		// Reference to GridBase dimensions.
 		const VecDu& size = this->size();
 		// Vector to store gradient calculation.
-		VecDT vec_grad(size.size());
+		VecDT vec_grad;
 		// Position for look-behind.
-		Eigen::Matrix<PosType, Dims, 1> vec_dir(pos_);
+		felt::VecDT<PosType, Dims> vec_dir(pos_);
 
 		for (INT axis = 0; axis < size.size(); axis++) {
 			vec_dir(axis) -= 1;
-			vec_grad(axis) = val_centre - (*this)(vec_dir);
+			vec_grad(axis) = val_centre - val(vec_dir);
 			vec_dir(axis) += 1;
 		}
 
@@ -768,7 +768,7 @@ x = (idx/Dz)/Dy % Dx
 		// Reference to GridBase dimensions.
 		const VecDu& size = this->size();
 		// Vector to store gradient calculation.
-		VecDT vec_grad(size.size());
+		VecDT vec_grad;
 		// Position for look-around.
 		felt::VecDT<PosType, Dims> vec_dir(pos_);
 
@@ -803,7 +803,7 @@ x = (idx/Dz)/Dy % Dx
 		// Reference to GridBase dimensions.
 		const VecDu& size = this->size();
 		// Vector to store gradient calculation.
-		VecDT vec_grad(size.size());
+		VecDT vec_grad;
 		// Position for look-around.
 		VecDR pos_test(pos_);
 
@@ -851,15 +851,15 @@ x = (idx/Dz)/Dy % Dx
 	 * @return vector of entropy satisfying gradient.
 	 */
 	template <typename PosType>
-	VecDT gradE (const Eigen::Matrix<PosType, Dims, 1>& pos) const
+	VecDT gradE (const felt::VecDT<PosType, Dims>& pos) const
 	{
-		typedef Eigen::Matrix<PosType, Dims, 1> VecDp;
+		using VecDp = felt::VecDT<PosType, Dims>;
 		// Value at this point.
 		const LeafType centre = val(pos);
 		// Reference to GridBase dimensions.
 		const VecDu& size = this->size();
 		// Vector to store gradient calculation.
-		VecDT vec_grad(size.size());
+		VecDT vec_grad;
 		// Position for look-around.
 		VecDp pos_test(pos);
 
@@ -918,7 +918,7 @@ x = (idx/Dz)/Dy % Dx
 
 		// Translate position vector into 'hypercube space',
 		// so 0 <= v(x) <= 1.
-		VecDf dir = pos_ - floorf(pos_);
+		VecDf dir = pos_ - felt::floorf(pos_);
 
 		// Repeatedly reduce along axes,
 		// i.e. hypercube -> cube -> square -> line -> point

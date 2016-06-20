@@ -103,6 +103,8 @@ BOOST_AUTO_TEST_SUITE(test_Poly)
 		surface2D.update_start();
 		surface2D.delta(Vec2i(0,0), -1);
 		surface2D.update_end();
+
+		BOOST_TEST_MESSAGE(stringifyGridSlice(surface3D.isogrid()));
 		surface3D.update_start();
 		surface3D.delta(Vec3i(0,0,0), -1);
 		surface3D.update_end();

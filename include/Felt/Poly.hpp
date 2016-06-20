@@ -28,15 +28,15 @@ namespace felt
 		/**
 		 * D-dimensional unsigned integer vector.
 		 */
-		using VecDu = Eigen::Matrix<UINT, D, 1>;
+		using VecDu = felt::VecDu<D>;
 		/**
 		 * D-dimensional integer vector.
 		 */
-		using VecDi = Eigen::Matrix<INT, D, 1>;
+		using VecDi = felt::VecDi<D>;
 		/**
 		 * D-dimensional float vector.
 		 */
-		using VecDf = Eigen::Matrix<FLOAT, D, 1>;
+		using VecDf = felt::VecDf<D>;
 
 		/// D-dimensional vertex type.
 		using typename PolyBase<D, void>::Vertex;
@@ -200,7 +200,7 @@ namespace felt
 		)
 		{
 			// Check lookup to see if vertex has already been calculated.
-			const UINT idx_lookup = m_grid_vtx(pos_a)(axis);
+			const UINT idx_lookup = m_grid_vtx.get(pos_a)(axis);
 			if (idx_lookup != NULL_IDX) {
 				return idx_lookup;
 			}

@@ -1284,7 +1284,8 @@ BOOST_AUTO_TEST_CASE(ray)
 
 	// ==== Action ====
 	// Rotating ray.
-
+	using MatrixType = Eigen::Matrix3f;
+	MatrixType mat_rot(MatrixType::Identity());
 	pos_hit = surface.ray(Vec3f(6.72, -6.55, -3.45), Vec3f(-0.672, 0.655, 0.345));
 
 	BOOST_CHECK_NE(pos_hit, surface.NULL_POS<FLOAT>());
@@ -1292,7 +1293,7 @@ BOOST_AUTO_TEST_CASE(ray)
 	for (FLOAT rot_mult = 0; rot_mult < 2.0f; rot_mult += 0.1f)
 	{
 		// ==== Setup ====
-		Eigen::Matrix3f mat_rot = Eigen::AngleAxisf(
+		mat_rot = Eigen::AngleAxisf(
 			rot_mult * M_PI, Vec3f::UnitY()
 		).matrix();
 		const Vec3f origin = mat_rot*Vec3f(0, 0, -10.0f);
@@ -1312,7 +1313,7 @@ BOOST_AUTO_TEST_CASE(ray)
 	for (FLOAT rot_mult = 0; rot_mult < 2.0f; rot_mult += 0.1f)
 	{
 		// ==== Setup ====
-		Eigen::Matrix3f mat_rot = Eigen::AngleAxisf(
+		mat_rot = Eigen::AngleAxisf(
 			rot_mult * M_PI, Vec3f(1, 1, 1).normalized()
 		).matrix();
 		const Vec3f origin = mat_rot*Vec3f(0, 0, -10);
@@ -1332,7 +1333,7 @@ BOOST_AUTO_TEST_CASE(ray)
 	for (FLOAT rot_mult = 0; rot_mult < 2.0f; rot_mult += 0.1f)
 	{
 		// ==== Setup ====
-		Eigen::Matrix3f mat_rot = Eigen::AngleAxisf(
+		mat_rot = Eigen::AngleAxisf(
 			rot_mult * M_PI, Vec3f(0, 1, 1).normalized()
 		).matrix();
 		const Vec3f origin = mat_rot*Vec3f(0, 0, -10);

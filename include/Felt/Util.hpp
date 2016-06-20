@@ -1,7 +1,8 @@
 #ifndef INCLUDE_FELT_UTIL_HPP_
-#define INCLUDE_FELT_FELT_HPP_
+#define INCLUDE_FELT_UTIL_HPP_
 
 #include <eigen3/Eigen/Dense>
+
 
 namespace felt
 {
@@ -167,4 +168,5 @@ VecDf<D> floorf(const VecDf<D>& pos_)
 }
 
 } // End namespace felt.
+
 #endif /* INCLUDE_FELT_UTIL_HPP_ */

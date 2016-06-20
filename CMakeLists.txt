@@ -15,10 +15,11 @@ include_directories(
     ${PROJECT_ROOT}/include ${EIGEN3_INCLUDE_DIR}
 )
 
-add_definitions(-std=c++14 -fopenmp -Wfatal-errors)
+add_definitions(-std=c++14 -fopenmp -Wfatal-errors -fdiagnostics-color=auto)
 
 
 # C++ unit tests
 file(GLOB TEST_CPPS "${TESTS_ROOT}/*.cpp")
+
 add_executable(tests ${TEST_CPPS})
 target_link_libraries(tests boost_unit_test_framework gomp)

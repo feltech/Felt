@@ -11,6 +11,7 @@
 #include <eigen3/Eigen/Dense>
 #include <omp.h>
 
+#include "Util.hpp"
 #include "LookupPartitionedGrid.hpp"
 #include "TrackedPartitionedGrid.hpp"
 #include "PartitionedArray.hpp"
@@ -207,9 +208,9 @@ public:
 	 * @return
 	 */
 	template <typename T>
-	constexpr const Eigen::Matrix<T, D, 1> NULL_POS() const
+	constexpr const felt::VecDT<T, D> NULL_POS() const
 	{
-		return Eigen::Matrix<T, D, 1>::Constant(std::numeric_limits<T>::max());
+		return felt::VecDT<T, D>::Constant(std::numeric_limits<T>::max());
 	};
 
 	/**
@@ -246,7 +247,7 @@ public:
 	void size (const VecDu& usize_, const VecDu& size_partition)
 	{
 		const VecDi isize = usize_.template cast<INT>();
-		const VecDi offset = -isize/2;
+		const VecDi offset = -1 * isize / 2;
 
 		// Configure isogrid embedding, initialising to all outside values.
 		m_grid_isogrid.init(usize_, offset, LAYER_MAX+1, size_partition);
@@ -661,7 +662,7 @@ public:
 		const VecDf& pos_centre, const FLOAT val, const FLOAT stddev
 	) {
 		const SingleLookupGrid<D, NUM_LAYERS>& lookup = this->walk_band<Distance>(
-			round(pos_centre)
+			felt::round(pos_centre)
 		);
 		return this->delta_gauss(lookup.list(this->layer_idx(0)), pos_centre, val, stddev);
 
