@@ -98,7 +98,7 @@ SCENARIO("Grid")
 			}
 		}
 
-		WHEN("we query for a point outside the grid")
+		WHEN("we query for a point outside the grid (positive)")
 		{
 			THEN("the index of a point in the data array is reported correctly")
 			{

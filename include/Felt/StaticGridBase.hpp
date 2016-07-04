@@ -437,6 +437,9 @@ public:
 		{
 			INT u_pos = pos_(i) - offset_(i);
 
+			if (u_pos >= size_(i))
+				u_pos = u_pos % size_(i);
+
 			for (INT j = i+1; j < size_.size(); j++)
 			{
 				u_pos *= size_(j);
@@ -445,6 +448,7 @@ public:
 		}
 		return idx;
 	}
+
 
 	/**
 	 * Get position of index.

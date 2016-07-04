@@ -207,7 +207,9 @@ public:
 	{
 		m_pgrid_snapshot.reset(new SnapshotGrid(this->size(), this->offset(), LeafType()));
 
-		const VecDi pos_max = this->m_size.template cast<INT>() - VecDi::Constant(1);
+		const VecDi pos_max = (
+			this->m_size.template cast<INT>() - VecDi::Constant(1) + this->offset()
+		);
 
 		for (UINT idx = 0; idx <= this->index(pos_max); idx++)
 		{

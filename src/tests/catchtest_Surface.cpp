@@ -93,46 +93,57 @@ WHEN("layers")
 /*
  * Placing a single singularity point.
  */
-WHEN("seed")
+GIVEN("a surface with 5x5 isogrid")
 {
 	Surface<2, 2> surface(Vec2u(5, 5));
 
-	surface.seed(Vec2i(0, 0));
+	WHEN("we add a singularity seed at the centre")
+	{
+		surface.seed(Vec2i(0, 0));
 
-	// Trivially check centre of seed is indeed a zero-level point (i.e. point
-	// on the surface).
+		// Trivially check centre of seed is indeed a zero-level point (i.e. point
+		// on the surface).
+		THEN("the value at the centre of the grid is 0")
+		{
+			const FLOAT val_centre = surface.isogrid().get(Vec2i(0, 0));
+			CHECK(val_centre == 0);
+		}
 
-	const FLOAT val_centre = surface.isogrid().get(Vec2i(0, 0));
-	CHECK(val_centre == 0);
+		THEN("the data in the grid matches expected data")
+		{
+			// A 2D 2-layer singularity (seed) point should look like the following.
 
-	// A 2D 2-layer singularity (seed) point should look like the following.
+			Grid<FLOAT, 2> isogrid_check(Vec2u(5, 5), Vec2i::Zero(), 0);
+			isogrid_check.data() = {
+				3, 3, 2, 3, 3,	// |
+				3, 2, 1, 2, 3,	// -
+				2, 1, 0, 1, 2,	// x
+				3, 2, 1, 2, 3,	// +
+				3, 3, 2, 3, 3	// |
+			//	|____ - y + ____|
+			};
+		//	std::cerr << isogrid.data() << std::endl << std::endl;
+		//	std::cerr << isogrid_check.data() << std::endl << std::endl;
 
-	Grid<FLOAT, 2> isogrid_check(Vec2u(5, 5), Vec2i::Zero(), 0);
-	isogrid_check.data() = {
-		3, 3, 2, 3, 3,	// |
-		3, 2, 1, 2, 3,	// -
-		2, 1, 0, 1, 2,	// x
-		3, 2, 1, 2, 3,	// +
-		3, 3, 2, 3, 3	// |
-	//	|____ - y + ____|
-	};
-//	std::cerr << isogrid.data() << std::endl << std::endl;
-//	std::cerr << isogrid_check.data() << std::endl << std::endl;
+			isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
+			INFO(stringifyGridSlice(surface.isogrid().snapshot()));
+			INFO(stringifyGridSlice(isogrid_check));
 
-	isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
-	INFO(stringifyGridSlice(surface.isogrid().snapshot()));
-	INFO(stringifyGridSlice(isogrid_check));
+			const FLOAT diff = isogrid_check.vdata().sum();
 
-	const FLOAT diff = isogrid_check.vdata().sum();
+			CHECK(diff == 0);
+		}
 
-	CHECK(diff == 0);
-
-	// Check appropriate points have been added to narrow band layers.
-	CHECK(surface.layer(-2).size() == 0);
-	CHECK(surface.layer(-1).size() == 0);
-	CHECK(surface.layer(0).size() == 1);
-	CHECK(surface.layer(1).size() == 4);
-	CHECK(surface.layer(2).size() == 8);
+		THEN("the surface layers track the correct number of points")
+		{
+			// Check appropriate points have been added to narrow band layers.
+			CHECK(surface.layer(-2).size() == 0);
+			CHECK(surface.layer(-1).size() == 0);
+			CHECK(surface.layer(0).size() == 1);
+			CHECK(surface.layer(1).size() == 4);
+			CHECK(surface.layer(2).size() == 8);
+		}
+	}
 }
 
 /*
