@@ -436,6 +436,7 @@ public:
 		for (INT i = 0; i < size_.size(); i++)
 		{
 			INT u_pos = pos_(i) - offset_(i);
+
 			for (INT j = i+1; j < size_.size(); j++)
 			{
 				u_pos *= size_(j);

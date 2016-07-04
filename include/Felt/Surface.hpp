@@ -387,7 +387,7 @@ public:
 		const INT newlayer_id = this->layer_id(val_);
 
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		
+
 		if (
 			std::abs(this->layer_id(val_)) != std::abs(layer_id_)
 			&& std::abs(this->layer_id(val_)) != std::abs(layer_id_) + 1
@@ -399,7 +399,7 @@ public:
 			std::string str = strs.str();
 			throw std::domain_error(str);
 		}
-		
+
 		#endif
 
 		m_grid_isogrid(pos_) = val_;
@@ -426,7 +426,7 @@ public:
 
 			m_grid_isogrid.add_child(pos_child);
 			Child& child = m_grid_isogrid.children().get(pos_child);
-			
+
 			const INT from_layer_id = this->layer_id(pos_neigh);
 
 			// Only add if neighbouring point is not already within the narrow band.
@@ -607,7 +607,7 @@ public:
 		}
 
 		#endif
-		
+
 		this->delta().add(pos_, val_, this->layer_idx(layer_id_));
 	}
 
@@ -656,7 +656,7 @@ public:
 	 * @param pos_centre centre of the Gaussian distribution.
 	 * @param val amount to spread over the points.
 	 * @param stddev standard deviation of Gaussian.
-	 */	
+	 */
 	template <UINT Distance>
 	FLOAT delta_gauss (
 		const VecDf& pos_centre, const FLOAT val, const FLOAT stddev
@@ -782,9 +782,9 @@ public:
 					std::string str = strs.str();
 					throw std::domain_error(str);
 				}
-				
+
 				#endif
-				
+
 				weights(idx) -= (weights(idx) - amount);
 
 				this->delta().add(pos, amount, this->layer_idx(0));
@@ -1112,9 +1112,9 @@ public:
 		m_grid_delta.reset_all(m_grid_isogrid);
 		m_grid_affected.reset_all(m_grid_isogrid);
 		m_grid_status_change.reset();
-		
+
 		#if false
-		
+
 		for (const VecDi& pos_child : m_grid_delta.children())
 			for (const VecDi& pos : m_grid_delta.children().get(pos_child))
 			{
@@ -1276,7 +1276,7 @@ public:
 				grid_delta_child.add(pos, dist, layer_idx);
 			}
 		}
-		
+
 		#pragma omp parallel for
 		for (UINT pos_idx = 0; pos_idx < lookup_.children().list(layer_idx).size(); pos_idx++)
 		{
@@ -1621,7 +1621,7 @@ public:
 		}
 		this->update_end();
 	}
-	
+
 	/**
 	 * Get array of offsets to corners of a cube (e.g. 8 for 3D, 4 for 2D).
 	 *

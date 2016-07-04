@@ -80,7 +80,7 @@ public:
 
 
 /**
- * Default traits for grids to derive from.
+ * Default traits for grids to derive from.clipse clip
  *
  * @tparam T the type of data to store in the grid.
  * @tparam D the number of dimensions of the grid.

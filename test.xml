@@ -1,0 +1,17 @@
+<testsuites>
+  <testsuite name="ctests" errors="0" failures="2" tests="20" hostname="tbd" time="0.001421" timestamp="tbd">
+    <testcase classname="Scenario: Lazy lookup partitioned grid" name="Given: A lazy lookup partitioned grid/When: two items are added/Then: it only activates once" time="0.000095">
+      <failure message="0 == 1" type="CHECK">
+at /home/dave/Dropbox/Workspace/Felt/src/tests/TestLookupPartitionedGrid.cpp:31
+      </failure>
+    </testcase>
+    <testcase classname="Scenario: Lazy lookup partitioned grid" name="Given: A lazy lookup partitioned grid/When: two items are added/When: one of the items are removed/Then: the element is removed but the grid is still active" time="0.000089">
+      <failure message="0 == 1" type="CHECK">
+at /home/dave/Dropbox/Workspace/Felt/src/tests/TestLookupPartitionedGrid.cpp:47
+      </failure>
+    </testcase>
+    <testcase classname="Scenario: Lazy lookup partitioned grid" name="Given: A lazy lookup partitioned grid/When: two items are added/When: one of the items are removed/When: the remaining element is removed/Then: the element is removed and the grid deactivated" time="0.000083"/>
+    <system-out/>
+    <system-err/>
+  </testsuite>
+</testsuites>

@@ -326,8 +326,6 @@ protected:
 	/**
 	 * Remove pos at index idx in the array and set lookup at pos to NULL index.
 	 *
-	 * NOTE: idx passed by value since it changes indirectly via grid lookup.
-	 *
 	 * @param idx_ index of element in tracking list to remove.
 	 * @param pos_ position in grid matching index in tracking list to remove.
 	 * @param arr_idx_ tracking list id to remove element from.
