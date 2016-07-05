@@ -31,12 +31,6 @@ WHEN("init")
 	CHECK(surface.isogrid().children().data().size() == 9);
 	CHECK(surface.isogrid().children().get(Vec2i(0, 0)).size() == Vec2u(3, 3));
 	CHECK(surface.isogrid().children().get(Vec2i(0, 0)).data().size() == 0);
-	// Usable isogrid should have size=size-layers and be offset by half grid width.
-	// In this test case, only the centre point is actually usable, all other points are
-	// reserved for outer layers.
-	CHECK(surface.pos_min() == Vec2i(0, 0));
-	CHECK(surface.pos_min() == Vec2i(0, 0));
-	// But actual isogrid isogrid should have size equal to size.
 	CHECK(surface.isogrid().size() == Vec2u(7, 7));
 	// Grid is initialised to all points 'outside' the surface (since there is no surface yet).
 	CHECK(surface.isogrid().get(Vec2i(0, 0)) == 3);
@@ -613,72 +607,111 @@ WHEN("iterate_layers")
 
 }
 
-/*
- * Check that isogrid grid is bounded, that is, we cannot cause the surface to
- * attempt to leave the isogrid embedding.
- */
-WHEN("check_bounded")
+GIVEN("a 9x9 surface initialised with a singulaty point in the centre")
 {
 	typedef Surface<2, 2> SurfaceT;
 	SurfaceT surface(Vec2u(9, 9));
+	surface.seed(Vec2i(0, 0));
+
 	// Grid to set values of manually, for checking against.
 	Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
 
-	// Create seed point and expand the narrow band.
-	surface.seed(Vec2i(0, 0));
-	surface.update_start();
+	WHEN("we expand the surface one unit outwards")
 	{
-		for (auto pos : surface.layer(0))
+		surface.update([](auto& pos, auto& isogrid) {
+			return -1.0f;
+		});
+
+		THEN("the grid data matches a surface of radius 1")
 		{
-			surface.delta(pos, -1.0f);
-		}
-	}
-	surface.update_end();
+			isogrid_check.data() = {
+			      3,    3,    3,    3,    3,    3,    3,    3,    3,
+			      3,    3,    3,    3,    2,    3,    3,    3,    3,
+			      3,    3,    3,    2,    1,    2,    3,    3,    3,
+			      3,    3,    2,    1,    0,    1,    2,    3,    3,
+			      3,    2,    1,    0,   -1,    0,    1,    2,    3,
+			      3,    3,    2,    1,    0,    1,    2,    3,    3,
+			      3,    3,    3,    2,    1,    2,    3,    3,    3,
+			      3,    3,    3,    3,    2,    3,    3,    3,    3,
+			      3,    3,    3,    3,    3,    3,    3,    3,    3
+			};
 
-	// Attempt to expand to outside the grid.
-	// delta isogrid should be modified from -1.0 to approx -0.5.
-	surface.update_start();
-	{
-		for (auto pos : surface.layer(0))
+			isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
+			const FLOAT diff = isogrid_check.vdata().sum();
+
+			INFO(stringifyGridSlice(surface.isogrid()));
+			CHECK(diff == Approx(0));
+		}
+
+		AND_WHEN("we expand by one unit again")
 		{
-			surface.delta(pos, -1.0f);
+			surface.update([](auto& pos, auto& isogrid) {
+				return -1.0f;
+			});
+
+			THEN("the grid data matches a surface of radius 2")
+			{
+				isogrid_check.data() = {
+				      3,    3,    3,    3,    2,    3,    3,    3,    3,
+				      3,    3,    3,    2,    1,    2,    3,    3,    3,
+				      3,    3,    2,    1,    0,    1,    2,    3,    3,
+				      3,    2,    1,    0,   -1,    0,    1,    2,    3,
+				      2,    1,    0,   -1,   -2,   -1,    0,    1,    2,
+				      3,    2,    1,    0,   -1,    0,    1,    2,    3,
+				      3,    3,    2,    1,    0,    1,    2,    3,    3,
+				      3,    3,    3,    2,    1,    2,    3,    3,    3,
+				      3,    3,    3,    3,    2,    3,    3,    3,    3
+				};
+
+				isogrid_check.vdata() = (
+					isogrid_check.vdata() - surface.isogrid().snapshot().vdata()
+				);
+				const FLOAT diff = isogrid_check.vdata().sum();
+
+				INFO(stringifyGridSlice(surface.isogrid()));
+				CHECK(diff == Approx(0));
+			}
+
+			AND_WHEN("we expand by one unit 9 more times")
+			{
+				for (UINT i = 0; i < 9; i++)
+					surface.update([](auto& pos, auto& isogrid) {
+						return -1.0f;
+					});
+
+				THEN("the grid data matches an area completely consumed by the surface")
+				{
+					isogrid_check.data() = {
+					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
+					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
+					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
+					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
+					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
+					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
+					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
+					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
+					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3
+					};
+
+					isogrid_check.vdata() = (
+						isogrid_check.vdata() - surface.isogrid().snapshot().vdata()
+					);
+					const FLOAT diff = isogrid_check.vdata().sum();
+
+					INFO(stringifyGridSlice(surface.isogrid()));
+					CHECK(diff == Approx(0));
+				}
+
+				THEN("the layer lists are empty")
+				{
+					CHECK(surface.layer(0).size() == 0);
+					CHECK(surface.layer(-1).size() == 0);
+					CHECK(surface.layer(-2).size() == 0);
+					CHECK(surface.layer(1).size() == 0);
+					CHECK(surface.layer(2).size() == 0);
+				}
+			}
 		}
-	}
-	surface.update_end();
-
-	// Try to expand again.
-	// delta isogrid should be modified from -1.0 to 0.
-	surface.update_start();
-	{
-		for (auto pos : surface.layer(0))
-		{
-			surface.delta(pos, -1.0f);
-		}
-	}
-	surface.update_end();
-
-	// Test it.
-	{
-//		std::cerr << surface.isogrid().data() << std::endl;
-		isogrid_check.data() = {
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1.5, 3, 3, 3, 3, 3, 3, 3,
-			1.5, 0.5, 1.5, 3, 3, 3, 3, 3, 1.5, 0.5, -0.5, 0.5, 1.5, 3, 3, 3,
-			1.5, 0.5, -0.5, -1.5, -0.5, 0.5, 1.5, 3, 3, 3, 1.5, 0.5, -0.5, 0.5,
-			1.5, 3, 3, 3, 3, 3, 1.5, 0.5, 1.5, 3, 3, 3, 3, 3, 3, 3, 1.5, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
-
-		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
-		const FLOAT diff = isogrid_check.vdata().sum();
-		// isogrid_check uses 'whole' 0.5s, but internally, to prevent rounding,
-		// max isogrid at grid boundary is 0.5-epsilon*2.
-		CHECK(
-			diff == Approx(0).epsilon(std::numeric_limits<FLOAT>::epsilon() * 7 * 7 * 2));
-
-		CHECK(surface.layer(0).size() == 4);
-		CHECK(surface.layer(-1).size() == 1);
-		CHECK(surface.layer(-2).size() == 0);
-		CHECK(surface.layer(1).size() == 8);
-		CHECK(surface.layer(2).size() == 12);
 	}
 }
 

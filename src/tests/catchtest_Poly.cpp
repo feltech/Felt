@@ -66,6 +66,40 @@ SCENARIO("Poly")
 		CHECK(poly3D.spx().size() == 0);
 	}
 
+	GIVEN("a polygonisation attached to a 7x7 surface of 0.4 units radius")
+	{
+		Surface<2> surface(Vec2u(7,7));
+		surface.seed(Vec2i(0,0));
+		surface.update([](auto& pos, auto& grid) {
+			return -0.4f;
+		});
+
+		INFO(stringifyGridSlice(surface.isogrid()));
+
+		Poly<2> poly(surface.isogrid().size(), surface.isogrid().offset());
+
+		WHEN("we calculate the vertex position between (0,0) and (1,0)")
+		{
+			// Index in vertex array of vertex along edge from centre to +x.
+			UINT idx = poly.idx(Vec2i(0,0), 0, surface.isogrid());
+
+			THEN("the returned index is 0")
+			{
+				CHECK(idx == 0);
+			}
+
+			AND_WHEN("we retrieve the vertex")
+			{
+				const Poly<2>::Vertex& vertex = poly.vtx(idx);
+
+				THEN("the vertex position is interpolated away from the centre")
+				{
+					CHECK(vertex.pos == Vec2f(0.4f, 0));
+				}
+			}
+		}
+	}
+
 	/**
 	 * Test calculation of vertices to eventually be joined to make triangles.
 	 */
@@ -79,19 +113,6 @@ SCENARIO("Poly")
 		Poly<2> poly2D(surface2D.isogrid().size(), surface2D.isogrid().offset());
 		Poly<3> poly3D(surface3D.isogrid().size(), surface3D.isogrid().offset());
 
-		// Text extremities of grid, ensure no segmentation fault errors.
-		poly2D.idx(surface2D.pos_min(), 0, surface2D.isogrid());
-		poly2D.idx(surface2D.pos_max(), 0, surface2D.isogrid());
-		poly2D.idx(surface2D.pos_min(), 1, surface2D.isogrid());
-		poly2D.idx(surface2D.pos_max(), 1, surface2D.isogrid());
-
-		poly3D.idx(surface3D.pos_min(), 0, surface3D.isogrid());
-		poly3D.idx(surface3D.pos_max(), 0, surface3D.isogrid());
-		poly3D.idx(surface3D.pos_min(), 1, surface3D.isogrid());
-		poly3D.idx(surface3D.pos_max(), 1, surface3D.isogrid());
-		poly3D.idx(surface3D.pos_min(), 2, surface3D.isogrid());
-		poly3D.idx(surface3D.pos_max(), 2, surface3D.isogrid());
-
 		// Reset vertex cache.
 		poly2D.reset();
 		poly3D.reset();
@@ -99,13 +120,12 @@ SCENARIO("Poly")
 		// Create seed and expand outwards.
 		// NOTE: will immediately hit edge of grid where max val is 0.5,
 		// so centre will be -0.5 and each neighbour will be +0.5.
-		surface2D.seed(Vec2i(0,0));
 		surface3D.seed(Vec3i(0,0,0));
 		surface2D.update_start();
 		surface2D.delta(Vec2i(0,0), -1);
 		surface2D.update_end();
 
-		INFO(stringifyGridSlice(surface3D.isogrid()));
+//		INFO(stringifyGridSlice(surface3D.isogrid()));
 		surface3D.update_start();
 		surface3D.delta(Vec3i(0,0,0), -1);
 		surface3D.update_end();

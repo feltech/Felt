@@ -257,58 +257,7 @@ public:
 		m_grid_status_change.init(usize_, offset, size_partition);
 		// Configure de-dupe grid for neighbourhood queries.
 		m_grid_affected.init(usize_, offset, size_partition);
-
-		// Store min and max usable positions in isogrid embedding.
-		this->pos_min(
-			VecDi::Constant(L + 1) + m_grid_isogrid.offset()
-		);
-		this->pos_max(
-			(isize - VecDi::Constant(L + 1))
-			+ m_grid_isogrid.offset() - VecDi::Constant(1)
-		);
 	}
-
-	/**
-	 * Get minimum usable position in isogrid grid.
-	 *
-	 * @return minimum position a zero layer point could be found.
-	 */
-	const VecDi& pos_min () const
-	{
-		return m_pos_min;
-	}
-
-	/**
-	 * Get maximum usable position in isogrid grid.
-	 *
-	 * @return maximum position a zero layer point could be found.
-	 */
-	const VecDi& pos_max () const
-	{
-		return m_pos_max;
-	}
-
-
-	/**
-	 * Set minimum usable position in isogrid grid.
-	 *
-	 * @param pos
-	 */
-	void pos_min (const VecDi& pos)
-	{
-		m_pos_min = pos;
-	}
-
-	/**
-	 * Set maximum usable position in isogrid grid.
-	 *
-	 * @param pos
-	 */
-	void pos_max (const VecDi& pos)
-	{
-		m_pos_max = pos;
-	}
-
 
 	/**
 	 * Get reference to isogrid grid.
@@ -589,9 +538,6 @@ public:
 	 */
 	void delta (const VecDi& pos_, FLOAT val_, const INT layer_id_ = 0)
 	{
-		if (layer_id_ == 0)
-			val_ = clamp(pos_, val_);
-
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
 		if (
@@ -612,36 +558,16 @@ public:
 	}
 
 	/**
-	 * Clamp delta isogrid value such that it doesn't breach the grid or cause
-	 * instability.
+	 * Clamp delta isogrid value such that it doesn't cause instability.
 	 *
-	 * @param pos
-	 * @param val
+	 * @param val value to clamp
 	 * @return clamped val
 	 */
-	FLOAT clamp (const VecDi& pos, FLOAT val)
+	FLOAT clamp (FLOAT val)
 	{
-		const VecDi& pos_min = this->pos_min();
-		const VecDi& pos_max = this->pos_max();
-
 		if (std::abs(val) > 1.0f)
 			val = sgn(val);
 
-		// Cycle each axis.
-		for (UINT d = 0; d < D; d++)
-			// Check if pos lies at the max bound of this axis.
-			if (pos_min(d) == pos(d) || pos_max(d) == pos(d))
-			{
-				// Get isogrid at this point.
-				const FLOAT fisogrid = this->isogrid(pos);
-				// Max value that will not be rounded and thus trigger
-				// a layer_move.
-				const FLOAT val_max = -0.5 +
-					(std::numeric_limits<FLOAT>::epsilon() * 2);
-				// Clamp the value of delta isogrid.
-				val = std::max(val_max - fisogrid, val);
-				break;
-			}
 		return val;
 	}
 
@@ -762,7 +688,7 @@ public:
 					pmutex_current->lock();
 				}
 
-				const FLOAT amount = this->clamp(pos, weights(idx) + m_grid_delta(pos));
+				const FLOAT amount = this->clamp(weights(idx) + m_grid_delta(pos));
 
 				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
