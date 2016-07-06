@@ -99,7 +99,68 @@ SCENARIO("Poly")
 			}
 		}
 	}
+	
+	GIVEN("a polygonisation attached to a 7x7x7 surface of 0.4 units radius")
+	{
+		Surface<3> surface(Vec2u(7,7,7));
+		surface.seed(Vec2i(0,0,0));
+		surface.update([](auto& pos, auto& grid) {
+			return -0.4f;
+		});
 
+		INFO(stringifyGridSlice(surface.isogrid()));
+
+		Poly<2> poly(surface.isogrid().size(), surface.isogrid().offset());
+
+		WHEN("we request the vertex between (0,0,0) and (0,0,1)")
+		{
+			// Index in vertex array of vertex along edge from centre to +z.
+			UINT idx = poly.idx(Vec3i(0,0,0), 2, surface.isogrid());
+
+			THEN("the returned index is 0")
+			{
+				CHECK(idx == 0);
+			}
+
+			AND_WHEN("we retrieve the vertex")
+			{
+				const Poly<3>::Vertex& vertex = poly.vtx(idx);
+
+				THEN("the vertex position is interpolated away from the centre")
+				{
+					CHECK(vertex.pos == Vec3f(0, 0, 0.4f));
+				}
+				
+				THEN("the vertex normal is in the +z direction")
+				{
+					CHECK(vertex.norm == Vec3f(0, 0, 1.0f));
+				}
+				
+				AND_WHEN("we retrieve another vertex")
+				{
+					UINT idx = poly.idx(Vec3i(0,0,-1), 2, surface.isogrid());
+					
+					THEN("the new vertex's index is 1")
+					{
+						CHECK(idx == 1);
+					}
+					
+					AND_WHEN("we request the previous vertex again")
+					{
+						UINT idx = poly.idx(Vec3i(0,0,0), 2, surface.isogrid());
+						const Poly<3>::Vertex& vertex_again = poly.vtx(idx);
+						
+						THEN("the index is unchanged and the vertex is the same object")
+						{
+							CHECK(idx == 0);
+							CHECK(&vertex == &vertex_again);
+						}
+					}
+				}
+			}
+		}
+	}
+	
 	/**
 	 * Test calculation of vertices to eventually be joined to make triangles.
 	 */
