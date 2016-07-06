@@ -248,7 +248,7 @@ namespace felt
 			// Append newly created vertex to the cache and return a reference
 			// to it.
 			const UINT idx = this->vtx().size();
-			this->vtx().push_back(vtx);
+			this->vtx().push_back(std::move(vtx));
 			m_grid_vtx(pos_a)(axis) = idx;
 			m_grid_vtx.add(pos_a);
 			return idx;

@@ -55,7 +55,7 @@ SCENARIO("Poly")
 		CHECK(poly3D.vtx().size() == 0);
 
 		// Add dummy vertex and simplex to the polygonisation object.
-		poly3D.vtx().push_back(vertex3D);
+		poly3D.vtx().push_back(std::move(vertex3D));
 		poly3D.spx().push_back(triangle);
 		CHECK(poly3D.spx().size() == 1);
 
@@ -102,8 +102,8 @@ SCENARIO("Poly")
 	
 	GIVEN("a polygonisation attached to a 7x7x7 surface of 0.4 units radius")
 	{
-		Surface<3> surface(Vec2u(7,7,7));
-		surface.seed(Vec2i(0,0,0));
+		Surface<3> surface(Vec3u(7,7,7));
+		surface.seed(Vec3i(0,0,0));
 		surface.update([](auto& pos, auto& grid) {
 			return -0.4f;
 		});
@@ -161,77 +161,6 @@ SCENARIO("Poly")
 		}
 	}
 	
-	/**
-	 * Test calculation of vertices to eventually be joined to make triangles.
-	 */
-	WHEN("lerp")
-	{
-		Surface<2> surface2D(Vec2u(7,7));
-		Surface<3> surface3D(Vec3u(7,7,7));
-
-		Poly<2>::Vertex vertex2D;
-		Poly<3>::Vertex vertex3D;
-		Poly<2> poly2D(surface2D.isogrid().size(), surface2D.isogrid().offset());
-		Poly<3> poly3D(surface3D.isogrid().size(), surface3D.isogrid().offset());
-
-		// Reset vertex cache.
-		poly2D.reset();
-		poly3D.reset();
-
-		// Create seed and expand outwards.
-		// NOTE: will immediately hit edge of grid where max val is 0.5,
-		// so centre will be -0.5 and each neighbour will be +0.5.
-		surface3D.seed(Vec3i(0,0,0));
-		surface2D.update_start();
-		surface2D.delta(Vec2i(0,0), -1);
-		surface2D.update_end();
-
-//		INFO(stringifyGridSlice(surface3D.isogrid()));
-		surface3D.update_start();
-		surface3D.delta(Vec3i(0,0,0), -1);
-		surface3D.update_end();
-
-		// Index in vertex array of vertex along edge from centre to +x.
-		UINT idx2D = poly2D.idx(Vec2i(0,0), 0, surface2D.isogrid());
-		// Index in vertex array of vertex along edge from centre to +z.
-		UINT idx3D = poly3D.idx(Vec3i(0,0,0), 2, surface3D.isogrid());
-		// Vertex along these edges should be the first in the list.
-		CHECK(idx2D == 0);
-		CHECK(idx3D == 0);
-
-		// Get the vertex at this index.
-		vertex2D = poly2D.vtx(idx2D);
-		vertex3D = poly3D.vtx(idx3D);
-		// Ensure vertex is positioned correctly.
-		CHECK((vertex2D.pos - Vec2f(0.5,0)).sum() == Approx(0).epsilon(0.00001f));
-		CHECK((vertex3D.pos - Vec3f(0,0,0.5)).sum() == Approx(0).epsilon(0.00001f));
-		// Ensure vertex normal is in correct direction (3D only).
-		CHECK((vertex3D.norm - Vec3f(0,0,1)).sum() == Approx(0).epsilon(0.00001f));
-
-
-
-		// Test cache is used for subsequent fetches:
-
-		// First calculate another vertex.
-		idx3D = poly3D.idx(Vec3i(0,0,-1), 2, surface3D.isogrid());
-		vertex3D = poly3D.vtx(idx3D);
-		// This new vertex should be appended to array (index=1).
-		CHECK(idx3D == 1);
-		// Check vertex position and normal is correct.
-		CHECK((vertex3D.pos - Vec3f(0,0,-0.5)).sum() == Approx(0).epsilon(0.00001f));
-		CHECK((vertex3D.norm - Vec3f(0,0,-1)).sum() == Approx(0).epsilon(0.00001f));
-
-		// Now cache should be used for previous vertex, such that idx == 0,
-		// not 2.
-		idx3D = poly3D.idx(Vec3i(0,0,0), 2, surface3D.isogrid());
-		vertex3D = poly3D.vtx(idx3D);
-		CHECK(idx3D == 0);
-		// Check it's still at the correct position with the correct normal.
-		CHECK((vertex3D.pos - Vec3f(0,0,0.5)).sum() == Approx(0).epsilon(0.00001f));
-		CHECK((vertex3D.norm - Vec3f(0,0,1)).sum() == Approx(0).epsilon(0.00001f));
-	}
-
-
 	/**
 	 * Test the cube corner inside/outside status bitmask.
 	 */

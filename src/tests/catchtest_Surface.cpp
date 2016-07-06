@@ -194,29 +194,6 @@ WHEN("next_closest_grid_point")
 	CHECK(pos_next == Vec2i(0, 0));
 }
 
-/*
- * Using delta isogrid grid/list.
- */
-WHEN("delta_isogrid_clamping")
-{
-	//! [Delta isogrid clamping]
-	// ==== Setup ====
-	// Basic non-threaded check.
-	Surface<3, 2> surface(Vec3u(5, 5, 5));
-	Vec3i pos(0, 0, 0);
-
-	// ==== Action ====
-	// Apply a delta to the surface.
-	surface.delta(pos, -2);
-
-	// ==== Confirm ====
-	// Check delta was stored in underlying grid - will be clamped to -1.
-	CHECK(surface.delta(pos) == -1);
-	// Check position vector of point in surface grid that delta was
-	// applied to is stored in a corresponding list to be iterated over.
-	CHECK(surface.delta().leafs(surface.layer_idx(0)).size() == 1);
-	//! [Delta isogrid clamping]
-}
 
 /*
  * Update isogrid with delta isogrid.
