@@ -367,12 +367,12 @@ public:
 	{
 		for (const VecDi& pos_child : apos_children_)
 		{
-			if (this->m_grid_children.is_active(pos_child_, list_idx_))
-				return false;
-			Child& child = this->m_grid_children.get(pos_child_);
+			if (this->m_grid_children.is_active(pos_child, list_idx_))
+				continue;
+			Child& child = this->m_grid_children.get(pos_child);
 			if (!child.is_active())
 				child.activate();
-			return this->m_grid_children.add(pos_child_, list_idx_);
+			this->m_grid_children.add(pos_child, list_idx_);
 		}
 	}
 

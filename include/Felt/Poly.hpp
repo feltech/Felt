@@ -389,7 +389,7 @@ namespace felt
 				}
 				// Append the simplex to the list of simplices that make up the
 				// polygonisation of this grid location.
-				spxs.push_back(simplex);
+				spxs.push_back(std::move(simplex));
 			}
 		} // End spx()
 
