@@ -110,7 +110,9 @@ SCENARIO("Poly")
 
 		INFO(stringifyGridSlice(surface.isogrid()));
 
-		Poly<2> poly(surface.isogrid().size(), surface.isogrid().offset());
+		Poly<3> poly(surface.isogrid().size(), surface.isogrid().offset());
+		// Reserve space to prevent reallocation when testing for equality of memory addresses.
+		poly.vtx().reserve(2);
 
 		WHEN("we request the vertex between (0,0,0) and (0,0,1)")
 		{
@@ -160,7 +162,7 @@ SCENARIO("Poly")
 			}
 		}
 	}
-	
+
 	/**
 	 * Test the cube corner inside/outside status bitmask.
 	 */
@@ -564,6 +566,8 @@ SCENARIO("Poly")
 		for (auto pos : surface.layer(0))
 			surface.delta(pos, -0.3);
 		surface.update_end();
+
+		INFO(stringifyGridSlice(surface.isogrid()));
 
 		// Check that the corner inside/outside status mask is indeed still
 		// the same.

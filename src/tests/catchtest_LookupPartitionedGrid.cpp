@@ -306,7 +306,7 @@ SCENARIO("LazySingleLookupPartitionedGrid")
 		CHECK(
 			grid.children().get(pos_child_active_because_master).data().size() == 3*3*3
 		);
-		CHECK(grid.children().list(0).size() == 1);
+		CHECK(grid.children().list(0).size() == 0);
 
 		// and except for partitions that still have active lists.
 		CHECK(grid.children().list(1).size() == 1);
@@ -366,7 +366,7 @@ SCENARIO("LazySingleLookupPartitionedGrid")
 		CHECK(
 			grid.children().get(pos_child_active_because_master).data().size() == 3*3*3
 		);
-		CHECK(grid.children().list(0).size() == 1);
+		CHECK(grid.children().list(0).size() == 0);
 		/// [LazySingleLookupPartitionedGrid reset_all]
 	}
 
@@ -477,7 +477,7 @@ TEST_CASE_METHOD(LazySingleLookupPartitionedGridResetFixture, "LazySingleLookupP
 	// ==== Confirm ====
 
 	CHECK(grid.get(pos) == NULL_IDX);
-	CHECK(grid.children().list(0).size() == 1);
+	CHECK(grid.children().list(0).size() == 0);
 	CHECK(grid.children().get(pos_child).list(0).size() == 0);
 	CHECK(grid.children().get(pos_child).is_active() == true);
 	CHECK(grid.children().get(pos_child).data().size() == 3*3*3);

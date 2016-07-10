@@ -311,8 +311,8 @@ TEST_CASE_METHOD(LazySingleTrackedPartitionedGridResetFixture, "LazySingleTracke
 
 	// Value reset.
 	CHECK(grid.get(pos) == 7);
-	// Child still tracked.
-	CHECK(grid.children().lookup().get(pos_child) == Vec3u(0, NULL_IDX, NULL_IDX));
+	// Child no longer tracked.
+	CHECK(grid.children().lookup().get(pos_child) == Vec3u(NULL_IDX, NULL_IDX, NULL_IDX));
 	// Child still active.
 	CHECK(grid.children().get(pos_child).is_active() == true);
 	CHECK(grid.children().get(pos_child).data().size() == 3*3*3);

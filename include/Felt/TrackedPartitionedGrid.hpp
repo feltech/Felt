@@ -18,6 +18,7 @@ public:
 	using Base = TrackingPartitionedGridBase<ThisType, IsLazy>;
 	using DerivedType = Derived;
 
+	using typename Base::Child;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 	using typename Base::ChildrenGrid;
@@ -36,16 +37,40 @@ public:
 	 *
 	 * @param pos_ position in grid.
 	 * @param val_ value to set.
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 * @return true if grid node set in child lookup grid and position added
 	 * to tracking list, false if child grid node was already set so
 	 * position already in a list.
 	 */
-	bool add(const VecDi& pos_, const LeafType& val_, const UINT arr_idx_)
+	bool add(const VecDi& pos_, const LeafType& val_, const UINT list_idx_)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
-		nself->add_child(pos_child, arr_idx_);
-		return this->children().get(pos_child).add(pos_, val_, arr_idx_);
+		nself->add_child(pos_child, list_idx_);
+		return this->children().get(pos_child).add(pos_, val_, list_idx_);
+	}
+
+	/**
+	 * Thread-safely set value in grid at given position and add position to lookup grid.
+	 *
+	 * Will set value regardless whether lookup grid already set for given
+	 * position + tracking list.
+	 *
+	 * Descend to relevant child grid to add to their tracking structure.
+	 *
+	 * @param pos_ position in grid.
+	 * @param val_ value to set.
+	 * @param list_idx_ tracking list id.
+	 * @return true if grid node set in child lookup grid and position added
+	 * to tracking list, false if child grid node was already set so
+	 * position already in a list.
+	 */
+	bool add_safe(const VecDi& pos_, const LeafType& val_, const UINT list_idx_)
+	{
+		const VecDi& pos_child = this->pos_child(pos_);
+		nself->add_child(pos_child, list_idx_);
+		Child& child = this->children().get(pos_child);
+		std::lock_guard<std::mutex> lock(child.mutex());
+		return child.add(pos_, val_, list_idx_);
 	}
 
 	/**
@@ -56,15 +81,15 @@ public:
 	 * and the relevant tracking list(s) will be empty.
 	 *
 	 * @param val_ value to set in main grid.
-	 * @param arr_idx_ tracking list id to cycle over and clear.
+	 * @param list_idx_ tracking list id to cycle over and clear.
 	 */
-	void reset(const LeafType& val_, const UINT arr_idx_ = 0)
+	void reset(const LeafType& val_, const UINT list_idx_ = 0)
 	{
 		ChildrenGrid& children = this->children();
-		for (const VecDi& pos_child : children.list(arr_idx_))
-			children(pos_child).reset(val_, arr_idx_);
+		for (const VecDi& pos_child : children.list(list_idx_))
+			children(pos_child).reset(val_, list_idx_);
 
-		Base::Base::reset(arr_idx_);
+		Base::Base::reset(list_idx_);
 	}
 };
 
@@ -94,30 +119,6 @@ public:
 	using PosArray = typename Child::PosArray;
 public:
 	using Base::TrackedPartitionedGridBase;
-
-	/**
-	 * Thread-safely set value in grid at given position and add position to lookup grid.
-	 *
-	 * Will set value regardless whether lookup grid already set for given
-	 * position + tracking list.
-	 *
-	 * Descend to relevant child grid to add to their tracking structure.
-	 *
-	 * @param pos_ position in grid.
-	 * @param val_ value to set.
-	 * @param arr_idx_ tracking list id.
-	 * @return true if grid node set in child lookup grid and position added
-	 * to tracking list, false if child grid node was already set so
-	 * position already in a list.
-	 */
-	bool add_safe(const VecDi& pos_, const LeafType& val_, const UINT arr_idx_ = 0)
-	{
-		const VecDi& pos_child = this->pos_child(pos_);
-		Base::add_child(pos_child, arr_idx_);
-		Child& child = this->children().get(pos_child);
-		std::lock_guard<std::mutex> lock(child.mutex());
-		return child.add(pos_, val_, arr_idx_);
-	}
 };
 
 
@@ -171,16 +172,38 @@ public:
 	 * remove child from tracking list if child's list is now empty.
 	 *
 	 * @param pos_ leaf position to remove.
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 */
-	void remove(const VecDi& pos_, const UINT arr_idx_, const LeafType& background_)
+	void remove(const VecDi& pos_, const UINT list_idx_, const LeafType& background_)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
 		Child& child = this->children().get(pos_child);
-		child.remove(pos_, arr_idx_);
-		if (child.list(arr_idx_).size() == 0)
-			remove_child(pos_child, arr_idx_, background_);
+		child.remove(pos_, list_idx_);
+		if (child.list(list_idx_).size() == 0)
+			remove_child(pos_child, list_idx_, background_);
 	}
+
+	/**
+	 * Move a tracked point from one tracking list to another.
+	 *
+	 * @param pos_ leaf position to remove.
+	 * @param list_idx_ tracking list id.
+	 */
+	void move(
+		const VecDi& pos_, const UINT list_idx_from_, const UINT list_idx_to_
+	) {
+		const VecDi& pos_child = this->pos_child(pos_);
+
+		Child& child = this->children().get(pos_child);
+		child.remove(pos_, list_idx_from_);
+		child.add(pos_, list_idx_to_);
+
+		std::lock_guard<std::mutex> lock(this->m_mutex_update_branch);
+		nself->children().add(pos_child, list_idx_to_);
+		if (child.list(list_idx_from_).size() == 0)
+			nself->children().remove(pos_child, list_idx_from_);
+	}
+
 
 	/**
 	 * Remove a spatial partition from children grid's tracking subgrid.
@@ -188,15 +211,15 @@ public:
 	 * Uses mutex for thread safety. Deactivates the child grid if not being tracked by any list.
 	 *
 	 * @param pos_ position of spatial partition to stop tracking.
-	 * @param arr_idx_ index of tracking list used to track position.
+	 * @param list_idx_ index of tracking list used to track position.
 	 */
 	void remove_child(
-		const VecDi& pos_child_, const UINT arr_idx_, const LeafType& background_
+		const VecDi& pos_child_, const UINT list_idx_, const LeafType& background_
 	) {
-		if (!this->m_grid_children.is_active(pos_child_, arr_idx_))
+		if (!this->m_grid_children.is_active(pos_child_, list_idx_))
 			return;
 		std::lock_guard<std::mutex> lock(this->m_mutex_update_branch);
-		this->m_grid_children.remove(pos_child_, arr_idx_);
+		this->m_grid_children.remove(pos_child_, list_idx_);
 		if (!this->is_child_active(pos_child_))
 		{
 			Child& child = this->m_grid_children.get(pos_child_);

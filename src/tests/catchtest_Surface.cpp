@@ -53,8 +53,8 @@ WHEN("layers")
 	CHECK(children.list(surface.layer_idx(2)).size() == 0);
 
 	// Add a single zero-layer point.
-	surface.isogrid(pos) = 0;
-	surface.layer_add(pos, 0);
+	surface.isogrid().get(pos) = 0;
+	surface.layer_add(0, pos);
 
 	// Check zero-layer array has registered point.
 	CHECK(surface.layer(0).size() == 1);
@@ -64,81 +64,12 @@ WHEN("layers")
 	// -- zero-layer point just added.
 	CHECK(surface.layer_id(pos) == 0);
 
-	// Add three arbitrary points to layer -1.
-	surface.layer_add(Vec3i(0, 0, 1), -1);
-	surface.layer_add(Vec3i(0, 0, 2), -1);
-	surface.layer_add(Vec3i(0, 0, 3), -1);
-
-	// Remove two points from layer -1
-	surface.layer_remove(Vec3i(0, 0, 1), -1);
-	CHECK(surface.layer(-1).size() == 2);
-	surface.layer_remove(Vec3i(0, 0, 3), -1);
-	CHECK(surface.layer(-1).size() == 1);
-
 	// Move a point from layer 0 to layer -1
 	surface.layer_move(pos, 0, -1);
-	CHECK(surface.layer(-1).size() == 2);
-
-	// Check lists updated.
+	CHECK(surface.layer(-1).size() == 1);
 	CHECK(surface.layer(0).size() == 0);
-	CHECK(surface.layer(-1).size() == 2);
 }
 
-/*
- * Placing a single singularity point.
- */
-GIVEN("a surface with 5x5 isogrid")
-{
-	Surface<2, 2> surface(Vec2u(5, 5));
-
-	WHEN("we add a singularity seed at the centre")
-	{
-		surface.seed(Vec2i(0, 0));
-
-		// Trivially check centre of seed is indeed a zero-level point (i.e. point
-		// on the surface).
-		THEN("the value at the centre of the grid is 0")
-		{
-			const FLOAT val_centre = surface.isogrid().get(Vec2i(0, 0));
-			CHECK(val_centre == 0);
-		}
-
-		THEN("the data in the grid matches expected data")
-		{
-			// A 2D 2-layer singularity (seed) point should look like the following.
-
-			Grid<FLOAT, 2> isogrid_check(Vec2u(5, 5), Vec2i::Zero(), 0);
-			isogrid_check.data() = {
-				3, 3, 2, 3, 3,	// |
-				3, 2, 1, 2, 3,	// -
-				2, 1, 0, 1, 2,	// x
-				3, 2, 1, 2, 3,	// +
-				3, 3, 2, 3, 3	// |
-			//	|____ - y + ____|
-			};
-		//	std::cerr << isogrid.data() << std::endl << std::endl;
-		//	std::cerr << isogrid_check.data() << std::endl << std::endl;
-
-			isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
-			INFO(stringifyGridSlice(surface.isogrid().snapshot()));
-			INFO(stringifyGridSlice(isogrid_check));
-
-			const FLOAT diff = isogrid_check.vdata().sum();
-
-			CHECK(diff == 0);
-		}
-
-		THEN("the surface layers track the correct number of points")
-		{
-			// Check appropriate points have been added to narrow band layers.
-			CHECK(surface.layer(-2).size() == 0);
-			CHECK(surface.layer(-1).size() == 0);
-			CHECK(surface.layer(0).size() == 1);
-			CHECK(surface.layer(1).size() == 4);
-			CHECK(surface.layer(2).size() == 8);
-		}
-	}
-}
 
 /*
  * Given a grid point, find neighbouring point closest to zero-curve.
@@ -521,7 +452,7 @@ WHEN("iterate_layers")
 		const Vec3i& pos_part = surface.parts()[part_idx];
 		for (const Vec3i& pos : surface.layer(pos_part, 0))
 		{
-			FLOAT val = surface(pos);
+			FLOAT val = surface.isogrid().get(pos);
 			#pragma omp critical
 			{
 				CHECK(val == 0);
@@ -544,7 +475,7 @@ WHEN("iterate_layers")
 		for (Vec3i& part : surface.parts(layer_id))
 			for (const Vec3i& pos : surface.layer(part, layer_id))
 			{
-				FLOAT val = surface(pos);
+				FLOAT val = surface.isogrid().get(pos);
 				#pragma omp critical
 				{
 					CHECK(val == layer_id);
@@ -582,114 +513,6 @@ WHEN("iterate_layers")
 	CHECK(counter == 6);
 	CHECK(pos_sum == Vec3i(0, 0, 0));
 
-}
-
-GIVEN("a 9x9 surface initialised with a singulaty point in the centre")
-{
-	typedef Surface<2, 2> SurfaceT;
-	SurfaceT surface(Vec2u(9, 9));
-	surface.seed(Vec2i(0, 0));
-
-	// Grid to set values of manually, for checking against.
-	Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
-
-	WHEN("we expand the surface one unit outwards")
-	{
-		surface.update([](auto& pos, auto& isogrid) {
-			return -1.0f;
-		});
-
-		THEN("the grid data matches a surface of radius 1")
-		{
-			isogrid_check.data() = {
-			      3,    3,    3,    3,    3,    3,    3,    3,    3,
-			      3,    3,    3,    3,    2,    3,    3,    3,    3,
-			      3,    3,    3,    2,    1,    2,    3,    3,    3,
-			      3,    3,    2,    1,    0,    1,    2,    3,    3,
-			      3,    2,    1,    0,   -1,    0,    1,    2,    3,
-			      3,    3,    2,    1,    0,    1,    2,    3,    3,
-			      3,    3,    3,    2,    1,    2,    3,    3,    3,
-			      3,    3,    3,    3,    2,    3,    3,    3,    3,
-			      3,    3,    3,    3,    3,    3,    3,    3,    3
-			};
-
-			isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
-			const FLOAT diff = isogrid_check.vdata().sum();
-
-			INFO(stringifyGridSlice(surface.isogrid()));
-			CHECK(diff == Approx(0));
-		}
-
-		AND_WHEN("we expand by one unit again")
-		{
-			surface.update([](auto& pos, auto& isogrid) {
-				return -1.0f;
-			});
-
-			THEN("the grid data matches a surface of radius 2")
-			{
-				isogrid_check.data() = {
-				      3,    3,    3,    3,    2,    3,    3,    3,    3,
-				      3,    3,    3,    2,    1,    2,    3,    3,    3,
-				      3,    3,    2,    1,    0,    1,    2,    3,    3,
-				      3,    2,    1,    0,   -1,    0,    1,    2,    3,
-				      2,    1,    0,   -1,   -2,   -1,    0,    1,    2,
-				      3,    2,    1,    0,   -1,    0,    1,    2,    3,
-				      3,    3,    2,    1,    0,    1,    2,    3,    3,
-				      3,    3,    3,    2,    1,    2,    3,    3,    3,
-				      3,    3,    3,    3,    2,    3,    3,    3,    3
-				};
-
-				isogrid_check.vdata() = (
-					isogrid_check.vdata() - surface.isogrid().snapshot().vdata()
-				);
-				const FLOAT diff = isogrid_check.vdata().sum();
-
-				INFO(stringifyGridSlice(surface.isogrid()));
-				CHECK(diff == Approx(0));
-			}
-
-			AND_WHEN("we expand by one unit 9 more times")
-			{
-				for (UINT i = 0; i < 9; i++)
-					surface.update([](auto& pos, auto& isogrid) {
-						return -1.0f;
-					});
-
-				THEN("the grid data matches an area completely consumed by the surface")
-				{
-					isogrid_check.data() = {
-					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
-					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
-					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
-					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
-					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
-					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
-					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
-					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
-					     -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3
-					};
-
-					isogrid_check.vdata() = (
-						isogrid_check.vdata() - surface.isogrid().snapshot().vdata()
-					);
-					const FLOAT diff = isogrid_check.vdata().sum();
-
-					INFO(stringifyGridSlice(surface.isogrid()));
-					CHECK(diff == Approx(0));
-				}
-
-				THEN("the layer lists are empty")
-				{
-					CHECK(surface.layer(0).size() == 0);
-					CHECK(surface.layer(-1).size() == 0);
-					CHECK(surface.layer(-2).size() == 0);
-					CHECK(surface.layer(1).size() == 0);
-					CHECK(surface.layer(2).size() == 0);
-				}
-			}
-		}
-	}
 }
 
 
@@ -803,6 +626,616 @@ WHEN("affected_outer_layers")
 	//![Calculate affected outer layers for localised narrow band updates]
 }
 
+
+GIVEN("a 9x9 2-layer surface")
+{
+	Surface<2, 2> surface(Vec2u(9, 9));
+	Grid<FLOAT, 2> isogrid_check(Vec2u(5, 5), Vec2i::Zero(), 0);
+
+	WHEN("we add a singularity seed at the centre")
+	{
+		surface.seed(Vec2i(0, 0));
+
+		INFO(stringifyGridSlice(surface.isogrid()));
+
+		// Trivially check centre of seed is indeed a zero-level point (i.e. point
+		// on the surface).
+		THEN("the value at the centre of the grid is 0")
+		{
+			const FLOAT val_centre = surface.isogrid().get(Vec2i(0, 0));
+			CHECK(val_centre == 0);
+		}
+
+		THEN("the surface data matches a singularity seed point")
+		{
+			// A 2D 2-layer singularity (seed) point should look like the following.
+
+			isogrid_check.data() = {
+			      3,    3,    3,    3,    3,    3,    3,    3,    3,
+			      3,    3,    3,    3,    3,    3,    3,    3,    3,
+			      3,    3,    3,    3,    2,    3,    3,    3,    3,
+			      3,    3,    3,    2,    1,    2,    3,    3,    3,
+			      3,    3,    2,    1,    0,    1,    2,    3,    3,
+			      3,    3,    3,    2,    1,    2,    3,    3,    3,
+			      3,    3,    3,    3,    2,    3,    3,    3,    3,
+			      3,    3,    3,    3,    3,    3,    3,    3,    3,
+			      3,    3,    3,    3,    3,    3,    3,    3,    3
+			};
+		//	std::cerr << isogrid.data() << std::endl << std::endl;
+		//	std::cerr << isogrid_check.data() << std::endl << std::endl;
+
+			isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
+
+			const FLOAT diff = isogrid_check.vdata().sum();
+
+			CHECK(diff == 0);
+
+			// Check appropriate points have been added to narrow band layers.
+			CHECK(surface.layer(-2).size() == 0);
+			CHECK(surface.layer(-1).size() == 0);
+			CHECK(surface.layer(0).size() == 1);
+			CHECK(surface.layer(1).size() == 4);
+			CHECK(surface.layer(2).size() == 8);
+		}
+
+		AND_WHEN("we expand the surface one unit outwards")
+		{
+			surface.update([](auto& pos, auto& isogrid) {
+				return -1.0f;
+			});
+
+			INFO(stringifyGridSlice(surface.isogrid()));
+
+			THEN("the grid data matches a surface of radius 1")
+			{
+				isogrid_check.data() = {
+					  3,    3,    3,    3,    3,    3,    3,    3,    3,
+					  3,    3,    3,    3,    2,    3,    3,    3,    3,
+					  3,    3,    3,    2,    1,    2,    3,    3,    3,
+					  3,    3,    2,    1,    0,    1,    2,    3,    3,
+					  3,    2,    1,    0,   -1,    0,    1,    2,    3,
+					  3,    3,    2,    1,    0,    1,    2,    3,    3,
+					  3,    3,    3,    2,    1,    2,    3,    3,    3,
+					  3,    3,    3,    3,    2,    3,    3,    3,    3,
+					  3,    3,    3,    3,    3,    3,    3,    3,    3
+				};
+
+				isogrid_check.vdata() = isogrid_check.vdata() -
+					surface.isogrid().snapshot().vdata();
+				const FLOAT diff = isogrid_check.vdata().sum();
+
+				CHECK(diff == Approx(0));
+			}
+
+			AND_WHEN("we expand by one unit again")
+			{
+				surface.update([](auto& pos, auto& isogrid) {
+					return -1.0f;
+				});
+
+				INFO(stringifyGridSlice(surface.isogrid()));
+
+				THEN("the grid data matches a surface of radius 2")
+				{
+					isogrid_check.data() = {
+						  3,    3,    3,    3,    2,    3,    3,    3,    3,
+						  3,    3,    3,    2,    1,    2,    3,    3,    3,
+						  3,    3,    2,    1,    0,    1,    2,    3,    3,
+						  3,    2,    1,    0,   -1,    0,    1,    2,    3,
+						  2,    1,    0,   -1,   -2,   -1,    0,    1,    2,
+						  3,    2,    1,    0,   -1,    0,    1,    2,    3,
+						  3,    3,    2,    1,    0,    1,    2,    3,    3,
+						  3,    3,    3,    2,    1,    2,    3,    3,    3,
+						  3,    3,    3,    3,    2,    3,    3,    3,    3
+					};
+
+					isogrid_check.vdata() = (
+						isogrid_check.vdata() - surface.isogrid().snapshot().vdata()
+					);
+					const FLOAT diff = isogrid_check.vdata().sum();
+
+					CHECK(diff == Approx(0));
+				}
+
+				AND_WHEN("we expand by one unit 9 more times")
+				{
+					for (UINT i = 0; i < 9; i++)
+					{
+						surface.update([](auto& pos, auto& isogrid) {
+							return -1.0f;
+						});
+					}
+
+					INFO(stringifyGridSlice(surface.isogrid()));
+
+					THEN("the surface data matches an area completely consumed by the surface")
+					{
+						isogrid_check.data() = {
+							 -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
+							 -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
+							 -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
+							 -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
+							 -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
+							 -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
+							 -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
+							 -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,
+							 -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3,   -3
+						};
+
+						isogrid_check.vdata() = (
+							isogrid_check.vdata() - surface.isogrid().snapshot().vdata()
+						);
+						const FLOAT diff = isogrid_check.vdata().sum();
+
+						CHECK(diff == Approx(0));
+
+						CHECK(surface.layer(0).size() == 0);
+						CHECK(surface.layer(-1).size() == 0);
+						CHECK(surface.layer(-2).size() == 0);
+						CHECK(surface.layer(1).size() == 0);
+						CHECK(surface.layer(2).size() == 0);
+					}
+				}
+			}
+
+			AND_WHEN("we contract the surface by 1 unit inwards")
+			{
+//				surface.update([](auto& pos, auto& isogrid) {
+//					return 1.0f;
+//				});
+
+				surface.update_start();
+				{
+					for (const Vec2i pos : surface.layer(0))
+						surface.delta(pos, 1.0f);
+				}
+				surface.update_end();
+
+				INFO(stringifyGridSlice(surface.isogrid()));
+
+				THEN("the surface has collapsed back to a singularity")
+				{
+					// A 2D 2-layer singularity (seed) point should look like the following.
+
+					isogrid_check.data() = {
+						  3,    3,    3,    3,    3,    3,    3,    3,    3,
+						  3,    3,    3,    3,    3,    3,    3,    3,    3,
+						  3,    3,    3,    3,    2,    3,    3,    3,    3,
+						  3,    3,    3,    2,    1,    2,    3,    3,    3,
+						  3,    3,    2,    1,    0,    1,    2,    3,    3,
+						  3,    3,    3,    2,    1,    2,    3,    3,    3,
+						  3,    3,    3,    3,    2,    3,    3,    3,    3,
+						  3,    3,    3,    3,    3,    3,    3,    3,    3,
+						  3,    3,    3,    3,    3,    3,    3,    3,    3
+					};
+
+					isogrid_check.vdata() = isogrid_check.vdata() -
+						surface.isogrid().snapshot().vdata();
+					INFO(stringifyGridSlice(surface.isogrid().snapshot()));
+					INFO(stringifyGridSlice(isogrid_check));
+
+					const FLOAT diff = isogrid_check.vdata().sum();
+
+					CHECK(diff == 0);
+
+					CHECK(surface.layer(-2).size() == 0);
+					CHECK(surface.layer(-1).size() == 0);
+					CHECK(surface.layer(0).size() == 1);
+					CHECK(surface.layer(1).size() == 4);
+					CHECK(surface.layer(2).size() == 8);
+				}
+
+				THEN("iterating over layer 0 gives 1 point")
+				{
+					UINT total_iterations = 0;
+					for (auto& pos : surface.layer(0))
+						total_iterations++;
+
+					CHECK(total_iterations == 1);
+				}
+
+				AND_WHEN("we contract the surface by 1 unit inwards again")
+				{
+//					surface.update([](auto& pos, auto& isogrid) {
+//						return 1.0f;
+//					});
+					surface.update_start();
+					{
+						for (const Vec2i pos : surface.layer(0))
+							surface.delta(pos, 1.0f);
+					}
+					surface.update_end();
+
+					INFO(stringifyGridSlice(surface.isogrid()));
+
+					THEN("iterating over layer 0 gives 0 points")
+					{
+						UINT total_iterations = 0;
+						for (auto& pos : surface.layer(0))
+							total_iterations++;
+
+						CHECK(total_iterations == 0);
+					}
+
+					THEN("the zero layer is gone, leaving some outer layers")
+					{
+
+						isogrid_check.data() = {
+						      3,    3,    3,    3,    3,    3,    3,    3,    3,
+						      3,    3,    3,    3,    3,    3,    3,    3,    3,
+						      3,    3,    3,    3,    3,    3,    3,    3,    3,
+						      3,    3,    3,    3,    2,    3,    3,    3,    3,
+						      3,    3,    3,    2,    1,    2,    3,    3,    3,
+						      3,    3,    3,    3,    2,    3,    3,    3,    3,
+						      3,    3,    3,    3,    3,    3,    3,    3,    3,
+						      3,    3,    3,    3,    3,    3,    3,    3,    3,
+						      3,    3,    3,    3,    3,    3,    3,    3,    3
+						};
+
+						isogrid_check.vdata() = isogrid_check.vdata() -
+							surface.isogrid().snapshot().vdata();
+						INFO(stringifyGridSlice(surface.isogrid().snapshot()));
+						INFO(stringifyGridSlice(isogrid_check));
+
+						const FLOAT diff = isogrid_check.vdata().sum();
+
+						CHECK(diff == 0);
+
+						CHECK(surface.layer(-2).size() == 0);
+						CHECK(surface.layer(-1).size() == 0);
+						CHECK(surface.layer(0).size() == 0);
+						CHECK(surface.layer(1).size() == 1);
+						CHECK(surface.layer(2).size() == 4);
+					}
+
+//					AND_WHEN("we contract the surface by 1 unit inwards again")
+//					{
+//	//					surface.update([](auto& pos, auto& isogrid) {
+//	//						return 1.0f;
+//	//					});
+//						surface.update_start();
+//						{
+//							for (const Vec2i pos : surface.layer(0))
+//								surface.delta(pos, 1.0f);
+//						}
+//						surface.update_end();
+//
+//						INFO(stringifyGridSlice(surface.isogrid()));
+//
+//						THEN("iterating over layer 0 gives 0 points")
+//						{
+//							UINT total_iterations = 0;
+//							for (auto& pos : surface.layer(0))
+//								total_iterations++;
+//
+//							CHECK(total_iterations == 0);
+//						}
+//
+//						AND_WHEN("we contract the surface by 1 unit inwards again")
+//						{
+//		//					surface.update([](auto& pos, auto& isogrid) {
+//		//						return 1.0f;
+//		//					});
+//							surface.update_start();
+//							{
+//								for (const Vec2i pos : surface.layer(0))
+//									surface.delta(pos, 1.0f);
+//							}
+//							surface.update_end();
+//
+//							INFO(stringifyGridSlice(surface.isogrid()));
+//
+//							THEN("iterating over layer 0 gives 0 points")
+//							{
+//								UINT total_iterations = 0;
+//								for (auto& pos : surface.layer(0))
+//									total_iterations++;
+//
+//								CHECK(total_iterations == 0);
+//							}
+//						}
+//					}
+
+					AND_WHEN("we contract the surface by 1 unit inwards twice more")
+					{
+//							surface.update([](auto& pos, auto& isogrid) {
+//								return 1.0f;
+//							});
+
+						surface.update_start();
+						{
+							for (const Vec2i pos : surface.layer(0))
+								surface.delta(pos, 1.0f);
+						}
+						surface.update_end();
+
+						UINT total_iterations = 0;
+						surface.update_start();
+						{
+							for (const Vec2i pos : surface.layer(0))
+								total_iterations++;
+						}
+						surface.update_end();
+
+						THEN("iterating over layer 0 gives 0 points")
+						{
+//							UINT total_iterations = 0;
+//							for (auto& pos : surface.layer(0))
+//								total_iterations++;
+
+							CHECK(total_iterations == 0);
+						}
+
+						INFO(stringifyGridSlice(surface.isogrid()));
+
+						THEN("the surface data matches an area completely outside the surface")
+						{
+							isogrid_check.data() = {
+							      3,    3,    3,    3,    3,    3,    3,    3,    3,
+							      3,    3,    3,    3,    3,    3,    3,    3,    3,
+							      3,    3,    3,    3,    3,    3,    3,    3,    3,
+							      3,    3,    3,    3,    3,    3,    3,    3,    3,
+							      3,    3,    3,    3,    3,    3,    3,    3,    3,
+							      3,    3,    3,    3,    3,    3,    3,    3,    3,
+							      3,    3,    3,    3,    3,    3,    3,    3,    3,
+							      3,    3,    3,    3,    3,    3,    3,    3,    3,
+							      3,    3,    3,    3,    3,    3,    3,    3,    3
+							};
+
+							isogrid_check.vdata() = isogrid_check.vdata() -
+								surface.isogrid().snapshot().vdata();
+
+							const FLOAT diff = isogrid_check.vdata().sum();
+
+							CHECK(diff == 0);
+
+							CHECK(surface.layer(-2).size() == 0);
+							CHECK(surface.layer(-1).size() == 0);
+							CHECK(surface.layer(0).size() == 0);
+							CHECK(surface.layer(1).size() == 0);
+							CHECK(surface.layer(2).size() == 0);
+						}
+
+					}
+				}
+			}
+		}
+	}
+}
+
+
+GIVEN("a 16x9 2-layer surface with two small regions side-by-side")
+{
+	Surface<2, 2> surface(Vec2u(16, 9), Vec2u::Constant(3));
+	Grid<FLOAT, 2> isogrid_check(Vec2u(16, 9), Vec2i::Zero(), 0);
+	// Create two seed points and expand the narrow band.
+	surface.seed(Vec2i(-4, 0));
+	surface.seed(Vec2i(4, 0));
+	surface.update([](auto& pos, auto& grid) {
+		return -1.0f;
+	});
+
+	INFO(stringifyGridSlice(surface.isogrid()));
+
+
+	THEN("outermost layers in central partitions are as expected")
+	{
+		CHECK(surface.layer(Vec2i(0,0), 2).size() == 3);
+		CHECK(surface.layer(Vec2i(1,0), 2).size() == 3);
+	}
+
+	THEN("the surface is in the expected state")
+	{
+		isogrid_check.data() = {
+		      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+		      3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,
+		      3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,
+		      3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    2,    1,    0,    1,    2,    3,
+		      3,    2,    1,    0,   -1,    0,    1,    2,    3,    2,    1,    0,   -1,    0,    1,    2,
+		      3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    2,    1,    0,    1,    2,    3,
+		      3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,
+		      3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,
+		      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
+		};
+
+		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
+		const FLOAT diff = isogrid_check.vdata().sum();
+		CHECK(diff == Approx(0));
+
+		CHECK(surface.layer(-2).size() == 0);
+		CHECK(surface.layer(-1).size() == 2);
+		CHECK(surface.layer(0).size() == 8);
+		CHECK(surface.layer(1).size() == 16);
+		CHECK(surface.layer(2).size() == 24);
+	}
+
+	WHEN("we expand the subsurfaces towards one-another")
+	{
+		surface.update_start();
+		surface.delta(Vec2i(-3, 0), -1.0f);
+		surface.delta(Vec2i(3, 0), -1.0f);
+		surface.update_end();
+
+		INFO(stringifyGridSlice(surface.isogrid()));
+
+		THEN("the centremost partitions contain the expected number of outer layer points")
+		{
+			CHECK(surface.layer(Vec2i(0,0), 2).size() == 3);
+			CHECK(surface.layer(Vec2i(1,0), 2).size() == 2);
+		}
+
+		THEN("the surface is in the expected state")
+		{
+			isogrid_check.data() = {
+			      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+			      3,    3,    3,    3,    2,    2,    3,    3,    3,    3,    3,    2,    2,    3,    3,    3,
+			      3,    3,    3,    2,    1,    1,    2,    3,    3,    3,    2,    1,    1,    2,    3,    3,
+			      3,    3,    2,    1,    0,    0,    1,    2,    3,    2,    1,    0,    0,    1,    2,    3,
+			      3,    2,    1,    0,   -1,   -1,    0,    1,    2,    1,    0,   -1,   -1,    0,    1,    2,
+			      3,    3,    2,    1,    0,    0,    1,    2,    3,    2,    1,    0,    0,    1,    2,    3,
+			      3,    3,    3,    2,    1,    1,    2,    3,    3,    3,    2,    1,    1,    2,    3,    3,
+			      3,    3,    3,    3,    2,    2,    3,    3,    3,    3,    3,    2,    2,    3,    3,    3,
+			      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
+			};
+
+			isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
+			const FLOAT diff = isogrid_check.vdata().sum();
+			CHECK(diff == Approx(0));
+
+			CHECK(surface.layer(-2).size() == 0);
+			CHECK(surface.layer(-1).size() == 4);
+			CHECK(surface.layer(0).size() == 12);
+			CHECK(surface.layer(1).size() == 20);
+			CHECK(surface.layer(2).size() == 27);
+		}
+	}
+
+	WHEN("we expand/contract the subsurfaces towards one-another")
+	{
+		for (UINT i = 0; i < 10; i++)
+		{
+			surface.update_start();
+			surface.delta(Vec2i(-3, 0), -1.0f);
+			surface.delta(Vec2i(3, 0), -1.0f);
+			surface.update_end_local();
+
+			surface.update_start();
+			surface.delta(Vec2i(-3, 1), 1.0f);
+			surface.delta(Vec2i(-2, 0), 1.0f);
+			surface.delta(Vec2i(-3, -1), 1.0f);
+
+			surface.delta(Vec2i(3, 1), 1.0f);
+			surface.delta(Vec2i(2, 0), 1.0f);
+			surface.delta(Vec2i(3, -1), 1.0f);
+			surface.update_end_local();
+		}
+
+		INFO(stringifyGridSlice(surface.isogrid()));
+
+		THEN("outermost layers in central partitions are as expected")
+		{
+			CHECK(surface.layer(Vec2i(0,0), 2).size() == 3);
+			CHECK(surface.layer(Vec2i(1,0), 2).size() == 3);
+		}
+
+		THEN("the surface has returned to its inital state")
+		{
+			isogrid_check.data() = {
+			      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+			      3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,
+			      3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,
+			      3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    2,    1,    0,    1,    2,    3,
+			      3,    2,    1,    0,   -1,    0,    1,    2,    3,    2,    1,    0,   -1,    0,    1,    2,
+			      3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    2,    1,    0,    1,    2,    3,
+			      3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,
+			      3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,
+			      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
+			};
+
+			isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
+			const FLOAT diff = isogrid_check.vdata().sum();
+			CHECK(diff == Approx(0));
+
+			CHECK(surface.layer(-2).size() == 0);
+			CHECK(surface.layer(-1).size() == 2);
+			CHECK(surface.layer(0).size() == 8);
+			CHECK(surface.layer(1).size() == 16);
+			CHECK(surface.layer(2).size() == 24);
+		}
+	}
+
+//	WHEN("we expand the closest two sub-surface zero-layer points by 3 units")
+//	{
+//		surface.update_start();
+//		surface.delta(Vec2i(-3, 0), -1.0f);
+//		surface.delta(Vec2i(2, 0), -1.0f);
+//		surface.update_end();
+//
+//		INFO(stringifyGridSlice(surface.isogrid()));
+//
+//		surface.update_start();
+//		surface.delta(Vec2i(-2, 0), -1.0f);
+//		surface.delta(Vec2i(1, 0), -1.0f);
+//		surface.update_end();
+//
+//		INFO(stringifyGridSlice(surface.isogrid()));
+//
+//		surface.update_start();
+//		surface.delta(Vec2i(-1, 0), -1.0f);
+//		surface.delta(Vec2i(0, 0), -1.0f);
+//		surface.update_end();
+//
+//		INFO(stringifyGridSlice(surface.isogrid()));
+//
+//		THEN("the sub-surfaces have merged")
+//		{
+//			Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
+//			isogrid_check.data() = {
+//			      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+//			      3,    3,    3,    2,    2,    2,    2,    2,    2,    2,    2,    3,    3,    3,
+//			      3,    3,    2,    1,    1,    1,    1,    1,    1,    1,    1,    2,    3,    3,
+//			      3,    2,    1,    0,    0,    0,    0,    0,    0,    0,    0,    1,    2,    3,
+//			      2,    1,    0,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,    0,    1,    2,
+//			      3,    2,    1,    0,    0,    0,    0,    0,    0,    0,    0,    1,    2,    3,
+//			      3,    3,    2,    1,    1,    1,    1,    1,    1,    1,    1,    2,    3,    3,
+//			      3,    3,    3,    2,    2,    2,    2,    2,    2,    2,    2,    3,    3,    3,
+//			      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
+//			};
+//
+//			isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
+//			const FLOAT diff = isogrid_check.vdata().sum();
+//			CHECK(diff == Approx(0));
+//
+//			CHECK(surface.layer(-2).size() == 0);
+//			CHECK(surface.layer(-1).size() == 8);
+//			CHECK(surface.layer(0).size() == 18);
+//			CHECK(surface.layer(1).size() == 22);
+//			CHECK(surface.layer(2).size() == 26);
+//		}
+//
+//		AND_WHEN("we repeatedly expand and contract")
+//		{
+//
+//			for (UINT i = 0; i < 5; i++)
+//			{
+//				surface.update([](auto& pos, auto& grid) {
+//					return 1.0f;
+//				});
+//				surface.update([](auto& pos, auto& grid) {
+//					return -1.0f;
+//				});
+//			}
+//
+//			THEN("the surface is still the same")
+//			{
+//				Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
+//				isogrid_check.data() = {
+//				      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+//				      3,    3,    3,    2,    2,    2,    2,    2,    2,    2,    2,    3,    3,    3,
+//				      3,    3,    2,    1,    1,    1,    1,    1,    1,    1,    1,    2,    3,    3,
+//				      3,    2,    1,    0,    0,    0,    0,    0,    0,    0,    0,    1,    2,    3,
+//				      2,    1,    0,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,    0,    1,    2,
+//				      3,    2,    1,    0,    0,    0,    0,    0,    0,    0,    0,    1,    2,    3,
+//				      3,    3,    2,    1,    1,    1,    1,    1,    1,    1,    1,    2,    3,    3,
+//				      3,    3,    3,    2,    2,    2,    2,    2,    2,    2,    2,    3,    3,    3,
+//				      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
+//				};
+//
+//				isogrid_check.vdata() =
+//					isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
+//				const FLOAT diff = isogrid_check.vdata().sum();
+//				CHECK(diff == Approx(0));
+//
+//				CHECK(surface.layer(-2).size() == 0);
+//				CHECK(surface.layer(-1).size() == 8);
+//				CHECK(surface.layer(0).size() == 18);
+//				CHECK(surface.layer(1).size() == 22);
+//				CHECK(surface.layer(2).size() == 26);
+//			}
+//		}
+//	}
+}
+
 /*
  * Localised update.
  */
@@ -868,6 +1301,58 @@ WHEN("local_update")
 		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
 		const FLOAT diff = isogrid_check.vdata().sum();
 		CHECK(diff == Approx(0).epsilon(0.000001f));
+	}
+}
+
+
+GIVEN("a 11x11x11 3-layer surface with 3x3x3 partitions initialised with a 1 unit radius surface")
+{
+	Surface<3,3> surface(Vec3u(11,11,11), Vec3u(3,3,3));
+	surface.seed(Vec3i(0,0,0));
+	surface.update([](auto& pos, auto& grid) {
+		return -1.0f;
+	});
+
+	INFO(stringifyGridSlice(surface.isogrid()));
+
+	THEN("the layer lists have the expected size")
+	{
+		CHECK(surface.layer(-3).size() == 0);
+		CHECK(surface.layer(-2).size() == 0);
+		CHECK(surface.layer(-1).size() == 1);
+		CHECK(surface.layer(0).size() == 6);
+		CHECK(surface.layer(1).size() == 18);
+		CHECK(surface.layer(2).size() == 38);
+		CHECK(surface.layer(3).size() == 66);
+	}
+
+	AND_WHEN("we expand and contract two nearby points using local update")
+	{
+		surface.update_start();
+		surface.delta(Vec3i(0,1,0), -1);
+		surface.update_end_local();
+
+		surface.update_start();
+		surface.delta(Vec3i(0,2,0), 1);
+		surface.delta(Vec3i(1,1,0), 1);
+		surface.delta(Vec3i(-1,1,0), 1);
+		surface.delta(Vec3i(0,1,1), 1);
+		surface.delta(Vec3i(0,1,-1), 1);
+		surface.update_end_local();
+
+		INFO(stringifyGridSlice(surface.isogrid()));
+
+		THEN("the layer lists have the same size as before")
+		{
+			CHECK(surface.layer(-3).size() == 0);
+			CHECK(surface.layer(-2).size() == 0);
+			CHECK(surface.layer(-1).size() == 1);
+			CHECK(surface.layer(0).size() == 6);
+			CHECK(surface.layer(1).size() == 18);
+			CHECK(surface.layer(2).size() == 38);
+			CHECK(surface.layer(3).size() == 66);
+		}
+
 	}
 }
 

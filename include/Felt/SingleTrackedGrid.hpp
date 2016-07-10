@@ -48,8 +48,12 @@ public:
 	using ThisType = LazySingleTrackedGrid<T, D, N>;
 	using Traits = GridTraits<ThisType>;
 	using Base = TrackedGridBase<ThisType, true>;
+	using typename Base::VecDi;
+
 	using Base::TrackedGridBase;
 	using Base::Base::is_active;
+	using Base::is_active;
+
 
 	/**
 	 * Create the internal data array and fill with background value.

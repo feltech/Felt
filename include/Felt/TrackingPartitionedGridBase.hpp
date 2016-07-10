@@ -93,7 +93,6 @@ public:
 				m_it_child++;
 				m_it_leaf = m_it_child;
 				increment();
-				return;
 			}
 		}
 
@@ -105,10 +104,7 @@ public:
 		 */
 		bool equal(const iterator& other_) const
 		{
-			return (
-				m_it_child == other_.m_it_child
-				&& m_it_leaf == other_.m_it_leaf
-			);
+			return m_it_child == other_.m_it_child && m_it_leaf == other_.m_it_leaf;
 		}
 
 		/**
@@ -117,7 +113,6 @@ public:
 		 * @return leaf grid node position currently pointed to.
 		 */
 		const VecDi& dereference() const {
-			const VecDi& pos = *m_it_leaf;
 			return *m_it_leaf;
 		}
 	};
@@ -148,9 +143,7 @@ public:
 
 		if (it_child_begin != it_child_end)
 		{
-			it_leaf_begin = m_pgrid->children().get(
-				*it_child_begin
-			).list(m_list_idx).begin();
+			it_leaf_begin = m_pgrid->children().get(*it_child_begin).list(m_list_idx).begin();
 		}
 
 		return iterator(
@@ -227,15 +220,15 @@ public:
 	 *
 	 * Descend to children to reset their tracking list.
 	 *
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 */
-	void reset(const UINT arr_idx_ = 0)
+	void reset(const UINT list_idx_ = 0)
 	{
 		ChildrenGrid& children = this->children();
-		for (const VecDi& pos_child : children.list(arr_idx_))
-			children(pos_child).reset(arr_idx_);
+		for (const VecDi& pos_child : children.list(list_idx_))
+			children(pos_child).reset(list_idx_);
 
-		Base::reset(arr_idx_);
+		Base::reset(list_idx_);
 	}
 
 	/**
@@ -244,16 +237,16 @@ public:
 	 * Descend to relevant child grid to add to their tracking structure.
 	 *
 	 * @param pos_ position to add.
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 * @return true if grid node set in child lookup grid and position added
 	 * to tracking list, false if child grid node was already set so
 	 * position already in a list.
 	 */
-	bool add(const VecDi& pos_, const UINT arr_idx_ = 0)
+	bool add(const VecDi& pos_, const UINT list_idx_ = 0)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
-		nself->add_child(pos_child, arr_idx_);
-		return this->children().get(pos_child).add(pos_, arr_idx_);
+		nself->add_child(pos_child, list_idx_);
+		return this->children().get(pos_child).add(pos_, list_idx_);
 	}
 
 	/**
@@ -266,20 +259,20 @@ public:
 	 * which is necessary if threads can "cross over" to other partitions.
 	 *
 	 * @param pos_ position to add.
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 * @return true if grid node set in child lookup grid and position added
 	 * to tracking list, false if child grid node was already set so
 	 * position already in a list.
 	 */
-	bool add_safe(const VecDi& pos_, const UINT arr_idx_ = 0)
+	bool add_safe(const VecDi& pos_, const UINT list_idx_ = 0)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
-		nself->add_child(pos_child, arr_idx_);
+		nself->add_child(pos_child, list_idx_);
 		Child& child = this->children().get(pos_child);
 		if (child.is_active(pos_))
 			return false;
 		std::lock_guard<std::mutex> lock(child.mutex());
-		return child.add(pos_, arr_idx_);
+		return child.add(pos_, list_idx_);
 	}
 
 	/**
@@ -287,15 +280,15 @@ public:
 	 * remove child from tracking list if child's list is now empty.
 	 *
 	 * @param pos_ leaf position to remove.
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 */
-	void remove(const VecDi& pos_, const UINT arr_idx_ = 0)
+	void remove(const VecDi& pos_, const UINT list_idx_ = 0)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
 		Child& child = this->children().get(pos_child);
-		child.remove(pos_, arr_idx_);
-		if (child.list(arr_idx_).size() == 0)
-			nself->remove_child(pos_child, arr_idx_);
+		child.remove(pos_, list_idx_);
+		if (child.list(list_idx_).size() == 0)
+			nself->remove_child(pos_child, list_idx_);
 	}
 
 	/**
@@ -316,12 +309,12 @@ private:
 	 * Override spoofed (non-partitioned) base class's list method to make
 	 * private, since it will always be empty (must use children or child).
 	 *
-	 * @param arr_idx_
+	 * @param list_idx_
 	 * @return list of this grid (will always be empty).
 	 */
-	PosArray& list(const UINT arr_idx_ = 0)
+	PosArray& list(const UINT list_idx_ = 0)
 	{
-		return Child::list(arr_idx_);
+		return Child::list(list_idx_);
 	}
 };
 
@@ -338,6 +331,8 @@ public:
 	using Base = TrackingPartitionedGridBase<ThisType, false>;
 	using typename Base::Child;
 	using typename Base::VecDi;
+	using typename Base::PosArray;
+
 	using Base::TrackingPartitionedGridBase;
 
 	/**
@@ -346,18 +341,39 @@ public:
 	 * Uses mutex for thread safety. Activates the child grid.
 	 *
 	 * @param pos_ position in spatial partition grid to track.
-	 * @param arr_idx_ index of tracking list used to track position.
+	 * @param list_idx_ index of tracking list used to track position.
 	 * @return true if position was added to tracking grid, false if it was already added.
 	 */
-	bool add_child(const VecDi& pos_, const UINT arr_idx_ = 0)
+	bool add_child(const VecDi& pos_child_, const UINT list_idx_ = 0)
 	{
-		if (this->m_grid_children.is_active(pos_, arr_idx_))
+		if (this->m_grid_children.is_active(pos_child_, list_idx_))
 			return false;
-		Child& child = this->m_grid_children.get(pos_);
+		Child& child = this->m_grid_children.get(pos_child_);
 		std::lock_guard<std::mutex> lock(this->m_mutex_update_branch);
 		if (!child.is_active())
-			this->m_grid_children.get(pos_).activate();
-		return this->m_grid_children.add(pos_, arr_idx_);
+			child.activate();
+		return this->m_grid_children.add(pos_child_, list_idx_);
+	}
+
+	/**
+	 * Bulk add children to tracking list, activating if not already active.
+	 *
+	 * Not thread-safe.
+	 *
+	 * @param apos_children_ list of child positions.
+	 * @param list_idx_ index of tracking list to add to.
+	 */
+	void add_children(const PosArray& apos_children_, const UINT list_idx_)
+	{
+		for (const VecDi& pos_child : apos_children_)
+		{
+			if (this->m_grid_children.is_active(pos_child_, list_idx_))
+				return false;
+			Child& child = this->m_grid_children.get(pos_child_);
+			if (!child.is_active())
+				child.activate();
+			return this->m_grid_children.add(pos_child_, list_idx_);
+		}
 	}
 
 	/**
@@ -366,14 +382,14 @@ public:
 	 * Uses mutex for thread safety. Deactivates the child grid if not being tracked by any list.
 	 *
 	 * @param pos_ position of spatial partition to stop tracking.
-	 * @param arr_idx_ index of tracking list used to track position.
+	 * @param list_idx_ index of tracking list used to track position.
 	 */
-	void remove_child(const VecDi& pos_child_, const UINT arr_idx_ = 0)
+	void remove_child(const VecDi& pos_child_, const UINT list_idx_ = 0)
 	{
-		if (!this->m_grid_children.is_active(pos_child_, arr_idx_))
+		if (!this->m_grid_children.is_active(pos_child_, list_idx_))
 			return;
 		std::lock_guard<std::mutex> lock(this->m_mutex_update_branch);
-		this->m_grid_children.remove(pos_child_, arr_idx_);
+		this->m_grid_children.remove(pos_child_, list_idx_);
 		if (!this->is_child_active(pos_child_))
 			this->m_grid_children.get(pos_child_).deactivate();
 	}
@@ -398,12 +414,16 @@ public:
 		for (const VecDi& pos_child : this->children().list(list_idx_))
 		{
 			Child& child = this->children().get(pos_child);
+			this->m_grid_children.remove(pos_child, list_idx_);
+
 			// If the master grid is not tracking this child, then remove it from tracking under
 			// this list id, potentially destroying it.
 			if (!grid_master_.is_child_active(pos_child))
 			{
-				this->remove_child(pos_child, list_idx_);
+				if (!this->is_child_active(pos_child))
+					this->m_grid_children.get(pos_child).deactivate();
 			}
+
 			// If the child has not been destroyed by the above, then reset as normal (loop over
 			// tracking list resetting values in grid, before resizing list to 0).
 			if (child.is_active())
