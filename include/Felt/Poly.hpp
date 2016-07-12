@@ -47,7 +47,7 @@ namespace felt
 		/// Vertex array type for primary vertex storage.
 		using VtxArray = std::vector<Vertex>;
 		/// Vertex spatial lookup type.
-		using VtxGrid = SingleTrackedGrid<VtxTuple, D>;
+		using VtxGrid = EagerSingleTrackedGrid<VtxTuple, D>;
 		/// Simplex type (line or triangle).
 		using typename PolyBase<D, void>::Simplex;
 		/// Simplex array type for primary simplex (line or triangle) storage.

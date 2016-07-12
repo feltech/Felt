@@ -18,7 +18,7 @@ namespace felt
  *
  * @tparam Derived the CRTP derived class
  */
-template <class Derived, bool IsLazy=false>
+template <class Derived, Laziness IsLazy>
 class LookupGridBase : public GridBase<LookupGridBase<Derived, IsLazy>, IsLazy>
 {
 public:
@@ -360,7 +360,7 @@ protected:
 };
 
 
-template <class Derived, bool IsLazy> const UINT
+template <class Derived, Laziness IsLazy> const UINT
 LookupGridBase<Derived, IsLazy>::NULL_IDX = std::numeric_limits<UINT>::max();
 
 
@@ -370,10 +370,10 @@ LookupGridBase<Derived, IsLazy>::NULL_IDX = std::numeric_limits<UINT>::max();
  * @tparam Derived CRTP derived class.
  */
 template <class Derived>
-class StaticLookupGridBase : public LookupGridBase<StaticLookupGridBase<Derived>, false>
+class EagerLookupGridBase : public LookupGridBase<EagerLookupGridBase<Derived>, Laziness::EAGER>
 {
 public:
-	using Base = LookupGridBase<StaticLookupGridBase<Derived>, false>;
+	using Base = LookupGridBase<EagerLookupGridBase<Derived>, Laziness::EAGER>;
 	using Base::LookupGridBase;
 };
 
@@ -384,10 +384,10 @@ public:
  * @tparam Derived CRTP derived class.
  */
 template <class Derived>
-class LazyLookupGridBase : public LookupGridBase<LazyLookupGridBase<Derived>, true>
+class LazyLookupGridBase : public LookupGridBase<LazyLookupGridBase<Derived>, Laziness::LAZY>
 {
 public:
-	using Base = LookupGridBase<LazyLookupGridBase<Derived>, true>;
+	using Base = LookupGridBase<LazyLookupGridBase<Derived>, Laziness::LAZY>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 	using typename Base::PosArray;
@@ -422,7 +422,7 @@ public:
  * @tparam Derived the CRTP derived class.
  * @tparam IsLazy true if the direct ancestor is a LazyGridBase.
  */
-template <class Derived, bool IsLazy>
+template <class Derived, Laziness IsLazy>
 struct GridTraits< LookupGridBase<Derived, IsLazy> > : GridTraits<Derived>
 {};
 

@@ -16,12 +16,12 @@ namespace felt
  *
  * @See MultiTrackedGrid and SingleTrackedGrid.
  */
-template <class Derived, bool IsLazy=false>
-class TrackedGridBase : public GridBase<TrackedGridBase<Derived>, IsLazy>
+template <class Derived, Laziness IsLazy>
+class TrackedGridBase : public GridBase<TrackedGridBase<Derived, IsLazy>, IsLazy>
 {
 public:
 	/// GridBase base class.
-	using Base = GridBase<TrackedGridBase<Derived>, IsLazy>;
+	using Base = GridBase<TrackedGridBase<Derived, IsLazy>, IsLazy>;
 	/// MultiLookup grid type to use for tracking active grid positions.
 	using Lookup = typename GridTraits<Derived>::LookupType;
 	/// Type of data to store in the main grid.
@@ -252,8 +252,8 @@ public:
  *
  * Just forward the traits defined for TrackedGridBase subclasses.
  */
-template <class Derived>
-struct GridTraits<TrackedGridBase<Derived> > : GridTraits<Derived>
+template <class Derived, Laziness IsLazy>
+struct GridTraits<TrackedGridBase<Derived, IsLazy> > : GridTraits<Derived>
 {};
 
 }

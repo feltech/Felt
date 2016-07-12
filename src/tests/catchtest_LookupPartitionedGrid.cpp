@@ -3,130 +3,12 @@
 
 #define _TESTING
 
-#include <Felt/LookupPartitionedGrid.hpp>
+#include <Felt/SingleLookupPartitionedGrid.hpp>
 
 using namespace felt;
 
-SCENARIO("MultiLookupPartitionedGrid")
-{
-	/**
-	 * Simple lookup get and set values.
-	 */
-	WHEN("initialise_and_populate")
-	{
-		typedef MultiLookupPartitionedGrid<3, 3> GridType;
-		typedef MultiLookupPartitionedGrid<3, 3>::ChildrenGrid ChildrenGrid;
-		typedef MultiLookupPartitionedGrid<3, 3>::ChildrenGrid::Lookup LookupGrid;
 
-		GridType grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
-		ChildrenGrid& children = grid.children();
-		LookupGrid& lookup = children.lookup();
-
-
-		for (INT x = -4; x <= 4; x++)
-			for (INT y = -4; y <= 4; y++)
-				for (INT z = -4; z <= 4; z++)
-				{
-					Vec3i pos(x, y, z);
-					CHECK(grid(pos) == GridType::MixinType::Traits::NULL_IDX_DATA);
-				}
-		for (INT x = -1; x <= 1; x++)
-			for (INT y = -1; y <= 1; y++)
-				for (INT z = -1; z <= 1; z++)
-				{
-					Vec3i pos(x, y, z);
-					CHECK(lookup(pos) == GridType::MixinType::Traits::NULL_IDX_DATA);
-				}
-
-
-		const Vec3i pos1(1, -4, -1);
-		const Vec3i pos2(2, -3, -2);
-		const Vec3i pos3(3, -2, -3);
-		const Vec3i pos4(4, -1, -4);
-		const Vec3i part1(0, -1,  0);
-		const Vec3i part2_3(1, -1, -1);
-		const Vec3i part4(1,  0, -1);
-
-		grid.add(pos1);
-		grid.add(pos2, 0);
-		grid.add(pos3, 0);
-		grid.add(pos4, 2);
-
-		CHECK((UINT)grid(pos1)(0) == 0);
-		CHECK((UINT)grid(pos2)(0) == 0);
-		CHECK((UINT)grid(pos3)(0) == 1);
-		CHECK((UINT)grid(pos4)(2) == 0);
-		CHECK(children(part1).list(0).size() == 1);
-		CHECK(children(part2_3).list(0).size() == 2);
-		CHECK(children(part4).list(2).size() == 1);
-		CHECK((UINT)children(part4)(pos4)(2) == 0);
-		CHECK(children.list(0).size() == 2);
-		CHECK(children.list(2).size() == 1);
-		CHECK(children.list(0)[0] == part1);
-		CHECK(children.list(0)[1] == part2_3);
-		CHECK(children.list(2)[0] == part4);
-		CHECK((UINT)lookup(part1)(0) == 0);
-		CHECK((UINT)lookup(part2_3)(0) == 1);
-		CHECK((UINT)lookup(part4)(2) == 0);
-
-		std::vector<Vec3i> apos;
-		for (UINT i = 0; i < 3; i++)
-			for (const Vec3i& pos_child : children.list(i))
-				for (const Vec3i pos : children(pos_child).list(i))
-					apos.push_back(pos);
-
-		REQUIRE(apos.size() == 4);
-		CHECK(apos[0] == pos1);
-		CHECK(apos[1] == pos2);
-		CHECK(apos[2] == pos3);
-		CHECK(apos[3] == pos4);
-
-		grid.reset(2);
-
-		CHECK(children.list(2).size() == 0);
-		CHECK(children(part4).list(2).size() == 0);
-		CHECK(grid(pos4) == GridType::MixinType::Traits::NULL_IDX_DATA);
-		CHECK(lookup(part4) == GridType::MixinType::Traits::NULL_IDX_DATA);
-
-		grid.remove(pos2, 0);
-
-		CHECK(children(part2_3).list(0).size() == 1);
-		CHECK(grid(pos2) == GridType::MixinType::Traits::NULL_IDX_DATA);
-		CHECK((UINT)lookup(part2_3)(0) == 1);
-
-		grid.remove(pos1, 0);
-
-		CHECK(children.list(0).size() == 1);
-		CHECK(children(part1).list(0).size() == 0);
-		CHECK(grid(pos1) == GridType::MixinType::Traits::NULL_IDX_DATA);
-		CHECK(lookup(part1) == GridType::MixinType::Traits::NULL_IDX_DATA);
-
-		grid.remove(pos3, 0);
-
-		for (UINT i = 0; i < 3; i++)
-			CHECK(children.list(i).size() == 0);
-
-		for (INT x = -4; x <= 4; x++)
-			for (INT y = -4; y <= 4; y++)
-				for (INT z = -4; z <= 4; z++)
-				{
-					Vec3i pos(x, y, z);
-					CHECK(grid(pos) == GridType::MixinType::Traits::NULL_IDX_DATA);
-				}
-		for (INT x = -1; x <= 1; x++)
-			for (INT y = -1; y <= 1; y++)
-				for (INT z = -1; z <= 1; z++)
-				{
-					Vec3i pos(x, y, z);
-					CHECK(lookup(pos) == GridType::MixinType::Traits::NULL_IDX_DATA);
-					for (UINT i = 0; i < 3; i++)
-						CHECK(children(pos).list(i).size() == 0);
-				}
-	}
-}
-
-
-SCENARIO("SingleLookupPartitionedGrid")
+SCENARIO("LazySingleLookupPartitionedGrid")
 {
 	WHEN("initialise_and_populate")
 	{
@@ -242,17 +124,13 @@ SCENARIO("SingleLookupPartitionedGrid")
 						CHECK(children(pos).list(i).size() == 0);
 				}
 	}
-}
 
-
-SCENARIO("LazySingleLookupPartitionedGrid")
-{
 	WHEN("initialisation")
 	{
 		/// [LazySingleLookupPartitionedGrid initialisation]
 		// ==== Setup ====
-		LazySingleLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
-		const UINT NULL_IDX = LazySingleLookupPartitionedGrid<3, 3>::NULL_IDX;
+		SingleLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
+		const UINT NULL_IDX = SingleLookupPartitionedGrid<3, 3>::NULL_IDX;
 
 		// ==== Confirm ====
 		CHECK((bool)grid.children().get(Vec3i(1,1,1)).is_active() == false);
@@ -266,9 +144,9 @@ SCENARIO("LazySingleLookupPartitionedGrid")
 	{
 		/// [LazySingleLookupPartitionedGrid reset_mixed_cases]
 		// ==== Setup ====
-		const UINT NULL_IDX = LazySingleLookupPartitionedGrid<3, 3>::NULL_IDX;
+		const UINT NULL_IDX = SingleLookupPartitionedGrid<3, 3>::NULL_IDX;
 		PartitionedGrid<FLOAT, 3> grid_master(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), 0, Vec3u(3, 3, 3));
-		LazySingleLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
+		SingleLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
 
 		const Vec3i pos_deactivated(0, 0, 0);
 		const Vec3i pos_active_because_master(-4, 0, 4);
@@ -324,9 +202,9 @@ SCENARIO("LazySingleLookupPartitionedGrid")
 		/// [LazySingleLookupPartitionedGrid reset_all]
 		// ==== Setup ====
 
-		const UINT NULL_IDX = LazySingleLookupPartitionedGrid<3, 3>::NULL_IDX;
+		const UINT NULL_IDX = SingleLookupPartitionedGrid<3, 3>::NULL_IDX;
 		PartitionedGrid<FLOAT, 3> grid_master(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), 0, Vec3u(3, 3, 3));
-		LazySingleLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
+		SingleLookupPartitionedGrid<3, 3> grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3));
 
 		const Vec3i pos_list_0(0, 0, 0);
 		const Vec3i pos_active_because_master(-4, 0, 4);
@@ -373,15 +251,15 @@ SCENARIO("LazySingleLookupPartitionedGrid")
 }
 
 struct LazySingleLookupPartitionedGridFixture {
-	const UINT NULL_IDX = LazySingleLookupPartitionedGrid<3, 3>::NULL_IDX;
-	LazySingleLookupPartitionedGrid<3, 3> grid;
+	const UINT NULL_IDX = SingleLookupPartitionedGrid<3, 3>::NULL_IDX;
+	SingleLookupPartitionedGrid<3, 3> grid;
 	LazySingleLookupPartitionedGridFixture()
 			: grid(Vec3u(9, 9, 9), Vec3i(-4,-4,-4), Vec3u(3, 3, 3))
 	{}
 };
 
 struct LazySingleLookupPartitionedGridResetFixture : LazySingleLookupPartitionedGridFixture {
-	const UINT NULL_IDX = LazySingleLookupPartitionedGrid<3, 3>::NULL_IDX;
+	const UINT NULL_IDX = SingleLookupPartitionedGrid<3, 3>::NULL_IDX;
 	PartitionedGrid<FLOAT, 3> grid_master;
 	LazySingleLookupPartitionedGridResetFixture()
 			: LazySingleLookupPartitionedGridFixture(),

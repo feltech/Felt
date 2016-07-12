@@ -7,6 +7,7 @@
 #include <mutex>
 #include <Felt/MultiLookupGrid.hpp>
 
+
 namespace felt
 {
 
@@ -18,12 +19,12 @@ namespace felt
  * @tparam D the dimension of the grid.
  * @tparam N the number of tracking lists to use.
  */
-template <class Derived, bool IsLazy=false>
-class SingleLookupGridBase : public LookupGridBase<SingleLookupGridBase<Derived>, IsLazy>
+template <class Derived, Laziness IsLazy>
+class SingleLookupGridBase : public LookupGridBase<SingleLookupGridBase<Derived, IsLazy>, IsLazy>
 {
 public:
-	friend class LookupGridBase<SingleLookupGridBase<Derived>, IsLazy>;
-	using ThisType = SingleLookupGridBase<Derived>;
+	friend class LookupGridBase<SingleLookupGridBase<Derived, IsLazy>, IsLazy>;
+	using ThisType = SingleLookupGridBase<Derived, IsLazy>;
 	using Base = LookupGridBase<ThisType, IsLazy>;
 	using Base::NULL_IDX;
 	using typename Base::LeafType;
@@ -155,10 +156,10 @@ protected:
  */
 template <class Derived>
 class StaticSingleLookupGridBase : public SingleLookupGridBase <
-	StaticSingleLookupGridBase<Derived>, false
+	StaticSingleLookupGridBase<Derived>, Laziness::EAGER
 > {
 public:
-	using Base = SingleLookupGridBase<StaticSingleLookupGridBase<Derived>, false>;
+	using Base = SingleLookupGridBase<StaticSingleLookupGridBase<Derived>, Laziness::EAGER>;
 	using Base::SingleLookupGridBase;
 };
 
@@ -170,11 +171,11 @@ public:
  */
 template <class Derived>
 class LazySingleLookupGridBase : public SingleLookupGridBase <
-	LazySingleLookupGridBase<Derived>, true
+	LazySingleLookupGridBase<Derived>, Laziness::LAZY
 > {
 public:
 	using ThisType = LazySingleLookupGridBase<Derived>;
-	using Base = SingleLookupGridBase<LazySingleLookupGridBase<Derived>, true>;
+	using Base = SingleLookupGridBase<LazySingleLookupGridBase<Derived>, Laziness::LAZY>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 	using Base::Base::Base::is_active;
@@ -303,7 +304,7 @@ public:
  *
  * Just forward the traits defined for SingleLookupGridBase subclasses.
  */
-template <class Derived, bool IsLazy>
+template <class Derived, Laziness IsLazy>
 struct GridTraits< SingleLookupGridBase<Derived, IsLazy> > : GridTraits<Derived>
 {};
 

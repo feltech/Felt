@@ -1,5 +1,5 @@
-#ifndef INCLUDE_FELT_STATICGRIDBASE_HPP_
-#define INCLUDE_FELT_STATICGRIDBASE_HPP_
+#ifndef INCLUDE_FELT_EAGERGRIDBASE_HPP_
+#define INCLUDE_FELT_EAGERGRIDBASE_HPP_
 
 #include "Util.hpp"
 #include <vector>
@@ -26,11 +26,11 @@ template <class Derived> struct GridTraits {};
  * @tparam Derived the CRTP derived class
  */
 template <class Derived>
-class StaticGridBase
+class EagerGridBase
 {
 public:
 	/// This GridBase type.
-	using ThisType = StaticGridBase<Derived>;
+	using ThisType = EagerGridBase<Derived>;
 	/// CRTP derived class.
 	using DerivedType = typename GridTraits<Derived>::ThisType;
 	/// Dimension of the grid.
@@ -59,20 +59,21 @@ public:
 	 */
 	using ArrayData = std::vector<LeafType>;
 
+	/**
+	 * Map type from POD (in usage, std::vector) to Eigen::Array.
+	 */
 	using VArrayData = Eigen::Map< Eigen::Array<LeafType, 1, Eigen::Dynamic> >;
 
 	/**
 	 * Resizeable array of VecDi (grid locations).
-	 *
-	 * Uses Eigen::aligned_allocator for optimal address alignment.
 	 */
-	using PosArray = std::vector<VecDi, Eigen::aligned_allocator<VecDi> >;
+	using PosArray = std::vector<VecDi>;
 
 	/**
 	 * Iterator for contiguous cycling over entire grid.
 	 */
 	class iterator : public boost::iterator_facade<
-		StaticGridBase::iterator, const VecDi&, boost::forward_traversal_tag
+		EagerGridBase::iterator, const VecDi&, boost::forward_traversal_tag
 	> {
 	private:
 		friend class boost::iterator_core_access;
@@ -96,7 +97,7 @@ public:
 		 * @param grid_ grid to iterator over.
 		 * @param start_idx_ index in underlying data to start at.
 		 */
-		iterator(const StaticGridBase& grid_, const UINT start_idx_ = 0)
+		iterator(const EagerGridBase& grid_, const UINT start_idx_ = 0)
 		: m_idx(start_idx_), m_size(grid_.size()), m_offset(grid_.offset()),
 		  m_pos(ThisType::index(start_idx_, grid_.size(), grid_.offset()))
 		{}
@@ -166,7 +167,7 @@ public:
 	/**
 	 * Trivial destructor.
 	 */
-	~StaticGridBase ()
+	~EagerGridBase ()
 	{}
 
 	/**
@@ -175,7 +176,7 @@ public:
 	 * If custom initialisation is required, then use this constructor
 	 * and call init() in the derived class.
 	 */
-	StaticGridBase () :
+	EagerGridBase () :
 		m_data(),
 		m_offset(VecDi::Zero()),
 		m_size(VecDu::Zero()),
@@ -187,7 +188,7 @@ public:
 	 * Initialise a zero-size grid with background value to use for eventual initialisation.
 	 *
 	 */
-	StaticGridBase (const LeafType background_) :
+	EagerGridBase (const LeafType background_) :
 		m_data(),
 		m_offset(VecDi::Zero()),
 		m_size(VecDu::Zero()),
@@ -208,7 +209,7 @@ public:
 	 * @param offset_ spatial offset of grid.
 	 * @param background_ default value to use when grid is inactive.
 	 */
-	StaticGridBase (
+	EagerGridBase (
 		const VecDu& size_, const VecDi& offset_, const LeafType& background_
 	):
 		m_data(),
@@ -1157,9 +1158,9 @@ public:
  * Just forward the traits defined for StaticGridBase subclasses.
  */
 template <class Derived>
-struct GridTraits<StaticGridBase<Derived> > : GridTraits<Derived>
+struct GridTraits<EagerGridBase<Derived> > : GridTraits<Derived>
 {};
 
 
 } // End namespace felt
-#endif /* INCLUDE_FELT_STATICGRIDBASE_HPP_ */
+#endif /* INCLUDE_FELT_EAGERGRIDBASE_HPP_ */

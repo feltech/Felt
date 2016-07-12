@@ -16,12 +16,12 @@ namespace felt
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N=1>
-class MultiLookupGrid : public StaticLookupGridBase<MultiLookupGrid<D, N> >
+class MultiLookupGrid : public EagerLookupGridBase<MultiLookupGrid<D, N> >
 {
 public:
 	using ThisType = MultiLookupGrid<D, N>;
-	using Base = StaticLookupGridBase<ThisType>;
-	using Base::StaticLookupGridBase;
+	using Base = EagerLookupGridBase<ThisType>;
+	using Base::EagerLookupGridBase;
 };
 
 
@@ -54,7 +54,7 @@ public:
  * @tparam Derived the CRTP derived class.
  */
 template <class Derived>
-struct GridTraits< StaticLookupGridBase<Derived> > : GridTraits<Derived>
+struct GridTraits< EagerLookupGridBase<Derived> > : GridTraits<Derived>
 {};
 
 

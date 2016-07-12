@@ -6,6 +6,7 @@
 namespace felt
 {
 
+
 /**
  * A tracked grid that assumes non-overlapping tracking lists.
  *
@@ -22,13 +23,15 @@ namespace felt
  * @tparam N the number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N=1>
-class SingleTrackedGrid : public TrackedGridBase< SingleTrackedGrid<T, D, N> >
+class EagerSingleTrackedGrid
+	: public TrackedGridBase<EagerSingleTrackedGrid<T, D, N>, Laziness::EAGER>
 {
 public:
-	using ThisType = SingleTrackedGrid<T, D, N>;
-	using Base = TrackedGridBase<ThisType>;
-	using TrackedGridBase<ThisType>::TrackedGridBase;
+	using ThisType = EagerSingleTrackedGrid<T, D, N>;
+	using Base = TrackedGridBase<ThisType, Laziness::EAGER>;
+	using Base::TrackedGridBase;
 };
+
 
 /**
  * A lazy tracked grid that assumes non-overlapping tracking lists.
@@ -42,12 +45,13 @@ public:
  * @tparam N the number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N=1>
-class LazySingleTrackedGrid : public TrackedGridBase<LazySingleTrackedGrid<T, D, N>, true>
+class LazySingleTrackedGrid
+	: public TrackedGridBase<LazySingleTrackedGrid<T, D, N>, Laziness::LAZY>
 {
 public:
 	using ThisType = LazySingleTrackedGrid<T, D, N>;
 	using Traits = GridTraits<ThisType>;
-	using Base = TrackedGridBase<ThisType, true>;
+	using Base = TrackedGridBase<ThisType, Laziness::LAZY>;
 	using typename Base::VecDi;
 
 	using Base::TrackedGridBase;
@@ -91,9 +95,9 @@ public:
  * @tparam N the number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N>
-struct GridTraits<SingleTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
+struct GridTraits<EagerSingleTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
 {
-	using ThisType = SingleTrackedGrid<T, D, N>;
+	using ThisType = EagerSingleTrackedGrid<T, D, N>;
 	/// Type of lookup grid to use.  This is what differentiates this from MultiTrackedGrid.
 	using LookupType = SingleLookupGrid<D, N>;
 };

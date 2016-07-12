@@ -1,7 +1,7 @@
 #ifndef INCLUDE_FELT_LAZYGRIDBASE_HPP_
 #define INCLUDE_FELT_LAZYGRIDBASE_HPP_
 
-#include "StaticGridBase.hpp"
+#include "EagerGridBase.hpp"
 
 namespace felt
 {
@@ -12,17 +12,17 @@ namespace felt
  * @tparam Derived the CRTP derived class.
  */
 template <class Derived>
-class LazyGridBase : public StaticGridBase<Derived>
+class LazyGridBase : public EagerGridBase<Derived>
 {
 public:
 	using ThisType = LazyGridBase<Derived>;
 	using DerivedType = typename GridTraits<Derived>::ThisType;
-	using Base = StaticGridBase<Derived>;
+	using Base = EagerGridBase<Derived>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 	using typename Base::VecDf;
 	using typename Base::LeafType;
-	using Base::StaticGridBase;
+	using Base::EagerGridBase;
 public:
 
 	/**

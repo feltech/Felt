@@ -22,10 +22,10 @@ namespace felt
  * @tparam N the number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N=1>
-class MultiTrackedGrid : public TrackedGridBase<MultiTrackedGrid<T, D, N> >
+class MultiTrackedGrid : public TrackedGridBase< MultiTrackedGrid<T, D, N>, Laziness::EAGER >
 {
 public:
-	using TrackedGridBase<MultiTrackedGrid<T, D, N> >::TrackedGridBase;
+	using TrackedGridBase<MultiTrackedGrid<T, D, N>, Laziness::EAGER >::TrackedGridBase;
 };
 
 

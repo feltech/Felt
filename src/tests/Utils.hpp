@@ -31,7 +31,7 @@ namespace felt
 	/// Utility: take a slice of a 3D grid and return a tabulated string.
 	template <class Derived>
 	std::string stringifyGridSlice(
-		const StaticGridBase<Derived>& grid, UINT axis_plane = 2, INT axis_plane_offset = 0
+		const EagerGridBase<Derived>& grid, UINT axis_plane = 2, INT axis_plane_offset = 0
 	) {
 		using GridType = GridBase<Derived>;
 		using VecDu = typename GridBase<Derived>::VecDu;

@@ -11,9 +11,10 @@
 #include <eigen3/Eigen/Dense>
 #include <omp.h>
 
+#include "SingleLookupPartitionedGrid.hpp"
 #include "Util.hpp"
-#include "LookupPartitionedGrid.hpp"
-#include "TrackedPartitionedGrid.hpp"
+#include "SingleTrackedPartitionedGrid.hpp"
+
 
 namespace felt
 {
@@ -44,12 +45,12 @@ public:
 	/**
 	 * A delta isogrid update grid with active (non-zero) grid points tracked.
 	 */
-	using DeltaIsoGrid = LazySingleTrackedPartitionedGrid<FLOAT, D, NUM_LISTS>;
+	using DeltaIsoGrid = SingleTrackedPartitionedGrid<FLOAT, D, NUM_LISTS>;
 	/**
 	 * A level set embedding isogrid grid, with active grid points (the narrow
 	 * band) tracked.
 	 */
-	using IsoGrid = LazySingleTrackedPartitionedGrid<FLOAT, D, NUM_LISTS>;
+	using IsoGrid = SingleTrackedPartitionedGrid<FLOAT, D, NUM_LISTS>;
 	/**
 	 * A resizable array of D-dimensional grid positions.
 	 */
@@ -69,7 +70,7 @@ public:
 	/**
 	 * Grid to track positions that require an update.
 	 */
-	using AffectedMultiLookupGrid = LazySingleLookupPartitionedGrid<D, NUM_LISTS>;
+	using AffectedMultiLookupGrid = SingleLookupPartitionedGrid<D, NUM_LISTS>;
 
 	/// D-dimensional hyperplane type (using Eigen library), for raycasting.
 	using Plane = Eigen::Hyperplane<FLOAT, D>;
@@ -96,7 +97,7 @@ protected:
 	 * The tracking list index encodes the "from" layer and the value in the grid encodes the
 	 * "to" layer.
 	 */
-	using StatusChangeGrid = LazySingleTrackedPartitionedGrid<INT, D, NUM_LISTS>;
+	using StatusChangeGrid = SingleTrackedPartitionedGrid<INT, D, NUM_LISTS>;
 
 protected:
 
@@ -158,31 +159,17 @@ public:
 	 */
 	void init (const VecDu& size_, const VecDu& size_partition_)
 	{
-		this->size(size_, size_partition_);
-	}
-
-	/**
-	 * Initialise level set embedding with given dimensions.
-	 *
-	 * Initialises the various lookup grids and (indirectly) the level set
-	 * sparse field layers. Also calculates and stores the spatial limits
-	 * of the grid accounting for the narrow band space required.
-	 *
-	 * @param usize
-	 */
-	void size (const VecDu& usize_, const VecDu& size_partition)
-	{
-		const VecDi isize = usize_.template cast<INT>();
+		const VecDi isize = size_.template cast<INT>();
 		const VecDi offset = -1 * isize / 2;
 
 		// Configure isogrid embedding, initialising to all outside values.
-		m_grid_isogrid.init(usize_, offset, LAYER_MAX+1, size_partition);
+		m_grid_isogrid.init(size_, offset, LAYER_MAX+1, size_partition_);
 		// Configure delta isogrid embedding, initialising to zero delta.
-		m_grid_delta.init(usize_, offset, 0, size_partition);
+		m_grid_delta.init(size_, offset, 0, size_partition_);
 		// Configure status change partitioned lists.
-		m_grid_status_change.init(usize_, offset, LAYER_MAX+1, size_partition);
+		m_grid_status_change.init(size_, offset, LAYER_MAX+1, size_partition_);
 		// Configure de-dupe grid for neighbourhood queries.
-		m_grid_affected.init(usize_, offset, size_partition);
+		m_grid_affected.init(size_, offset, size_partition_);
 	}
 
 	/**

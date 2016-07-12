@@ -182,19 +182,14 @@ public:
 };
 
 
-template <class Derived, bool IsLazy=false>
-class TrackingPartitionedGridBase
-{};
-
-
 /**
  * Base class for spatially partitioned wrappers for MultiLookupGrid and MultiTrackedGrid.
  *
  * @tparam Derived the CRTP derived class.
  */
 template <class Derived>
-class TrackingPartitionedGridBase<Derived, false>
-	: public PartitionedGridBase<TrackingPartitionedGridBase<Derived> >
+class TrackingPartitionedGridBase
+	: public PartitionedGridBase< TrackingPartitionedGridBase<Derived> >
 {
 public:
 	using ThisType = TrackingPartitionedGridBase<Derived>;
@@ -304,36 +299,6 @@ public:
 		);
 	}
 
-private:
-	/**
-	 * Override spoofed (non-partitioned) base class's list method to make
-	 * private, since it will always be empty (must use children or child).
-	 *
-	 * @param list_idx_
-	 * @return list of this grid (will always be empty).
-	 */
-	PosArray& list(const UINT list_idx_ = 0)
-	{
-		return Child::list(list_idx_);
-	}
-};
-
-
-/**
- * Lazy variant of TrackingPartitionedGridBase.
- */
-template <class Derived>
-class TrackingPartitionedGridBase<Derived, true>
-	: public TrackingPartitionedGridBase< TrackingPartitionedGridBase<Derived, true>, false >
-{
-public:
-	using ThisType = TrackingPartitionedGridBase<Derived, true>;
-	using Base = TrackingPartitionedGridBase<ThisType, false>;
-	using typename Base::Child;
-	using typename Base::VecDi;
-	using typename Base::PosArray;
-
-	using Base::TrackingPartitionedGridBase;
 
 	/**
 	 * Add a spatial partition to children grid's tracking subgrid.
@@ -454,6 +419,20 @@ public:
 		for (UINT idx = 0; idx < this->children().lookup().NUM_LISTS; idx++)
 			this->reset(grid_master_, idx);
 	}
+
+
+private:
+	/**
+	 * Override spoofed (non-partitioned) base class's list method to make
+	 * private, since it will always be empty (must use children or child).
+	 *
+	 * @param list_idx_
+	 * @return list of this grid (will always be empty).
+	 */
+	PosArray& list(const UINT list_idx_ = 0)
+	{
+		return Child::list(list_idx_);
+	}
 };
 
 
@@ -464,8 +443,8 @@ public:
  *
  * @tparam Derived the CRTP derived class.
  */
-template <class Derived, bool IsLazy>
-struct GridTraits<TrackingPartitionedGridBase<Derived, IsLazy> > : GridTraits<Derived>
+template <class Derived>
+struct GridTraits< TrackingPartitionedGridBase<Derived> > : GridTraits<Derived>
 {};
 
 
