@@ -91,10 +91,10 @@ protected:
 	};
 
 	/**
-	 * A spatially partitioned array of StatusChange objects.
-	 *
-	 * There is one extra 'layer' for status change lists, one either side
-	 * of the narrow band, for those points that are going out of scope.
+	 * Grid tracking locations that are to be moved to another narrow band layer.
+	 * 
+	 * The tracking list index encodes the "from" layer and the value in the grid encodes the
+	 * "to" layer.
 	 */
 	using StatusChangeGrid = LazySingleTrackedPartitionedGrid<INT, D, NUM_LISTS>;
 
@@ -188,7 +188,7 @@ public:
 	/**
 	 * Get reference to isogrid grid.
 	 *
-	 * @return
+	 * @return signed distance isogrid embedding the level set surface.
 	 */
 	IsoGrid& isogrid ()
 	{
@@ -198,16 +198,15 @@ public:
 	/**
 	 * Get reference to isogrid grid.
 	 *
-	 * @return
+	 * @return signed distance isogrid embedding the level set surface.
 	 */
 	const IsoGrid& isogrid () const
 	{
 		return m_grid_isogrid;
 	}
 
-
 	/**
-	 * Get grid of affected narrow band points, used for localised updates.
+	 * Get grid of affected narrow band points used during localised update mode.
 	 *
 	 * @return ephemeral "affected" grid.
 	 */
@@ -215,7 +214,6 @@ public:
 	{
 		return m_grid_affected;
 	}
-
 
 	/**
 	 * Get the status change grid that flags when a point is moving between narrow band layers
@@ -227,11 +225,10 @@ public:
 		return m_grid_status_change;
 	}
 
-
 	/**
-	 * Get reference to delta isogrid grid.
+	 * Get reference to delta grid of isogrid updates.
 	 *
-	 * @return
+	 * @return grid of delta values to be applied to isogrid.
 	 */
 	DeltaIsoGrid& delta ()
 	{
@@ -239,9 +236,9 @@ public:
 	}
 
 	/**
-	 * Get reference to delta isogrid grid (const version).
+	 * @copydoc Surface::delta()
 	 *
-	 * @return
+	 * const version.
 	 */
 	const DeltaIsoGrid& delta () const
 	{
@@ -252,8 +249,8 @@ public:
 	 * Get reference to the active partitions of a given layer of the narrow
 	 * band.
 	 *
-	 * @param layer_id_
-	 * @return
+	 * @param layer_id_ narrow band layer id.
+	 * @return list of positions of active child partitions in the main isogrid.
 	 */
 	PosArray& parts (const INT layer_id_ = 0)
 	{
@@ -264,9 +261,9 @@ public:
 	 * Get reference to a single layer of the narrow band at a given
 	 * spatial partition.
 	 *
-	 * @param pos_child_
-	 * @param layer_id_
-	 * @return
+	 * @param pos_child_ location of child spatial partition.
+	 * @param layer_id_ narrow band layer id.
+	 * @return list of positions in given narrow band layer within given child partition.
 	 */
 	PosArray& layer (const VecDi& pos_child_, const INT layer_id_ = 0)
 	{
@@ -274,12 +271,9 @@ public:
 	}
 
 	/**
-	 * Get reference to a single layer of the narrow band at a given
-	 * spatial partition (const version).
-	 *
-	 * @param pos_child_
-	 * @param layer_id_
-	 * @return
+	 * @copydoc Surface::layer(const VecDi&, const INT)
+	 * 
+	 * const version.
 	 */
 	const PosArray& layer (
 		const VecDi& pos_child_, const INT layer_id_ = 0
@@ -296,8 +290,8 @@ public:
 	 * is required for iterating over all the positions in a layer in
 	 * sequence.
 	 *
-	 * @param layer_id_
-	 * @return
+	 * @param layer_id_ narrow band layer id.
+	 * @return iterable container along all active leaf locations of given layer.
 	 */
 	const LeafsContainer<IsoGrid> layer(const INT layer_id_) const
 	{
@@ -306,19 +300,30 @@ public:
 
 	/**
 	 * Get narrow band layer id of location in isogrid grid.
-	 * @param pos
-	 * @return
+	 *
+	 * Calculates layer ID based on value in grid (i.e. is the layer the location *should*
+	 * be in). 
+	 *
+	 * The position vector type is templated, so that interpolation overloads can be used
+	 * if a float vector (e.g. Vec3f) is provided.
+	 *
+	 * @param pos_ position vector of location
+	 * @return integer layer ID that given location should belong to.
 	 */
 	template <class PosType>
-	INT layer_id(const PosType& pos) const
+	INT layer_id(const PosType& pos_) const
 	{
-		return this->layer_id(this->isogrid()(pos));
+		return this->layer_id(this->isogrid()(pos_));
 	}
 
 	/**
-	 * Get narrow band layer id of value.
-	 * @param val
-	 * @return
+	 * Get narrow band layer ID of given value.
+	 *
+	 * Rounds value to nearest integer, but with an epsilon to prefer rounding up, to keep
+	 * consistent when we have floating point rounding errors.
+	 * 
+	 * @param val value to round to give narrow band layer ID.
+	 * @return layer ID that given value should belong to
 	 */
 	INT layer_id(const FLOAT val) const
 	{
@@ -329,10 +334,13 @@ public:
 	}
 
 	/**
-	 * Get narrow band layer index of ID.
+	 * Get narrow band layer index of ID for indexing into arrays.
 	 *
-	 * @param id
-	 * @return
+	 * Internally we can of course not have negative array indices, so must convert to an
+	 * index first.
+	 *
+	 * @param id narrow band layer ID.
+	 * @return index to use to get given layer in narrow band array.
 	 */
 	UINT layer_idx(const INT id) const
 	{
@@ -340,10 +348,10 @@ public:
 	}
 
 	/**
-	 * Test whether a given value lies within the narrow band or not.
+	 * Test whether a given value lies (or should lie) within the narrow band or not.
 	 *
-	 * @param val
-	 * @return
+	 * @param val float or int value to test
+	 * @return true if inside the narrow band, false otherwise.
 	 */
 	template <typename ValType>
 	bool inside_band (const ValType& val) const
@@ -352,12 +360,12 @@ public:
 	}
 
 	/**
-	 * Update delta isogrid grid and append point to change list for given thread.
+	 * Update delta isogrid grid, adding to tracking list if not already tracked.
 	 *
 	 * @snippet test_Surface.cpp Simple delta isogrid update
 	 *
-	 * @param pos
-	 * @param val
+	 * @param pos position to update.
+	 * @param val value to set at given position.
 	 */
 	void delta (const VecDi& pos_, FLOAT val_)
 	{
@@ -383,11 +391,10 @@ public:
 	 * Update delta isogrid grid surrounding a zero layer point found via a
 	 * raycast by amount spread using Gaussian distribution.
 	 *
-	 * @param pos_origin
-	 * @param dir
-	 * @param dist
-	 * @param amount
-	 * @param stddev
+	 * @param pos_origin real-valued position vector cast ray from.
+	 * @param dir direction normal vector of the ray.
+	 * @param val amount to update by, spread across Gaussian window.
+	 * @param stddev standard deviation of Gaussian.
 	 */
 	template <UINT Distance>
 	FLOAT delta_gauss (
@@ -411,7 +418,6 @@ public:
 	 * Will be normalised so that the total amount distributed over the points
 	 * sums to val. Locks mutexes of affected spatial partitions so thread safe.
 	 *
-	 * @param dist distance from central point to spread over.
 	 * @param pos_centre centre of the Gaussian distribution.
 	 * @param val amount to spread over the points.
 	 * @param stddev standard deviation of Gaussian.
