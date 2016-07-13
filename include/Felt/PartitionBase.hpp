@@ -2,7 +2,8 @@
 #define INCLUDE_FELT_PARTITIONBASE_HPP_
 
 #include <mutex>
-#include <Felt/MultiTrackedGrid.hpp>
+
+#include "MultiTrackedGrid.hpp"
 
 namespace felt
 {
@@ -30,7 +31,7 @@ public:
 	static const UINT NUM_LISTS = Traits::NumLists;
 
 	/// Grid of partitions with tracking list(s) of active partitions.
-	using ChildrenGrid = MultiTrackedGrid<Child, Traits::Dims, NUM_LISTS>;
+	using ChildrenGrid = EagerMultiTrackedGrid<Child, Traits::Dims, NUM_LISTS>;
 	/// D-dimensional unsigned int vector.
 	using VecDu = typename ChildrenGrid::VecDu;
 	/// D-dimensional signed int vector.

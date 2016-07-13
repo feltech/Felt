@@ -413,7 +413,7 @@ public:
 	FLOAT delta_gauss (
 		const VecDf& pos_centre, const FLOAT val, const FLOAT stddev
 	) {
-		const SingleLookupGrid<D, NUM_LAYERS>& lookup = this->walk_band<Distance>(
+		const EagerSingleLookupGrid<D, NUM_LAYERS>& lookup = this->walk_band<Distance>(
 			felt::round(pos_centre)
 		);
 		return this->delta_gauss(lookup.list(this->layer_idx(0)), pos_centre, val, stddev);
@@ -1362,13 +1362,13 @@ public:
 	 * for each layer.
 	 */
 	template <UINT Distance>
-	SingleLookupGrid<D, NUM_LAYERS>& walk_band (const VecDi& pos_)
+	EagerSingleLookupGrid<D, NUM_LAYERS>& walk_band (const VecDi& pos_)
 	{
-		using MultiLookup = SingleLookupGrid<D, NUM_LAYERS>;
-		using PosArray = typename MultiLookup::PosArray;
+		using Lookup = EagerSingleLookupGrid<D, NUM_LAYERS>;
+		using PosArray = typename Lookup::PosArray;
 
 		// Box size is: (Distance * 2 directions) + 1 central.
-		static MultiLookup lookup(VecDu::Constant(Distance * 2 + 1));
+		static Lookup lookup(VecDu::Constant(Distance * 2 + 1));
 		lookup.reset_all();
 		lookup.offset(pos_ - VecDi::Constant(Distance));
 

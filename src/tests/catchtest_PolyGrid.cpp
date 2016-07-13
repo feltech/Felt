@@ -323,7 +323,7 @@ SCENARIO("PolyGrid")
 		}
 		CHECK(total_vtx == 0);
 		CHECK(total_spx == 0);
-		CHECK(poly.changes().list().size() == 0);
+		CHECK(poly.changes().list(0).size() == 0);
 	}
 
 	/**

@@ -169,8 +169,8 @@ SCENARIO("LazySingleLookupPartitionedGrid")
 		CHECK(grid.get(pos_active_because_master) == NULL_IDX);
 		CHECK(grid.get(pos_deactivated) == NULL_IDX);
 		CHECK(grid.get(pos_active_because_other_list) == 0);
-		CHECK(grid.children().get(pos_child_active_because_master).list().size() == 0);
-		CHECK(grid.children().get(pos_child_deactivated).list().size() == 0);
+		CHECK(grid.children().get(pos_child_active_because_master).list(0).size() == 0);
+		CHECK(grid.children().get(pos_child_deactivated).list(0).size() == 0);
 		CHECK(
 			grid.children().get(pos_child_active_because_other_list).list(1).size() == 1
 		);
@@ -281,7 +281,7 @@ TEST_CASE_METHOD(LazySingleLookupPartitionedGridFixture, "LazySingleLookupPartit
 
 	// ==== Confirm ====
 	CHECK(grid.children().get(pos_child).is_active());
-	CHECK(grid.children().list().size() == 1);
+	CHECK(grid.children().list(0).size() == 1);
 	CHECK(grid.children().get(pos_child).get(pos1) == 0);
 	CHECK(grid.children().get(pos_child).get(pos2) == 0);
 	CHECK(grid.children().get(pos_child).list(0).size() == 1);

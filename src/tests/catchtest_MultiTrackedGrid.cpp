@@ -11,7 +11,7 @@ SCENARIO("MultiTrackedGrid")
 	WHEN("initialisation")
 	{
 		// ==== Setup/Action ====
-		MultiTrackedGrid<FLOAT, 3, 3> grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), 0);
+		EagerMultiTrackedGrid<FLOAT, 3, 3> grid(Vec3u(9,9,9), Vec3i(-4,-4,-4), 0);
 
 		// ==== Confirm ====
 		CHECK(grid.data().size() == 9*9*9);

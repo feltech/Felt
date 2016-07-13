@@ -16,33 +16,12 @@ namespace felt
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N=1>
-class MultiLookupGrid : public EagerLookupGridBase<MultiLookupGrid<D, N> >
+class EagerMultiLookupGrid : public EagerLookupGridBase<EagerMultiLookupGrid<D, N> >
 {
 public:
-	using ThisType = MultiLookupGrid<D, N>;
+	using ThisType = EagerMultiLookupGrid<D, N>;
 	using Base = EagerLookupGridBase<ThisType>;
 	using Base::EagerLookupGridBase;
-};
-
-
-/**
- * Lazy lookup grid - only initialised on activation, otherwise returns NULL_IDX when queried.
- *
- * @snippet test_MappedGrid.cpp LazyMultiLookupGrid initialisation
- *
- * @tparam D the dimension of the grid.
- * @tparam N the number of tracking lists to use.
- */
-template <UINT D, UINT N=1>
-class LazyMultiLookupGrid : public LazyLookupGridBase<LazyMultiLookupGrid<D, N> >
-{
-public:
-	using ThisType = LazyMultiLookupGrid<D, N>;
-	using Base = LazyLookupGridBase<ThisType>;
-	using typename Base::VecDu;
-	using typename Base::VecDi;
-	using Base::LazyLookupGridBase;
-	using Base::reset;
 };
 
 
@@ -56,6 +35,7 @@ public:
 template <class Derived>
 struct GridTraits< EagerLookupGridBase<Derived> > : GridTraits<Derived>
 {};
+
 
 
 /**
@@ -87,6 +67,7 @@ struct DefaultMultiLookupGridTraits : DefaultGridTraits<VecDu<N>, D >
 	static const UINT NumLists = N;
 };
 
+
 template <UINT D, UINT N>
 const VecDu<N> DefaultMultiLookupGridTraits<D, N>::NULL_IDX_DATA = (
 	VecDu<N>::Constant(std::numeric_limits<UINT>::max())
@@ -100,22 +81,9 @@ const VecDu<N> DefaultMultiLookupGridTraits<D, N>::NULL_IDX_DATA = (
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N>
-struct GridTraits<MultiLookupGrid<D, N> > : DefaultMultiLookupGridTraits<D, N>
+struct GridTraits<EagerMultiLookupGrid<D, N> > : DefaultMultiLookupGridTraits<D, N>
 {
-	using ThisType = MultiLookupGrid<D, N>;
-};
-
-
-/**
- * Traits for LazyMultiLookupGrid.
- *
- * @tparam D the dimension of the grid.
- * @tparam N the number of tracking lists to use.
- */
-template <UINT D, UINT N>
-struct GridTraits<LazyMultiLookupGrid<D, N> > : DefaultMultiLookupGridTraits<D, N>
-{
-	using ThisType = LazyMultiLookupGrid<D, N>;
+	using ThisType = EagerMultiLookupGrid<D, N>;
 };
 
 

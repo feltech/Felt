@@ -7,10 +7,10 @@
 #include <vector>
 #include <eigen3/Eigen/StdVector>
 
+#include "MultiTrackedGrid.hpp"
 #include "PolyBase.hpp"
 #include "Grid.hpp"
 #include "MultiLookupGrid.hpp"
-#include "MultiTrackedGrid.hpp"
 #include "Surface.hpp"
 
 namespace felt 
@@ -73,8 +73,8 @@ namespace felt
 		static const VtxTuple NULL_VTX_TUPLE;
 
 	protected:
-		/// MultiLookup grid type used for avoiding duplicates.
-		using MultiLookupGrid_t = MultiLookupGrid<D>;
+		/// Lookup grid type used for avoiding duplicates.
+		using LookupGridType = EagerSingleLookupGrid<D>;
 
 		/**
 		 * List of interpolated vertices.
@@ -402,7 +402,7 @@ namespace felt
 		template <UINT L>
 		void surf(const Surface<D, L>& surface)
 		{
-			MultiLookupGrid_t grid_dupe(m_grid_vtx.size(), m_grid_vtx.offset());
+			LookupGridType grid_dupe(m_grid_vtx.size(), m_grid_vtx.offset());
 			for (VecDi pos_centre : surface.layer(0))
 				for (const VecDi& pos_offset : corners)
 				{

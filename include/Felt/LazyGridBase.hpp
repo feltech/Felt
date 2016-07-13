@@ -31,18 +31,6 @@ public:
 	LazyGridBase () : Base()
 	{}
 
-	/**
-	 * Get whether this grid is active or not.
-	 *
-	 * An inactive grid stores no data and always returns the background value.
-	 *
-	 * @return boolean of the current active state of this grid.
-	 */
-	const bool is_active() const
-	{
-		return this->m_data.size() > 0;
-	}
-
 	using Base::size;
 
 	/**
@@ -53,16 +41,6 @@ public:
 	void size (const VecDu& size_)
 	{
 		this->m_size = size_;
-	}
-
-	/**
-	 * Create the internal data array and fill with background value.
-	 *
-	 * @snippet test_Grid.cpp LazyGrid activation
-	 */
-	void activate()
-	{
-		Base::activate();
 	}
 
 	/**
@@ -87,7 +65,7 @@ public:
 	 */
 	LeafType& get (const VecDi& pos_)
 	{
-		if (is_active())
+		if (this->is_active())
 			return this->get_internal(pos_);
 		return this->m_background;
 	}
@@ -98,7 +76,7 @@ public:
 	 */
 	const LeafType& get (const VecDi& pos_) const
 	{
-		if (is_active())
+		if (this->is_active())
 			return this->get_internal(pos_);
 		return this->m_background;
 	}

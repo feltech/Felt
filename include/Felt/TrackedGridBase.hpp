@@ -4,6 +4,7 @@
 #include <array>
 #include <sstream>
 #include <mutex>
+
 #include "SingleLookupGrid.hpp"
 
 namespace felt
@@ -36,9 +37,10 @@ protected:
 	/// Internal lookup grid to track active grid positions.
 	Lookup		m_grid_lookup;
 public:
+	using Base::GridBase;
 	using Base::offset;
 	using Base::size;
-	using Base::GridBase;
+	using Base::is_active;
 
 	/**
 	 * Explicitly defined default constructor.
@@ -127,12 +129,24 @@ public:
 	}
 
 	/**
+	 * Get tracking list at index 0.
+	 *
+	 * Useful for common case of only a single tracking list.
+	 *
+	 * @return tracking list 0.
+	 */
+	const PosArray& list() const
+	{
+		return list(0);
+	}
+
+	/**
 	 * Get list of active grid points from lookup grid.
 	 *
 	 * @param list_idx_ tracking list id.
 	 * @return the tracking list of active grid positions from the internal lookup grid.
 	 */
-	PosArray& list(const UINT list_idx_ = 0)
+	PosArray& list(const UINT list_idx_)
 	{
 		return m_grid_lookup.list(list_idx_);
 	}
@@ -143,7 +157,7 @@ public:
 	 * @param list_idx_ tracking list id.
 	 * @return the tracking list of active grid positions from the internal lookup grid.
 	 */
-	const PosArray& list(const UINT list_idx_ = 0) const
+	const PosArray& list(const UINT list_idx_) const
 	{
 		return m_grid_lookup.list(list_idx_);
 	}
@@ -161,7 +175,7 @@ public:
 	 * tracking list, false if grid node was already set so position already
 	 * in a list.
 	 */
-	bool add(const VecDi& pos_, const LeafType& val_, const UINT list_idx_ = 0)
+	bool add(const VecDi& pos_, const LeafType& val_, const UINT list_idx_)
 	{
 		this->get(pos_) = val_;
 		return add(pos_, list_idx_);
@@ -176,9 +190,33 @@ public:
 	 * tracking list, false if grid node was already set so position already
 	 * in a list.
 	 */
-	bool add(const VecDi& pos_, const UINT list_idx_ = 0)
+	bool add(const VecDi& pos_)
+	{
+		return m_grid_lookup.add(pos_, 0);
+	}
+
+	/**
+	 * Add a position to the lookup grid with given tracking list ID.
+	 *
+	 * @param pos_ position in the grid to add.
+	 * @param list_idx_ tracking list id.
+	 * @return true if grid node set in lookup grid and position added to
+	 * tracking list, false if grid node was already set so position already
+	 * in a list.
+	 */
+	bool add(const VecDi& pos_, const UINT list_idx_)
 	{
 		return m_grid_lookup.add(pos_, list_idx_);
+	}
+
+	/**
+	 * Reset the tracked locations in list index 0.
+	 *
+	 * Useful for common case of only a single tracking list.
+	 */
+	void reset ()
+	{
+		reset(0);
 	}
 
 	/**
@@ -203,7 +241,7 @@ public:
 	 *
 	 * @param list_idx_ tracking list to clear.
 	 */
-	void reset(const UINT list_idx_ = 0)
+	void reset(const UINT list_idx_)
 	{
 		reset(this->m_background, list_idx_);
 	}
@@ -215,32 +253,54 @@ public:
 	 * @param idx_ index in tracking list.
 	 * @param list_idx_ tracking list id.
 	 */
-	void remove(const UINT idx_, const UINT list_idx_ = 0)
+	void remove(const UINT idx_, const UINT list_idx_)
 	{
 		m_grid_lookup.remove(idx_, list_idx_);
 	}
 
 	/**
-	 * Look up tracking list index in grid, remove from list and set lookup
+	 * Get tracking list index from lookup grid, remove from list and set lookup
+	 * grid node to NULL index.
+	 *
+	 * @param pos_ position in lookup grid.
+	 */
+	void remove (const VecDi& pos_)
+	{
+		remove(pos_, 0);
+	}
+
+	/**
+	 * Get tracking list index from lookup grid, remove from list and set lookup
 	 * grid node to NULL index.
 	 *
 	 * @param pos_ position in lookup grid.
 	 * @param list_idx_ tracking list id.
 	 */
-	void remove (const VecDi& pos_, const UINT list_idx_ = 0)
+	void remove (const VecDi& pos_, const UINT list_idx_)
 	{
 		m_grid_lookup.remove(pos_, list_idx_);
 	}
 
 	/**
-	 * Return true if position currently tracked for given list id, false
-	 * otherwise.
+	 * Check if position currently tracked.
 	 *
 	 * @param pos_ position in grid to query.
 	 * @param list_idx_ tracking list id to query.
 	 * @return true if position currently tracked, false otherwise.
 	 */
-	const bool is_active (const VecDi& pos_, const UINT list_idx_ = 0) const
+	const bool is_active (const VecDi& pos_) const
+	{
+		return m_grid_lookup.is_active(pos_, 0);
+	}
+
+	/**
+	 * Check if position currently tracked for given list ID.
+	 *
+	 * @param pos_ position in grid to query.
+	 * @param list_idx_ tracking list id to query.
+	 * @return true if position currently tracked, false otherwise.
+	 */
+	const bool is_active (const VecDi& pos_, const UINT list_idx_) const
 	{
 		return m_grid_lookup.is_active(pos_, list_idx_);
 	}

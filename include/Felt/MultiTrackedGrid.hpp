@@ -3,6 +3,7 @@
 
 #include "TrackedGridBase.hpp"
 
+
 namespace felt
 {
 
@@ -22,10 +23,10 @@ namespace felt
  * @tparam N the number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N=1>
-class MultiTrackedGrid : public TrackedGridBase< MultiTrackedGrid<T, D, N>, Laziness::EAGER >
+class EagerMultiTrackedGrid : public TrackedGridBase< EagerMultiTrackedGrid<T, D, N>, Laziness::EAGER >
 {
 public:
-	using TrackedGridBase<MultiTrackedGrid<T, D, N>, Laziness::EAGER >::TrackedGridBase;
+	using TrackedGridBase<EagerMultiTrackedGrid<T, D, N>, Laziness::EAGER >::TrackedGridBase;
 };
 
 
@@ -37,11 +38,11 @@ public:
  * @tparam N the number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N>
-struct GridTraits<MultiTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
+struct GridTraits<EagerMultiTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
 {
-	using ThisType = MultiTrackedGrid<T, D, N>;
+	using ThisType = EagerMultiTrackedGrid<T, D, N>;
 	/// Type of lookup grid to use.  This is what differentiates this from SingleTrackedGrid.
-	using LookupType = MultiLookupGrid<D, N>;
+	using LookupType = EagerMultiLookupGrid<D, N>;
 };
 
 }

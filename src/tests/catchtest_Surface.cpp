@@ -1430,7 +1430,7 @@ WHEN("walk")
 		});
 
 		// ==== Action ====
-		SingleLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band<2>(
+		EagerSingleLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band<2>(
 			Vec2i(-3,0)
 		);
 
@@ -1448,7 +1448,7 @@ WHEN("walk")
 	{
 		// ==== Setup ====
 		Surface<3, 2> surface(Vec3u(9, 9, 9));
-		using MultiLookup = SingleLookupGrid<3, surface.NUM_LAYERS>;
+		using MultiLookup = EagerSingleLookupGrid<3, surface.NUM_LAYERS>;
 
 		// Create seed point and expand the narrow band.
 		surface.seed(Vec3i(0, 0, 0));
@@ -1515,7 +1515,7 @@ WHEN("walk")
 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
 */
 		// ==== Action ====
-		SingleLookupGrid<3, surface.NUM_LAYERS> lookup = surface.walk_band<1>(
+		EagerSingleLookupGrid<3, surface.NUM_LAYERS> lookup = surface.walk_band<1>(
 			Vec3i(0,0,0)
 		);
 
@@ -1569,7 +1569,7 @@ WHEN("gaussian_from_list")
 		return -1.0f;
 	});
 
-	SingleLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band<2>(
+	EagerSingleLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band<2>(
 		Vec2i(-3,0)
 	);
 

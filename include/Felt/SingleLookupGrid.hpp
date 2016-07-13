@@ -5,7 +5,8 @@
 #include <array>
 #include <sstream>
 #include <mutex>
-#include <Felt/MultiLookupGrid.hpp>
+
+#include "MultiLookupGrid.hpp"
 
 
 namespace felt
@@ -16,8 +17,9 @@ namespace felt
  *
  * Useful in cases where grid nodes cannot be in more than one list.
  *
- * @tparam D the dimension of the grid.
- * @tparam N the number of tracking lists to use.
+ * @tparam Derived CRTP derived type
+ * @tparam IsLazy either EAGER for memory allocated at construction, or LAZY for allocation on
+ * `activate`.
  */
 template <class Derived, Laziness IsLazy>
 class SingleLookupGridBase : public LookupGridBase<SingleLookupGridBase<Derived, IsLazy>, IsLazy>
@@ -27,6 +29,7 @@ public:
 	using ThisType = SingleLookupGridBase<Derived, IsLazy>;
 	using Base = LookupGridBase<ThisType, IsLazy>;
 	using Base::NULL_IDX;
+	using typename Base::PosArray;
 	using typename Base::LeafType;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
@@ -34,6 +37,8 @@ protected:
 	using Base::m_a_pos;
 public:
 	using Base::LookupGridBase;
+	using Base::list;
+	using Base::add;
 
 	/**
 	 * Return true if position currently tracked for given list id, false
@@ -54,13 +59,40 @@ public:
 	 * indices at the grid position.
 	 *
 	 * @param pos_ position in grid to track.
-	 * @param arr_idx_ tracking list id to add position to.
+	 * @param list_idx_ tracking list id to add position to.
 	 * @return true if grid node set and position added to list, false if grid node was already set
 	 * so position already in a list.
 	 */
-	bool add (const VecDi& pos_, const UINT arr_idx_ = 0)
+	bool add (const VecDi& pos_)
 	{
-		return Base::add(pos_, arr_idx_, 0u);
+		return Base::add(pos_, 0, 0);
+	}
+
+	/**
+	 * Add position to tracking list with given ID and store index in tracking list in grid.
+	 *
+	 * Overloads LookupGridBase to place lookup index in first (and only) element of tuple of
+	 * indices at the grid position.
+	 *
+	 * @param pos_ position in grid to track.
+	 * @param list_idx_ tracking list id to add position to.
+	 * @return true if grid node set and position added to list, false if grid node was already set
+	 * so position already in a list.
+	 */
+	bool add (const VecDi& pos_, const UINT list_idx_)
+	{
+		return Base::add(pos_, list_idx_, 0);
+	}
+
+	/**
+	 * Set all lookup grid nodes to NULL index and clear the tracking list.
+	 *
+	 * Overloads LookupGridBase to reset first (and only) element of tuple
+	 * of indices for each grid position referenced in given tracking list.
+	 */
+	void reset ()
+	{
+		reset(0);
 	}
 
 	/**
@@ -70,11 +102,11 @@ public:
 	 * Overloads LookupGridBase to reset first (and only) element of tuple
 	 * of indices for each grid position referenced in given tracking list.
 	 *
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 */
-	void reset (const UINT arr_idx_ = 0)
+	void reset (const UINT list_idx_)
 	{
-		Base::reset(arr_idx_, 0u);
+		Base::reset(list_idx_, 0);
 	}
 
 	/**
@@ -94,28 +126,41 @@ public:
 	 * tuple of indices in the grid to NULL index.
 	 *
 	 * @param idx_ index in tracking list.
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 */
-	void remove (const UINT idx_, const UINT arr_idx_ = 0)
+	void remove (const UINT idx_, const UINT list_idx_)
 	{
-		const VecDi& pos = this->list(arr_idx_)[idx_];
-		Base::remove(idx_, pos, arr_idx_, 0);
+		const VecDi& pos = this->list(list_idx_)[idx_];
+		Base::remove(idx_, pos, list_idx_, 0);
 	}
 
 	/**
-	 * Look up tracking list index in grid, remove from list and set grid
-	 * node to NULL index.
+	 * Look up tracking list index in grid, remove from list and set grid node to NULL index.
 	 *
-	 * Overloads LookupGridBase to set the first (and only) element of
-	 * tuple of indices in the grid to NULL index.
+	 * Overloads LookupGridBase to set the first (and only) element of tuple of indices in the grid
+	 * to NULL index.
 	 *
 	 * @param pos_ position in lookup grid.
-	 * @param arr_idx_ tracking list id.
 	 */
-	void remove (const VecDi& pos_, const UINT arr_idx_ = 0)
+	void remove (const VecDi& pos_)
 	{
-		const UINT idx = idx_from_pos(pos_);
-		Base::remove(idx, pos_, arr_idx_, 0);
+		remove(pos_, 0);
+	}
+
+	/**
+	 * Look up tracking list index in grid, remove from list with given ID and set grid node to
+	 * NULL index.
+	 *
+	 * Overloads LookupGridBase to set the first (and only) element of tuple of indices in the grid
+	 * to NULL index.
+	 *
+	 * @param pos_ position in lookup grid.
+	 * @param list_idx_ tracking list id.
+	 */
+	void remove (const VecDi& pos_, const UINT list_idx_)
+	{
+		const UINT idx = idx_from_pos(pos_, 0);
+		Base::remove(idx, pos_, list_idx_, 0);
 	}
 
 protected:
@@ -132,10 +177,10 @@ protected:
 	 * Get index in a tracking list from position.
 	 *
 	 * @param pos_ position in grid to find index data.
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 * @return
 	 */
-	UINT& idx_from_pos(const VecDi& pos_, const UINT arr_idx_ = 0)
+	UINT& idx_from_pos(const VecDi& pos_, const UINT list_idx_)
 	{
 		return this->get(pos_);
 	}
@@ -143,7 +188,7 @@ protected:
 	/**
 	 * @copydoc idx_from_pos(const VecDi&,const UINT)
 	 */
-	const UINT idx_from_pos(const VecDi& pos_, const UINT arr_idx_) const
+	const UINT idx_from_pos(const VecDi& pos_, const UINT list_idx_) const
 	{
 		return this->get(pos_);
 	}
@@ -269,10 +314,10 @@ const UINT DefaultSingleLookupGridTraits<D, N>::NULL_IDX_DATA = std::numeric_lim
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N=1>
-class SingleLookupGrid : public EagerSingleLookupGridBase<SingleLookupGrid<D, N> >
+class EagerSingleLookupGrid : public EagerSingleLookupGridBase<EagerSingleLookupGrid<D, N> >
 {
 public:
-	using ThisType = SingleLookupGrid<D, N>;
+	using ThisType = EagerSingleLookupGrid<D, N>;
 	using Base = EagerSingleLookupGridBase<ThisType>;
 	using Base::EagerSingleLookupGridBase;
 };
@@ -336,10 +381,10 @@ struct GridTraits<EagerSingleLookupGridBase<Derived> > : GridTraits<Derived>
  * @tparam N number of tracking lists to use.
  */
 template <UINT D, UINT N>
-struct GridTraits<SingleLookupGrid<D, N> > : DefaultSingleLookupGridTraits<D, N>
+struct GridTraits<EagerSingleLookupGrid<D, N> > : DefaultSingleLookupGridTraits<D, N>
 {
 	/// The derived type.
-	using ThisType = SingleLookupGrid<D, N>;
+	using ThisType = EagerSingleLookupGrid<D, N>;
 };
 
 

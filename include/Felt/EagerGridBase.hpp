@@ -535,6 +535,16 @@ x = (idx/Dz)/Dy % Dx
 	}
 
 	/**
+	 * Get whether this grid has had data allocated.
+	 *
+	 * @return boolean of the current active state of this grid.
+	 */
+	const bool is_active() const
+	{
+		return this->m_data.size() > 0;
+	}
+
+	/**
 	 * Get an iterator wrapping a position at 0 in data index.
 	 *
 	 * @return an iterator referencing the first element in the internal data array.

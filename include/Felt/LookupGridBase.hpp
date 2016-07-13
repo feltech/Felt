@@ -44,6 +44,7 @@ protected:
 	std::mutex						m_mutex;
 public:
 	using Base::init;
+	using Base::size;
 
 	/**
 	 * Default (empty) destructor.
@@ -155,28 +156,38 @@ public:
 		Base::size(size_);
 	}
 
-	using Base::size;
-
 	/**
-	 * Get tracking list by id.
+	 * Get tracking list at index 0.
 	 *
-	 * @param arr_idx_ id of tracking list to get.
-	 * @return tracking list at given index.
+	 * Useful for common case of only a single tracking list.
+	 *
+	 * @return tracking list 0.
 	 */
-	inline PosArray& list (const UINT arr_idx_ = 0)
+	const PosArray& list() const
 	{
-		return m_a_pos[arr_idx_];
+		return list(0);
 	}
 
 	/**
 	 * Get tracking list by id.
 	 *
-	 * @param arr_idx_ id of tracking list to get.
+	 * @param list_idx_ id of tracking list to get.
 	 * @return tracking list at given index.
 	 */
-	inline const PosArray& list (const UINT arr_idx_ = 0) const
+	inline PosArray& list (const UINT list_idx_)
 	{
-		return m_a_pos[arr_idx_];
+		return m_a_pos[list_idx_];
+	}
+
+	/**
+	 * Get tracking list by id.
+	 *
+	 * @param list_idx_ id of tracking list to get.
+	 * @return tracking list at given index.
+	 */
+	inline const PosArray& list (const UINT list_idx_) const
+	{
+		return m_a_pos[list_idx_];
 	}
 
 	/**
@@ -184,28 +195,42 @@ public:
 	 * otherwise.
 	 *
 	 * @param pos_ position in grid to query.
-	 * @param arr_idx_ id of tracking list to test.
+	 * @param list_idx_ id of tracking list to test.
 	 * @return true if grid position tracked, false otherwise.
 	 */
-	const bool is_active (const VecDi& pos_, const UINT arr_idx_ = 0) const
+	const bool is_active (const VecDi& pos_, const UINT list_idx_) const
 	{
-		return cself->idx_from_pos(pos_, arr_idx_) != NULL_IDX;
+		return cself->idx_from_pos(pos_, list_idx_) != NULL_IDX;
 	}
 
 	/**
-	 * Add position to tracking list and store index in tracking list in
-	 * grid.
+	 * Add position to tracking list and store index in tracking list in grid.
 	 *
 	 * Does nothing if grid node already set with an index in tracking list.
 	 *
 	 * @param pos_ position in grid to track.
-	 * @param arr_idx_ id of tracking list to add to.
+	 * @param list_idx_ id of tracking list to add to.
 	 * @return true if grid node set and position added to list,
 	 * false if grid node was already set so position already in a list.
 	 */
-	bool add (const VecDi& pos, const UINT arr_idx_ = 0)
+	bool add (const VecDi& pos)
 	{
-		return add(pos, arr_idx_, arr_idx_);
+		return add(pos, 0);
+	}
+
+	/**
+	 * Add position to tracking list with given ID and store index in tracking list in grid.
+	 *
+	 * Does nothing if grid node already set with an index in tracking list.
+	 *
+	 * @param pos_ position in grid to track.
+	 * @param list_idx_ id of tracking list to add to.
+	 * @return true if grid node set and position added to list,
+	 * false if grid node was already set so position already in a list.
+	 */
+	bool add (const VecDi& pos, const UINT list_idx_)
+	{
+		return add(pos, list_idx_, list_idx_);
 	}
 
 	/**
@@ -213,12 +238,12 @@ public:
 	 * corresponding grid node to NULL index.
 	 *
 	 * @param idx_ index in tracking list.
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 */
-	void remove (const UINT idx, const UINT arr_idx_ = 0)
+	void remove (const UINT idx, const UINT list_idx_)
 	{
-		const VecDi& pos = this->list(arr_idx_)[idx];
-		remove(idx, pos, arr_idx_, arr_idx_);
+		const VecDi& pos = this->list(list_idx_)[idx];
+		remove(idx, pos, list_idx_, list_idx_);
 	}
 
 	/**
@@ -226,24 +251,36 @@ public:
 	 * node to NULL index.
 	 *
 	 * @param pos_ position in lookup grid.
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 */
-	void remove (const VecDi& pos, const UINT arr_idx_ = 0)
+	void remove (const VecDi& pos)
 	{
-		const UINT idx = this->get(pos)[arr_idx_];
+		remove(pos, 0);
+	}
+
+	/**
+	 * Look up tracking list index in grid, remove from list and set grid
+	 * node to NULL index.
+	 *
+	 * @param pos_ position in lookup grid.
+	 * @param list_idx_ tracking list id.
+	 */
+	void remove (const VecDi& pos, const UINT list_idx_)
+	{
+		const UINT idx = this->get(pos)[list_idx_];
 		if (idx == NULL_IDX)
 			return;
-		remove(idx, pos, arr_idx_, arr_idx_);
+		remove(idx, pos, list_idx_, list_idx_);
 	}
 
 	/**
 	 * Clear tracking list and reset every grid point to NULL index.
 	 *
-	 * @param arr_idx_ tracking list id to clear.
+	 * @param list_idx_ tracking list id to clear.
 	 */
-	void reset (const UINT arr_idx_ = 0)
+	void reset (const UINT list_idx_)
 	{
-		reset(arr_idx_, arr_idx_);
+		reset(list_idx_, list_idx_);
 	}
 
 protected:
@@ -253,16 +290,16 @@ protected:
 	 *
 	 * If a grid node has a non-NULL index then does nothing.
 	 *
-	 * The arr_idx and lookup_idx can be different values - used in
+	 * The list_idx and lookup_idx can be different values - used in
 	 * subclass overrides.  See LookupGrid.
 	 *
 	 * @param pos_ position in lookup grid.
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 * @param lookup_idx_ lookup grid id.
 	 * @return true if grid node was set and position added to list,
 	 * false if grid node was already set so position already in a list.
 	 */
-	bool add(const VecDi& pos_, const UINT arr_idx_, const UINT lookup_idx_)
+	bool add(const VecDi& pos_, const UINT list_idx_, const UINT lookup_idx_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		this->assert_pos_bounds(pos_, "add: ");
@@ -273,15 +310,15 @@ protected:
 		if (idx != NULL_IDX)
 			return false;
 		// idx is by reference, so this sets the value in grid.
-		idx = this->list(arr_idx_).size();
-		list(arr_idx_).push_back(pos_);
+		idx = this->list(list_idx_).size();
+		list(list_idx_).push_back(pos_);
 		return true;
 	}
 
 	/**
 	 * Set all lookup grid nodes to NULL index and clear all lists.
 	 *
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 */
 	void reset_all ()
 	{
@@ -293,34 +330,34 @@ protected:
 	 * For given tracking list, set all lookup grid nodes to NULL index and
 	 * clear the list.
 	 *
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 * @param lookup_idx_ lookup grid node tuple index.
 	 */
-	void reset(const UINT arr_idx_, const UINT lookup_idx_)
+	void reset(const UINT list_idx_, const UINT lookup_idx_)
 	{
-		for (VecDi pos : m_a_pos[arr_idx_])
+		for (VecDi pos : m_a_pos[list_idx_])
 			nself->idx_from_pos(pos, lookup_idx_) = NULL_IDX;
-		list(arr_idx_).clear();
+		list(list_idx_).clear();
 	}
 
 	/**
 	 * Get index in a tracking list from position.
 	 *
 	 * @param pos_ position in grid to find index data.
-	 * @param arr_idx_ tracking list id.
+	 * @param list_idx_ tracking list id.
 	 * @return
 	 */
-	UINT& idx_from_pos(const VecDi& pos_, const UINT arr_idx_)
+	UINT& idx_from_pos(const VecDi& pos_, const UINT list_idx_)
 	{
-		return this->get(pos_)[arr_idx_];
+		return this->get(pos_)[list_idx_];
 	}
 
 	/**
 	 * @copydoc idx_from_pos(const VecDi&,const UINT)
 	 */
-	const UINT idx_from_pos(const VecDi& pos_, const UINT arr_idx_) const
+	const UINT idx_from_pos(const VecDi& pos_, const UINT list_idx_) const
 	{
-		return this->get(pos_)[arr_idx_];
+		return this->get(pos_)[list_idx_];
 	}
 
 	/**
@@ -328,11 +365,11 @@ protected:
 	 *
 	 * @param idx_ index of element in tracking list to remove.
 	 * @param pos_ position in grid matching index in tracking list to remove.
-	 * @param arr_idx_ tracking list id to remove element from.
+	 * @param list_idx_ tracking list id to remove element from.
 	 * @param lookup_idx_ index in tuple stored at grid node that references element to remove.
 	 */
 	void remove(
-		const UINT idx_, const VecDi& pos_, const UINT arr_idx_, const UINT lookup_idx_
+		const UINT idx_, const VecDi& pos_, const UINT list_idx_, const UINT lookup_idx_
 	) {
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		this->assert_pos_bounds(pos_, "remove: ");
@@ -344,18 +381,18 @@ protected:
 		// If this is not the last remaining position in the array, then
 		// we must move the last position to this position and update the
 		// lookup grid.
-		const UINT size = this->list(arr_idx_).size();
+		const UINT size = this->list(list_idx_).size();
 		if (idx_ < size - 1)
 		{
 			// Duplicate last element into this index.
-			const VecDi& pos_last = this->list(arr_idx_)[size - 1];
-			this->list(arr_idx_)[idx_] = pos_last;
+			const VecDi& pos_last = this->list(list_idx_)[size - 1];
+			this->list(list_idx_)[idx_] = pos_last;
 			// Set the lookup grid to reference the new index in the array.
 			nself->idx_from_pos(pos_last, lookup_idx_) = idx_;
 		}
 		// Remove the last element in the array (which is at this point
 		// either the last remaining element or a duplicate).
-		list(arr_idx_).pop_back();
+		list(list_idx_).pop_back();
 	}
 };
 

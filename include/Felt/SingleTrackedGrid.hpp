@@ -6,7 +6,6 @@
 namespace felt
 {
 
-
 /**
  * A tracked grid that assumes non-overlapping tracking lists.
  *
@@ -54,10 +53,8 @@ public:
 	using Base = TrackedGridBase<ThisType, Laziness::LAZY>;
 	using typename Base::VecDi;
 
+public:
 	using Base::TrackedGridBase;
-	using Base::Base::is_active;
-	using Base::is_active;
-
 
 	/**
 	 * Create the internal data array and fill with background value.
@@ -99,7 +96,7 @@ struct GridTraits<EagerSingleTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
 {
 	using ThisType = EagerSingleTrackedGrid<T, D, N>;
 	/// Type of lookup grid to use.  This is what differentiates this from MultiTrackedGrid.
-	using LookupType = SingleLookupGrid<D, N>;
+	using LookupType = EagerSingleLookupGrid<D, N>;
 };
 
 

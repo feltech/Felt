@@ -2,7 +2,7 @@
 
 #define INCLUDE_FELT_POLYGRID_HPP_
 
-#include <Felt/MultiLookupGrid.hpp>
+#include "MultiLookupGrid.hpp"
 #include "PartitionedGrid.hpp"
 #include "Surface.hpp"
 #include "Poly.hpp"
@@ -37,7 +37,7 @@ namespace felt
 		using PolySurface = Surface<Dims, 3>;
 
 		/// MultiLookup grid to track partitions containing zero-layer points.
-		using PolyChanges = MultiLookupGrid<Dims>;
+		using PolyChanges = EagerSingleLookupGrid<Dims>;
 		
 	protected:
 		/// MultiLookup grid to track partitions containing zero-layer points.
