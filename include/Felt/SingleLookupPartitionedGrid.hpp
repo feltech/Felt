@@ -74,7 +74,7 @@ struct GridTraits<SingleLookupPartitionedGrid<D, N> > : DefaultSingleLookupGridT
 	/// Child grid class, in this case LazySingleLookupGrid.
 	using ChildType = LazySingleLookupGrid<D, N>;
 	/// Grid class whose interface to copy via CRTP mixin.
-	using MixinType = StaticSingleLookupGridBase<ThisType>;
+	using MixinType = EagerSingleLookupGridBase<ThisType>;
 };
 
 } // End namespace felt

@@ -155,11 +155,11 @@ protected:
  * @tparam Derived CRTP derived class.
  */
 template <class Derived>
-class StaticSingleLookupGridBase : public SingleLookupGridBase <
-	StaticSingleLookupGridBase<Derived>, Laziness::EAGER
+class EagerSingleLookupGridBase : public SingleLookupGridBase <
+	EagerSingleLookupGridBase<Derived>, Laziness::EAGER
 > {
 public:
-	using Base = SingleLookupGridBase<StaticSingleLookupGridBase<Derived>, Laziness::EAGER>;
+	using Base = SingleLookupGridBase<EagerSingleLookupGridBase<Derived>, Laziness::EAGER>;
 	using Base::SingleLookupGridBase;
 };
 
@@ -269,12 +269,12 @@ const UINT DefaultSingleLookupGridTraits<D, N>::NULL_IDX_DATA = std::numeric_lim
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N=1>
-class SingleLookupGrid : public StaticSingleLookupGridBase<SingleLookupGrid<D, N> >
+class SingleLookupGrid : public EagerSingleLookupGridBase<SingleLookupGrid<D, N> >
 {
 public:
 	using ThisType = SingleLookupGrid<D, N>;
-	using Base = StaticSingleLookupGridBase<ThisType>;
-	using Base::StaticSingleLookupGridBase;
+	using Base = EagerSingleLookupGridBase<ThisType>;
+	using Base::EagerSingleLookupGridBase;
 };
 
 
@@ -325,7 +325,7 @@ struct GridTraits<LazySingleLookupGridBase<Derived> > : GridTraits<Derived>
  * Just forward the traits defined for SingleLookupGridBase subclasses.
  */
 template <class Derived>
-struct GridTraits<StaticSingleLookupGridBase<Derived> > : GridTraits<Derived>
+struct GridTraits<EagerSingleLookupGridBase<Derived> > : GridTraits<Derived>
 {};
 
 
