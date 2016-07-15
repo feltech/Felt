@@ -1875,6 +1875,21 @@ WHEN("ray")
 
 */
 }
+  
+  
+GIVEN("a 11x11x11 3-layer flat periodic surface")
+{
+	Surface<3, 3> surface(Vec3u(11, 11, 11), Vec3u(11, 11, 11));
+	surface.seed(Vec3i(0, 0, 0))
+   for (UINT i = 0; i < 5; i++)
+     surface.update([](auto& pos, auto& grid) {
+       	if (pos(1) == 0)
+           return -1;
+       	return 0;
+     });
+     
+   WARN(stringifyGridSlice(surface.isogrid()));
+}
 
 
 WHEN("gaussian_from_ray")
