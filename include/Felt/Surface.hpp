@@ -1456,7 +1456,7 @@ public:
 	/**
 	 * Get array of offsets to corners of a cube (e.g. 8 for 3D, 4 for 2D).
 	 *
-	 * @return
+	 * @return D-dimensional array of offsets.
 	 */
 	constexpr std::array<VecDi, 1 << D> corners () const
 	{
@@ -1471,14 +1471,37 @@ public:
 	}
 
 	/**
-	 * Cast a ray to the zero layer.
+	 * Cast a ray through periodic region, up to twice the length of the grid.
 	 *
-	 * @param pos_origin
-	 * @param dir
-	 * @return NULL_POS if no hit, otherwise interpolated position on zero
-	 * curve.
+	 * @param pos_origin originating point of ray
+	 * @param dir normal vector in direction of ray
+	 * @return zero curve hit location or NULL_POS.
 	 */
-	const VecDf ray(const VecDf& pos_origin, const VecDf& dir) const
+	VecDf ray(const VecDf& pos_origin, const VecDf& dir) const
+	{
+//		VecDf pos_start = m_grid_isogrid.mod(pos_origin);
+//
+//		VecDf pos_hit = ray_non_periodic(pos_start, dir);
+//		if (pos_hit != NULL_POS<FLOAT>())
+//			return pos_hit;
+
+		std::cerr << "Casting: (" << pos_origin.transpose() << ") => " << dir.transpose() << std::endl;
+
+		VecDf pos_hit = ray_non_periodic(pos_origin, dir);
+
+		std::cerr << "Hit: " << pos_hit.transpose() << std::endl;
+
+		return pos_hit;
+	}
+
+	/**
+	 * Cast a ray to the zero layer, without wrapping around periodic boundary.
+	 *
+	 * @param pos_origin originating point of ray
+	 * @param dir normal vector in direction of ray
+	 * @return zero curve hit location or NULL_POS.
+	 */
+	VecDf ray_non_periodic(const VecDf& pos_origin, const VecDf& dir) const
 	{
 
 		using ChildHits = std::vector<ChildHit>;
@@ -1615,7 +1638,7 @@ protected:
 	 * @return NULL_POS if no hit, otherwise interpolated position on zero
 	 * curve.
 	 */
-	const VecDf ray(
+	VecDf ray(
 		VecDf pos_sample, const VecDf& dir, const typename IsoGrid::Child& child
 	) const {
 		using Line = Eigen::ParametrizedLine<FLOAT, D>;
@@ -1623,9 +1646,13 @@ protected:
 		const Line line_leaf(pos_sample, dir);
 		FLOAT t_leaf = 0;
 
+//		std::cerr << "Child: " << child.offset().transpose() << std::endl;
+
 		while (child.inside(pos_sample))
 		{
 			const INT layer_id = this->layer_id(pos_sample);
+
+//			std::cerr << layer_id << std::endl;
 
 			if (abs(layer_id) == 0)
 			{
@@ -1643,6 +1670,8 @@ protected:
 				#endif
 
 				normal.normalize();
+
+//				std::cerr << "Normal: " << normal.transpose() << std::endl;
 
 				if (normal.dot(dir) < 0)
 				{
@@ -1678,7 +1707,8 @@ protected:
 				}
 			}
 
-			t_leaf += 0.5f;
+			t_leaf += 0.1f;
+
 			pos_sample = line_leaf.pointAt(t_leaf);
 		} // End while inside child grid.
 

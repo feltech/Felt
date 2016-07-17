@@ -1701,7 +1701,7 @@ WHEN("ray")
 
 	// ==== Action ====
 	// Simplest "dead on" case - from outside grid.
-	pos_hit = surface.ray(Vec3f(-100.0f, 0, 0), Vec3f(1, 0, 0));
+	pos_hit = surface.ray(Vec3f(-35.0f, 0, 0), Vec3f(1, 0, 0));
 
 	// ==== Confirm ====
 	CHECK(
@@ -1719,7 +1719,7 @@ WHEN("ray")
 
 	// ==== Action ====
 	// Simplest "dead on" case - from inside surface.
-	pos_hit = surface.ray(Vec3f(0.0f, 0, 0), Vec3f(1, 0, 0));
+	pos_hit = surface.ray(Vec3f(0, 0, 0), Vec3f(1, 0, 0));
 
 	// ==== Confirm ====
 	CHECK(pos_hit == surface.NULL_POS<FLOAT>());
@@ -1877,22 +1877,89 @@ WHEN("ray")
 }
   
   
-GIVEN("a 11x11x11 3-layer flat periodic surface")
+GIVEN("a 3-layer flat periodic surface in an 11x11x11 grid with 3x3x3 partitions")
 {
-	Surface<3, 3> surface(Vec3u(11, 11, 11), Vec3u(11, 11, 11));
-	surface.seed(Vec3i(0, 0, 0))
-   for (UINT i = 0; i < 5; i++)
-     surface.update([](auto& pos, auto& grid) {
-       	if (pos(1) == 0)
-           return -1;
-       	return 0;
-     });
-     
-   WARN(stringifyGridSlice(surface.isogrid()));
+	Surface<3, 3> surface(Vec3u(11, 11, 11), Vec3u(3, 3, 3));
+	surface.seed(Vec3i(0, 0, 0));
+	for (UINT i = 0; i < 6; i++)
+		surface.update([](auto& pos, auto& grid) {
+			if (pos(1) == 0)
+				return -1;
+			return 0;
+		});
+
+	INFO(stringifyGridSlice(surface.isogrid()));
+
+	WHEN("we cast a ray upward from positively outside the x-range of the isogrid")
+	{
+		const Vec3f& pos_hit = surface.ray(Vec3f(7, -4, 0), Vec3f(0,1,0));
+
+		THEN("the surface is hit on the other side because of periodic boundary")
+		{
+			CHECK(pos_hit == ApproxVec(Vec3f(-4, -1, 0)));
+		}
+	}
+
+	WHEN("we cast a ray upward from negatively outside the x-range of the isogrid")
+	{
+		const Vec3f& pos_hit = surface.ray(Vec3f(-7, -4, 0), Vec3f(0,1,0));
+
+		THEN("the surface is hit on the other side because of periodic boundary")
+		{
+			CHECK(pos_hit == ApproxVec(Vec3f(4, -1, 0)));
+		}
+	}
+
+	WHEN("we cast a ray diagonally downward from positively outside the y-range of the isogrid")
+	{
+		const Vec3f& pos_hit = surface.ray(Vec3f(5, 8, 0), Vec3f(-1,-1,0).normalized());
+
+		THEN("the surface is hit on the other side because of periodic boundary")
+		{
+			CHECK(pos_hit != surface.NULL_POS<FLOAT>());
+		}
+	}
 }
 
 
-WHEN("gaussian_from_ray")
+GIVEN("a 3-layer flat periodic surface in an 100x100x100 grid with 16x16x16 partitions")
+{
+	WARN("Creating large surface, this may take a while...");
+	Surface<3, 3> surface(Vec3u(20, 20, 20), Vec3u(16, 16, 16));
+	surface.seed(Vec3i(0,0,0));
+	surface.update([](auto& pos, auto& phi)->FLOAT {
+		return -1.0f;
+	});
+	surface.update([](auto& pos, auto& phi)->FLOAT {
+		return -1.0f;
+	});
+	for (UINT i = 0; i < 10; i++)
+		surface.update([](auto& pos, auto& grid) {
+			if (std::abs(pos(1)) > 1)
+				return 0;
+			else
+				return -1;
+		});
+//	Casting: (-5.45783  44.8901 -57.4607) =>  0.134944 -0.616392   0.77579
+//	Hit: 3.40282e+38 3.40282e+38 3.40282e+38
+	INFO(stringifyGridSlice(surface.isogrid()));
+
+
+	WHEN("we cast a ray diagonally downward from positively outside the y-range of the isogrid")
+	{
+		const Vec3f& pos_hit = surface.ray(
+			Vec3f(-5.45783, 44.8901, -57.4607), Vec3f(0.134944, -0.616392, 0.77579).normalized()
+		);
+
+		THEN("the surface is hit")
+		{
+			CHECK(pos_hit != surface.NULL_POS<FLOAT>());
+		}
+	}
+}
+
+
+GIVEN("a 2-layer surface of radius 3 in a 16x16 grid with 3x3 partitions")
 {
 	// ==== Setup ====
 	Surface<2, 2> surface(Vec2u(16, 16), Vec2u(3, 3));
@@ -1910,44 +1977,43 @@ WHEN("gaussian_from_ray")
 	});
 	FLOAT leftover;
 
-
-	// ==== Action ====
-	surface.update_start();
-	leftover = surface.delta_gauss<2>(
-		Vec2f(-2.4f, -10.0f), Vec2f(0, 1), 0.5f, 0.2f
-	);
-	surface.update_end();
+	INFO(stringifyGridSlice(surface.isogrid()));
 
 
-	// === Confirm ===
-//	INFO(stringifyGridSlice(surface.isogrid()));
-/*
-/home/dave/Dropbox/Workspace/Felt/src/tests/test_Surface.cpp(1,198): Message:
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -3 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
+	WHEN("we cast a ray upward from just below the grid")
+	{
+		const Vec2f& pos_hit = surface.ray(Vec2f(-2.4f, -10.0f), Vec2f(0, 1));
 
-*/
-	CHECK(
-		surface.delta().get(Vec2i(-3, 0))
-		+ surface.delta().get(Vec2i(-2, 1))
-		+ surface.delta().get(Vec2i(-2, -1))
-		+ surface.delta().get(Vec2i(-1, -2)) == Approx(0.5f).epsilon(0.000001f));
+		THEN("the surface is hit where expected")
+		{
+			CHECK(pos_hit == ApproxVec(Vec2f(-2.21609, -0.78391)).epsilon(0.1));
+		}
+	}
 
-	CHECK(leftover <= 0.000001f);
+	WHEN("we cast a ray upward and apply a gaussian-distributed delta")
+	{
+		surface.update_start();
+		leftover = surface.delta_gauss<2>(
+			Vec2f(-2.4f, -10.0f), Vec2f(0, 1), 0.5f, 0.2f
+		);
+		surface.update_end();
+
+		INFO(stringifyGridSlice(surface.isogrid()));
+
+		THEN("the delta summed over affected points is equal to the amount given")
+		{
+			CHECK(
+				surface.delta().get(Vec2i(-3, 0))
+				+ surface.delta().get(Vec2i(-2, 1))
+				+ surface.delta().get(Vec2i(-2, -1))
+				+ surface.delta().get(Vec2i(-1, -2)) == Approx(0.5f));
+
+			AND_THEN("the leftover amount is zero")
+			{
+				CHECK(leftover == Approx(0));
+			}
+		}
+	}
 
 //	CHECK(
 //		surface.delta().get(Vec2i(-3, 0)) == Approx(0.152139202f).epsilon(0.0001f
