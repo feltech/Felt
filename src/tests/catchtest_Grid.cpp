@@ -116,6 +116,32 @@ SCENARIO("Grid")
 	//! [Position index]
 
 
+	GIVEN("a 7x7x7 grid with (-3,-3,-3) offset")
+	{
+		using GridType = Grid<FLOAT, 3>;
+		GridType grid(Vec3u(7,7,7), Vec3i(-3,-3,-3), 0);
+
+		WHEN("we modulo transform a position outside the grid in the positive direction")
+		{
+			Vec3f pos_mod = grid.mod(Vec3f(5,5,5));
+
+			THEN("the position is transformed correctly")
+			{
+				CHECK(pos_mod == ApproxVec(Vec3f(-2,-2,-2)));
+			}
+		}
+
+		WHEN("we modulo transform a position outside the grid in the negative direction")
+		{
+			Vec3f pos_mod = grid.mod(Vec3f(-5,-5,-5));
+
+			THEN("the position is transformed correctly")
+			{
+				CHECK(pos_mod == ApproxVec(Vec3f(2,2,2)));
+			}
+		}
+	}
+
 	/**
 	 * Fill grid with a value.
 	 */
