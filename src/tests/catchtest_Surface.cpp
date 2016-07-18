@@ -1922,9 +1922,8 @@ GIVEN("a 3-layer flat periodic surface in an 11x11x11 grid with 3x3x3 partitions
 }
 
 
-GIVEN("a 3-layer flat periodic surface in an 100x100x100 grid with 16x16x16 partitions")
+GIVEN("a 3-layer flat periodic surface in an 20x20x20 grid with 16x16x16 partitions")
 {
-	WARN("Creating large surface, this may take a while...");
 	Surface<3, 3> surface(Vec3u(20, 20, 20), Vec3u(16, 16, 16));
 	surface.seed(Vec3i(0,0,0));
 	surface.update([](auto& pos, auto& phi)->FLOAT {
@@ -1940,16 +1939,16 @@ GIVEN("a 3-layer flat periodic surface in an 100x100x100 grid with 16x16x16 part
 			else
 				return -1;
 		});
-//	Casting: (-5.45783  44.8901 -57.4607) =>  0.134944 -0.616392   0.77579
-//	Hit: 3.40282e+38 3.40282e+38 3.40282e+38
 	INFO(stringifyGridSlice(surface.isogrid()));
 
 
-	WHEN("we cast a ray diagonally downward from positively outside the y-range of the isogrid")
+	WHEN("we cast a ray diagonally downward from outside the isogrid")
 	{
 		const Vec3f& pos_hit = surface.ray(
 			Vec3f(-5.45783, 44.8901, -57.4607), Vec3f(0.134944, -0.616392, 0.77579).normalized()
 		);
+
+		//pos + 69.5*dir = (3.9205,2.051,-3.5433)
 
 		THEN("the surface is hit")
 		{

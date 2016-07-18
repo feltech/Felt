@@ -1479,15 +1479,15 @@ public:
 	 */
 	VecDf ray(const VecDf& pos_origin, const VecDf& dir) const
 	{
-//		VecDf pos_start = m_grid_isogrid.mod(pos_origin);
-//
-//		VecDf pos_hit = ray_non_periodic(pos_start, dir);
-//		if (pos_hit != NULL_POS<FLOAT>())
-//			return pos_hit;
+		VecDf pos_start = m_grid_isogrid.mod(pos_origin);
+
+		VecDf pos_hit = ray_non_periodic(pos_start, dir);
+		if (pos_hit != NULL_POS<FLOAT>())
+			return pos_hit;
 
 		std::cerr << "Casting: (" << pos_origin.transpose() << ") => " << dir.transpose() << std::endl;
 
-		VecDf pos_hit = ray_non_periodic(pos_origin, dir);
+		pos_hit = ray_non_periodic(pos_origin, dir);
 
 		std::cerr << "Hit: " << pos_hit.transpose() << std::endl;
 
@@ -1568,8 +1568,9 @@ public:
 			normal(dim) = -dir_dim;
 
 			// Cast ray to plane and add any child grids hit on the way to tracking list.
-			if (!ray_check_add_child(child_hits, line, Plane(normal, pos_plane(dim) * dir_dim)))
-				continue;
+			// If child size is not a factor of grid size then this first cast could be to outside
+			// the grid.  So cannot quit early here and must try next child.
+			ray_check_add_child(child_hits, line, Plane(normal, pos_plane(dim) * dir_dim));
 
 			// Round up/down to next child, in case we started at inexact modulo of child grid size
 			// (i.e. when isogrid grid size is not integer multiple of child grid size).
@@ -1646,7 +1647,8 @@ protected:
 		const Line line_leaf(pos_sample, dir);
 		FLOAT t_leaf = 0;
 
-//		std::cerr << "Child: " << child.offset().transpose() << std::endl;
+//		std::cerr << "Child: (" << child.offset().transpose() << ") + (" <<
+//			child.size().transpose() << ")" << std::endl;
 
 		while (child.inside(pos_sample))
 		{
@@ -1707,7 +1709,7 @@ protected:
 				}
 			}
 
-			t_leaf += 0.1f;
+			t_leaf += 0.5f;
 
 			pos_sample = line_leaf.pointAt(t_leaf);
 		} // End while inside child grid.
