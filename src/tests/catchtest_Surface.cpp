@@ -1957,6 +1957,42 @@ GIVEN("a 3-layer flat periodic surface in an 20x20x20 grid with 16x16x16 partiti
 	}
 }
 
+//Casting: (-1.29043  49.6148 -66.8919) => 0.0725882 -0.660291  0.747493
+GIVEN("a 3-layer flat periodic surface in an 50x50x50 grid with 16x16x16 partitions")
+{
+	Surface<3, 3> surface(Vec3u(50, 50, 50), Vec3u(16, 16, 16));
+	surface.seed(Vec3i(0,0,0));
+	surface.update([](auto& pos, auto& phi)->FLOAT {
+		return -1.0f;
+	});
+	surface.update([](auto& pos, auto& phi)->FLOAT {
+		return -1.0f;
+	});
+	for (UINT i = 0; i < 20; i++)
+		surface.update([](auto& pos, auto& grid) {
+			if (std::abs(pos(1)) > 1)
+				return 0;
+			else
+				return -1;
+		});
+//	INFO(stringifyGridSlice(surface.isogrid()));
+
+
+	WHEN("we cast a ray diagonally downward from outside the isogrid")
+	{
+		const Vec3f& pos_hit = surface.ray(
+			Vec3f(-1.29043, 49.6148, -66.8919), Vec3f(0.0725882, -0.660291, 0.747493).normalized()
+		);
+
+		//pos + 69.5*dir = (3.9205,2.051,-3.5433)
+
+		THEN("the surface is hit")
+		{
+			CHECK(pos_hit != surface.NULL_POS<FLOAT>());
+		}
+	}
+}
+
 
 GIVEN("a 2-layer surface of radius 3 in a 16x16 grid with 3x3 partitions")
 {
