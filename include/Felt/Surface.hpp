@@ -1485,11 +1485,11 @@ public:
 		if (pos_hit != NULL_POS<FLOAT>())
 			return pos_hit;
 
-		std::cerr << "Casting: (" << pos_origin.transpose() << ") => " << dir.transpose() << std::endl;
+//		std::cerr << "Casting: (" << pos_origin.transpose() << ") => " << dir.transpose() << std::endl;
 
 		pos_hit = ray_non_periodic(pos_origin, dir);
 
-		std::cerr << "Hit: " << pos_hit.transpose() << std::endl;
+//		std::cerr << "Hit: " << pos_hit.transpose() << std::endl;
 
 		return pos_hit;
 	}
@@ -1570,7 +1570,7 @@ public:
 			// Cast ray to plane and add any child grids hit on the way to tracking list.
 			// If child size is not a factor of grid size then this first cast could be to outside
 			// the grid.  So cannot quit early here and must try next child.
-			ray_check_add_child(child_hits, line, Plane(normal, pos_plane(dim) * dir_dim));
+			!ray_check_add_child(child_hits, line, Plane(normal, pos_plane(dim) * dir_dim));
 
 			// Round up/down to next child, in case we started at inexact modulo of child grid size
 			// (i.e. when isogrid grid size is not integer multiple of child grid size).
@@ -1731,10 +1731,20 @@ protected:
 		const VecDf& pos_intersect = (
 			line.intersectionPoint(plane) + line.direction() * FLOAT(TINY)
 		);
-
-		if (!this->m_grid_isogrid.inside(pos_intersect))
-			return false;
-
+     
+		const VecDu& size = m_grid_isogrid.size();
+		const VecDi& offset = m_grid_isogrid.offset();     
+		const VecDf& dir = line.direction();     
+		
+		for (UINT i = 0; i < dir.size(); i++)
+		{
+			if (
+     			(dir(i) > 0 && pos_intersect(i) > size(i)) ||
+     			(dir(i) < 0 && pos_intersect(i) < offset(i))
+     		)
+     			return false;
+		}     
+     
 		const VecDi& pos_floor = floor(pos_intersect);
 		const VecDi& pos_child = this->m_grid_isogrid.pos_child(pos_floor);
 
