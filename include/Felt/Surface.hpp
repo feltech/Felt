@@ -1480,8 +1480,9 @@ public:
 	VecDf ray(const VecDf& pos_origin, const VecDf& dir) const
 	{
 		VecDf pos_start = m_grid_isogrid.mod(pos_origin);
+		VecDf pos_hit;
 
-		VecDf pos_hit = ray_non_periodic(pos_start, dir);
+		pos_hit = ray_non_periodic(pos_start, dir);
 		if (pos_hit != NULL_POS<FLOAT>())
 			return pos_hit;
 
@@ -1594,6 +1595,19 @@ public:
 					break;
 			}
 		}
+
+		// Remove children whose raycast hit point lies outside themselves.  Possible if a child
+		// has been allowed to be added in order for the loop above to continue on to the next
+		// child, via dir vs. offset/size check in ray_check_add_child().
+//		child_hits.erase(std::remove_if(
+//			child_hits.begin(), child_hits.end(),
+//			[this](const ChildHit& child_hit) {
+//				return !this->m_grid_isogrid.children()
+//					.get(child_hit.pos_child)
+//					.inside(child_hit.pos_intersect);
+//			}
+//		), child_hits.end());
+
 		// Sort candidate child grids in distance order from front to back.
 		std::sort(
 			child_hits.begin(), child_hits.end(),
@@ -1744,6 +1758,9 @@ protected:
      		)
      			return false;
 		}     
+
+		if (!m_grid_isogrid.inside(pos_intersect))
+			return true;
      
 		const VecDi& pos_floor = floor(pos_intersect);
 		const VecDi& pos_child = this->m_grid_isogrid.pos_child(pos_floor);

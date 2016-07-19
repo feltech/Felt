@@ -1978,17 +1978,30 @@ GIVEN("a 3-layer flat periodic surface in an 50x50x50 grid with 16x16x16 partiti
 //	INFO(stringifyGridSlice(surface.isogrid()));
 
 
-	WHEN("we cast a ray diagonally downward from outside the isogrid")
+	WHEN("we cast rays diagonally downward from outside the isogrid")
 	{
-		const Vec3f& pos_hit = surface.ray(
-			Vec3f(-1.29043, 49.6148, -66.8919), Vec3f(0.0725882, -0.660291, 0.747493).normalized()
-		);
-
+		// | -25 -- -9 -- 7 -- 23 -- 50
 		//pos + 69.5*dir = (3.9205,2.051,-3.5433)
+		const Vec3f& pos_hit1 = surface.ray(
+			Vec3f(-1.29043, 49.6148, -66.8919),
+			Vec3f(0.0725882, -0.660291, 0.747493).normalized()
+		);
+		//pos + 32.5*dir = (-3.73342,1.94405,-18.64452)
+		const Vec3f& pos_hit2 = surface.ray(
+			Vec3f(-0.0219189, 18.1713, -46.5578),
+			Vec3f(-0.114205,-0.499295, 0.858872).normalized()
+		);
+		//pos + 34.7*dir = (-1.33501,2.01918,-15.87545)
+		const Vec3f& pos_hit3 = surface.ray(
+			Vec3f(-0.0139845, 18.1755, -46.5565),
+			Vec3f(-0.0380706, -0.465599, 0.884177).normalized()
+		);
 
 		THEN("the surface is hit")
 		{
-			CHECK(pos_hit != surface.NULL_POS<FLOAT>());
+			CHECK(pos_hit1 != surface.NULL_POS<FLOAT>());
+			CHECK(pos_hit2 != surface.NULL_POS<FLOAT>());
+			CHECK(pos_hit3 != surface.NULL_POS<FLOAT>());
 		}
 	}
 }
