@@ -1925,14 +1925,14 @@ GIVEN("a 3-layer flat periodic surface in an 11x11x11 grid with 3x3x3 partitions
 		}
 	}
   
-	WHEN("we cast from a position outside the grid but congruent")
+	WHEN("we cast from above the zero position inside a congruent grid")
 	{
 		const Vec3f& pos_hit1 = surface.ray(Vec3f(0, 5, 0), Vec3f(0,-1,0));
 		const Vec3f& pos_hit2 = surface.ray(Vec3f(0, 5, 11), Vec3f(0,-1,0));
 		const Vec3f& pos_hit3 = surface.ray(Vec3f(11, 5, 0), Vec3f(0,-1,0));
 		const Vec3f& pos_hit4 = surface.ray(Vec3f(11, 5, 11), Vec3f(0,-1,0));
 
-		THEN("the surface is hit on the other side because of periodic boundary")
+		THEN("the surface is hit")
 		{
 			CHECK(pos_hit1 == ApproxVec(Vec3f(0, 1, 0)));
 			CHECK(pos_hit2 == ApproxVec(Vec3f(0, 1, 0)));
@@ -1940,6 +1940,23 @@ GIVEN("a 3-layer flat periodic surface in an 11x11x11 grid with 3x3x3 partitions
 			CHECK(pos_hit4 == ApproxVec(Vec3f(0, 1, 0)));
 		}
 	}  
+
+	WHEN("we cast from above the zero position outside a congruent grid")
+	{
+		const Vec3f& pos_hit1 = surface.ray(Vec3f(0, 6, 0), Vec3f(0,-1,0));
+		const Vec3f& pos_hit2 = surface.ray(Vec3f(0, 6, 11), Vec3f(0,-1,0));
+		const Vec3f& pos_hit3 = surface.ray(Vec3f(11, 6, 0), Vec3f(0,-1,0));
+		const Vec3f& pos_hit4 = surface.ray(Vec3f(11, 6, 11), Vec3f(0,-1,0));
+
+		THEN("the surface is hit")
+		{
+			CHECK(pos_hit1 == ApproxVec(Vec3f(0, 1, 0)));
+			CHECK(pos_hit2 == ApproxVec(Vec3f(0, 1, 0)));
+			CHECK(pos_hit3 == ApproxVec(Vec3f(0, 1, 0)));
+			CHECK(pos_hit4 == ApproxVec(Vec3f(0, 1, 0)));
+		}
+	}
+
 }
 
 

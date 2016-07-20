@@ -1479,19 +1479,45 @@ public:
 	 */
 	VecDf ray(const VecDf& pos_origin, const VecDf& dir) const
 	{
-		VecDf pos_start = m_grid_isogrid.mod(pos_origin);
 		VecDf pos_hit;
+		std::cerr << "Casting: (" << pos_origin.transpose() << ") => " <<
+			dir.transpose() << std::endl;
 
-		pos_hit = ray_non_periodic(pos_start, dir);
+		VecDf pos_modulo = m_grid_isogrid.mod(pos_origin);
+		pos_hit = ray_non_periodic(pos_modulo, dir);
 		if (pos_hit != NULL_POS<FLOAT>())
+		{
+			std::cerr << "Hit: " << pos_hit.transpose() << std::endl;
 			return pos_hit;
+		}
 
-//		std::cerr << "Casting: (" << pos_origin.transpose() << ") => " << dir.transpose() << std::endl;
+		FLOAT pos_plane_dim_closest = std::numeric_limits<FLOAT>::max();
+		UINT dim_closest;
 
-		pos_hit = ray_non_periodic(pos_origin, dir);
+		// Cycle each axis, casting ray to child grid planes marching away from origin.
+		for (UINT dim = 0; dim < dir.size(); dim++)
+		{
+			// Direction +/-1 along this axis.
+			FLOAT dir_dim = sgn(dir(dim));
+			if (dir_dim == 0)
+				continue;
 
-//		std::cerr << "Hit: " << pos_hit.transpose() << std::endl;
+			// Get next child plane along this axis.
+			const FLOAT pos_plane_dim = round_to_next(
+				dim, dir_dim, pos_origin(dim), m_grid_isogrid.size()
+			);
 
+			if (pos_plane_dim < pos_plane_dim_closest)
+			{
+				pos_plane_dim_closest = pos_plane_dim;
+				dim_closest = dim;
+			}
+		}
+
+		pos_modulo(dim_closest) = pos_origin(dim_closest);
+		pos_hit = ray_non_periodic(pos_modulo, dir);
+
+		std::cerr << "Hit: " << pos_hit.transpose() << std::endl;
 		return pos_hit;
 	}
 
@@ -1535,7 +1561,9 @@ public:
 				continue;
 
 			// Get next child plane along this axis.
-			FLOAT pos_plane_dim = round_to_next_child(dim, dir_dim, pos_origin(dim));
+			FLOAT pos_plane_dim = round_to_next(
+				dim, dir_dim, pos_origin(dim), m_grid_isogrid.child_size()
+			);
 
 			// Construct vector with elements not on this axis at zero.
 			VecDf pos_plane = VecDf::Constant(0);
@@ -1575,7 +1603,9 @@ public:
 
 			// Round up/down to next child, in case we started at inexact modulo of child grid size
 			// (i.e. when isogrid grid size is not integer multiple of child grid size).
-			pos_plane_dim = round_to_next_child(dim, dir_dim, pos_plane(dim));
+			pos_plane_dim = round_to_next(
+				dim, dir_dim, pos_plane(dim), m_grid_isogrid.child_size()
+			);
 			// If rounding produced a different plane, then cast to that plane, and potentially add
 			// child grid to tracking list.
 			if (pos_plane_dim != pos_plane(dim))
@@ -1775,18 +1805,20 @@ protected:
 	}
 
 	/**
-	 * Along a given dimension at given position, round up or down to border of next child grid.
+	 * Along a given dimension at given position, round up or down to border of next partition.
 	 *
-	 * @param dim
-	 * @param dir
-	 * @param pos
-	 * @return
+	 * @param dim dimension e.g. 0 for x, 1 for y.
+	 * @param dir direction along given dimension, eiether -1 or 1.
+	 * @param pos position to round from
+	 * @param part_size size of partition in space to round to.
+	 * @return position of plane
 	 */
-	FLOAT round_to_next_child(const UINT dim, const FLOAT dir, const FLOAT pos) const
-	{
+	FLOAT round_to_next(
+		const UINT dim, const FLOAT dir, const FLOAT pos, const VecDu part_size
+	) const {
 		// Real-valued child pos translated to [0, 2*childsize) space.
 		FLOAT pos_plane_dim = (
-			FLOAT(pos - m_grid_isogrid.offset()(dim)) / m_grid_isogrid.child_size()(dim)
+			FLOAT(pos - m_grid_isogrid.offset()(dim)) / part_size(dim)
 		);
 		// Round to next child en route in [0, 2*childsize) space.
 		pos_plane_dim = (dir == -1) ?
