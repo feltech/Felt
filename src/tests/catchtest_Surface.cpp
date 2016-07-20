@@ -1641,6 +1641,11 @@ WHEN("gaussian_from_dist")
 		surface.delta().get(Vec2i(-2, 1)) == Approx(0.105970778f).epsilon(0.0001f));
 }
 
+}
+
+SCENARIO("Raycasting")
+{
+  
 /**
  * Test raycasting to zero curve.
  */
@@ -1914,11 +1919,27 @@ GIVEN("a 3-layer flat periodic surface in an 11x11x11 grid with 3x3x3 partitions
 	{
 		const Vec3f& pos_hit = surface.ray(Vec3f(5, 8, 0), Vec3f(-1,-1,0).normalized());
 
-		THEN("the surface is hit on the other side because of periodic boundary")
+		THEN("the surface is hit")
 		{
 			CHECK(pos_hit != surface.NULL_POS<FLOAT>());
 		}
 	}
+  
+	WHEN("we cast from a position outside the grid but congruent")
+	{
+		const Vec3f& pos_hit1 = surface.ray(Vec3f(0, 5, 0), Vec3f(0,-1,0));
+		const Vec3f& pos_hit2 = surface.ray(Vec3f(0, 5, 11), Vec3f(0,-1,0));
+		const Vec3f& pos_hit3 = surface.ray(Vec3f(11, 5, 0), Vec3f(0,-1,0));
+		const Vec3f& pos_hit4 = surface.ray(Vec3f(11, 5, 11), Vec3f(0,-1,0));
+
+		THEN("the surface is hit on the other side because of periodic boundary")
+		{
+			CHECK(pos_hit1 == ApproxVec(Vec3f(0, 1, 0)));
+			CHECK(pos_hit2 == ApproxVec(Vec3f(0, 1, 0)));
+			CHECK(pos_hit3 == ApproxVec(Vec3f(0, 1, 0)));
+			CHECK(pos_hit4 == ApproxVec(Vec3f(0, 1, 0)));
+		}
+	}  
 }
 
 
