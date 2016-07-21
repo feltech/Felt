@@ -97,50 +97,8 @@ SCENARIO("Grid")
 				CHECK(GridType::index(7, size, offset) == Vec2i(0, 2));
 			}
 		}
-
-		WHEN("we query for a point outside the grid (positive)")
-		{
-			THEN("the index of a point in the data array is reported correctly")
-			{
-				CHECK(GridType::index(Vec2i(2, -1), size, offset) == 0);
-				CHECK(grid.index(Vec2i(2, -1)) == 0);
-			}
-
-			THEN("the point represented by an index in the data array is reported correctly")
-			{
-				CHECK(grid.index(0) == Vec2i(-1, -1));
-				CHECK(GridType::index(0, size, offset) == Vec2i(-1, -1));
-			}
-		}
 	}
 	//! [Position index]
-
-
-	GIVEN("a 7x7x7 grid with (-3,-3,-3) offset")
-	{
-		using GridType = Grid<FLOAT, 3>;
-		GridType grid(Vec3u(7,7,7), Vec3i(-3,-3,-3), 0);
-
-		WHEN("we modulo transform a position outside the grid in the positive direction")
-		{
-			Vec3f pos_mod = grid.mod(Vec3f(5,5,5));
-
-			THEN("the position is transformed correctly")
-			{
-				CHECK(pos_mod == ApproxVec(Vec3f(-2,-2,-2)));
-			}
-		}
-
-		WHEN("we modulo transform a position outside the grid in the negative direction")
-		{
-			Vec3f pos_mod = grid.mod(Vec3f(-5,-5,-5));
-
-			THEN("the position is transformed correctly")
-			{
-				CHECK(pos_mod == ApproxVec(Vec3f(2,2,2)));
-			}
-		}
-	}
 
 	/**
 	 * Fill grid with a value.

@@ -1595,7 +1595,11 @@ WHEN("gaussian_from_list")
 	CHECK(
 		surface.delta().get(Vec2i(-2, 1)) == Approx(0.07714f).epsilon(0.0001f));
 }
+}
 
+SCENARIO("Raycasting")
+{
+  
 /**
  * Test delta isogrid update spread using Gaussian distribution given point and
  * radius.
@@ -1641,11 +1645,6 @@ WHEN("gaussian_from_dist")
 		surface.delta().get(Vec2i(-2, 1)) == Approx(0.105970778f).epsilon(0.0001f));
 }
 
-}
-
-SCENARIO("Raycasting")
-{
-  
 /**
  * Test raycasting to zero curve.
  */
@@ -1881,85 +1880,6 @@ WHEN("ray")
 */
 }
   
-  
-GIVEN("a 3-layer flat periodic surface in an 11x11x11 grid with 3x3x3 partitions")
-{
-	Surface<3, 3> surface(Vec3u(11, 11, 11), Vec3u(3, 3, 3));
-	surface.seed(Vec3i(0, 0, 0));
-	for (UINT i = 0; i < 6; i++)
-		surface.update([](auto& pos, auto& grid) {
-			if (pos(1) == 0)
-				return -1;
-			return 0;
-		});
-
-	INFO(stringifyGridSlice(surface.isogrid()));
-
-	WHEN("we cast a ray upward from positively outside the x-range of the isogrid")
-	{
-		const Vec3f& pos_hit = surface.ray(Vec3f(7, -4, 0), Vec3f(0,1,0));
-
-		THEN("the surface is hit on the other side because of periodic boundary")
-		{
-			CHECK(pos_hit == ApproxVec(Vec3f(-4, -1, 0)));
-		}
-	}
-
-	WHEN("we cast a ray upward from negatively outside the x-range of the isogrid")
-	{
-		const Vec3f& pos_hit = surface.ray(Vec3f(-7, -4, 0), Vec3f(0,1,0));
-
-		THEN("the surface is hit on the other side because of periodic boundary")
-		{
-			CHECK(pos_hit == ApproxVec(Vec3f(4, -1, 0)));
-		}
-	}
-
-	WHEN("we cast a ray diagonally downward from positively outside the y-range of the isogrid")
-	{
-		const Vec3f& pos_hit = surface.ray(Vec3f(5, 8, 0), Vec3f(-1,-1,0).normalized());
-
-		THEN("the surface is hit")
-		{
-			CHECK(pos_hit != surface.NULL_POS<FLOAT>());
-		}
-	}
-  
-	WHEN("we cast from above the zero position inside a congruent grid")
-	{
-		const Vec3f& pos_hit1 = surface.ray(Vec3f(0, 5, 0), Vec3f(0,-1,0));
-		const Vec3f& pos_hit2 = surface.ray(Vec3f(0, 5, 11), Vec3f(0,-1,0));
-		const Vec3f& pos_hit3 = surface.ray(Vec3f(11, 5, 0), Vec3f(0,-1,0));
-		const Vec3f& pos_hit4 = surface.ray(Vec3f(11, 5, 11), Vec3f(0,-1,0));
-
-		THEN("the surface is hit")
-		{
-			CHECK(pos_hit1 == ApproxVec(Vec3f(0, 1, 0)));
-			CHECK(pos_hit2 == ApproxVec(Vec3f(0, 1, 0)));
-			CHECK(pos_hit3 == ApproxVec(Vec3f(0, 1, 0)));
-			CHECK(pos_hit4 == ApproxVec(Vec3f(0, 1, 0)));
-		}
-	}  
-
-	WHEN("we cast from above the zero position outside a congruent grid")
-	{
-		const Vec3f& pos_hit1 = surface.ray(Vec3f(0, 6, 0), Vec3f(0,-1,0));
-		const Vec3f& pos_hit2 = surface.ray(Vec3f(0, 6, 11), Vec3f(0,-1,0));
-		const Vec3f& pos_hit3 = surface.ray(Vec3f(11, 6, 0), Vec3f(0,-1,0));
-		const Vec3f& pos_hit4 = surface.ray(Vec3f(11, 6, 11), Vec3f(0,-1,0));
-
-		THEN("the surface is hit")
-		{
-			CHECK(pos_hit1 == ApproxVec(Vec3f(0, 1, 0)));
-			CHECK(pos_hit2 == ApproxVec(Vec3f(0, 1, 0)));
-			CHECK(pos_hit3 == ApproxVec(Vec3f(0, 1, 0)));
-			CHECK(pos_hit4 == ApproxVec(Vec3f(0, 1, 0)));
-		}
-	}
-
-}
-
-
 GIVEN("a 3-layer flat periodic surface in an 20x20x20 grid with 16x16x16 partitions")
 {
 	Surface<3, 3> surface(Vec3u(20, 20, 20), Vec3u(16, 16, 16));
@@ -2100,19 +2020,6 @@ GIVEN("a 2-layer surface of radius 3 in a 16x16 grid with 3x3 partitions")
 			}
 		}
 	}
-
-//	CHECK(
-//		surface.delta().get(Vec2i(-3, 0)) == Approx(0.152139202f).epsilon(0.0001f
-//));
-//	CHECK(
-//		surface.delta().get(Vec2i(-2, -1)) == Approx(0.24048205f).epsilon(0.0001f
-//));
-//	CHECK(
-//		surface.delta().get(Vec2i(-2, 1)) == Approx(0.0559686795).epsilon(0.0001f
-//));
-//	CHECK(
-//		surface.delta().get(Vec2i(-1, -2)) == Approx(0.0514338501).epsilon(0.0001f
-//));
 }
 
 }

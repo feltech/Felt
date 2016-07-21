@@ -1471,64 +1471,13 @@ public:
 	}
 
 	/**
-	 * Cast a ray through periodic region, up to twice the length of the grid.
-	 *
-	 * @param pos_origin originating point of ray
-	 * @param dir normal vector in direction of ray
-	 * @return zero curve hit location or NULL_POS.
-	 */
-	VecDf ray(const VecDf& pos_origin, const VecDf& dir) const
-	{
-		VecDf pos_hit;
-		std::cerr << "Casting: (" << pos_origin.transpose() << ") => " <<
-			dir.transpose() << std::endl;
-
-		VecDf pos_modulo = m_grid_isogrid.mod(pos_origin);
-		pos_hit = ray_non_periodic(pos_modulo, dir);
-		if (pos_hit != NULL_POS<FLOAT>())
-		{
-			std::cerr << "Hit: " << pos_hit.transpose() << std::endl;
-			return pos_hit;
-		}
-
-		FLOAT pos_plane_dim_closest = std::numeric_limits<FLOAT>::max();
-		UINT dim_closest;
-
-		// Cycle each axis, casting ray to child grid planes marching away from origin.
-		for (UINT dim = 0; dim < dir.size(); dim++)
-		{
-			// Direction +/-1 along this axis.
-			FLOAT dir_dim = sgn(dir(dim));
-			if (dir_dim == 0)
-				continue;
-
-			// Get next child plane along this axis.
-			const FLOAT pos_plane_dim = round_to_next(
-				dim, dir_dim, pos_origin(dim), m_grid_isogrid.size()
-			);
-
-			if (pos_plane_dim < pos_plane_dim_closest)
-			{
-				pos_plane_dim_closest = pos_plane_dim;
-				dim_closest = dim;
-			}
-		}
-
-		pos_modulo(dim_closest) = pos_origin(dim_closest);
-		pos_hit = ray_non_periodic(pos_modulo, dir);
-
-		std::cerr << "Hit: " << pos_hit.transpose() << std::endl;
-		return pos_hit;
-	}
-
-	/**
 	 * Cast a ray to the zero layer, without wrapping around periodic boundary.
 	 *
 	 * @param pos_origin originating point of ray
 	 * @param dir normal vector in direction of ray
 	 * @return zero curve hit location or NULL_POS.
 	 */
-	VecDf ray_non_periodic(const VecDf& pos_origin, const VecDf& dir) const
+	VecDf ray(const VecDf& pos_origin, const VecDf& dir) const
 	{
 
 		using ChildHits = std::vector<ChildHit>;

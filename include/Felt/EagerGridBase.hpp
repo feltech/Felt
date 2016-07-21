@@ -438,8 +438,8 @@ public:
 		{
 			INT u_pos = pos_(i) - offset_(i);
 
-			if (u_pos >= size_(i))
-				u_pos = u_pos % size_(i);
+//			if (u_pos >= size_(i))
+//				u_pos = u_pos % size_(i);
 
 			for (INT j = i+1; j < size_.size(); j++)
 			{
@@ -715,39 +715,6 @@ x = (idx/Dz)/Dy % Dx
 			vec_dir(axis) -= 1;
 		}
 	}
-
-
-	/**
-	 * Calculate position in periodic grid using modulo arithmetic.
-	 *
-	 * @param pos location inside or outside grid to transform
-	 * @return modulo calculated position vector
-	 */
-	VecDf mod(const VecDf& pos_) const
-	{
-		VecDf pos_mod(pos_);
-
-		if (inside(pos_mod))
-			return pos_mod;
-
-		const VecDf size = m_size.template cast<FLOAT>();
-		const VecDf offset = m_offset.template cast<FLOAT>();
-
-		pos_mod -= offset;
-		pos_mod = pos_mod.binaryExpr(
-			size.template cast<FLOAT>(),
-			[](FLOAT val, FLOAT size)
-			{
-				val /= size;
-				val -= std::floor(val);
-				val *= size;
-				return val;
-			}
-		);
-		pos_mod += offset;
-		return pos_mod;
-	}
-
 
 	/**
 	 * Forward difference gradient.
