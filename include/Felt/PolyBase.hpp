@@ -137,7 +137,7 @@ protected:
 		Vertex(const GridBase<Derived>& grid, const PosType& pos)
 		{
 			this->pos = pos.template cast<FLOAT>();
-			this->norm = grid.gradC(pos);
+			this->norm = grid.grad(pos);
 			this->norm.normalize();
 		}
 
