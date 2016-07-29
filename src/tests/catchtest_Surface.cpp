@@ -1226,65 +1226,6 @@ SCENARIO("Local updating")
 		// Create seed point and expand the narrow band.
 		surface.seed(Vec2i(0, 0));
 
-		WHEN("we expand the centre point using a local update")
-		{
-			surface.update_start();
-			{
-				surface.delta(Vec2i(0, 0), -0.6f);
-			}
-			// Using localised update, which will only update outer layers that are
-			// affected by changes to the modified zero layer points.  In this test
-			// case, all outer layer points are affected, same as a global update.
-			surface.update_end_local();
-
-			THEN("the grid data is as expected")
-			{
-				isogrid_check.data() = {
-					3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3,
-					2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3,
-					2.4, 1.4, 0.4, -0.6, 0.4, 1.4, 2.4, 3, 3, 3, 2.4, 1.4, 0.4, 1.4,
-					2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3,
-					3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
-
-				isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
-				const FLOAT diff = isogrid_check.vdata().sum();
-				CHECK(diff == Approx(0));
-
-				CHECK(surface.layer(0).size() == 4);
-				CHECK(surface.layer(-1).size() == 1);
-				CHECK(surface.layer(-2).size() == 0);
-				CHECK(surface.layer(1).size() == 8);
-				CHECK(surface.layer(2).size() == 12);
-			}
-
-			AND_WHEN("we contract the centre point by the same amount using a local update")
-			{
-
-				// Cycle new zero-layer points and move back to original signed distance.
-				surface.update_start();
-				{
-					for (const Vec2i& pos : surface.layer(0))
-						surface.delta(pos, 0.6f);
-				}
-				surface.update_end_local();
-
-				THEN("the grid data is back to how it was")
-				{
-					isogrid_check.data() = {
-						3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-						2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 2, 1, 0, 1, 2, 3,
-						3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3,
-						3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
-
-					isogrid_check.vdata() =
-						isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
-					const FLOAT diff = isogrid_check.vdata().sum();
-
-					CHECK(diff == Approx(0).epsilon(0.000001f));
-				}
-			}
-		}
-
 		WHEN("we expand by 1 unit")
 		{
 			//![Calculate affected outer layers for localised narrow band updates]
@@ -1398,6 +1339,65 @@ SCENARIO("Local updating")
 				}
 			}
 			//![Calculate affected outer layers for localised narrow band updates]
+		}
+
+		WHEN("we expand the centre point using a local update")
+		{
+			surface.update_start();
+			{
+				surface.delta(Vec2i(0, 0), -0.6f);
+			}
+			// Using localised update, which will only update outer layers that are
+			// affected by changes to the modified zero layer points.  In this test
+			// case, all outer layer points are affected, same as a global update.
+			surface.update_end_local();
+
+			THEN("the grid data is as expected")
+			{
+				isogrid_check.data() = {
+					3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3,
+					2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3,
+					2.4, 1.4, 0.4, -0.6, 0.4, 1.4, 2.4, 3, 3, 3, 2.4, 1.4, 0.4, 1.4,
+					2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3,
+					3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
+
+				isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
+				const FLOAT diff = isogrid_check.vdata().sum();
+				CHECK(diff == Approx(0));
+
+				CHECK(surface.layer(0).size() == 4);
+				CHECK(surface.layer(-1).size() == 1);
+				CHECK(surface.layer(-2).size() == 0);
+				CHECK(surface.layer(1).size() == 8);
+				CHECK(surface.layer(2).size() == 12);
+			}
+
+			AND_WHEN("we contract the centre point by the same amount using a local update")
+			{
+
+				// Cycle new zero-layer points and move back to original signed distance.
+				surface.update_start();
+				{
+					for (const Vec2i& pos : surface.layer(0))
+						surface.delta(pos, 0.6f);
+				}
+				surface.update_end_local();
+
+				THEN("the grid data is back to how it was")
+				{
+					isogrid_check.data() = {
+						3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+						2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 2, 1, 0, 1, 2, 3,
+						3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3,
+						3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
+
+					isogrid_check.vdata() =
+						isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
+					const FLOAT diff = isogrid_check.vdata().sum();
+
+					CHECK(diff == Approx(0).epsilon(0.000001f));
+				}
+			}
 		}
 	}
 
