@@ -516,117 +516,6 @@ WHEN("iterate_layers")
 }
 
 
-WHEN("affected_outer_layers")
-{
-	//![Calculate affected outer layers for localised narrow band updates]
-	// ==== Setup ====
-	using PosArray = Surface<2, 2>::IsoGrid::PosArray;
-	Surface<2, 2> surface(Vec2u(9, 9));
-	// Create seed point and expand the narrow band.
-	surface.seed(Vec2i(0, 0));
-	surface.update_start();
-	{
-		for (auto pos : surface.layer(0))
-		{
-			surface.delta(pos, -1.0f);
-		}
-	}
-	surface.update_end();
-	// Clean up from previous update.
-	surface.update_start();
-	// Add a couple of points that could affect the narrow band.
-	surface.delta(Vec2i(0, 1), 0.3f);
-	surface.delta(Vec2i(1, 0), 0.3f);
-	//		3.0,	3.0,	3.0,	 2.0,	3.0,	3.0,	3.0,
-	//		3.0,	3.0,	2.0,	 1.0,	2.0,	3.0,	3.0,
-	//		3.0,	2.0,	1.0,	 0.0,	1.0,	2.0,	3.0,
-	//		2.0,	1.0,	0.0,	-1.0,	0.3,	1.0,	2.0,
-	//		3.0,	2.0,	1.0,	 0.3,	1.0,	2.0,	3.0,
-	//		3.0,	3.0,	2.0,	 1.0,	2.0,	3.0,	3.0,
-	//		3.0,	3.0,	3.0,	 2.0,	3.0,	3.0,	3.0;
-
-	// ==== Action ====
-
-	surface.calc_affected();
-
-	// ==== Confirm ====
-
-	PosArray check_layers_pos[5];
-	check_layers_pos[2 + -2] = PosArray();
-	check_layers_pos[2 + -1] = PosArray({
-		Vec2i(0, 0)
-	});
-	check_layers_pos[2 + 0] = PosArray({
-	// We don't care for now about zero-layer points.
-//		Vec2i(0,1),
-//		Vec2i(1,0)
-	});
-	check_layers_pos[2 + 1] = PosArray({
-		// For (0,1):
-		Vec2i(-1, 1), Vec2i(1, 1), Vec2i(0, 2),
-		// For (1,0):
-		Vec2i(2, 0), Vec2i(1, -1)
-	});
-
-	check_layers_pos[2 + 2] = PosArray({
-		// For (0,1):
-		Vec2i(-2, 1), Vec2i(2, 1),
-		Vec2i(-1, 2), Vec2i(1, 2),
-		Vec2i(0, 3),
-		// For (1,0):
-		Vec2i(3, 0), Vec2i(1, -2), Vec2i(2, -1)
-	});
-
-	for (INT layer_id = -2; layer_id <= 2; layer_id++)
-	{
-		if (layer_id == 0)
-			continue;
-
-		const INT layer_idx = 2 + layer_id;
-
-		INFO(
-			"Layer " + s(layer_id) + " at index " + s(layer_idx) +
-			" number of leafs " +
-			s(surface.affected().leafs(layer_idx).size()) + " == " +
-			s(check_layers_pos[layer_idx].size())
-		);
-		CHECK(
-			surface.affected().leafs(layer_idx).size() == check_layers_pos[layer_idx].size());
-
-		for (auto pos : check_layers_pos[layer_idx])
-		{
-			auto iter = std::find(
-				surface.affected().leafs(layer_idx).begin(),
-				surface.affected().leafs(layer_idx).end(), pos
-			);
-
-			INFO(
-				"Affected grid layer " + s(layer_id) + " at index " + s(layer_idx) +
-				" should contain (" + s(pos(0)) + "," + s(pos(1)) + ")"
-			);
-			CHECK(
-				iter != surface.affected().leafs(layer_idx).end());
-		}
-
-		for (auto pos : surface.affected().leafs(layer_idx))
-		{
-			auto iter = std::find(
-				check_layers_pos[layer_idx].begin(),
-				check_layers_pos[layer_idx].end(), pos
-			);
-
-			INFO(
-				"Checking list layer " + s(layer_id) + " at index " + s(layer_idx) +
-				" should contain (" + s(pos(0)) + "," + s(pos(1)) + ")"
-			);
-			CHECK(
-				iter != check_layers_pos[layer_idx].end());
-		}
-	}
-	//![Calculate affected outer layers for localised narrow band updates]
-}
-
-
 GIVEN("a 9x9 2-layer surface")
 {
 	Surface<2, 2> surface(Vec2u(9, 9));
@@ -661,8 +550,6 @@ GIVEN("a 9x9 2-layer surface")
 			      3,    3,    3,    3,    3,    3,    3,    3,    3,
 			      3,    3,    3,    3,    3,    3,    3,    3,    3
 			};
-		//	std::cerr << isogrid.data() << std::endl << std::endl;
-		//	std::cerr << isogrid_check.data() << std::endl << std::endl;
 
 			isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
 
@@ -780,10 +667,6 @@ GIVEN("a 9x9 2-layer surface")
 
 			AND_WHEN("we contract the surface by 1 unit inwards")
 			{
-//				surface.update([](auto& pos, auto& isogrid) {
-//					return 1.0f;
-//				});
-
 				surface.update_start();
 				{
 					for (const Vec2i pos : surface.layer(0))
@@ -836,9 +719,6 @@ GIVEN("a 9x9 2-layer surface")
 
 				AND_WHEN("we contract the surface by 1 unit inwards again")
 				{
-//					surface.update([](auto& pos, auto& isogrid) {
-//						return 1.0f;
-//					});
 					surface.update_start();
 					{
 						for (const Vec2i pos : surface.layer(0))
@@ -888,60 +768,9 @@ GIVEN("a 9x9 2-layer surface")
 						CHECK(surface.layer(2).size() == 4);
 					}
 
-//					AND_WHEN("we contract the surface by 1 unit inwards again")
-//					{
-//	//					surface.update([](auto& pos, auto& isogrid) {
-//	//						return 1.0f;
-//	//					});
-//						surface.update_start();
-//						{
-//							for (const Vec2i pos : surface.layer(0))
-//								surface.delta(pos, 1.0f);
-//						}
-//						surface.update_end();
-//
-//						INFO(stringifyGridSlice(surface.isogrid()));
-//
-//						THEN("iterating over layer 0 gives 0 points")
-//						{
-//							UINT total_iterations = 0;
-//							for (auto& pos : surface.layer(0))
-//								total_iterations++;
-//
-//							CHECK(total_iterations == 0);
-//						}
-//
-//						AND_WHEN("we contract the surface by 1 unit inwards again")
-//						{
-//		//					surface.update([](auto& pos, auto& isogrid) {
-//		//						return 1.0f;
-//		//					});
-//							surface.update_start();
-//							{
-//								for (const Vec2i pos : surface.layer(0))
-//									surface.delta(pos, 1.0f);
-//							}
-//							surface.update_end();
-//
-//							INFO(stringifyGridSlice(surface.isogrid()));
-//
-//							THEN("iterating over layer 0 gives 0 points")
-//							{
-//								UINT total_iterations = 0;
-//								for (auto& pos : surface.layer(0))
-//									total_iterations++;
-//
-//								CHECK(total_iterations == 0);
-//							}
-//						}
-//					}
 
 					AND_WHEN("we contract the surface by 1 unit inwards twice more")
 					{
-//							surface.update([](auto& pos, auto& isogrid) {
-//								return 1.0f;
-//							});
-
 						surface.update_start();
 						{
 							for (const Vec2i pos : surface.layer(0))
@@ -959,10 +788,6 @@ GIVEN("a 9x9 2-layer surface")
 
 						THEN("iterating over layer 0 gives 0 points")
 						{
-//							UINT total_iterations = 0;
-//							for (auto& pos : surface.layer(0))
-//								total_iterations++;
-
 							CHECK(total_iterations == 0);
 						}
 
@@ -1143,219 +968,7 @@ GIVEN("a 16x9 2-layer surface with two small regions side-by-side")
 			CHECK(surface.layer(2).size() == 24);
 		}
 	}
-
-//	WHEN("we expand the closest two sub-surface zero-layer points by 3 units")
-//	{
-//		surface.update_start();
-//		surface.delta(Vec2i(-3, 0), -1.0f);
-//		surface.delta(Vec2i(2, 0), -1.0f);
-//		surface.update_end();
-//
-//		INFO(stringifyGridSlice(surface.isogrid()));
-//
-//		surface.update_start();
-//		surface.delta(Vec2i(-2, 0), -1.0f);
-//		surface.delta(Vec2i(1, 0), -1.0f);
-//		surface.update_end();
-//
-//		INFO(stringifyGridSlice(surface.isogrid()));
-//
-//		surface.update_start();
-//		surface.delta(Vec2i(-1, 0), -1.0f);
-//		surface.delta(Vec2i(0, 0), -1.0f);
-//		surface.update_end();
-//
-//		INFO(stringifyGridSlice(surface.isogrid()));
-//
-//		THEN("the sub-surfaces have merged")
-//		{
-//			Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
-//			isogrid_check.data() = {
-//			      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
-//			      3,    3,    3,    2,    2,    2,    2,    2,    2,    2,    2,    3,    3,    3,
-//			      3,    3,    2,    1,    1,    1,    1,    1,    1,    1,    1,    2,    3,    3,
-//			      3,    2,    1,    0,    0,    0,    0,    0,    0,    0,    0,    1,    2,    3,
-//			      2,    1,    0,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,    0,    1,    2,
-//			      3,    2,    1,    0,    0,    0,    0,    0,    0,    0,    0,    1,    2,    3,
-//			      3,    3,    2,    1,    1,    1,    1,    1,    1,    1,    1,    2,    3,    3,
-//			      3,    3,    3,    2,    2,    2,    2,    2,    2,    2,    2,    3,    3,    3,
-//			      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
-//			};
-//
-//			isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
-//			const FLOAT diff = isogrid_check.vdata().sum();
-//			CHECK(diff == Approx(0));
-//
-//			CHECK(surface.layer(-2).size() == 0);
-//			CHECK(surface.layer(-1).size() == 8);
-//			CHECK(surface.layer(0).size() == 18);
-//			CHECK(surface.layer(1).size() == 22);
-//			CHECK(surface.layer(2).size() == 26);
-//		}
-//
-//		AND_WHEN("we repeatedly expand and contract")
-//		{
-//
-//			for (UINT i = 0; i < 5; i++)
-//			{
-//				surface.update([](auto& pos, auto& grid) {
-//					return 1.0f;
-//				});
-//				surface.update([](auto& pos, auto& grid) {
-//					return -1.0f;
-//				});
-//			}
-//
-//			THEN("the surface is still the same")
-//			{
-//				Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
-//				isogrid_check.data() = {
-//				      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
-//				      3,    3,    3,    2,    2,    2,    2,    2,    2,    2,    2,    3,    3,    3,
-//				      3,    3,    2,    1,    1,    1,    1,    1,    1,    1,    1,    2,    3,    3,
-//				      3,    2,    1,    0,    0,    0,    0,    0,    0,    0,    0,    1,    2,    3,
-//				      2,    1,    0,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,    0,    1,    2,
-//				      3,    2,    1,    0,    0,    0,    0,    0,    0,    0,    0,    1,    2,    3,
-//				      3,    3,    2,    1,    1,    1,    1,    1,    1,    1,    1,    2,    3,    3,
-//				      3,    3,    3,    2,    2,    2,    2,    2,    2,    2,    2,    3,    3,    3,
-//				      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
-//				};
-//
-//				isogrid_check.vdata() =
-//					isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
-//				const FLOAT diff = isogrid_check.vdata().sum();
-//				CHECK(diff == Approx(0));
-//
-//				CHECK(surface.layer(-2).size() == 0);
-//				CHECK(surface.layer(-1).size() == 8);
-//				CHECK(surface.layer(0).size() == 18);
-//				CHECK(surface.layer(1).size() == 22);
-//				CHECK(surface.layer(2).size() == 26);
-//			}
-//		}
-//	}
 }
-
-/*
- * Localised update.
- */
-WHEN("local_update")
-{
-	typedef Surface<2, 2> SurfaceT;
-	SurfaceT surface(Vec2u(9, 9));
-	// Grid to set values of manually, for checking against.
-	Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
-
-	// Create seed point and expand the narrow band.
-	surface.seed(Vec2i(0, 0));
-//	3,	3,	3,	3,	3,	3,	3,
-//	3,	3,	3,	2,	3,	3,	3,
-//	3,	3,	2,	1,	2,	3,	3,
-//	3,	2,	1,	0,	1,	2,	3,
-//	3,	3,	2,	1,	2,	3,	3,
-//	3,	3,	3,	2,	3,	3,	3,
-//	3,	3,	3,	3,	3,	3,	3;
-	surface.update_start();
-	{
-		surface.delta(Vec2i(0, 0), -0.6f);
-	}
-	// Using localised update, which will only update outer layers that are
-	// affected by changes to the modified zero layer points.  In this test
-	// case, all outer layer points are affected, same as a global update.
-	surface.update_end_local();
-
-	{
-		isogrid_check.data() = {
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3,
-			2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3,
-			2.4, 1.4, 0.4, -0.6, 0.4, 1.4, 2.4, 3, 3, 3, 2.4, 1.4, 0.4, 1.4,
-			2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
-
-		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
-		const FLOAT diff = isogrid_check.vdata().sum();
-		CHECK(diff == Approx(0).epsilon(0.000001f));
-
-		CHECK(surface.layer(0).size() == 4);
-		CHECK(surface.layer(-1).size() == 1);
-		CHECK(surface.layer(-2).size() == 0);
-		CHECK(surface.layer(1).size() == 8);
-		CHECK(surface.layer(2).size() == 12);
-	}
-
-	// Cycle new zero-layer points and move back to original signed distance.
-	surface.update_start();
-	{
-		for (const Vec2i& pos : surface.layer(0))
-			surface.delta(pos, 0.6f);
-	}
-	surface.update_end_local();
-
-	{
-		isogrid_check.data() = {
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-			2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 2, 1, 0, 1, 2, 3,
-			3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3,
-			3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
-
-		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
-		const FLOAT diff = isogrid_check.vdata().sum();
-		CHECK(diff == Approx(0).epsilon(0.000001f));
-	}
-}
-
-
-GIVEN("a 11x11x11 3-layer surface with 3x3x3 partitions initialised with a 1 unit radius surface")
-{
-	Surface<3,3> surface(Vec3u(11,11,11), Vec3u(3,3,3));
-	surface.seed(Vec3i(0,0,0));
-	surface.update([](auto& pos, auto& grid) {
-		return -1.0f;
-	});
-
-	INFO(stringifyGridSlice(surface.isogrid()));
-
-	THEN("the layer lists have the expected size")
-	{
-		CHECK(surface.layer(-3).size() == 0);
-		CHECK(surface.layer(-2).size() == 0);
-		CHECK(surface.layer(-1).size() == 1);
-		CHECK(surface.layer(0).size() == 6);
-		CHECK(surface.layer(1).size() == 18);
-		CHECK(surface.layer(2).size() == 38);
-		CHECK(surface.layer(3).size() == 66);
-	}
-
-	AND_WHEN("we expand and contract two nearby points using local update")
-	{
-		surface.update_start();
-		surface.delta(Vec3i(0,1,0), -1);
-		surface.update_end_local();
-
-		surface.update_start();
-		surface.delta(Vec3i(0,2,0), 1);
-		surface.delta(Vec3i(1,1,0), 1);
-		surface.delta(Vec3i(-1,1,0), 1);
-		surface.delta(Vec3i(0,1,1), 1);
-		surface.delta(Vec3i(0,1,-1), 1);
-		surface.update_end_local();
-
-		INFO(stringifyGridSlice(surface.isogrid()));
-
-		THEN("the layer lists have the same size as before")
-		{
-			CHECK(surface.layer(-3).size() == 0);
-			CHECK(surface.layer(-2).size() == 0);
-			CHECK(surface.layer(-1).size() == 1);
-			CHECK(surface.layer(0).size() == 6);
-			CHECK(surface.layer(1).size() == 18);
-			CHECK(surface.layer(2).size() == 38);
-			CHECK(surface.layer(3).size() == 66);
-		}
-
-	}
-}
-
 
 WHEN("deactivates_with_inside_background_value")
 {
@@ -1596,6 +1209,251 @@ WHEN("gaussian_from_list")
 		surface.delta().get(Vec2i(-2, 1)) == Approx(0.07714f).epsilon(0.0001f));
 }
 }
+
+
+SCENARIO("Local updating")
+{
+	/*
+	 * Localised update.
+	 */
+	GIVEN("a 9x9 2-layer surface with a seed point in the centre")
+	{
+		typedef Surface<2, 2> SurfaceT;
+		SurfaceT surface(Vec2u(9, 9));
+		// Grid to set values of manually, for checking against.
+		Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
+
+		// Create seed point and expand the narrow band.
+		surface.seed(Vec2i(0, 0));
+
+		WHEN("we expand the centre point using a local update")
+		{
+			surface.update_start();
+			{
+				surface.delta(Vec2i(0, 0), -0.6f);
+			}
+			// Using localised update, which will only update outer layers that are
+			// affected by changes to the modified zero layer points.  In this test
+			// case, all outer layer points are affected, same as a global update.
+			surface.update_end_local();
+
+			THEN("the grid data is as expected")
+			{
+				isogrid_check.data() = {
+					3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3,
+					2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3,
+					2.4, 1.4, 0.4, -0.6, 0.4, 1.4, 2.4, 3, 3, 3, 2.4, 1.4, 0.4, 1.4,
+					2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3,
+					3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
+
+				isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
+				const FLOAT diff = isogrid_check.vdata().sum();
+				CHECK(diff == Approx(0));
+
+				CHECK(surface.layer(0).size() == 4);
+				CHECK(surface.layer(-1).size() == 1);
+				CHECK(surface.layer(-2).size() == 0);
+				CHECK(surface.layer(1).size() == 8);
+				CHECK(surface.layer(2).size() == 12);
+			}
+
+			AND_WHEN("we contract the centre point by the same amount using a local update")
+			{
+
+				// Cycle new zero-layer points and move back to original signed distance.
+				surface.update_start();
+				{
+					for (const Vec2i& pos : surface.layer(0))
+						surface.delta(pos, 0.6f);
+				}
+				surface.update_end_local();
+
+				THEN("the grid data is back to how it was")
+				{
+					isogrid_check.data() = {
+						3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+						2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 2, 1, 0, 1, 2, 3,
+						3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3,
+						3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
+
+					isogrid_check.vdata() =
+						isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
+					const FLOAT diff = isogrid_check.vdata().sum();
+
+					CHECK(diff == Approx(0).epsilon(0.000001f));
+				}
+			}
+		}
+
+		WHEN("we expand by 1 unit")
+		{
+			//![Calculate affected outer layers for localised narrow band updates]
+			surface.update_start();
+			{
+				for (auto pos : surface.layer(0))
+				{
+					surface.delta(pos, -1.0f);
+				}
+			}
+			surface.update_end();
+
+			AND_WHEN("we modify a couple of points and calculate the affected narrow band points")
+			{
+				// Clean up from previous update.
+				surface.update_start();
+				// Add a couple of points that could affect the narrow band.
+				surface.delta(Vec2i(0, 1), 0.3f);
+				surface.delta(Vec2i(1, 0), 0.3f);
+
+				//		3.0,	3.0,	3.0,	 2.0,	3.0,	3.0,	3.0,
+				//		3.0,	3.0,	2.0,	 1.0,	2.0,	3.0,	3.0,
+				//		3.0,	2.0,	1.0,	 0.0,	1.0,	2.0,	3.0,
+				//		2.0,	1.0,	0.0,	-1.0,	0.3,	1.0,	2.0,
+				//		3.0,	2.0,	1.0,	 0.3,	1.0,	2.0,	3.0,
+				//		3.0,	3.0,	2.0,	 1.0,	2.0,	3.0,	3.0,
+				//		3.0,	3.0,	3.0,	 2.0,	3.0,	3.0,	3.0;
+
+				// ==== Action ====
+
+				surface.calc_affected();
+
+				THEN("the affected narrow band points are as expected")
+				{
+					using PosArray = SurfaceT::PosArray;
+					PosArray check_layers_pos[5];
+					check_layers_pos[2 + -2] = PosArray();
+					check_layers_pos[2 + -1] = PosArray({
+						Vec2i(0, 0)
+					});
+					check_layers_pos[2 + 0] = PosArray({
+					// We don't care for now about zero-layer points.
+				//		Vec2i(0,1),
+				//		Vec2i(1,0)
+					});
+					check_layers_pos[2 + 1] = PosArray({
+						// For (0,1):
+						Vec2i(-1, 1), Vec2i(1, 1), Vec2i(0, 2),
+						// For (1,0):
+						Vec2i(2, 0), Vec2i(1, -1)
+					});
+
+					check_layers_pos[2 + 2] = PosArray({
+						// For (0,1):
+						Vec2i(-2, 1), Vec2i(2, 1),
+						Vec2i(-1, 2), Vec2i(1, 2),
+						Vec2i(0, 3),
+						// For (1,0):
+						Vec2i(3, 0), Vec2i(1, -2), Vec2i(2, -1)
+					});
+
+					for (INT layer_id = -2; layer_id <= 2; layer_id++)
+					{
+						if (layer_id == 0)
+							continue;
+
+						const INT layer_idx = 2 + layer_id;
+
+						INFO(
+							"Layer " + s(layer_id) + " at index " + s(layer_idx) +
+							" number of leafs " +
+							s(surface.affected().leafs(layer_idx).size()) + " == " +
+							s(check_layers_pos[layer_idx].size())
+						);
+						CHECK(
+							surface.affected().leafs(layer_idx).size()
+							==
+							check_layers_pos[layer_idx].size()
+						);
+
+						for (auto pos : check_layers_pos[layer_idx])
+						{
+							auto iter = std::find(
+								surface.affected().leafs(layer_idx).begin(),
+								surface.affected().leafs(layer_idx).end(), pos
+							);
+
+							INFO(
+								"Affected grid layer " + s(layer_id) + " at index " +
+								s(layer_idx) + " should contain (" + s(pos(0)) + "," +
+								s(pos(1)) + ")"
+							);
+							CHECK(iter != surface.affected().leafs(layer_idx).end());
+						}
+
+						for (auto pos : surface.affected().leafs(layer_idx))
+						{
+							auto iter = std::find(
+								check_layers_pos[layer_idx].begin(),
+								check_layers_pos[layer_idx].end(), pos
+							);
+
+							INFO(
+								"Checking list layer " + s(layer_id) + " at index " +
+								s(layer_idx) + " should contain (" + s(pos(0)) + "," +
+								s(pos(1)) + ")"
+							);
+							CHECK(iter != check_layers_pos[layer_idx].end());
+						}
+					}
+				}
+			}
+			//![Calculate affected outer layers for localised narrow band updates]
+		}
+	}
+
+	GIVEN(
+		"a 11x11x11 3-layer surface with 3x3x3 partitions initialised with a 1 unit radius "
+		"surface"
+	) {
+		Surface<3,3> surface(Vec3u(11,11,11), Vec3u(3,3,3));
+		surface.seed(Vec3i(0,0,0));
+		surface.update([](auto& pos, auto& grid) {
+			return -1.0f;
+		});
+
+		INFO(stringifyGridSlice(surface.isogrid()));
+
+		THEN("the layer lists have the expected size")
+		{
+			CHECK(surface.layer(-3).size() == 0);
+			CHECK(surface.layer(-2).size() == 0);
+			CHECK(surface.layer(-1).size() == 1);
+			CHECK(surface.layer(0).size() == 6);
+			CHECK(surface.layer(1).size() == 18);
+			CHECK(surface.layer(2).size() == 38);
+			CHECK(surface.layer(3).size() == 66);
+		}
+
+		AND_WHEN("we expand and contract two nearby points using local update")
+		{
+			surface.update_start();
+			surface.delta(Vec3i(0,1,0), -1);
+			surface.update_end_local();
+
+			surface.update_start();
+			surface.delta(Vec3i(0,2,0), 1);
+			surface.delta(Vec3i(1,1,0), 1);
+			surface.delta(Vec3i(-1,1,0), 1);
+			surface.delta(Vec3i(0,1,1), 1);
+			surface.delta(Vec3i(0,1,-1), 1);
+			surface.update_end_local();
+
+			INFO(stringifyGridSlice(surface.isogrid()));
+
+			THEN("the layer lists have the same size as before")
+			{
+				CHECK(surface.layer(-3).size() == 0);
+				CHECK(surface.layer(-2).size() == 0);
+				CHECK(surface.layer(-1).size() == 1);
+				CHECK(surface.layer(0).size() == 6);
+				CHECK(surface.layer(1).size() == 18);
+				CHECK(surface.layer(2).size() == 38);
+				CHECK(surface.layer(3).size() == 66);
+			}
+		}
+	}
+}
+
 
 SCENARIO("Raycasting")
 {
@@ -2021,5 +1879,4 @@ GIVEN("a 2-layer surface of radius 3 in a 16x16 grid with 3x3 partitions")
 		}
 	}
 }
-
 }
