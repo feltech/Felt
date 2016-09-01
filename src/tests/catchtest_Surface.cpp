@@ -1213,207 +1213,250 @@ WHEN("gaussian_from_list")
 
 SCENARIO("Local updating")
 {
-	/*
-	 * Localised update.
-	 */
-	GIVEN("a 9x9 2-layer surface with a seed point in the centre")
+GIVEN("a 9x9 2-layer surface with a seed point in the centre")
+{
+	typedef Surface<2, 2> SurfaceT;
+	SurfaceT surface(Vec2u(9, 9));
+	// Grid to set values of manually, for checking against.
+	Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
+
+	// Create seed point and expand the narrow band.
+	surface.seed(Vec2i(0, 0));
+
+	WHEN("we expand by 1 unit")
 	{
-		typedef Surface<2, 2> SurfaceT;
-		SurfaceT surface(Vec2u(9, 9));
-		// Grid to set values of manually, for checking against.
-		Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
-
-		// Create seed point and expand the narrow band.
-		surface.seed(Vec2i(0, 0));
-
-		WHEN("we expand by 1 unit")
+		//![Calculate affected outer layers for localised narrow band updates]
+		surface.update_start();
 		{
-			//![Calculate affected outer layers for localised narrow band updates]
-			surface.update_start();
+			for (auto pos : surface.layer(0))
 			{
-				for (auto pos : surface.layer(0))
-				{
-					surface.delta(pos, -1.0f);
-				}
+				surface.delta(pos, -1.0f);
 			}
-			surface.update_end();
+		}
+		surface.update_end();
 
-			AND_WHEN("we modify a couple of points and calculate the affected narrow band points")
+		AND_WHEN("we modify a couple of points and calculate the affected narrow band points")
+		{
+			// Clean up from previous update.
+			surface.update_start();
+			// Add a couple of points that could affect the narrow band.
+			surface.delta(Vec2i(0, 1), 0.3f);
+			surface.delta(Vec2i(1, 0), 0.3f);
+
+			//		3.0,	3.0,	3.0,	 2.0,	3.0,	3.0,	3.0,
+			//		3.0,	3.0,	2.0,	 1.0,	2.0,	3.0,	3.0,
+			//		3.0,	2.0,	1.0,	 0.0,	1.0,	2.0,	3.0,
+			//		2.0,	1.0,	0.0,	-1.0,	0.3,	1.0,	2.0,
+			//		3.0,	2.0,	1.0,	 0.3,	1.0,	2.0,	3.0,
+			//		3.0,	3.0,	2.0,	 1.0,	2.0,	3.0,	3.0,
+			//		3.0,	3.0,	3.0,	 2.0,	3.0,	3.0,	3.0;
+
+			// ==== Action ====
+
+			surface.calc_affected();
+
+			THEN("the affected narrow band points are as expected")
 			{
-				// Clean up from previous update.
-				surface.update_start();
-				// Add a couple of points that could affect the narrow band.
-				surface.delta(Vec2i(0, 1), 0.3f);
-				surface.delta(Vec2i(1, 0), 0.3f);
+				using PosArray = SurfaceT::PosArray;
+				PosArray check_layers_pos[5];
+				check_layers_pos[2 + -2] = PosArray();
+				check_layers_pos[2 + -1] = PosArray({
+					Vec2i(0, 0)
+				});
+				check_layers_pos[2 + 0] = PosArray({
+				// We don't care for now about zero-layer points.
+			//		Vec2i(0,1),
+			//		Vec2i(1,0)
+				});
+				check_layers_pos[2 + 1] = PosArray({
+					// For (0,1):
+					Vec2i(-1, 1), Vec2i(1, 1), Vec2i(0, 2),
+					// For (1,0):
+					Vec2i(2, 0), Vec2i(1, -1)
+				});
 
-				//		3.0,	3.0,	3.0,	 2.0,	3.0,	3.0,	3.0,
-				//		3.0,	3.0,	2.0,	 1.0,	2.0,	3.0,	3.0,
-				//		3.0,	2.0,	1.0,	 0.0,	1.0,	2.0,	3.0,
-				//		2.0,	1.0,	0.0,	-1.0,	0.3,	1.0,	2.0,
-				//		3.0,	2.0,	1.0,	 0.3,	1.0,	2.0,	3.0,
-				//		3.0,	3.0,	2.0,	 1.0,	2.0,	3.0,	3.0,
-				//		3.0,	3.0,	3.0,	 2.0,	3.0,	3.0,	3.0;
+				check_layers_pos[2 + 2] = PosArray({
+					// For (0,1):
+					Vec2i(-2, 1), Vec2i(2, 1),
+					Vec2i(-1, 2), Vec2i(1, 2),
+					Vec2i(0, 3),
+					// For (1,0):
+					Vec2i(3, 0), Vec2i(1, -2), Vec2i(2, -1)
+				});
 
-				// ==== Action ====
-
-				surface.calc_affected();
-
-				THEN("the affected narrow band points are as expected")
+				for (INT layer_id = -2; layer_id <= 2; layer_id++)
 				{
-					using PosArray = SurfaceT::PosArray;
-					PosArray check_layers_pos[5];
-					check_layers_pos[2 + -2] = PosArray();
-					check_layers_pos[2 + -1] = PosArray({
-						Vec2i(0, 0)
-					});
-					check_layers_pos[2 + 0] = PosArray({
-					// We don't care for now about zero-layer points.
-				//		Vec2i(0,1),
-				//		Vec2i(1,0)
-					});
-					check_layers_pos[2 + 1] = PosArray({
-						// For (0,1):
-						Vec2i(-1, 1), Vec2i(1, 1), Vec2i(0, 2),
-						// For (1,0):
-						Vec2i(2, 0), Vec2i(1, -1)
-					});
+					if (layer_id == 0)
+						continue;
 
-					check_layers_pos[2 + 2] = PosArray({
-						// For (0,1):
-						Vec2i(-2, 1), Vec2i(2, 1),
-						Vec2i(-1, 2), Vec2i(1, 2),
-						Vec2i(0, 3),
-						// For (1,0):
-						Vec2i(3, 0), Vec2i(1, -2), Vec2i(2, -1)
-					});
+					const INT layer_idx = 2 + layer_id;
 
-					for (INT layer_id = -2; layer_id <= 2; layer_id++)
+					INFO(
+						"Layer " + s(layer_id) + " at index " + s(layer_idx) +
+						" number of leafs " +
+						s(surface.affected().leafs(layer_idx).size()) + " == " +
+						s(check_layers_pos[layer_idx].size())
+					);
+					CHECK(
+						surface.affected().leafs(layer_idx).size()
+						==
+						check_layers_pos[layer_idx].size()
+					);
+
+					for (auto pos : check_layers_pos[layer_idx])
 					{
-						if (layer_id == 0)
-							continue;
-
-						const INT layer_idx = 2 + layer_id;
+						auto iter = std::find(
+							surface.affected().leafs(layer_idx).begin(),
+							surface.affected().leafs(layer_idx).end(), pos
+						);
 
 						INFO(
-							"Layer " + s(layer_id) + " at index " + s(layer_idx) +
-							" number of leafs " +
-							s(surface.affected().leafs(layer_idx).size()) + " == " +
-							s(check_layers_pos[layer_idx].size())
+							"Affected grid layer " + s(layer_id) + " at index " +
+							s(layer_idx) + " should contain (" + s(pos(0)) + "," +
+							s(pos(1)) + ")"
 						);
-						CHECK(
-							surface.affected().leafs(layer_idx).size()
-							==
-							check_layers_pos[layer_idx].size()
+						CHECK(iter != surface.affected().leafs(layer_idx).end());
+					}
+
+					for (auto pos : surface.affected().leafs(layer_idx))
+					{
+						auto iter = std::find(
+							check_layers_pos[layer_idx].begin(),
+							check_layers_pos[layer_idx].end(), pos
 						);
 
-						for (auto pos : check_layers_pos[layer_idx])
-						{
-							auto iter = std::find(
-								surface.affected().leafs(layer_idx).begin(),
-								surface.affected().leafs(layer_idx).end(), pos
-							);
-
-							INFO(
-								"Affected grid layer " + s(layer_id) + " at index " +
-								s(layer_idx) + " should contain (" + s(pos(0)) + "," +
-								s(pos(1)) + ")"
-							);
-							CHECK(iter != surface.affected().leafs(layer_idx).end());
-						}
-
-						for (auto pos : surface.affected().leafs(layer_idx))
-						{
-							auto iter = std::find(
-								check_layers_pos[layer_idx].begin(),
-								check_layers_pos[layer_idx].end(), pos
-							);
-
-							INFO(
-								"Checking list layer " + s(layer_id) + " at index " +
-								s(layer_idx) + " should contain (" + s(pos(0)) + "," +
-								s(pos(1)) + ")"
-							);
-							CHECK(iter != check_layers_pos[layer_idx].end());
-						}
+						INFO(
+							"Checking list layer " + s(layer_id) + " at index " +
+							s(layer_idx) + " should contain (" + s(pos(0)) + "," +
+							s(pos(1)) + ")"
+						);
+						CHECK(iter != check_layers_pos[layer_idx].end());
 					}
 				}
 			}
-			//![Calculate affected outer layers for localised narrow band updates]
+		}
+		//![Calculate affected outer layers for localised narrow band updates]
+
+		AND_WHEN("we cycle a square region partially containing the surface")
+		{
+			UINT num_visited = 0;
+			Vec2i pos_visited;
+			surface.update(
+				Vec2i(1, 0), Vec2i(3, 3),
+				[&num_visited, &pos_visited](const Vec2i& pos, const SurfaceT::IsoGrid& grid) {
+					num_visited++;
+					pos_visited = pos;
+					return 0;
+				}
+			);
+
+			THEN("we only visit the points in the region")
+			{
+				CHECK(num_visited == 1);
+				CHECK(pos_visited == Vec2i(1, 0));
+			}
 		}
 
-		WHEN("we expand the centre point using a local update")
+	} // End WHEN("we expand by 1 unit")
+
+	WHEN("we expand the centre point using a local update")
+	{
+		surface.update_start();
 		{
+			surface.delta(Vec2i(0, 0), -0.6f);
+		}
+		// Using localised update, which will only update outer layers that are
+		// affected by changes to the modified zero layer points.  In this test
+		// case, all outer layer points are affected, same as a global update.
+		surface.update_end_local();
+
+		THEN("the grid data is as expected")
+		{
+			isogrid_check.data() = {
+				3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3,
+				2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3,
+				2.4, 1.4, 0.4, -0.6, 0.4, 1.4, 2.4, 3, 3, 3, 2.4, 1.4, 0.4, 1.4,
+				2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3,
+				3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
+
+			isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
+			const FLOAT diff = isogrid_check.vdata().sum();
+			CHECK(diff == Approx(0));
+
+			CHECK(surface.layer(0).size() == 4);
+			CHECK(surface.layer(-1).size() == 1);
+			CHECK(surface.layer(-2).size() == 0);
+			CHECK(surface.layer(1).size() == 8);
+			CHECK(surface.layer(2).size() == 12);
+		}
+
+		AND_WHEN("we contract the centre point by the same amount using a local update")
+		{
+
+			// Cycle new zero-layer points and move back to original signed distance.
 			surface.update_start();
 			{
-				surface.delta(Vec2i(0, 0), -0.6f);
+				for (const Vec2i& pos : surface.layer(0))
+					surface.delta(pos, 0.6f);
 			}
-			// Using localised update, which will only update outer layers that are
-			// affected by changes to the modified zero layer points.  In this test
-			// case, all outer layer points are affected, same as a global update.
 			surface.update_end_local();
 
-			THEN("the grid data is as expected")
+			THEN("the grid data is back to how it was")
 			{
 				isogrid_check.data() = {
-					3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3, 3, 3, 3, 3, 3,
-					2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 0.4, 1.4, 2.4, 3, 3, 3,
-					2.4, 1.4, 0.4, -0.6, 0.4, 1.4, 2.4, 3, 3, 3, 2.4, 1.4, 0.4, 1.4,
-					2.4, 3, 3, 3, 3, 3, 2.4, 1.4, 2.4, 3, 3, 3, 3, 3, 3, 3, 2.4, 3, 3,
-					3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
+					3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+					2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 2, 1, 0, 1, 2, 3,
+					3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3,
+					3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
 
-				isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
+				isogrid_check.vdata() =
+					isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
 				const FLOAT diff = isogrid_check.vdata().sum();
-				CHECK(diff == Approx(0));
 
-				CHECK(surface.layer(0).size() == 4);
-				CHECK(surface.layer(-1).size() == 1);
-				CHECK(surface.layer(-2).size() == 0);
-				CHECK(surface.layer(1).size() == 8);
-				CHECK(surface.layer(2).size() == 12);
-			}
-
-			AND_WHEN("we contract the centre point by the same amount using a local update")
-			{
-
-				// Cycle new zero-layer points and move back to original signed distance.
-				surface.update_start();
-				{
-					for (const Vec2i& pos : surface.layer(0))
-						surface.delta(pos, 0.6f);
-				}
-				surface.update_end_local();
-
-				THEN("the grid data is back to how it was")
-				{
-					isogrid_check.data() = {
-						3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-						2, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 2, 1, 0, 1, 2, 3,
-						3, 3, 3, 3, 2, 1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3,
-						3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
-
-					isogrid_check.vdata() =
-						isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
-					const FLOAT diff = isogrid_check.vdata().sum();
-
-					CHECK(diff == Approx(0).epsilon(0.000001f));
-				}
+				CHECK(diff == Approx(0).epsilon(0.000001f));
 			}
 		}
 	}
+}
 
-	GIVEN(
-		"a 11x11x11 3-layer surface with 3x3x3 partitions initialised with a 1 unit radius "
-		"surface"
-	) {
-		Surface<3,3> surface(Vec3u(11,11,11), Vec3u(3,3,3));
-		surface.seed(Vec3i(0,0,0));
-		surface.update([](auto& pos, auto& grid) {
-			return -1.0f;
-		});
+GIVEN("a 11x11x11 3-layer surface with 3x3x3 partitions initialised with a 1 unit radius surface")
+{
+	Surface<3,3> surface(Vec3u(11,11,11), Vec3u(3,3,3));
+	surface.seed(Vec3i(0,0,0));
+	surface.update([](auto& pos, auto& grid) {
+		return -1.0f;
+	});
+
+	INFO(stringifyGridSlice(surface.isogrid()));
+
+	THEN("the layer lists have the expected size")
+	{
+		CHECK(surface.layer(-3).size() == 0);
+		CHECK(surface.layer(-2).size() == 0);
+		CHECK(surface.layer(-1).size() == 1);
+		CHECK(surface.layer(0).size() == 6);
+		CHECK(surface.layer(1).size() == 18);
+		CHECK(surface.layer(2).size() == 38);
+		CHECK(surface.layer(3).size() == 66);
+	}
+
+	AND_WHEN("we expand and contract two nearby points using local update")
+	{
+		surface.update_start();
+		surface.delta(Vec3i(0,1,0), -1);
+		surface.update_end_local();
+
+		surface.update_start();
+		surface.delta(Vec3i(0,2,0), 1);
+		surface.delta(Vec3i(1,1,0), 1);
+		surface.delta(Vec3i(-1,1,0), 1);
+		surface.delta(Vec3i(0,1,1), 1);
+		surface.delta(Vec3i(0,1,-1), 1);
+		surface.update_end_local();
 
 		INFO(stringifyGridSlice(surface.isogrid()));
 
-		THEN("the layer lists have the expected size")
+		THEN("the layer lists have the same size as before")
 		{
 			CHECK(surface.layer(-3).size() == 0);
 			CHECK(surface.layer(-2).size() == 0);
@@ -1423,35 +1466,8 @@ SCENARIO("Local updating")
 			CHECK(surface.layer(2).size() == 38);
 			CHECK(surface.layer(3).size() == 66);
 		}
-
-		AND_WHEN("we expand and contract two nearby points using local update")
-		{
-			surface.update_start();
-			surface.delta(Vec3i(0,1,0), -1);
-			surface.update_end_local();
-
-			surface.update_start();
-			surface.delta(Vec3i(0,2,0), 1);
-			surface.delta(Vec3i(1,1,0), 1);
-			surface.delta(Vec3i(-1,1,0), 1);
-			surface.delta(Vec3i(0,1,1), 1);
-			surface.delta(Vec3i(0,1,-1), 1);
-			surface.update_end_local();
-
-			INFO(stringifyGridSlice(surface.isogrid()));
-
-			THEN("the layer lists have the same size as before")
-			{
-				CHECK(surface.layer(-3).size() == 0);
-				CHECK(surface.layer(-2).size() == 0);
-				CHECK(surface.layer(-1).size() == 1);
-				CHECK(surface.layer(0).size() == 6);
-				CHECK(surface.layer(1).size() == 18);
-				CHECK(surface.layer(2).size() == 38);
-				CHECK(surface.layer(3).size() == 66);
-			}
-		}
 	}
+}
 }
 
 

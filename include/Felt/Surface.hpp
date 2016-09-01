@@ -587,25 +587,71 @@ public:
 	}
 
 	/**
-	 * Perform a a full (parallelised) update of the narrow band.
+	 * Perform a full update of the narrow band.
 	 *
 	 * Lambda function passed will be given the position to process and
 	 * a reference to the isogrid grid, and is expected to return delta isogrid to
 	 * apply.
 	 *
+	 * Each spatial partition is processed in parallel.
+	 *
 	 * @param fn_ (pos, isogrid) -> float
 	 */
 	void update(std::function<FLOAT(const VecDi&, const IsoGrid&)> fn_)
 	{
+		const PosArray& pos_children = parts();
 		this->update_start();
 		#pragma omp parallel for
-		for (UINT part_idx = 0; part_idx < parts().size(); part_idx++)
+		for (UINT part_idx = 0; part_idx < pos_children.size(); part_idx++)
 		{
-			const VecDi& pos_part = this->parts()[part_idx];
+			const VecDi& pos_part = pos_children[part_idx];
 			for (const VecDi& pos : this->layer(pos_part))
 				this->delta(pos, fn_(pos, m_grid_isogrid));
 		}
 		this->update_end();
+	}
+
+	/**
+	 * Perform a bounded update of the narrow band.
+	 *
+	 * Lambda function passed will be given the position to process and a reference to the isogrid
+	 * grid, and is expected to return delta isogrid to apply.
+	 *
+	 * Each spatial partition is processed in parallel.
+	 *
+	 * @param pos_leaf_lower_ region selection from.
+	 * @param pos_leaf_upper_ region selection to.
+	 * @param fn_ (pos, isogrid) -> float.
+	 */
+	void update(
+		const VecDi& pos_leaf_lower_, const VecDi& pos_leaf_upper_,
+		std::function<FLOAT(const VecDi&, const IsoGrid&)> fn_
+	) {
+		// Partition containing lower point of bounding box.
+		const VecDi& pos_child_lower = m_grid_isogrid.pos_child(pos_leaf_lower_);
+		// Partition containing upper point of bounding box.
+		const VecDi& pos_child_upper = m_grid_isogrid.pos_child(pos_leaf_upper_);
+		// Size of bounding box
+		const VecDu& bounding_box_size =
+			(pos_child_upper - pos_child_lower + VecDi::Constant(2)).template cast<UINT>();
+		// Upper bound of leaf (1 more than upper point).
+		const VecDi& pos_leaf_upper_bound = pos_leaf_upper_ + VecDi::Constant(1);
+		// Upper index of bounding box.
+		const UINT child_idx_bound = bounding_box_size.prod();
+
+		this->update_start();
+		#pragma omp parallel for
+		for (UINT child_idx = 0; child_idx < child_idx_bound; child_idx++)
+		{
+			const VecDi& pos_part_untransformed = IsoGrid::index(child_idx, bounding_box_size);
+			const VecDi& pos_part = pos_part_untransformed + pos_child_lower;
+			for (const VecDi& pos : layer(pos_part))
+			{
+				if (IsoGrid::inside(pos, pos_leaf_lower_, pos_leaf_upper_bound))
+					this->delta(pos, fn_(pos, m_grid_isogrid));
+			}
+		}
+		this->update_end_local();
 	}
 
 	/**
