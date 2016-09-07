@@ -627,15 +627,24 @@ public:
 		const VecDi& pos_leaf_lower_, const VecDi& pos_leaf_upper_,
 		std::function<FLOAT(const VecDi&, const IsoGrid&)> fn_
 	) {
+		const VecDi& one = VecDi::Constant(1);
+		const VecDi& two = VecDi::Constant(2);
+		const VecDi& pos_grid_lower = m_grid_isogrid.offset() + one;
+		const VecDi& pos_grid_upper =
+			m_grid_isogrid.offset() + m_grid_isogrid.size().template cast<INT>() - one;
+		const VecDi& pos_grid_child_lower = m_grid_isogrid.pos_child(pos_grid_lower);
+		const VecDi& pos_grid_child_upper = m_grid_isogrid.pos_child(pos_grid_upper);
 		// Partition containing lower point of bounding box.
-		const VecDi& pos_child_lower = m_grid_isogrid.pos_child(pos_leaf_lower_);
+		const VecDi& pos_child_lower =
+			m_grid_isogrid.pos_child(pos_leaf_lower_).cwiseMax(pos_grid_child_lower);
 		// Partition containing upper point of bounding box.
-		const VecDi& pos_child_upper = m_grid_isogrid.pos_child(pos_leaf_upper_);
+		const VecDi& pos_child_upper =
+			m_grid_isogrid.pos_child(pos_leaf_upper_).cwiseMin(pos_grid_child_upper);
 		// Size of bounding box
 		const VecDu& bounding_box_size =
-			(pos_child_upper - pos_child_lower + VecDi::Constant(2)).template cast<UINT>();
+			(pos_child_upper - pos_child_lower + two).template cast<UINT>();
 		// Upper bound of leaf (1 more than upper point).
-		const VecDi& pos_leaf_upper_bound = pos_leaf_upper_ + VecDi::Constant(1);
+		const VecDi& pos_leaf_upper_bound = pos_leaf_upper_ + one;
 		// Upper index of bounding box.
 		const UINT child_idx_bound = bounding_box_size.prod();
 

@@ -1357,6 +1357,25 @@ GIVEN("a 9x9 2-layer surface with a seed point in the centre")
 			}
 		}
 
+		AND_WHEN("we cycle a square region completely containing the surface")
+		{
+			UINT num_visited = 0;
+			Vec2i pos_visited;
+			surface.update(
+				Vec2i(-100, -100), Vec2i(100, 100),
+				[&num_visited, &pos_visited](const Vec2i& pos, const SurfaceT::IsoGrid& grid) {
+					num_visited++;
+					pos_visited = pos;
+					return 0;
+				}
+			);
+
+			THEN("we only visit the points in the region")
+			{
+				CHECK(num_visited == 14);
+			}
+		}
+
 	} // End WHEN("we expand by 1 unit")
 
 	WHEN("we expand the centre point using a local update")
