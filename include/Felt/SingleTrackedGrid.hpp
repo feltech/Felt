@@ -31,6 +31,8 @@ public:
 	using Base::TrackedGridBase;
 };
 
+template <typename T, UINT D, UINT N=1>
+using SingleTrackedGrid = EagerSingleTrackedGrid<T, D, N>;
 
 /**
  * A lazy tracked grid that assumes non-overlapping tracking lists.
