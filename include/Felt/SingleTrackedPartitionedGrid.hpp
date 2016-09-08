@@ -54,7 +54,7 @@ public:
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
 		this->add_child(pos_child, list_idx_);
-		return this->children().get(pos_child).add(pos_, val_, list_idx_);
+		return this->m_grid_children.get(pos_child).add(pos_, val_, list_idx_);
 	}
 
 	/**
@@ -76,7 +76,7 @@ public:
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
 		this->add_child(pos_child, list_idx_);
-		Child& child = this->children().get(pos_child);
+		Child& child = this->m_grid_children.get(pos_child);
 		std::lock_guard<std::mutex> lock(child.mutex());
 		return child.add(pos_, val_, list_idx_);
 	}
@@ -93,9 +93,8 @@ public:
 	 */
 	void reset(const LeafType& val_, const UINT list_idx_ = 0)
 	{
-		ChildrenGrid& children = this->children();
-		for (const VecDi& pos_child : children.list(list_idx_))
-			children(pos_child).reset(val_, list_idx_);
+		for (const VecDi& pos_child : this->m_grid_children.list(list_idx_))
+			this->m_grid_children(pos_child).reset(val_, list_idx_);
 
 		Base::Base::reset(list_idx_);
 	}
@@ -110,7 +109,7 @@ public:
 	void remove(const VecDi& pos_, const UINT list_idx_, const LeafType& background_)
 	{
 		const VecDi& pos_child = this->pos_child(pos_);
-		Child& child = this->children().get(pos_child);
+		Child& child = this->m_grid_children.get(pos_child);
 		child.remove(pos_, list_idx_);
 		if (child.list(list_idx_).size() == 0)
 			remove_child(pos_child, list_idx_, background_);
@@ -126,15 +125,29 @@ public:
 		const VecDi& pos_, const UINT list_idx_from_, const UINT list_idx_to_
 	) {
 		const VecDi& pos_child = this->pos_child(pos_);
+		Child& child = this->m_grid_children.get(pos_child);
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		{
+			if (!this->is_child_active(pos_child))
+			{
 
-		Child& child = this->children().get(pos_child);
+				std::stringstream strs;
+				strs << "Attempting to move lists within an inactive child: " <<
+					felt::format(pos_) << " from list " << list_idx_from_ << " to list " <<
+					list_idx_to_ << " in partition " << felt::format(pos_child);
+				std::string str = strs.str();
+				throw std::domain_error(str);
+			}
+
+		}
+		#endif
 		child.remove(pos_, list_idx_from_);
 		child.add(pos_, list_idx_to_);
 
 		std::lock_guard<std::mutex> lock(this->m_mutex_update_branch);
-		this->children().add(pos_child, list_idx_to_);
+		this->m_grid_children.add(pos_child, list_idx_to_);
 		if (child.list(list_idx_from_).size() == 0)
-			this->children().remove(pos_child, list_idx_from_);
+			this->m_grid_children.remove(pos_child, list_idx_from_);
 	}
 
 
@@ -149,9 +162,9 @@ public:
 	void remove_child(
 		const VecDi& pos_child_, const UINT list_idx_, const LeafType& background_
 	) {
+		std::lock_guard<std::mutex> lock(this->m_mutex_update_branch);
 		if (!this->m_grid_children.is_active(pos_child_, list_idx_))
 			return;
-		std::lock_guard<std::mutex> lock(this->m_mutex_update_branch);
 		this->m_grid_children.remove(pos_child_, list_idx_);
 		if (!this->is_child_active(pos_child_))
 		{

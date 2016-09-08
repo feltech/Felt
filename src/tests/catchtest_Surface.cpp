@@ -1216,7 +1216,7 @@ SCENARIO("Local updating")
 GIVEN("a 9x9 2-layer surface with a seed point in the centre")
 {
 	typedef Surface<2, 2> SurfaceT;
-	SurfaceT surface(Vec2u(9, 9));
+	SurfaceT surface(Vec2u(9, 9), Vec2u(2, 2));
 	// Grid to set values of manually, for checking against.
 	Grid<FLOAT, 2> isogrid_check(Vec2u(9, 9), Vec2i::Zero(), 0);
 
@@ -1365,14 +1365,13 @@ GIVEN("a 9x9 2-layer surface with a seed point in the centre")
 				Vec2i(-100, -100), Vec2i(100, 100),
 				[&num_visited, &pos_visited](const Vec2i& pos, const SurfaceT::IsoGrid& grid) {
 					num_visited++;
-					pos_visited = pos;
 					return 0;
 				}
 			);
 
 			THEN("we only visit the points in the region")
 			{
-				CHECK(num_visited == 14);
+				CHECK(num_visited == 4);
 			}
 		}
 

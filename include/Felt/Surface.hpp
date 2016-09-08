@@ -371,7 +371,7 @@ public:
 
 		#endif
 
-		this->delta().add(pos_, val_, this->layer_idx(0));
+		m_grid_delta.add(pos_, val_, layer_idx(0));
 	}
 
 	/**
@@ -627,39 +627,49 @@ public:
 		const VecDi& pos_leaf_lower_, const VecDi& pos_leaf_upper_,
 		std::function<FLOAT(const VecDi&, const IsoGrid&)> fn_
 	) {
-		const VecDi& one = VecDi::Constant(1);
-		const VecDi& two = VecDi::Constant(2);
-		const VecDi& pos_grid_lower = m_grid_isogrid.offset() + one;
+		static const VecDi& one = VecDi::Constant(1);
+		static const VecDi& two = VecDi::Constant(2);
+		// Upper and lower bounds of the grid, inclusive.
+		const VecDi& pos_grid_lower = m_grid_isogrid.offset();
 		const VecDi& pos_grid_upper =
-			m_grid_isogrid.offset() + m_grid_isogrid.size().template cast<INT>() - one;
+			m_grid_isogrid.offset() + m_grid_isogrid.size().template cast<INT>();
+		// Child partitions containing upper and lower bounds of grid.
 		const VecDi& pos_grid_child_lower = m_grid_isogrid.pos_child(pos_grid_lower);
-		const VecDi& pos_grid_child_upper = m_grid_isogrid.pos_child(pos_grid_upper);
-		// Partition containing lower point of bounding box.
+		const VecDi& pos_grid_child_upper = m_grid_isogrid.pos_child(pos_grid_upper - one);
+		// Partition containing lower point of bounding box, bounded by grid.
 		const VecDi& pos_child_lower =
-			m_grid_isogrid.pos_child(pos_leaf_lower_).cwiseMax(pos_grid_child_lower);
-		// Partition containing upper point of bounding box.
+			pos_grid_child_lower.cwiseMax(m_grid_isogrid.pos_child(pos_leaf_lower_));
+		// Partition containing upper point of bounding box, bounded by grid.
 		const VecDi& pos_child_upper =
-			m_grid_isogrid.pos_child(pos_leaf_upper_).cwiseMin(pos_grid_child_upper);
-		// Size of bounding box
-		const VecDu& bounding_box_size =
-			(pos_child_upper - pos_child_lower + two).template cast<UINT>();
-		// Upper bound of leaf (1 more than upper point).
-		const VecDi& pos_leaf_upper_bound = pos_leaf_upper_ + one;
+			pos_grid_child_upper.cwiseMin(m_grid_isogrid.pos_child(pos_leaf_upper_));
+		// Size of bounding box at partition level.
+		const VecDu& child_bounding_box_size =
+			(pos_child_upper - pos_child_lower + one).template cast<UINT>();
+		// Upper bound of leaf (1 more than upper point), bounded by grid..
+		const VecDi& pos_leaf_upper_bound = pos_grid_upper.cwiseMin(pos_leaf_upper_ + one);
 		// Upper index of bounding box.
-		const UINT child_idx_bound = bounding_box_size.prod();
-
+		const UINT child_idx_bound = child_bounding_box_size.prod();
+		// Clear previous update.
 		this->update_start();
+		// Parallel loop through spatial partitions.
 		#pragma omp parallel for
 		for (UINT child_idx = 0; child_idx < child_idx_bound; child_idx++)
 		{
-			const VecDi& pos_part_untransformed = IsoGrid::index(child_idx, bounding_box_size);
-			const VecDi& pos_part = pos_part_untransformed + pos_child_lower;
-			for (const VecDi& pos : layer(pos_part))
+			// Get spatial partition position.
+			const VecDi& pos_child_without_offset = IsoGrid::index(
+				child_idx, child_bounding_box_size
+			);
+			const VecDi& pos_child = pos_child_without_offset + pos_child_lower;
+			// Loop all zero-layer points within this partition.
+			for (const VecDi& pos : layer(pos_child))
 			{
+				// Skip zero-layer points not within finer-grained bounding box.
 				if (IsoGrid::inside(pos, pos_leaf_lower_, pos_leaf_upper_bound))
+					// Update delta isogrid.
 					this->delta(pos, fn_(pos, m_grid_isogrid));
 			}
 		}
+		// Apply delta to isogrid.
 		this->update_end_local();
 	}
 
@@ -1104,24 +1114,24 @@ public:
 	void layer_move(
 		const VecDi& pos_, const INT layer_id_from_, const INT layer_id_to_
 	) {
-		const bool is_from_inside = this->inside_band(layer_id_from_);
-		const bool is_to_inside = this->inside_band(layer_id_to_);
+		const bool is_from_inside = inside_band(layer_id_from_);
+		const bool is_to_inside = inside_band(layer_id_to_);
 
 		if (is_from_inside && is_to_inside)
 		{
 			m_grid_isogrid.move(
-				pos_, this->layer_idx(layer_id_from_), this->layer_idx(layer_id_to_)
+				pos_, layer_idx(layer_id_from_), layer_idx(layer_id_to_)
 			);
 		}
 		else if (is_from_inside)
 		{
 			m_grid_isogrid.remove(
-				pos_, this->layer_idx(layer_id_from_), layer_id_from_ + sgn(layer_id_from_)
+				pos_, layer_idx(layer_id_from_), layer_id_from_ + sgn(layer_id_from_)
 			);
 		}
 		else if (is_to_inside)
 		{
-			m_grid_isogrid.add(pos_, this->layer_idx(layer_id_to_));
+			m_grid_isogrid.add(pos_, layer_idx(layer_id_to_));
 		}
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		else
@@ -1500,10 +1510,10 @@ public:
 	 * TODO: c++14 should support variable templates, which is a better solution,
 	 * but gcc doesn't yet.
 	 *
-	 * @return
+	 * @return D-dimensional vector with each element set to numeric_limits<T>::max.
 	 */
 	template <typename T>
-	constexpr const felt::VecDT<T, D> NULL_POS() const
+	static constexpr felt::VecDT<T, D> NULL_POS()
 	{
 		return felt::VecDT<T, D>::Constant(std::numeric_limits<T>::max());
 	};
