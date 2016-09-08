@@ -726,11 +726,13 @@ public:
 				const FLOAT fisogrid = isogrid_child.get(pos);
 				const FLOAT fdelta = delta_child.get(pos);
 				const FLOAT fval = fisogrid + fdelta;
-				const INT newlayer_id = this->layer_id(fval);
+				const INT layer_id_new = this->layer_id(fval);
 
 				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
-				if (this->layer_id(fisogrid) != 0)
+				const INT layer_id_old = layer_id(fisogrid);
+
+				if (layer_id_old != 0)
 				{
 					std::stringstream strs;
 					strs << "Zero layer update attempted at non-zero layer point " <<
@@ -740,14 +742,14 @@ public:
 				}
 
 				if (
-					std::abs(newlayer_id) != std::abs(newlayer_id)
-					&& std::abs(newlayer_id) != std::abs(newlayer_id) + 1
-					&& std::abs(newlayer_id) != std::abs(newlayer_id) - 1
+					std::abs(layer_id_new) != std::abs(layer_id_old)
+					&& std::abs(layer_id_new) != std::abs(layer_id_old) + 1
+					&& std::abs(layer_id_new) != std::abs(layer_id_old) - 1
 				) {
 					std::stringstream strs;
 					strs << "Zero layer update out of bounds.  Attempting to change value at" <<
 						felt::format(pos) << " to " << fval << " would give a layer of " <<
-						newlayer_id << ", which is too much of a jump";
+						layer_id_new << ", which is too much of a jump";
 					std::string str = strs.str();
 					throw std::domain_error(str);
 				}
@@ -757,7 +759,7 @@ public:
 				// Update value in grid with new signed distance.
 				isogrid_child(pos) = fval;
 				// Potentially add to status change, if narrow band layer has changed.
-				this->status_change(pos, 0, newlayer_id);
+				this->status_change(pos, 0, layer_id_new);
 			}
 		}
 	}
@@ -943,7 +945,7 @@ public:
 
 			const INT side = sgn(layer_id);
 
-			#pragma omp parallel for
+//			#pragma omp parallel for
 			for (UINT idx_child = 0; idx_child < apos_children.size(); idx_child++)
 			{
 				const VecDi& pos_child = apos_children[idx_child];
@@ -956,35 +958,75 @@ public:
 						continue;
 
 					// Cycle over neighbours of this outer layer point.
-					m_grid_isogrid.neighs(pos, [this, list_idx, side](const VecDi& pos_neigh) {
-						const INT from_layer_id = this->layer_id(pos_neigh);
-
-						// Only add if neighbouring point is not already within the narrow band.
-						if (this->inside_band(from_layer_id))
-							return;
-
-						// Calculate distance of this neighbour to the zero curve.
-						const FLOAT distance = this->distance(pos_neigh, side);
-
+					m_grid_isogrid.neighs(
+						pos,
+						[
+						 this, list_idx, side, &pos_child
 						#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-
-						const INT newlayer_id = this->layer_id(distance);
-						if (newlayer_id != LAYER_MIN && newlayer_id != LAYER_MAX)
-						{
-							std::stringstream strs;
-							strs << "Attempting to add " << felt::format(pos_neigh) <<
-								" to the narrow band but the distance is " << distance <<
-								" which would give a layer of " << newlayer_id;
-							std::string str = strs.str();
-							throw std::domain_error(str);
-						}
-
+						 , &pos
 						#endif
+						](const VecDi& pos_neigh) {
+							const INT layer_id_from = this->layer_id(pos_neigh);
 
-						// Use thread-safe update and track function, since neighbouring point
-						// could be in another spatial partition.
-						this->m_grid_isogrid.add_safe(pos_neigh, distance, list_idx);
-					});
+							// Only add if neighbouring point is not already within the narrow band.
+							if (inside_band(layer_id_from))
+								return;
+
+							const VecDi& pos_child_neigh = m_grid_isogrid.pos_child(pos_neigh);
+							// TODO: layer_id_from IS WRONG, NEED "TO" LAYER, BUT THATS ENCODED
+							// IN THE LIST INDEX REFERENCED IN THE POINT.
+							if (
+								m_grid_status_change.get(pos_neigh) !=
+									m_grid_status_change.background()
+							) {
+								m_grid_status_change.remove(
+									pos_neigh, layer_idx(layer_id_from),
+									m_grid_status_change.background()
+								);
+							}
+
+							// Calculate distance of this neighbour to the zero curve.
+							const FLOAT distance_neigh = distance(pos_neigh, side);
+
+							#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+
+							const INT layer_id_to = this->layer_id(distance_neigh);
+
+							if (layer_id_to != LAYER_MIN && layer_id_to != LAYER_MAX)
+							{
+								std::stringstream strs;
+								strs << "Attempting to add " << felt::format(pos_neigh) <<
+									" to the narrow band but the distance is " << distance_neigh <<
+									" which would give a layer of " << layer_id_to;
+								std::string str = strs.str();
+								throw std::domain_error(str);
+							}
+
+//							if (
+//								m_grid_status_change.get(pos_neigh) !=
+//									m_grid_status_change.background()
+//							) {
+//								std::stringstream strs;
+//								strs << "Attempting to expand narrow band at " <<
+//									felt::format(pos) << " from layer " << layer_id_from <<
+//									" to layer " << layer_id_to << " in partition " <<
+//									felt::format(pos_child_neigh) << " whilst" <<
+//									" processing partition " << felt::format(pos_child) <<
+//									", but position is already in status change list, moving to " <<
+//									m_grid_status_change.get(pos_neigh);
+//
+//								std::string str = strs.str();
+//								throw std::domain_error(str);
+//							}
+
+
+							#endif
+
+							// Use thread-safe update and track function, since neighbouring point
+							// could be in another spatial partition.
+							this->m_grid_isogrid.add_safe(pos_neigh, distance_neigh, list_idx);
+						}
+					);
 				}
 			}
 		}
@@ -1055,7 +1097,7 @@ public:
 			const StatusChangeChildrenList& pos_children =
 				m_grid_status_change.children().list(list_idx);
 
-			#pragma omp parallel for
+//			#pragma omp parallel for
 			for (UINT idx_child = 0; idx_child < pos_children.size(); idx_child++)
 			{
 				const VecDi& pos_child = pos_children[idx_child];
@@ -1119,6 +1161,28 @@ public:
 
 		if (is_from_inside && is_to_inside)
 		{
+
+			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+
+			const VecDi& pos_child = m_grid_isogrid.pos_child(pos_);
+			const UINT list_idx_from = layer_idx(layer_id_from_);
+			const UINT list_idx_to = layer_idx(layer_id_to_);
+			const typename IsoGrid::Child& child = m_grid_isogrid.children().get(pos_child);
+
+			if (child.list(list_idx_from).size() == 0)
+			{
+				std::stringstream strs;
+				strs << "Layer empty when attempting to move " << felt::format(pos_) <<
+					" from layer " << layer_id_from_ << " to layer " << layer_id_to_ <<
+					" in partition " << felt::format(pos_child) << " = " <<
+					felt::format(child.offset()) << "-" <<
+					felt::format(child.offset() + child.size().template cast<INT>());
+				std::string str = strs.str();
+				throw std::domain_error(str);
+			}
+
+			#endif
+
 			m_grid_isogrid.move(
 				pos_, layer_idx(layer_id_from_), layer_idx(layer_id_to_)
 			);
