@@ -776,6 +776,8 @@ public:
 		this->update_distance(m_grid_isogrid);
 
 		this->flush_status_change();
+
+		this->expand_narrow_band();
 	}
 
 	/**
@@ -793,6 +795,8 @@ public:
 		this->update_distance(m_grid_affected);
 
 		this->flush_status_change();
+
+		this->expand_narrow_band();
 	}
 
 	/**
@@ -810,8 +814,6 @@ public:
 		// Update distance transform for outer layers of the narrow band.
 		for (INT layer_id = 1; layer_id <= LAYER_MAX; layer_id++)
 			this->update_distance(layer_id, 1, lookup_);
-
-		this->expand_narrow_band();
 	}
 
 
@@ -960,30 +962,12 @@ public:
 					// Cycle over neighbours of this outer layer point.
 					m_grid_isogrid.neighs(
 						pos,
-						[
-						 this, list_idx, side, &pos_child
-						#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-						 , &pos
-						#endif
-						](const VecDi& pos_neigh) {
+						[this, list_idx, side](const VecDi& pos_neigh) {
 							const INT layer_id_from = this->layer_id(pos_neigh);
 
 							// Only add if neighbouring point is not already within the narrow band.
 							if (inside_band(layer_id_from))
 								return;
-
-							const VecDi& pos_child_neigh = m_grid_isogrid.pos_child(pos_neigh);
-							// TODO: layer_id_from IS WRONG, NEED "TO" LAYER, BUT THATS ENCODED
-							// IN THE LIST INDEX REFERENCED IN THE POINT.
-							if (
-								m_grid_status_change.get(pos_neigh) !=
-									m_grid_status_change.background()
-							) {
-								m_grid_status_change.remove(
-									pos_neigh, layer_idx(layer_id_from),
-									m_grid_status_change.background()
-								);
-							}
 
 							// Calculate distance of this neighbour to the zero curve.
 							const FLOAT distance_neigh = distance(pos_neigh, side);
@@ -1001,24 +985,6 @@ public:
 								std::string str = strs.str();
 								throw std::domain_error(str);
 							}
-
-//							if (
-//								m_grid_status_change.get(pos_neigh) !=
-//									m_grid_status_change.background()
-//							) {
-//								std::stringstream strs;
-//								strs << "Attempting to expand narrow band at " <<
-//									felt::format(pos) << " from layer " << layer_id_from <<
-//									" to layer " << layer_id_to << " in partition " <<
-//									felt::format(pos_child_neigh) << " whilst" <<
-//									" processing partition " << felt::format(pos_child) <<
-//									", but position is already in status change list, moving to " <<
-//									m_grid_status_change.get(pos_neigh);
-//
-//								std::string str = strs.str();
-//								throw std::domain_error(str);
-//							}
-
 
 							#endif
 
