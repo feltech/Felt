@@ -86,19 +86,19 @@ WHEN("next_closest_grid_point")
 	Vec2i pos_next = Vec2i(-1, -2);
 	CHECK(isogrid(pos_next) == 3);
 
-	pos_next = surface.next_closest(pos_next);
+	pos_next = surface.next_closest(pos_next, 1);
 
 	CHECK(isogrid(pos_next) == 2);
 
-	pos_next = surface.next_closest(pos_next);
+	pos_next = surface.next_closest(pos_next, 1);
 
 	CHECK(isogrid(pos_next) == 1);
 
-	pos_next = surface.next_closest(pos_next);
+	pos_next = surface.next_closest(pos_next, 1);
 
 	CHECK(isogrid(pos_next) == 0);
 
-	pos_next = surface.next_closest(pos_next);
+	pos_next = surface.next_closest(pos_next, 1);
 
 	CHECK(isogrid(pos_next) == 0);
 
@@ -114,12 +114,12 @@ WHEN("next_closest_grid_point")
 	CHECK(isogrid(pos_next) == -2);
 	CHECK(pos_next == Vec2i(2, 0));
 
-	pos_next = surface.next_closest(pos_next);
+	pos_next = surface.next_closest(pos_next, -1);
 
 	CHECK(isogrid(pos_next) == -1);
 	CHECK(pos_next == Vec2i(1, 0));
 
-	pos_next = surface.next_closest(pos_next);
+	pos_next = surface.next_closest(pos_next, -1);
 
 	CHECK(isogrid(pos_next) == 0);
 	CHECK(pos_next == Vec2i(0, 0));
@@ -1436,6 +1436,104 @@ GIVEN("a 9x9 2-layer surface with a seed point in the centre")
 		}
 	}
 }
+
+
+GIVEN("a 12x12 2-layer grid with two seeds diagonally opposite")
+{
+	// ==== Setup ====
+	using SurfaceT = Surface<2, 3>;
+	Vec2u size(12, 12);
+	SurfaceT surface(size, Vec2u(2, 2));
+	// Grid to set values of manually, for checking against.
+	Grid<FLOAT, 2> isogrid_check(size, Vec2i::Zero(), 0);
+
+	// Create seed point and expand the narrow band.
+	surface.seed(Vec2i(-2, -2));
+	surface.seed(Vec2i(2, 2));
+
+	INFO(stringifyGridSlice(surface.isogrid()));
+
+//    4,    4,    4,    4,    4,    4,    4,    4,    4,    4,    4,    4,
+//    4,    4,    4,    4,    3,    4,    4,    4,    4,    4,    4,    4,
+//    4,    4,    4,    3,    2,    3,    4,    4,    4,    4,    4,    4,
+//    4,    4,    3,    2,    1,    2,    3,    4,    4,    4,    4,    4,
+//    4,    3,    2,    1,    0,    1,    2,    3,    4,    4,    4,    4,
+//    4,    4,    3,    2,    1,    2,    3,    4,    3,    4,    4,    4,
+//    4,    4,    4,    3,    2,    3,    4,    3,    2,    3,    4,    4,
+//    4,    4,    4,    4,    3,    4,    3,    2,    1,    2,    3,    4,
+//    4,    4,    4,    4,    4,    3,    2,    1,    0,    1,    2,    3,
+//    4,    4,    4,    4,    4,    4,    3,    2,    1,    2,    3,    4,
+//    4,    4,    4,    4,    4,    4,    4,    3,    2,    3,    4,    4,
+//    4,    4,    4,    4,    4,    4,    4,    4,    3,    4,    4,    4
+
+	WHEN(
+		"we expand one seed then simultaneously expand again whilst collapsing the other seed,"
+		" then expand again"
+	) {
+		surface.update_start();
+		surface.delta(Vec2i(-2, -2), -1);
+		surface.update_end();
+		surface.update_start();
+		surface.delta(Vec2i(-1, -2), -1);
+		surface.update_end();
+		surface.update_start();
+		surface.delta(Vec2i(0, -2), -1);
+		surface.update_end();
+
+		INFO(stringifyGridSlice(surface.isogrid()));
+
+//	      4,    4,    4,    4,    3,    4,    4,    4,    4,    4,    4,    4,
+//	      4,    4,    4,    3,    2,    3,    4,    4,    4,    4,    4,    4,
+//	      4,    4,    3,    2,    1,    2,    3,    4,    4,    4,    4,    4,
+//	      4,    3,    2,    1,    0,    1,    2,    3,    4,    4,    4,    4,
+//	      3,    2,    1,    0,   -1,    0,    1,    2,    3,    4,    4,    4,
+//	      4,    3,    2,    1,    0,    1,    2,    3,    3,    4,    4,    4,
+//	      4,    4,    3,    2,    1,    2,    3,    3,    2,    3,    4,    4,
+//	      4,    4,    4,    3,    2,    3,    3,    2,    1,    2,    3,    4,
+//	      4,    4,    4,    4,    3,    3,    2,    1,    0,    1,    2,    3,
+//	      4,    4,    4,    4,    4,    4,    3,    2,    1,    2,    3,    4,
+//	      4,    4,    4,    4,    4,    4,    4,    3,    2,    3,    4,    4,
+//	      4,    4,    4,    4,    4,    4,    4,    4,    3,    4,    4,    4
+
+		surface.update_start();
+		surface.delta(Vec2i(1, -2), -1);
+		surface.delta(Vec2i(2, 2), 1);
+		surface.update_end();
+
+		INFO(stringifyGridSlice(surface.isogrid()));
+
+//		Bad:
+//	      4,    4,    4,    3,    2,    2,    2,    2,    3,    4,    4,    4,
+//	      4,    4,    3,    2,    1,    1,    1,    1,    2,    3,    4,    4,
+//	      4,    3,    2,    1,    0,    0,    0,    0,    1,    2,    3,    4,
+//	      3,    2,    1,    0,   -1,   -1,   -1,   -1,    0,    1,    2,    3,
+//	      4,    3,    2,    1,    0,    0,    0,    0,    1,    2,    3,    4,
+//	      4,    4,    3,    2,    1,    1,    1,    1,    3,    3,    4,    4,
+//	      4,    4,    4,    3,    2,    2,    2,    3,    2,    3,    4,    4,
+//	      4,    4,    4,    4,    3,    3,    3,    2,    1,    2,    3,    4,
+//	      4,    4,    4,    4,    4,    4,    4,    3,    2,    3,    4,    4,
+//	      4,    4,    4,    4,    4,    4,    4,    4,    3,    4,    4,    4,
+//	      4,    4,    4,    4,    4,    4,    4,    4,    4,    4,    4,    4
+
+		surface.update_start();
+		surface.delta(Vec2i(1, -1), -1);
+		surface.update_end();
+
+		INFO(stringifyGridSlice(surface.isogrid()));
+
+		THEN("the grid data is as expected")
+		{
+
+			isogrid_check.data() = {
+			};
+
+			isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
+			const FLOAT diff = isogrid_check.vdata().sum();
+			CHECK(diff == Approx(0).epsilon(0.000001f));
+		}
+	}
+}
+
 
 GIVEN("a 11x11x11 3-layer surface with 3x3x3 partitions initialised with a 1 unit radius surface")
 {

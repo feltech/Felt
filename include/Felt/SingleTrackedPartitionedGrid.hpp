@@ -150,7 +150,6 @@ public:
 			this->m_grid_children.remove(pos_child, list_idx_from_);
 	}
 
-
 	/**
 	 * Remove a spatial partition from children grid's tracking subgrid.
 	 *
@@ -172,6 +171,44 @@ public:
 			child.background() = background_;
 			this->m_grid_children.get(pos_child_).deactivate();
 		}
+	}
+
+	/**
+	 * Check if spatial partition is tracked.
+	 *
+	 * @param pos_child_ spartial partition location.
+	 * @return true if spatial partition has active tracking lists, false otherwise.
+	 */
+	bool is_child_active(const VecDi& pos_child_) const
+	{
+		using NULL_IDX_TYPE = typename ChildrenGrid::Lookup::Traits::NULL_IDX_TYPE;
+
+		const NULL_IDX_TYPE idxs = this->children().lookup().get(pos_child_);
+
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		{
+			if (idxs == ChildrenGrid::Lookup::Traits::NULL_IDX_DATA)
+				for (UINT list_idx = 0; list_idx < Base::NUM_LISTS; list_idx++)
+				{
+					if (this->m_grid_children.get(pos_child_).list(list_idx).size())
+					{
+						std::stringstream strs;
+						strs << "Children lookup is NULL_IDX, but child still contains active"
+							" lists: ";
+						for (UINT list_idx = 0; list_idx < Base::NUM_LISTS; list_idx++)
+						{
+							strs << "[" << list_idx << "] = " <<
+								this->m_grid_children.get(pos_child_).list(list_idx).size() << "; ";
+						}
+						std::string str = strs.str();
+						throw std::domain_error(str);
+					}
+				}
+
+		}
+		#endif
+
+		return idxs != ChildrenGrid::Lookup::Traits::NULL_IDX_DATA;
 	}
 
 private:

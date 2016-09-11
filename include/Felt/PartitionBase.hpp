@@ -182,15 +182,15 @@ public:
 	 * Uses mutex for thread safety.
 	 *
 	 * @param pos_ position in spatial partition grid to track.
-	 * @param arr_idx_ index of tracking list used to track position.
+	 * @param list_idx_ index of tracking list used to track position.
 	 * @return true if position was added to tracking grid, false if it was already added.
 	 */
-	bool add_child(const VecDi& pos_, const UINT arr_idx_ = 0)
+	bool add_child(const VecDi& pos_, const UINT list_idx_ = 0)
 	{
-		if (m_grid_children.is_active(pos_, arr_idx_))
+		if (m_grid_children.is_active(pos_, list_idx_))
 			return false;
 		std::lock_guard<std::mutex> lock(m_mutex_update_branch);
-		return this->children().add(pos_, arr_idx_);
+		return this->children().add(pos_, list_idx_);
 	}
 
 	/**
@@ -199,21 +199,21 @@ public:
 	 * Uses mutex for thread safety.
 	 *
 	 * @param pos_ position of spatial partition to stop tracking.
-	 * @param arr_idx_ index of tracking list used to track position.
+	 * @param list_idx_ index of tracking list used to track position.
 	 */
-	void remove_child(const VecDi& pos_, const UINT arr_idx_ = 0)
+	void remove_child(const VecDi& pos_, const UINT list_idx_ = 0)
 	{
-		if (!m_grid_children.is_active(pos_, arr_idx_))
+		if (!m_grid_children.is_active(pos_, list_idx_))
 			return;
 		std::lock_guard<std::mutex> lock(m_mutex_update_branch);
-		this->children().remove(pos_, arr_idx_);
+		this->children().remove(pos_, list_idx_);
 	}
 
-
 	/**
+	 * Check if spatial partition has any active tracking lists.
 	 *
-	 * @param pos_
-	 * @return
+	 * @param pos_child_ spartial partition location.
+	 * @return true if spatial partition has active tracking lists, false otherwise.
 	 */
 	bool is_child_active(const VecDi& pos_child_) const
 	{
@@ -229,7 +229,7 @@ public:
 	 *
 	 * Stops tracking all children, but does not affect the data in the child grids.
 	 *
-	 * @param arr_idx_ index of tracking list to reset.
+	 * @param list_idx_ index of tracking list to reset.
 	 */
 	void reset(const UINT list_idx_ = 0)
 	{

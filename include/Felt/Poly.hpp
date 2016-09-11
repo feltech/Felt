@@ -312,7 +312,7 @@ namespace felt
 			// Array of indices of zero-crossing vertices along each axis from
 			// this corner.
 			UINT vtx_idxs[this->num_edges];
-			// MultiLookup the edges that are crossed from the corner mask.
+			// Look up the edges that are crossed from the corner mask.
 			unsigned short vtx_mask = this->vtx_mask[mask];
 			const short* vtx_order = this->vtx_order[mask];
 

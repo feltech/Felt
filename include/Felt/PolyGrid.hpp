@@ -180,9 +180,7 @@ namespace felt
 				UINT child_idx = 0;
 				child_idx < m_grid_changes.list().size(); child_idx++
 			) {
-				const VecDi& pos_child = (
-					m_grid_changes.list()[child_idx]
-				);
+				const VecDi& pos_child = m_grid_changes.list()[child_idx];
 
 				PolyLeaf& leaf = this->get(pos_child);
 				leaf.reset();

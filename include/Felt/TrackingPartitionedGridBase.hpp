@@ -311,10 +311,10 @@ public:
 	 */
 	bool add_child(const VecDi& pos_child_, const UINT list_idx_ = 0)
 	{
+		std::lock_guard<std::mutex> lock(this->m_mutex_update_branch);
 		if (this->m_grid_children.is_active(pos_child_, list_idx_))
 			return false;
 		Child& child = this->m_grid_children.get(pos_child_);
-		std::lock_guard<std::mutex> lock(this->m_mutex_update_branch);
 		if (!child.is_active())
 			child.activate();
 		return this->m_grid_children.add(pos_child_, list_idx_);
