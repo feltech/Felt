@@ -658,7 +658,7 @@ public:
 		// Clear previous update.
 		update_start();
 		// Parallel loop through spatial partitions.
-//		#pragma omp parallel for
+		#pragma omp parallel for if(child_idx_bound > 16)
 		for (UINT child_idx = 0; child_idx < child_idx_bound; child_idx++)
 		{
 			// Get spatial partition position.
@@ -930,8 +930,10 @@ public:
 		// Performance optimisation to bulk add spatial partitions to be tracked in isogrid.
 		m_grid_isogrid.add_children(apos_children, layer_idx_zero);
 
-		#pragma omp parallel for
-		for (UINT idx_child = 0; idx_child < apos_children.size(); idx_child++)
+		const UINT num_childs = apos_children.size();
+
+		#pragma omp parallel for firstprivate(plookup_buffer_) if(num_childs > 16)
+		for (UINT idx_child = 0; idx_child < num_childs; idx_child++)
 		{
 			const VecDi& pos_child = apos_children[idx_child];
 			DeltaChild& delta_child = m_grid_delta.children().get(pos_child);
@@ -1059,9 +1061,10 @@ public:
 
 		const UINT layer_idx = this->layer_idx(layer_id_);
 		const PosArray& apos_children = plookup_->children().list(layer_idx);
+		const UINT num_childs = apos_children.size();
 
-		#pragma omp parallel for
-		for (UINT pos_idx = 0; pos_idx < apos_children.size(); pos_idx++)
+		#pragma omp parallel for firstprivate(plookup_, plookup_buffer_) if(num_childs > 16)
+		for (UINT pos_idx = 0; pos_idx < num_childs; pos_idx++)
 		{
 			// Child spatial partition position
 			const VecDi& pos_child = apos_children[pos_idx];
@@ -1107,8 +1110,8 @@ public:
 			}
 		}
 
-		#pragma omp parallel for
-		for (UINT pos_idx = 0; pos_idx < apos_children.size(); pos_idx++)
+		#pragma omp parallel for firstprivate(plookup_, plookup_buffer_) if(num_childs > 16)
+		for (UINT pos_idx = 0; pos_idx < num_childs; pos_idx++)
 		{
 			const VecDi& pos_child = apos_children[pos_idx];
 
@@ -1207,8 +1210,10 @@ public:
 			const StatusChangeChildrenList& pos_children =
 				m_grid_status_change.children().list(list_idx);
 
-			#pragma omp parallel for
-			for (UINT idx_child = 0; idx_child < pos_children.size(); idx_child++)
+			const UINT num_childs = pos_children.size();
+
+			#pragma omp parallel for firstprivate(layer_id_from) if(num_childs > 16)
+			for (UINT idx_child = 0; idx_child < num_childs; idx_child++)
 			{
 				const VecDi& pos_child = pos_children[idx_child];
 				const StatusChangeChild& child = m_grid_status_change.children().get(pos_child);
