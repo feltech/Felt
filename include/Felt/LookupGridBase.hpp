@@ -77,7 +77,7 @@ public:
 	 */
 	LookupGridBase(const ThisType& other_) : Base(other_)
 	{
- 		m_a_pos = other_.m_a_pos;
+		m_a_pos = other_.m_a_pos;
 	}
 
 	/**
@@ -89,7 +89,7 @@ public:
 	 */
 	LookupGridBase(ThisType&& other_) : Base(other_)
 	{
- 		m_a_pos = other_.m_a_pos;
+		m_a_pos = other_.m_a_pos;
 	}
 
 	/**
@@ -102,8 +102,8 @@ public:
 	ThisType& operator=(const ThisType& other_)
 	{
 		ThisType& me = static_cast<ThisType&>(Base::operator=(other_));
- 		me.m_a_pos = other_.m_a_pos;
- 		return me;
+		me.m_a_pos = other_.m_a_pos;
+		return me;
 	}
 
 	/**
@@ -116,8 +116,8 @@ public:
 	ThisType& operator=(ThisType&& other_)
 	{
 		ThisType& me = static_cast<ThisType&>(Base::operator=(other_));
- 		me.m_a_pos = other_.m_a_pos;
- 		return me;
+		me.m_a_pos = other_.m_a_pos;
+		return me;
 	}
 
 	/**
@@ -301,14 +301,35 @@ protected:
 	 */
 	bool add(const VecDi& pos_, const UINT list_idx_, const UINT lookup_idx_)
 	{
-		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		this->assert_pos_bounds(pos_, "add: ");
-		#endif
+#endif
 
 		UINT& idx = nself->idx_from_pos(pos_, lookup_idx_);
 		// Do not allow duplicates.
 		if (idx != NULL_IDX)
+		{
+#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+
+			bool found = false;
+
+			for (UINT list_idx = 0; list_idx < m_a_pos.size() && !found; list_idx++)
+				if (m_a_pos[list_idx].size() > idx)
+					found = true;
+
+			if (!found)
+			{
+				std::stringstream sstr;
+				sstr << "Position " << felt::format(pos_) << " detected as a duplicate, since " <<
+				idx << " is not " << NULL_IDX << ", but no list is that big";
+				std::string str = sstr.str();
+				throw std::domain_error(str);
+			}
+
+#endif
+
 			return false;
+		}
 		// idx is by reference, so this sets the value in grid.
 		idx = this->list(list_idx_).size();
 		list(list_idx_).push_back(pos_);
@@ -371,28 +392,35 @@ protected:
 	void remove(
 		const UINT idx_, const VecDi& pos_, const UINT list_idx_, const UINT lookup_idx_
 	) {
-		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		this->assert_pos_bounds(pos_, "remove: ");
-		#endif
+#endif
 
 		// Set index lookup to null value.
-		nself->idx_from_pos(pos_, lookup_idx_) = NULL_IDX;
+		UINT& idx_at_pos = nself->idx_from_pos(pos_, lookup_idx_);
+
+		if (idx_at_pos == NULL_IDX)
+			return;
+
+		idx_at_pos = NULL_IDX;
 
 		// If this is not the last remaining position in the array, then
 		// we must move the last position to this position and update the
 		// lookup grid.
-		const UINT size = this->list(list_idx_).size();
-		if (idx_ < size - 1)
+		PosArray& list = m_a_pos[list_idx_];
+		const UINT last_idx = list.size() - 1;
+		if (idx_ < last_idx)
 		{
 			// Duplicate last element into this index.
-			const VecDi& pos_last = this->list(list_idx_)[size - 1];
-			this->list(list_idx_)[idx_] = pos_last;
+			const VecDi& pos_last = list[last_idx];
+			list[idx_] = pos_last;
 			// Set the lookup grid to reference the new index in the array.
-			nself->idx_from_pos(pos_last, lookup_idx_) = idx_;
+			UINT& idx_at_pos_last = nself->idx_from_pos(pos_last, lookup_idx_);
+			idx_at_pos_last = idx_;
 		}
 		// Remove the last element in the array (which is at this point
 		// either the last remaining element or a duplicate).
-		list(list_idx_).pop_back();
+		list.pop_back();
 	}
 };
 

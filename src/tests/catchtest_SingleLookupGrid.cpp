@@ -19,6 +19,7 @@ SCENARIO("SingleLookupGrid")
 		const Vec3i pos4(4, -1, 2);
 		const Vec3i pos5(5, -2, 1);
 		const Vec3i pos6(6, -2, 2);
+		const Vec3i pos7(7, 0, 0);
 
 		WHEN("we add 4 locations to be tracked")
 		{
@@ -51,6 +52,33 @@ SCENARIO("SingleLookupGrid")
 				CHECK((UINT)grid(pos3) == 1);
 				CHECK((UINT)grid(pos4) == 0);
 			}
+			AND_WHEN("we remove a position that is not tracked")
+			{
+				grid.remove(pos7, 1);
+
+				THEN("the tracking lists contain the expected number of elements")
+				{
+					CHECK(grid.list(0).size() == 1);
+					CHECK(grid.list(1).size() == 2);
+					CHECK(grid.list(2).size() == 1);
+				}
+
+				THEN("the tracking list elements contain the position vectors")
+				{
+					CHECK(grid.list(0)[0] == pos1);
+					CHECK(grid.list(1)[0] == pos2);
+					CHECK(grid.list(1)[1] == pos3);
+					CHECK(grid.list(2)[0] == pos4);
+				}
+
+				THEN("the grid contains the indices of the position vectors in the tracking list")
+				{
+					CHECK((UINT)grid(pos1) == 0);
+					CHECK((UINT)grid(pos2) == 0);
+					CHECK((UINT)grid(pos3) == 1);
+					CHECK((UINT)grid(pos4) == 0);
+				}
+			}
 
 			AND_WHEN("we remove a position vector from tracking in list 0")
 			{
@@ -64,8 +92,8 @@ SCENARIO("SingleLookupGrid")
 				}
 
 				THEN(
-					"the tracking list elements still contain the remaining position vectors,"
-					" with the remaining position from list 1 having changed index"
+				"the tracking list elements still contain the remaining position vectors,"
+				" with the remaining position from list 1 having changed index"
 				) {
 					CHECK(grid.list(0)[0] == pos1);
 					CHECK(grid.list(1)[0] == pos3);
@@ -103,8 +131,8 @@ SCENARIO("SingleLookupGrid")
 					}
 
 					THEN(
-						"the grid contains the indices of the position vectors in the tracking"
-						" list"
+					"the grid contains the indices of the position vectors in the tracking"
+					" list"
 					) {
 						CHECK((UINT)grid(pos1) == 0);
 						CHECK((UINT)grid(pos2) == GridType::NULL_IDX);
@@ -136,8 +164,8 @@ SCENARIO("SingleLookupGrid")
 						}
 
 						THEN(
-							"the grid contains the indices of the position vectors in the tracking"
-							" list, with the two removed points having NULL index"
+						"the grid contains the indices of the position vectors in the tracking"
+						" list, with the two removed points having NULL index"
 						) {
 							CHECK((UINT)grid(pos1) == GridType::NULL_IDX);
 							CHECK((UINT)grid(pos2) == GridType::NULL_IDX);
