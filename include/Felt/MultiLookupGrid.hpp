@@ -21,7 +21,12 @@ class EagerMultiLookupGrid : public EagerLookupGridBase<EagerMultiLookupGrid<D, 
 public:
 	using ThisType = EagerMultiLookupGrid<D, N>;
 	using Base = EagerLookupGridBase<ThisType>;
+	using typename Base::PosArray;
+public:
 	using Base::EagerLookupGridBase;
+	using Base::list;
+private:
+	const PosArray& list() const {}
 };
 
 
