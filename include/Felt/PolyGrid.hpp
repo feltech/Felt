@@ -14,7 +14,7 @@ namespace felt
 	 * signed distance grid.
 	 *
 	 * Each Poly object polygonises a single spatial partition.
-	 * 
+	 *
 	 * @tparam D number of dimensions of the surface and thus grid.
 	 * @tparam P Poly compatible class for storing the polygonisations of
 	 * spatial partitions.
@@ -36,17 +36,17 @@ namespace felt
 		/// Standard 3-layer signed-distance surface (either 2D or 3D).
 		using PolySurface = Surface<Dims, 3>;
 
-		/// MultiLookup grid to track partitions containing zero-layer points.
+		/// Lookup grid to track partitions containing zero-layer points.
 		using PolyChanges = EagerSingleLookupGrid<Dims>;
-		
+
 	protected:
-		/// MultiLookup grid to track partitions containing zero-layer points.
+		/// Lookup grid to track partitions containing zero-layer points.
 		PolyChanges		m_grid_changes;
 
 	public:
 		~PolyGridBase ()
 		{}
-		
+
 		/**
 		 * Initialise an empty grid of Poly objects.
 		 */
@@ -55,7 +55,7 @@ namespace felt
 
 		/**
 		 * Construct a grid of polygonisations to fit size of given Surface.
-		 * 
+		 *
 		 * @param surface
 		 */
 		PolyGridBase (const PolySurface& surface) : Base(), m_grid_changes()
@@ -101,9 +101,9 @@ namespace felt
 		}
 
 		/**
-		 * Get the grid of tracked changes to the surface vs. last 
+		 * Get the grid of tracked changes to the surface vs. last
 		 * polygonisation.
-		 * 
+		 *
 		 * @return grid of changes.
 		 */
 		const PolyChanges& changes () const
@@ -122,19 +122,22 @@ namespace felt
 		 */
 		void notify(const PolySurface& surface)
 		{
-			for (INT layer_id = surface.LAYER_MIN; layer_id <= surface.LAYER_MAX; layer_id++)
-			{
-				for (
-					const VecDi& pos_child
-					: surface.delta().children().list(surface.layer_idx(layer_id))
-				) {
-					this->notify(surface, pos_child);
-				}
+			for (
+				UINT layer_idx = 0; layer_idx <= surface.isogrid().NUM_LISTS;
+				layer_idx += surface.isogrid().NUM_LISTS - 1
+			) {
+				for (const VecDi& pos_child : surface.delta().children().list(layer_idx))
+					notify(surface, pos_child);
 			}
 
-			for (const VecDi& pos_child : surface.status_change().children().list())
-			{
-				m_grid_changes.add(pos_child);
+			// Cycle outermost status change lists, where a child may need resetting.
+			for (
+				UINT layer_idx = 0; layer_idx <= surface.isogrid().NUM_LISTS;
+				layer_idx += surface.isogrid().NUM_LISTS - 1
+			) {
+				for (const VecDi& pos_child : surface.status_change().children().list(layer_idx))
+					if (this->get(pos_child).spx().size() > 0)
+						m_grid_changes.add(pos_child);
 			}
 		}
 
@@ -148,16 +151,11 @@ namespace felt
 		{
 			bool is_active = this->get(pos_child).spx().size() > 0;
 
-			if (!is_active)
-			{
-				is_active = surface.status_change().children().is_active(pos_child);
-
-				for (
-					UINT layer_idx = 0; layer_idx < surface.isogrid().NUM_LISTS && !is_active;
-					layer_idx++
-				) {
-					is_active = surface.isogrid().children().is_active(pos_child, layer_idx);
-				}
+			for (
+				UINT layer_idx = 0; !is_active && layer_idx <= surface.isogrid().NUM_LISTS;
+				layer_idx += surface.isogrid().NUM_LISTS - 1
+			) {
+				is_active = surface.isogrid().children().is_active(pos_child, layer_idx);
 			}
 
 			if (is_active)
@@ -176,22 +174,17 @@ namespace felt
 		{
 
 			#pragma omp parallel for
-			for (
-				UINT child_idx = 0;
-				child_idx < m_grid_changes.list().size(); child_idx++
-			) {
+			for (UINT child_idx = 0; child_idx < m_grid_changes.list().size(); child_idx++)
+			{
 				const VecDi& pos_child = m_grid_changes.list()[child_idx];
 
 				PolyLeaf& leaf = this->get(pos_child);
 				leaf.reset();
 
-				for (
-					INT layer_id = surface.LAYER_MIN;
-					layer_id <= surface.LAYER_MAX; layer_id++
-				) {
-					for (
-						const VecDi& pos : surface.layer(pos_child, layer_id)
-					) {
+				for (INT layer_id = surface.LAYER_MIN; layer_id <= surface.LAYER_MAX; layer_id++)
+				{
+					for (const VecDi& pos : surface.layer(pos_child, layer_id))
+					{
 						leaf.spx(pos, surface.isogrid());
 					}
 				}
