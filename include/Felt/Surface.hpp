@@ -15,6 +15,12 @@
 #include "Util.hpp"
 #include "SingleTrackedPartitionedGrid.hpp"
 
+#define FELT_STR(args) #args
+#define FELT_PARALLEL_FOR_CMD(num, args)\
+	FELT_STR(omp parallel for if(num >= 32) args)
+
+#define FELT_PARALLEL_FOR(num, args) _Pragma(FELT_PARALLEL_FOR_CMD(num, args))
+
 
 namespace felt
 {
@@ -93,7 +99,7 @@ protected:
 
 	/**
 	 * Grid tracking locations that are to be moved to another narrow band layer.
-	 * 
+	 *
 	 * The tracking list index encodes the "from" layer and the value in the grid encodes the
 	 * "to" layer.
 	 */
@@ -262,7 +268,7 @@ public:
 
 	/**
 	 * @copydoc Surface::layer(const VecDi&, const INT)
-	 * 
+	 *
 	 * const version.
 	 */
 	const PosArray& layer (
@@ -292,7 +298,7 @@ public:
 	 * Get narrow band layer id of location in isogrid grid.
 	 *
 	 * Calculates layer ID based on value in grid (i.e. is the layer the location *should*
-	 * be in). 
+	 * be in).
 	 *
 	 * The position vector type is templated, so that interpolation overloads can be used
 	 * if a float vector (e.g. Vec3f) is provided.
@@ -313,7 +319,7 @@ public:
 	 *
 	 * Rounds value to nearest integer, but with an epsilon to prefer rounding up, to keep
 	 * consistent when we have floating point rounding errors.
-	 * 
+	 *
 	 * @param val value to round to give narrow band layer ID.
 	 * @return layer ID that given value should belong to
 	 */
@@ -607,7 +613,7 @@ public:
 	{
 		const PosArray& pos_children = parts();
 		update_start();
-		#pragma omp parallel for
+		FELT_PARALLEL_FOR(pos_children.size(),)
 		for (UINT part_idx = 0; part_idx < pos_children.size(); part_idx++)
 		{
 			const VecDi& pos_part = pos_children[part_idx];
@@ -658,7 +664,7 @@ public:
 		// Clear previous update.
 		update_start();
 		// Parallel loop through spatial partitions.
-		#pragma omp parallel for if(child_idx_bound > 16)
+		FELT_PARALLEL_FOR(child_idx_bound,)
 		for (UINT child_idx = 0; child_idx < child_idx_bound; child_idx++)
 		{
 			// Get spatial partition position.
@@ -932,7 +938,7 @@ public:
 
 		const UINT num_childs = apos_children.size();
 
-		#pragma omp parallel for firstprivate(plookup_buffer_) if(num_childs > 16)
+		FELT_PARALLEL_FOR(num_childs, firstprivate(plookup_buffer_))
 		for (UINT idx_child = 0; idx_child < num_childs; idx_child++)
 		{
 			const VecDi& pos_child = apos_children[idx_child];
@@ -1063,7 +1069,7 @@ public:
 		const PosArray& apos_children = plookup_->children().list(layer_idx);
 		const UINT num_childs = apos_children.size();
 
-		#pragma omp parallel for firstprivate(plookup_, plookup_buffer_) if(num_childs > 16)
+		FELT_PARALLEL_FOR(num_childs, firstprivate(plookup_, plookup_buffer_))
 		for (UINT pos_idx = 0; pos_idx < num_childs; pos_idx++)
 		{
 			// Child spatial partition position
@@ -1110,7 +1116,7 @@ public:
 			}
 		}
 
-		#pragma omp parallel for firstprivate(plookup_, plookup_buffer_) if(num_childs > 16)
+		FELT_PARALLEL_FOR(num_childs, firstprivate(plookup_, plookup_buffer_))
 		for (UINT pos_idx = 0; pos_idx < num_childs; pos_idx++)
 		{
 			const VecDi& pos_child = apos_children[pos_idx];
@@ -1212,7 +1218,7 @@ public:
 
 			const UINT num_childs = pos_children.size();
 
-			#pragma omp parallel for firstprivate(layer_id_from) if(num_childs > 16)
+			FELT_PARALLEL_FOR(num_childs, firstprivate(layer_id_from))
 			for (UINT idx_child = 0; idx_child < num_childs; idx_child++)
 			{
 				const VecDi& pos_child = pos_children[idx_child];
@@ -1323,7 +1329,7 @@ public:
 
 							// Use thread-safe update and track function, since neighbouring point
 							// could be in another spatial partition.
-							this->m_grid_isogrid.add_safe(pos_neigh, distance_neigh, list_idx);
+							this->m_grid_isogrid.add(pos_neigh, distance_neigh, list_idx);
 						}
 					);
 				}
@@ -1903,23 +1909,23 @@ protected:
 		const VecDf& pos_intersect = (
 			line.intersectionPoint(plane) + line.direction() * FLOAT(TINY)
 		);
-     
+
 		const VecDu& size = m_grid_isogrid.size();
-		const VecDi& offset = m_grid_isogrid.offset();     
-		const VecDf& dir = line.direction();     
-		
+		const VecDi& offset = m_grid_isogrid.offset();
+		const VecDf& dir = line.direction();
+
 		for (UINT i = 0; i < dir.size(); i++)
 		{
 			if (
-     			(dir(i) > 0 && pos_intersect(i) > size(i)) ||
-     			(dir(i) < 0 && pos_intersect(i) < offset(i))
-     		)
-     			return false;
-		}     
+				(dir(i) > 0 && pos_intersect(i) > size(i)) ||
+				(dir(i) < 0 && pos_intersect(i) < offset(i))
+			)
+				return false;
+		}
 
 		if (!m_grid_isogrid.inside(pos_intersect))
 			return true;
-     
+
 		const VecDi& pos_floor = floor(pos_intersect);
 		const VecDi& pos_child = this->m_grid_isogrid.pos_child(pos_floor);
 
