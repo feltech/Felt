@@ -1,5 +1,8 @@
 Deformable surface simulation and visualisation library
 -------------------------------------------------------
+
+Documentation: http://feltech.github.io/Felt/
+
 Felt is an implementation of the
 [sparse field level set](https://en.wikipedia.org/wiki/Level_set_(data_structures)#Sparse_field)
 method for deformable surfaces, and the
