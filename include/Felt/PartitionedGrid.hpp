@@ -11,7 +11,7 @@ namespace felt
  *
  * Uses multiple inheritance from child grid (MixinType) class, spoofing the signature,
  * and PartitionBase for actual storage in a (single-level) tree hierarchy,
- * i.e. PartitionedGridBase -> Branch -> Child -> leaf.
+ * i.e. PartitionedGridBase -> Child -> LeafType.
  */
 template <class Derived>
 class PartitionedGridBase
@@ -40,13 +40,13 @@ public:
 	 * Each grid node stores a Child grid and tracks active nodes using one or more tracking lists.
 	 */
 	using ChildrenGrid = typename Base::ChildrenGrid;
-	
+
 	using VecDu = typename MixinType::VecDu;
 	using VecDi = typename MixinType::VecDi;
-	
+
 	/**
-	 * Non-partitioned Grid class to store snapshots of partitioned grids. 
-	 * 
+	 * Non-partitioned Grid class to store snapshots of partitioned grids.
+	 *
 	 * Useful for serialisation or logging.
 	 */
 	using SnapshotGrid = Grid<LeafType, Dims>;
@@ -230,9 +230,9 @@ public:
 		if (m_pgrid_snapshot.get() == NULL)
 			return;
 
-		for (UINT branch_idx = 0; branch_idx < this->children().data().size(); branch_idx++)
+		for (UINT child_idx = 0; child_idx < this->children().data().size(); child_idx++)
 		{
-			Child& child = this->children().data()[branch_idx];
+			Child& child = this->children().data()[child_idx];
 			for (UINT leaf_idx = 0; leaf_idx < child.data().size(); leaf_idx++)
 			{
 				const VecDi& pos = child.index(leaf_idx);

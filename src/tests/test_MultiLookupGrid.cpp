@@ -20,7 +20,7 @@ SCENARIO("MultiLookupGrid")
 		const Vec3i pos5(5, -2, 1);
 		const Vec3i pos6(6, -2, 2);
 
-		THEN("the grid is initialised with NULL indices an the tracking lists are empty")
+		THEN("the grid is initialised with NULL indices and the tracking lists are empty")
 		{
 			REQUIRE(grid.list(0).size() == 0);
 			REQUIRE(grid.list(1).size() == 0);

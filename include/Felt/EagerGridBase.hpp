@@ -1163,7 +1163,7 @@ public:
 
 
 /**
- * Traits for StaticGridBase.
+ * Traits for EagerGridBase.
  *
  * Just forward the traits defined for StaticGridBase subclasses.
  */

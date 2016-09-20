@@ -183,7 +183,7 @@ public:
 
 
 /**
- * Base class for spatially partitioned wrappers for MultiLookupGrid and MultiTrackedGrid.
+ * Base class for spatially partitioned wrappers for LookupGrid and TrackedGrid.
  *
  * @tparam Derived the CRTP derived class.
  */

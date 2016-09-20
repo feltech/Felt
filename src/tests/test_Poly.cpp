@@ -74,7 +74,7 @@ SCENARIO("Poly")
 			return -0.4f;
 		});
 
-		INFO(stringifyGridSlice(surface.isogrid()));
+		INFO(stringify_grid_slice(surface.isogrid()));
 
 		Poly<2> poly(surface.isogrid().size(), surface.isogrid().offset());
 
@@ -99,7 +99,7 @@ SCENARIO("Poly")
 			}
 		}
 	}
-	
+
 	GIVEN("a polygonisation attached to a 7x7x7 surface of 0.4 units radius")
 	{
 		Surface<3> surface(Vec3u(7,7,7));
@@ -108,7 +108,7 @@ SCENARIO("Poly")
 			return -0.4f;
 		});
 
-		INFO(stringifyGridSlice(surface.isogrid()));
+		INFO(stringify_grid_slice(surface.isogrid()));
 
 		Poly<3> poly(surface.isogrid().size(), surface.isogrid().offset());
 		// Reserve space to prevent reallocation when testing for equality of memory addresses.
@@ -132,26 +132,26 @@ SCENARIO("Poly")
 				{
 					CHECK(vertex.pos == Vec3f(0, 0, 0.4f));
 				}
-				
+
 				THEN("the vertex normal is in the +z direction")
 				{
 					CHECK(vertex.norm == Vec3f(0, 0, 1.0f));
 				}
-				
+
 				AND_WHEN("we retrieve another vertex")
 				{
 					UINT idx = poly.idx(Vec3i(0,0,-1), 2, surface.isogrid());
-					
+
 					THEN("the new vertex's index is 1")
 					{
 						CHECK(idx == 1);
 					}
-					
+
 					AND_WHEN("we request the previous vertex again")
 					{
 						UINT idx = poly.idx(Vec3i(0,0,0), 2, surface.isogrid());
 						const Poly<3>::Vertex& vertex_again = poly.vtx(idx);
-						
+
 						THEN("the index is unchanged and the vertex is the same object")
 						{
 							CHECK(idx == 0);
@@ -469,8 +469,8 @@ SCENARIO("Poly")
 
 		INFO(
 			std::to_string(mask) +
-			" = " + stringifyBitmask(mask, 8) +
-			" => " + stringifyBitmask(vtx_mask, 12)
+			" = " + stringify_bitmask(mask, 8) +
+			" => " + stringify_bitmask(vtx_mask, 12)
 		);
 		CHECK(vtx_mask == 0b101010010110);
 
@@ -511,7 +511,7 @@ SCENARIO("Poly")
 			if (vtx_order[idx] >= 0)
 			{
 				INFO(
-					stringifyBitmask(vtx_mask, 12) + " >> " +
+					stringify_bitmask(vtx_mask, 12) + " >> " +
 					std::to_string(vtx_order[idx])
 				);
 				CHECK(
@@ -567,7 +567,7 @@ SCENARIO("Poly")
 			surface.delta(pos, -0.3);
 		surface.update_end();
 
-		INFO(stringifyGridSlice(surface.isogrid()));
+		INFO(stringify_grid_slice(surface.isogrid()));
 
 		// Check that the corner inside/outside status mask is indeed still
 		// the same.

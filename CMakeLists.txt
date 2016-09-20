@@ -27,7 +27,7 @@ add_definitions(
 
 # C++ unit tests
 
-file(GLOB CTEST_CPPS "${TESTS_ROOT}/catchtest*.cpp")
+file(GLOB CTEST_CPPS "${TESTS_ROOT}/test*.cpp")
 add_executable(ctests ${CTEST_CPPS} ${TESTS_ROOT}/Utils.cpp)
 include_directories(${PROJECT_ROOT}/include ${EIGEN3_INCLUDE_DIR})
 target_link_libraries(ctests gomp pthread)

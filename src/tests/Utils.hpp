@@ -11,28 +11,12 @@
 
 namespace felt
 {
-	/// Utility: turn a vector into a string.
-	template <class T>
-	std::string stringifyVector(const T& p, const INT prec = 3)
-	{
-		std::stringstream str;
-		str << "(";
-		for (UINT i = 0; i < p.size(); i++)
-		{
-			if (i != 0)
-				str << ", ";
-			str << std::setprecision(prec) << p(i);
-		}
-		str << ")";
-		return str.str();
-	}
-
 	/// Utility: turn a number into a bit string.
-	std::string stringifyBitmask(long mask, short length = 8);
+	std::string stringify_bitmask(long mask, short length = 8);
 
 	/// Utility: take a slice of a 3D grid and return a tabulated string.
 	template <class Derived>
-	std::string stringifyGridSlice(
+	std::string stringify_grid_slice(
 		const EagerGridBase<Derived>& grid, UINT axis_plane = 2, INT axis_plane_offset = 0
 	) {
 		using GridType = GridBase<Derived>;
@@ -69,7 +53,7 @@ namespace felt
 	 * Copy of Catch::Detail::Approx to handle vector types.
 	 */
 	template <class VecType>
-    class ApproxVecImpl
+	class ApproxVecImpl
 	{
 	public:
 		using ThisType = ApproxVecImpl<VecType>;
@@ -134,7 +118,7 @@ namespace felt
 		double m_epsilon;
 		double m_scale;
 		VecType m_value;
-    };
+	};
 
 	/**
 	 * Wrap ApproxVec implementation in a function to enable template parameter deduction.
@@ -152,14 +136,14 @@ namespace felt
 
 namespace Catch
 {
-    template<class VecType>
-    struct StringMaker< felt::ApproxVecImpl<VecType> >
+	template<class VecType>
+	struct StringMaker< felt::ApproxVecImpl<VecType> >
 	{
-        static std::string convert( felt::ApproxVecImpl<VecType> const& value_ )
-        {
-            return value_.toString();
-        }
-    };
+		static std::string convert( felt::ApproxVecImpl<VecType> const& value_ )
+		{
+			return value_.toString();
+		}
+	};
 }
 
 #endif /* SRC_TESTS_UTILS_HPP_ */

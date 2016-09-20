@@ -44,7 +44,7 @@ UINT assert_partitioned_matches_baseline (
 		if (polys.get(pos_child).vtx().size() > 0)
 			INFO(
 				"Partition "
-				+ stringifyVector(pos_child)
+				+ felt::format(pos_child)
 				+ " vtxs = "
 				+ std::to_string(polys.get(pos_child).vtx().size())
 				+ ", spxs = "
@@ -81,9 +81,9 @@ UINT assert_partitioned_matches_baseline (
 			INFO(
 				(
 					"Simplex from partition "
-					+ stringifyVector(polys_vtxs[0]) + "-"
-					+ stringifyVector(polys_vtxs[1]) + "-"
-					+ stringifyVector(polys_vtxs[2])
+					+ felt::format(polys_vtxs[0]) + "-"
+					+ felt::format(polys_vtxs[1]) + "-"
+					+ felt::format(polys_vtxs[2])
 					+ " found in baseline"
 				)
 			);
@@ -134,9 +134,9 @@ UINT assert_partitioned_matches_baseline (
 		INFO(
 			(
 				"Simplex from baseline "
-				+ stringifyVector(poly_vtxs[0]) + "-"
-				+ stringifyVector(poly_vtxs[1]) + "-"
-				+ stringifyVector(poly_vtxs[2])
+				+ felt::format(poly_vtxs[0]) + "-"
+				+ felt::format(poly_vtxs[1]) + "-"
+				+ felt::format(poly_vtxs[2])
 				+ " found in partition"
 			)
 		);
@@ -243,7 +243,7 @@ SCENARIO("PolyGrid")
 */
 		// ==== Confirm ====
 
-//		INFO(stringifyGridSlice(surface.isogrid()));
+//		INFO(stringify_grid_slice(surface.isogrid()));
 		poly_single.reset();
 		poly_single.surf(surface);
 
@@ -298,7 +298,7 @@ SCENARIO("PolyGrid")
 */
 		// ==== Confirm ====
 
-//		INFO(stringifyGridSlice(surface.isogrid()));
+//		INFO(stringify_grid_slice(surface.isogrid()));
 		poly_single.reset();
 		poly_single.surf(surface);
 
@@ -359,7 +359,7 @@ SCENARIO("PolyGrid")
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-//		INFO(stringifyGridSlice(surface.isogrid()));
+//		INFO(stringify_grid_slice(surface.isogrid()));
 
 		// ==== Confirm ====
 
@@ -424,7 +424,7 @@ SCENARIO("PolyGrid")
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-//		INFO(stringifyGridSlice(surface.isogrid()));
+//		INFO(stringify_grid_slice(surface.isogrid()));
 
 		// ==== Confirm ====
 
@@ -463,7 +463,7 @@ SCENARIO("PolyGrid")
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-//		INFO(stringifyGridSlice(surface.isogrid()));
+//		INFO(stringify_grid_slice(surface.isogrid()));
 
 		UINT num_spxs_before = 0;
 		UINT num_vtxs_before = 0;
@@ -483,7 +483,7 @@ SCENARIO("PolyGrid")
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-//		INFO(stringifyGridSlice(surface.isogrid()));
+//		INFO(stringify_grid_slice(surface.isogrid()));
 
 		// Contract
 		surface.update_start();
@@ -497,7 +497,7 @@ SCENARIO("PolyGrid")
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-//		INFO(stringifyGridSlice(surface.isogrid()));
+//		INFO(stringify_grid_slice(surface.isogrid()));
 
 		// ==== Confirm ====
 
@@ -540,7 +540,7 @@ SCENARIO("PolyGrid")
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-		INFO(stringifyGridSlice(surface.isogrid()));
+		INFO(stringify_grid_slice(surface.isogrid()));
 
 		UINT num_spxs_before = 0;
 		for (const Vec3i& pos_child : polys)
@@ -559,7 +559,7 @@ SCENARIO("PolyGrid")
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-//		INFO(stringifyGridSlice(surface.isogrid()));
+//		INFO(stringify_grid_slice(surface.isogrid()));
 
 		// Contract.
 		surface.update_start();
@@ -573,7 +573,7 @@ SCENARIO("PolyGrid")
 		polys.poly_cubes(surface);
 		polys.update_end();
 
-//		INFO(stringifyGridSlice(surface.isogrid()));
+//		INFO(stringify_grid_slice(surface.isogrid()));
 
 		// ==== Confirm ====
 
@@ -583,7 +583,7 @@ SCENARIO("PolyGrid")
 		for (const Vec3i& pos_child : polys)
 		{
 			INFO(
-				"Partition " + stringifyVector(pos_child) + " "
+				"Partition " + felt::format(pos_child) + " "
 				+ std::to_string(polys.get(pos_child).spx().size())
 				+ " spxs now == "
 				+ std::to_string(grid_spxs_before(pos_child)) + " spxs before"
@@ -621,7 +621,7 @@ SCENARIO("PolyGrid")
 		});
 		polys.notify(surface);
 
-		INFO(stringifyGridSlice(surface.isogrid()));
+		INFO(stringify_grid_slice(surface.isogrid()));
 
 		// Expand - expanding across to other partition.
 		surface.update_start();
@@ -635,7 +635,7 @@ SCENARIO("PolyGrid")
 		assert_partitioned_matches_baseline(polys, poly);
 		poly.reset();
 
-		INFO(stringifyGridSlice(surface.isogrid()));
+		INFO(stringify_grid_slice(surface.isogrid()));
 
 		UINT num_spxs_before = 0;
 		for (const Vec3i& pos_child : polys)
@@ -650,7 +650,7 @@ SCENARIO("PolyGrid")
 		surface.delta(Vec3i(0,5,0), 0.0f);
 		surface.update_end();
 
-//		INFO(stringifyGridSlice(surface.isogrid()));
+//		INFO(stringify_grid_slice(surface.isogrid()));
 
 		// ==== Confirm ====
 
@@ -661,7 +661,7 @@ SCENARIO("PolyGrid")
 		for (const Vec3i& pos_child : polys)
 		{
 			INFO(
-				"Partition " + stringifyVector(pos_child) + " "
+				"Partition " + felt::format(pos_child) + " "
 				+ std::to_string(polys.get(pos_child).spx().size())
 				+ " spxs now == "
 				+ std::to_string(grid_spxs_before(pos_child)) + " spxs before"
@@ -706,7 +706,7 @@ SCENARIO("PolyGrid")
 
 		polys.surf(surface);
 
-//		INFO(stringifyGridSlice(surface.isogrid()));
+//		INFO(stringify_grid_slice(surface.isogrid()));
 
 		// ==== Confirm ====
 

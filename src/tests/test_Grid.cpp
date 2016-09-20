@@ -38,7 +38,7 @@ SCENARIO("Grid")
 				CHECK(grid.data().size() == (5 * 11 * 13));
 			}
 		}
-		//! [Initialsing grid size]
+		//! [Initialising grid size]
 
 		//! [Get and set]
 		WHEN("some positions values are set")

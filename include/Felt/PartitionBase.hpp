@@ -42,7 +42,7 @@ protected:
 	/// Grid of partitions with tracking list(s) of active grid points.
 	ChildrenGrid	m_grid_children;
 
-	/// Mutex used to synchrnonise the the adding/removing of elements from the tracking list(s).
+	/// Mutex used to synchrnonise the adding/removing of elements from the tracking list(s).
 	std::mutex	m_mutex_update_branch;
 
 	/// A convenience vector of the (unsigned) size of a partition.

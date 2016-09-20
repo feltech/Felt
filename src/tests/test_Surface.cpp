@@ -341,13 +341,18 @@ WHEN("iterate_layers")
 
 GIVEN("a 9x9 2-layer surface with a singularity seed at the centre")
 {
+	// 2D surface with 2x narrow band layers, respectively.
 	using Surface_t = Surface<2, 2>;
+	// Construct the surface.
 	Surface_t surface(Vec2u(9, 9));
+
+	// Grid to use for checking data.
 	Grid<FLOAT, 2> isogrid_check(Vec2u(5, 5), Vec2i::Zero(), 0);
 
+	// Create seed point in the centre
 	surface.seed(Vec2i(0, 0));
 
-	INFO(stringifyGridSlice(surface.isogrid()));
+	INFO(stringify_grid_slice(surface.isogrid()));
 
 	// Trivially check centre of seed is indeed a zero-level point (i.e. point
 	// on the surface).
@@ -393,7 +398,7 @@ GIVEN("a 9x9 2-layer surface with a singularity seed at the centre")
 			return -1.0f;
 		});
 
-		INFO(stringifyGridSlice(surface.isogrid()));
+		INFO(stringify_grid_slice(surface.isogrid()));
 
 		THEN("the grid data matches a surface of radius 1")
 		{
@@ -422,7 +427,7 @@ GIVEN("a 9x9 2-layer surface with a singularity seed at the centre")
 				return -1.0f;
 			});
 
-			INFO(stringifyGridSlice(surface.isogrid()));
+			INFO(stringify_grid_slice(surface.isogrid()));
 
 			THEN("the grid data matches a surface of radius 2")
 			{
@@ -455,7 +460,7 @@ GIVEN("a 9x9 2-layer surface with a singularity seed at the centre")
 					});
 				}
 
-				INFO(stringifyGridSlice(surface.isogrid()));
+				INFO(stringify_grid_slice(surface.isogrid()));
 
 				THEN("the surface data matches an area completely consumed by the surface")
 				{
@@ -496,7 +501,7 @@ GIVEN("a 9x9 2-layer surface with a singularity seed at the centre")
 			}
 			surface.update_end();
 
-			INFO(stringifyGridSlice(surface.isogrid()));
+			INFO(stringify_grid_slice(surface.isogrid()));
 
 			THEN("the surface has collapsed back to a singularity")
 			{
@@ -516,8 +521,8 @@ GIVEN("a 9x9 2-layer surface with a singularity seed at the centre")
 
 				isogrid_check.vdata() = isogrid_check.vdata() -
 					surface.isogrid().snapshot().vdata();
-				INFO(stringifyGridSlice(surface.isogrid().snapshot()));
-				INFO(stringifyGridSlice(isogrid_check));
+				INFO(stringify_grid_slice(surface.isogrid().snapshot()));
+				INFO(stringify_grid_slice(isogrid_check));
 
 				const FLOAT diff = isogrid_check.vdata().sum();
 
@@ -548,7 +553,7 @@ GIVEN("a 9x9 2-layer surface with a singularity seed at the centre")
 				}
 				surface.update_end();
 
-				INFO(stringifyGridSlice(surface.isogrid()));
+				INFO(stringify_grid_slice(surface.isogrid()));
 
 				THEN("iterating over layer 0 gives 0 points")
 				{
@@ -592,36 +597,37 @@ GIVEN("a 9x9 2-layer surface with a singularity seed at the centre")
 
 	WHEN("we expand by 0.6")
 	{
-		// Create seed point and expand the narrow band.
-		surface.update_start();
-		{
-			surface.delta(Vec2i(0, 0), -0.6f);
-		}
-		surface.update_end();
+		// Expand the narrow band.
+		surface.update([](auto& pos, auto& isogrid) {
+			return -0.6f;
+		});
 
-		INFO(stringifyGridSlice(surface.isogrid()));
+		INFO(stringify_grid_slice(surface.isogrid()));
 
 		THEN("the grid data and layers are as expected")
 		{
 			isogrid_check.data() = {
-			      3,    3,    3,    3,    3,    3,    3,    3,    3,
-			      3,    3,    3,    3,  2.4,    3,    3,    3,    3,
-			      3,    3,    3,  2.4,  1.4,  2.4,    3,    3,    3,
-			      3,    3,  2.4,  1.4,  0.4,  1.4,  2.4,    3,    3,
-			      3,  2.4,  1.4,  0.4, -0.6,  0.4,  1.4,  2.4,    3,
-			      3,    3,  2.4,  1.4,  0.4,  1.4,  2.4,    3,    3,
-			      3,    3,    3,  2.4,  1.4,  2.4,    3,    3,    3,
-			      3,    3,    3,    3,  2.4,    3,    3,    3,    3,
-			      3,    3,    3,    3,    3,    3,    3,    3,    3
+				  3,    3,    3,    3,    3,    3,    3,    3,    3,
+				  3,    3,    3,    3,  2.4,    3,    3,    3,    3,
+				  3,    3,    3,  2.4,  1.4,  2.4,    3,    3,    3,
+				  3,    3,  2.4,  1.4,  0.4,  1.4,  2.4,    3,    3,
+				  3,  2.4,  1.4,  0.4, -0.6,  0.4,  1.4,  2.4,    3,
+				  3,    3,  2.4,  1.4,  0.4,  1.4,  2.4,    3,    3,
+				  3,    3,    3,  2.4,  1.4,  2.4,    3,    3,    3,
+				  3,    3,    3,    3,  2.4,    3,    3,    3,    3,
+				  3,    3,    3,    3,    3,    3,    3,    3,    3
 			};
 
+			// snapshot() copies the spatially partitioned grid into a single
+			// unpartitioned grid. vdata() returns an Eigen vector with the grid data, giving
+			// access to arithmetic and other BLAS functions.
 			isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
 			const FLOAT diff = isogrid_check.vdata().sum();
 			CHECK(diff == Approx(0));
 
-			CHECK(surface.layer(0).size() == 4);
-			CHECK(surface.layer(-1).size() == 1);
 			CHECK(surface.layer(-2).size() == 0);
+			CHECK(surface.layer(-1).size() == 1);
+			CHECK(surface.layer(0).size() == 4);
 			CHECK(surface.layer(1).size() == 8);
 			CHECK(surface.layer(2).size() == 12);
 		}
@@ -633,20 +639,20 @@ GIVEN("a 9x9 2-layer surface with a singularity seed at the centre")
 				return 0.6f;
 			});
 
-			INFO(stringifyGridSlice(surface.isogrid()));
+			INFO(stringify_grid_slice(surface.isogrid()));
 
 			THEN("the surface is once more a seed")
 			{
 				isogrid_check.data() = {
-				      3,    3,    3,    3,    3,    3,    3,    3,    3,
-				      3,    3,    3,    3,    3,    3,    3,    3,    3,
-				      3,    3,    3,    3,    2,    3,    3,    3,    3,
-				      3,    3,    3,    2,    1,    2,    3,    3,    3,
-				      3,    3,    2,    1,    0,    1,    2,    3,    3,
-				      3,    3,    3,    2,    1,    2,    3,    3,    3,
-				      3,    3,    3,    3,    2,    3,    3,    3,    3,
-				      3,    3,    3,    3,    3,    3,    3,    3,    3,
-				      3,    3,    3,    3,    3,    3,    3,    3,    3
+					  3,    3,    3,    3,    3,    3,    3,    3,    3,
+					  3,    3,    3,    3,    3,    3,    3,    3,    3,
+					  3,    3,    3,    3,    2,    3,    3,    3,    3,
+					  3,    3,    3,    2,    1,    2,    3,    3,    3,
+					  3,    3,    2,    1,    0,    1,    2,    3,    3,
+					  3,    3,    3,    2,    1,    2,    3,    3,    3,
+					  3,    3,    3,    3,    2,    3,    3,    3,    3,
+					  3,    3,    3,    3,    3,    3,    3,    3,    3,
+					  3,    3,    3,    3,    3,    3,    3,    3,    3
 				};
 
 				CHECK(surface.layer(-2).size() == 0);
@@ -668,20 +674,20 @@ GIVEN("a 9x9 2-layer surface with a singularity seed at the centre")
 					return 0.6f;
 				});
 
-				INFO(stringifyGridSlice(surface.isogrid()));
+				INFO(stringify_grid_slice(surface.isogrid()));
 
 				THEN("the surface has completely collapsed and all points are outside")
 				{
 					isogrid_check.data() = {
-					      3,    3,    3,    3,    3,    3,    3,    3,    3,
-					      3,    3,    3,    3,    3,    3,    3,    3,    3,
-					      3,    3,    3,    3,    3,    3,    3,    3,    3,
-					      3,    3,    3,    3,    3,    3,    3,    3,    3,
-					      3,    3,    3,    3,    3,    3,    3,    3,    3,
-					      3,    3,    3,    3,    3,    3,    3,    3,    3,
-					      3,    3,    3,    3,    3,    3,    3,    3,    3,
-					      3,    3,    3,    3,    3,    3,    3,    3,    3,
-					      3,    3,    3,    3,    3,    3,    3,    3,    3
+						  3,    3,    3,    3,    3,    3,    3,    3,    3,
+						  3,    3,    3,    3,    3,    3,    3,    3,    3,
+						  3,    3,    3,    3,    3,    3,    3,    3,    3,
+						  3,    3,    3,    3,    3,    3,    3,    3,    3,
+						  3,    3,    3,    3,    3,    3,    3,    3,    3,
+						  3,    3,    3,    3,    3,    3,    3,    3,    3,
+						  3,    3,    3,    3,    3,    3,    3,    3,    3,
+						  3,    3,    3,    3,    3,    3,    3,    3,    3,
+						  3,    3,    3,    3,    3,    3,    3,    3,    3
 					};
 
 					CHECK(surface.layer(-2).size() == 0);
@@ -712,7 +718,7 @@ GIVEN("a 16x9 2-layer surface with two small regions side-by-side")
 		return -1.0f;
 	});
 
-	INFO(stringifyGridSlice(surface.isogrid()));
+	INFO(stringify_grid_slice(surface.isogrid()));
 
 
 	THEN("outermost layers in central partitions are as expected")
@@ -724,15 +730,15 @@ GIVEN("a 16x9 2-layer surface with two small regions side-by-side")
 	THEN("the surface is in the expected state")
 	{
 		isogrid_check.data() = {
-		      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
-		      3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,
-		      3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,
-		      3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    2,    1,    0,    1,    2,    3,
-		      3,    2,    1,    0,   -1,    0,    1,    2,    3,    2,    1,    0,   -1,    0,    1,    2,
-		      3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    2,    1,    0,    1,    2,    3,
-		      3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,
-		      3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,
-		      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
+			  3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+			  3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,
+			  3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,
+			  3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    2,    1,    0,    1,    2,    3,
+			  3,    2,    1,    0,   -1,    0,    1,    2,    3,    2,    1,    0,   -1,    0,    1,    2,
+			  3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    2,    1,    0,    1,    2,    3,
+			  3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,
+			  3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,
+			  3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
 		};
 
 		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
@@ -753,7 +759,7 @@ GIVEN("a 16x9 2-layer surface with two small regions side-by-side")
 		surface.delta(Vec2i(3, 0), -1.0f);
 		surface.update_end();
 
-		INFO(stringifyGridSlice(surface.isogrid()));
+		INFO(stringify_grid_slice(surface.isogrid()));
 
 		THEN("the centremost partitions contain the expected number of outer layer points")
 		{
@@ -764,15 +770,15 @@ GIVEN("a 16x9 2-layer surface with two small regions side-by-side")
 		THEN("the surface is in the expected state")
 		{
 			isogrid_check.data() = {
-			      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
-			      3,    3,    3,    3,    2,    2,    3,    3,    3,    3,    3,    2,    2,    3,    3,    3,
-			      3,    3,    3,    2,    1,    1,    2,    3,    3,    3,    2,    1,    1,    2,    3,    3,
-			      3,    3,    2,    1,    0,    0,    1,    2,    3,    2,    1,    0,    0,    1,    2,    3,
-			      3,    2,    1,    0,   -1,   -1,    0,    1,    2,    1,    0,   -1,   -1,    0,    1,    2,
-			      3,    3,    2,    1,    0,    0,    1,    2,    3,    2,    1,    0,    0,    1,    2,    3,
-			      3,    3,    3,    2,    1,    1,    2,    3,    3,    3,    2,    1,    1,    2,    3,    3,
-			      3,    3,    3,    3,    2,    2,    3,    3,    3,    3,    3,    2,    2,    3,    3,    3,
-			      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
+				  3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+				  3,    3,    3,    3,    2,    2,    3,    3,    3,    3,    3,    2,    2,    3,    3,    3,
+				  3,    3,    3,    2,    1,    1,    2,    3,    3,    3,    2,    1,    1,    2,    3,    3,
+				  3,    3,    2,    1,    0,    0,    1,    2,    3,    2,    1,    0,    0,    1,    2,    3,
+				  3,    2,    1,    0,   -1,   -1,    0,    1,    2,    1,    0,   -1,   -1,    0,    1,    2,
+				  3,    3,    2,    1,    0,    0,    1,    2,    3,    2,    1,    0,    0,    1,    2,    3,
+				  3,    3,    3,    2,    1,    1,    2,    3,    3,    3,    2,    1,    1,    2,    3,    3,
+				  3,    3,    3,    3,    2,    2,    3,    3,    3,    3,    3,    2,    2,    3,    3,    3,
+				  3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
 			};
 
 			isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
@@ -808,7 +814,7 @@ WHEN("deactivates_with_inside_background_value")
 
 	// ==== Confirm ====
 
-	INFO(stringifyGridSlice(surface.isogrid()));
+	INFO(stringify_grid_slice(surface.isogrid()));
 	isogrid_check.data() = {
 		3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
 		3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
@@ -838,194 +844,6 @@ WHEN("deactivates_with_inside_background_value")
 	CHECK(diff == Approx(0).epsilon(0.000001f));
 }
 
-
-/**
- * Test walking the zero layer out to a given distance.
- */
-WHEN("walk")
-{
-	{
-		// ==== Setup ====
-		Surface<2, 2> surface(Vec2u(16, 16));
-
-		// Create seed point and expand the narrow band.
-		surface.seed(Vec2i(0, 0));
-		surface.update([](auto& pos, auto& isogrid) {
-			return -1.0f;
-		});
-		surface.update([](auto& pos, auto& isogrid) {
-			return -1.0f;
-		});
-		surface.update([](auto& pos, auto& isogrid) {
-			return -1.0f;
-		});
-
-		// ==== Action ====
-		EagerSingleLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band<2>(
-			Vec2i(-3,0)
-		);
-
-		// ==== Contirm ====
-		CHECK(lookup.list(surface.layer_idx(-2)).size() == 1);
-		CHECK(lookup.list(surface.layer_idx(-1)).size() == 1);
-		CHECK(lookup.list(surface.layer_idx(0)).size() == 3);
-		CHECK(lookup.list(surface.layer_idx(1)).size() == 3);
-		CHECK(lookup.list(surface.layer_idx(2)).size() == 5);
-
-		CHECK(lookup.list(surface.layer_idx(0))[0] == Vec2i(-3, 0));
-		CHECK(lookup.list(surface.layer_idx(0))[1] == Vec2i(-2, -1));
-		CHECK(lookup.list(surface.layer_idx(0))[2] == Vec2i(-2, 1));
-	}
-	{
-		// ==== Setup ====
-		Surface<3, 2> surface(Vec3u(9, 9, 9));
-		using MultiLookup = EagerSingleLookupGrid<3, surface.NUM_LAYERS>;
-
-		// Create seed point and expand the narrow band.
-		surface.seed(Vec3i(0, 0, 0));
-
-		// ==== Action ====
-		MultiLookup& lookup1 = surface.walk_band<1>(Vec3i(0,0,0));
-
-		// ==== Contirm ====
-		CHECK(lookup1.list(surface.layer_idx(-2)).size() == 0);
-		CHECK(lookup1.list(surface.layer_idx(-1)).size() == 0);
-		CHECK(lookup1.list(surface.layer_idx(0)).size() == 1);
-		CHECK(lookup1.list(surface.layer_idx(1)).size() == 6);
-		CHECK(lookup1.list(surface.layer_idx(2)).size() == 0);
-
-		// ==== Action ====
-		MultiLookup& lookup2 = surface.walk_band<1>(Vec3i(0,0,0));
-
-		// ==== Contirm ====
-		CHECK(&lookup1 == &lookup2);
-
-		// ==== Action ====
-		MultiLookup& lookup3 = surface.walk_band<2>(Vec3i(0,0,0));
-
-		// ==== Contirm ====
-		CHECK(&lookup1 == &lookup2);
-		CHECK(&lookup1 != &lookup3);
-		CHECK(&lookup2 != &lookup3);
-	}
-
-	{
-		// ==== Setup ====
-		Surface<3, 2> surface(Vec3u(16, 16, 16));
-
-		// Create seed point and expand the narrow band.
-		surface.seed(Vec3i(0, 0, 0));
-		surface.update([](auto& pos, auto& isogrid) {
-			return -1.0f;
-		});
-		surface.update([](auto& pos, auto& isogrid) {
-			return -1.0f;
-		});
-		surface.update([](auto& pos, auto& isogrid) {
-			return -1.0f;
-		});
-
-//		INFO(stringifyGridSlice(surface.isogrid()));
-/*
-/home/dave/Dropbox/Workspace/Felt/src/tests/test_Surface.cpp(924): Message:
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -3 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |   -2 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |   -1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    0 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    1 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    2 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-*/
-		// ==== Action ====
-		EagerSingleLookupGrid<3, surface.NUM_LAYERS> lookup = surface.walk_band<1>(
-			Vec3i(0,0,0)
-		);
-
-		// ==== Contirm ====
-		CHECK(lookup.list(surface.layer_idx(-2)).size() == 0);
-		CHECK(lookup.list(surface.layer_idx(-1)).size() == 0);
-		CHECK(lookup.list(surface.layer_idx(0)).size() == 0);
-		CHECK(lookup.list(surface.layer_idx(1)).size() == 0);
-		CHECK(lookup.list(surface.layer_idx(2)).size() == 0);
-
-		// ==== Action ====
-		lookup = surface.walk_band<2>(Vec3i(-5,0,0));
-
-		// ==== Contirm ====
-		CHECK(lookup.list(surface.layer_idx(-2)).size() == 0);
-		CHECK(lookup.list(surface.layer_idx(-1)).size() == 0);
-		CHECK(lookup.list(surface.layer_idx(0)).size() == 1);
-		CHECK(lookup.list(surface.layer_idx(1)).size() == 1);
-		CHECK(lookup.list(surface.layer_idx(2)).size() == 5);
-
-		CHECK(lookup(Vec3i(-4, 0, 0)) == 0);
-		CHECK(lookup(Vec3i(-3, 0, 0)) == 0);
-		CHECK(
-			[](const UINT idx) {
-				return 0 <= idx <= 4;
-			}((lookup(Vec3i(-5, 0, 0)))
-		));
-		CHECK(lookup(Vec3i(-6, 0, 0)) == lookup.NULL_IDX);
-
-	}
-}
-
-/**
- * Test delta isogrid update spread using Gaussian distribution given a list of
- * positions to update.
- */
-WHEN("gaussian_from_list")
-{
-	// ==== Setup ====
-	Surface<2, 2> surface(Vec2u(16, 16));
-
-	// Create seed point and expand the narrow band.
-	surface.seed(Vec2i(0, 0));
-	surface.update([](auto& pos, auto& isogrid) {
-		return -1.0f;
-	});
-	surface.update([](auto& pos, auto& isogrid) {
-		return -1.0f;
-	});
-	surface.update([](auto& pos, auto& isogrid) {
-		return -1.0f;
-	});
-
-	EagerSingleLookupGrid<2, surface.NUM_LAYERS> lookup = surface.walk_band<2>(
-		Vec2i(-3,0)
-	);
-
-	// ==== Action ====
-	surface.update_start();
-	surface.delta_gauss(
-		lookup.list(surface.layer_idx(0)), Vec2f(-3.5f, 0), 0.5f, 0.2f
-	);
-	surface.update_end();
-
-
-	// === Confirm ===
-
-	CHECK(
-		surface.delta().get(Vec2i(-3, 0))
-		+ surface.delta().get(Vec2i(-2, 1))
-		+ surface.delta().get(Vec2i(-2, -1)) == Approx(0.5f).epsilon(0.0000001f));
-
-	CHECK(
-		surface.delta().get(Vec2i(-3, 0)) == Approx(0.3457f).epsilon(0.0001f));
-	CHECK(
-		surface.delta().get(Vec2i(-2, -1)) == Approx(0.07714f).epsilon(0.0001f));
-	CHECK(
-		surface.delta().get(Vec2i(-2, 1)) == Approx(0.07714f).epsilon(0.0001f));
-}
 }
 
 
@@ -1046,20 +864,20 @@ GIVEN("a 9x9 2-layer surface with a seed point in the centre")
 		surface.update_start();
 		surface.delta(Vec2i(0, 0), 1.0f);
 		surface.update_end_local();
-		INFO(stringifyGridSlice(surface.isogrid()));
+		INFO(stringify_grid_slice(surface.isogrid()));
 
 		THEN("the surface data matches an area completely outside the surface")
 		{
 			isogrid_check.data() = {
-			      3,    3,    3,    3,    3,    3,    3,    3,    3,
-			      3,    3,    3,    3,    3,    3,    3,    3,    3,
-			      3,    3,    3,    3,    3,    3,    3,    3,    3,
-			      3,    3,    3,    3,    3,    3,    3,    3,    3,
-			      3,    3,    3,    3,    3,    3,    3,    3,    3,
-			      3,    3,    3,    3,    3,    3,    3,    3,    3,
-			      3,    3,    3,    3,    3,    3,    3,    3,    3,
-			      3,    3,    3,    3,    3,    3,    3,    3,    3,
-			      3,    3,    3,    3,    3,    3,    3,    3,    3
+				  3,    3,    3,    3,    3,    3,    3,    3,    3,
+				  3,    3,    3,    3,    3,    3,    3,    3,    3,
+				  3,    3,    3,    3,    3,    3,    3,    3,    3,
+				  3,    3,    3,    3,    3,    3,    3,    3,    3,
+				  3,    3,    3,    3,    3,    3,    3,    3,    3,
+				  3,    3,    3,    3,    3,    3,    3,    3,    3,
+				  3,    3,    3,    3,    3,    3,    3,    3,    3,
+				  3,    3,    3,    3,    3,    3,    3,    3,    3,
+				  3,    3,    3,    3,    3,    3,    3,    3,    3
 			};
 
 			isogrid_check.vdata() = isogrid_check.vdata() -
@@ -1240,7 +1058,7 @@ GIVEN("a 9x9 2-layer surface with a seed point in the centre")
 		// case, all outer layer points are affected, same as a global update.
 		surface.update_end_local();
 
-		INFO(stringifyGridSlice(surface.isogrid()));
+		INFO(stringify_grid_slice(surface.isogrid()));
 
 		THEN("the grid data is as expected")
 		{
@@ -1302,7 +1120,7 @@ GIVEN("a 16x9 2-layer surface with two small regions side-by-side")
 		return -1.0f;
 	});
 
-	INFO(stringifyGridSlice(surface.isogrid()));
+	INFO(stringify_grid_slice(surface.isogrid()));
 
 	WHEN("we expand/contract the subsurfaces towards one-another")
 	{
@@ -1324,7 +1142,7 @@ GIVEN("a 16x9 2-layer surface with two small regions side-by-side")
 			surface.update_end_local();
 		}
 
-		INFO(stringifyGridSlice(surface.isogrid()));
+		INFO(stringify_grid_slice(surface.isogrid()));
 
 		THEN("outermost layers in central partitions are as expected")
 		{
@@ -1335,15 +1153,15 @@ GIVEN("a 16x9 2-layer surface with two small regions side-by-side")
 		THEN("the surface has returned to its inital state")
 		{
 			isogrid_check.data() = {
-			      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
-			      3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,
-			      3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,
-			      3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    2,    1,    0,    1,    2,    3,
-			      3,    2,    1,    0,   -1,    0,    1,    2,    3,    2,    1,    0,   -1,    0,    1,    2,
-			      3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    2,    1,    0,    1,    2,    3,
-			      3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,
-			      3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,
-			      3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
+				  3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+				  3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,
+				  3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,
+				  3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    2,    1,    0,    1,    2,    3,
+				  3,    2,    1,    0,   -1,    0,    1,    2,    3,    2,    1,    0,   -1,    0,    1,    2,
+				  3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    2,    1,    0,    1,    2,    3,
+				  3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,
+				  3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,
+				  3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
 			};
 
 			isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot().vdata();
@@ -1368,7 +1186,7 @@ GIVEN("a 11x11x11 3-layer surface with 3x3x3 partitions initialised with a 1 uni
 		return -1.0f;
 	});
 
-	INFO(stringifyGridSlice(surface.isogrid()));
+	INFO(stringify_grid_slice(surface.isogrid()));
 
 	THEN("the layer lists have the expected size")
 	{
@@ -1395,7 +1213,7 @@ GIVEN("a 11x11x11 3-layer surface with 3x3x3 partitions initialised with a 1 uni
 		surface.delta(Vec3i(0,1,-1), 1);
 		surface.update_end_local();
 
-		INFO(stringifyGridSlice(surface.isogrid()));
+		INFO(stringify_grid_slice(surface.isogrid()));
 
 		THEN("the layer lists have the same size as before")
 		{
@@ -1429,7 +1247,7 @@ SCENARIO("Complex layer interactions")
 		surface.seed(Vec2i(-2, -2));
 		surface.seed(Vec2i(2, 2));
 
-		INFO(stringifyGridSlice(surface.isogrid()));
+		INFO(stringify_grid_slice(surface.isogrid()));
 
 //    4,    4,    4,    4,    4,    4,    4,    4,    4,    4,    4,    4,
 //    4,    4,    4,    4,    3,    4,    4,    4,    4,    4,    4,    4,
@@ -1454,7 +1272,7 @@ SCENARIO("Complex layer interactions")
 		surface.delta(Vec2i(0, -2), -1);
 		surface.update_end();
 
-		INFO(stringifyGridSlice(surface.isogrid()));
+		INFO(stringify_grid_slice(surface.isogrid()));
 
 //	      4,    4,    4,    4,    3,    3,    3,    4,    4,    4,    4,    4,
 //	      4,    4,    4,    3,    2,    2,    2,    3,    4,    4,    4,    4,
@@ -1507,13 +1325,13 @@ SCENARIO("Complex layer interactions")
 			surface.delta(Vec2i(2, 2), 1);
 			surface.update_end_local();
 
-			INFO(stringifyGridSlice(surface.isogrid()));
+			INFO(stringify_grid_slice(surface.isogrid()));
 
 			surface.update_start();
 			surface.delta(Vec2i(1, -1), -1);
 			surface.update_end_local();
 
-			INFO(stringifyGridSlice(surface.isogrid()));
+			INFO(stringify_grid_slice(surface.isogrid()));
 
 			THEN("the grid data is as expected")
 			{
@@ -1558,13 +1376,13 @@ SCENARIO("Complex layer interactions")
 			surface.delta(Vec2i(2, 2), 1);
 			surface.update_end();
 
-			INFO(stringifyGridSlice(surface.isogrid()));
+			INFO(stringify_grid_slice(surface.isogrid()));
 
 			surface.update_start();
 			surface.delta(Vec2i(1, -1), -1);
 			surface.update_end();
 
-			INFO(stringifyGridSlice(surface.isogrid()));
+			INFO(stringify_grid_slice(surface.isogrid()));
 
 			THEN("the grid data is as expected")
 			{
@@ -1603,52 +1421,6 @@ SCENARIO("Complex layer interactions")
 
 SCENARIO("Raycasting")
 {
-  
-/**
- * Test delta isogrid update spread using Gaussian distribution given point and
- * radius.
- */
-WHEN("gaussian_from_dist")
-{
-	// ==== Setup ====
-	Surface<2, 2> surface(Vec2u(16, 16));
-
-	// Create seed point and expand the narrow band.
-	surface.seed(Vec2i(0, 0));
-	surface.update([](auto& pos, auto& isogrid) {
-		return -1.0f;
-	});
-	surface.update([](auto& pos, auto& isogrid) {
-		return -1.0f;
-	});
-	surface.update([](auto& pos, auto& isogrid) {
-		return -1.0f;
-	});
-
-
-	// ==== Action ====
-	surface.update_start();
-	surface.delta_gauss<2>(
-		Vec2f(-3.0f, 0), 0.5f, 0.2f
-	);
-	surface.update_end();
-
-
-	// === Confirm ===
-
-	CHECK(
-		surface.delta().get(Vec2i(-3, 0))
-		+ surface.delta().get(Vec2i(-2, 1))
-		+ surface.delta().get(Vec2i(-2, -1)) == Approx(0.5f).epsilon(0.0000001f));
-
-	CHECK(
-		surface.delta().get(Vec2i(-3, 0)) == Approx(0.28805843f).epsilon(0.0001f));
-	CHECK(
-		surface.delta().get(Vec2i(-2, -1)) == Approx(0.105970778f).epsilon(0.0001f));
-	CHECK(
-		surface.delta().get(Vec2i(-2, 1)) == Approx(0.105970778f).epsilon(0.0001f));
-}
-
 /**
  * Test raycasting to zero curve.
  */
@@ -1670,7 +1442,7 @@ WHEN("ray")
 		return -1.0f;
 	});
 
-//	INFO(stringifyGridSlice(surface.isogrid()));
+//	INFO(stringify_grid_slice(surface.isogrid()));
 /*
 /home/dave/Dropbox/Workspace/Felt/src/tests/test_Surface.cpp(1,185): Message:
 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |
@@ -1759,20 +1531,7 @@ WHEN("ray")
 	surface.update([](auto& pos, auto& isogrid) {
 		return 0.3f;
 	});
-	INFO(stringifyGridSlice(surface.isogrid()));
-
-//	INFO(stringifyVector(surface.isogrid().children().get(Vec3i(0, -1, 0)).offset()));
-//	INFO(stringifyVector(surface.isogrid().children().get(Vec3i(0, -1, 0)).size()));
-//	INFO(stringifyGridSlice(surface.isogrid().children().get(Vec3i(0, -1, 0))));
-//	INFO(stringifyVector(surface.isogrid().children().get(Vec3i(-1, 0, 0)).offset()));
-//	INFO(stringifyVector(surface.isogrid().children().get(Vec3i(-1, 0, 0)).size()));
-//	INFO(stringifyGridSlice(surface.isogrid().children().get(Vec3i(-1, 0, 0))));
-//	INFO(stringifyVector(surface.isogrid().children().get(Vec3i(-1, -1, 0)).offset()));
-//	INFO(stringifyVector(surface.isogrid().children().get(Vec3i(-1, -1, 0)).size()));
-//	INFO(stringifyGridSlice(surface.isogrid().children().get(Vec3i(-1, -1, 0))));
-//	INFO(stringifyVector(surface.isogrid().children().get(Vec3i(0, 0, 0)).offset()));
-//	INFO(stringifyVector(surface.isogrid().children().get(Vec3i(0, 0, 0)).size()));
-//	INFO(stringifyGridSlice(surface.isogrid().children().get(Vec3i(0, 0, 0))));
+	INFO(stringify_grid_slice(surface.isogrid()));
 
 	// ==== Action ====
 	// Ray at an angle.
@@ -1813,8 +1572,8 @@ WHEN("ray")
 
 		// ==== Confirm ====
 		INFO(
-			"Ray hit from " + stringifyVector(origin) + " in direction "
-			+ stringifyVector(dir) + " should not be NULL_POS"
+			"Ray hit from " + felt::format(origin) + " in direction "
+			+ felt::format(dir) + " should not be NULL_POS"
 		);
 		CHECK(
 			pos_hit != surface.NULL_POS<FLOAT>());
@@ -1834,8 +1593,8 @@ WHEN("ray")
 
 		// ==== Confirm ====
 		INFO(
-			"Ray hit from " + stringifyVector(origin) + " in direction "
-			+ stringifyVector(dir) + " should not be NULL_POS"
+			"Ray hit from " + felt::format(origin) + " in direction "
+			+ felt::format(dir) + " should not be NULL_POS"
 		);
 		CHECK(
 			pos_hit != surface.NULL_POS<FLOAT>());
@@ -1855,14 +1614,14 @@ WHEN("ray")
 
 		// ==== Confirm ====
 		INFO(
-			"Ray hit from " + stringifyVector(origin) + " in direction "
-			+ stringifyVector(dir) + " should not be NULL_POS"
+			"Ray hit from " + felt::format(origin) + " in direction "
+			+ felt::format(dir) + " should not be NULL_POS"
 		);
 		CHECK(
 			pos_hit != surface.NULL_POS<FLOAT>());
 	}
 	// ==== Confirm ====
-//	INFO(stringifyGridSlice(surface.isogrid()));
+//	INFO(stringify_grid_slice(surface.isogrid()));
 /*
 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
@@ -1883,8 +1642,8 @@ WHEN("ray")
 
 */
 }
-  
-GIVEN("a 3-layer flat periodic surface in an 20x20x20 grid with 16x16x16 partitions")
+
+GIVEN("a 3-layer flat surface in an 20x20x20 grid with 16x16x16 partitions")
 {
 	Surface<3, 3> surface(Vec3u(20, 20, 20), Vec3u(16, 16, 16));
 	surface.seed(Vec3i(0,0,0));
@@ -1901,7 +1660,7 @@ GIVEN("a 3-layer flat periodic surface in an 20x20x20 grid with 16x16x16 partiti
 			else
 				return -1;
 		});
-	INFO(stringifyGridSlice(surface.isogrid()));
+	INFO(stringify_grid_slice(surface.isogrid()));
 
 
 	WHEN("we cast a ray diagonally downward from outside the isogrid")
@@ -1937,7 +1696,7 @@ GIVEN("a 3-layer flat periodic surface in an 50x50x50 grid with 16x16x16 partiti
 			else
 				return -1;
 		});
-//	INFO(stringifyGridSlice(surface.isogrid()));
+//	INFO(stringify_grid_slice(surface.isogrid()));
 
 
 	WHEN("we cast rays diagonally downward from outside the isogrid")
@@ -1987,7 +1746,7 @@ GIVEN("a 2-layer surface of radius 3 in a 16x16 grid with 3x3 partitions")
 	});
 	FLOAT leftover;
 
-	INFO(stringifyGridSlice(surface.isogrid()));
+	INFO(stringify_grid_slice(surface.isogrid()));
 
 
 	WHEN("we cast a ray upward from just below the grid")
@@ -1997,31 +1756,6 @@ GIVEN("a 2-layer surface of radius 3 in a 16x16 grid with 3x3 partitions")
 		THEN("the surface is hit where expected")
 		{
 			CHECK(pos_hit == ApproxVec(Vec2f(-2.21609, -0.78391)).epsilon(0.1));
-		}
-	}
-
-	WHEN("we cast a ray upward and apply a gaussian-distributed delta")
-	{
-		surface.update_start();
-		leftover = surface.delta_gauss<2>(
-			Vec2f(-2.4f, -10.0f), Vec2f(0, 1), 0.5f, 0.2f
-		);
-		surface.update_end();
-
-		INFO(stringifyGridSlice(surface.isogrid()));
-
-		THEN("the delta summed over affected points is equal to the amount given")
-		{
-			CHECK(
-				surface.delta().get(Vec2i(-3, 0))
-				+ surface.delta().get(Vec2i(-2, 1))
-				+ surface.delta().get(Vec2i(-2, -1))
-				+ surface.delta().get(Vec2i(-1, -2)) == Approx(0.5f));
-
-			AND_THEN("the leftover amount is zero")
-			{
-				CHECK(leftover == Approx(0));
-			}
 		}
 	}
 }

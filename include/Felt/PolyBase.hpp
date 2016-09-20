@@ -1,18 +1,10 @@
 #include "Surface.hpp"
 
 namespace felt {
-/** @addtogroup Poly
- *
- *  Polygonisation of 2D and 3D isogrids.
- *
- *  @{
- */
 
 template <UINT D, class Dummy>
 class PolyBase
-{
-};
-
+{};
 
 /**
  * 2D-specific definitions.
@@ -78,7 +70,7 @@ protected:
 	 * create representative simplices (lines).
 	 */
 	static const short vtx_order [][4];
-	
+
 	/**
 	 * A lookup of offsets from start position to corners of a cube.
 	 */
@@ -197,8 +189,8 @@ protected:
 	 */
 	static const Vec3i SpxGridPosOffset;
 };
-	
-	
+
+
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 // 2D lookups.
@@ -257,7 +249,7 @@ const std::array<Vec2i, 4> PolyBase<2, Dummy>::corners = {
 	Vec2i(1, 1),
 	Vec2i(0, 1)
 };
-	
+
 /*
  * Array of edge definitions (offset, direction) matching ::corners.
  */
@@ -273,7 +265,7 @@ template<class Dummy>
 const Vec2i PolyBase<2, Dummy>::SpxGridPosOffset(0,0);
 
 /*
- * MultiLookup from corner mask to edge mask.
+ * Lookup from corner mask to edge mask.
  */
 template<class Dummy>
 const short PolyBase<2, Dummy>::vtx_mask [] ={
@@ -294,7 +286,7 @@ const short PolyBase<2, Dummy>::vtx_mask [] ={
 	0b1001,
 	0b0000
 };
-	
+
 /*
  * A lookup from inside/outside status bitmask to vertex ordering to
  * create representative simplices (lines).
@@ -317,16 +309,16 @@ const short PolyBase<2, Dummy>::vtx_order [][4] = {
 	{  1,  0, -1, -1 },
 	{  0,  3, -1, -1 },
 	{ -1, -1, -1, -1 }
-};	
-	
+};
+
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 // 3D lookups.
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
-	
+
 /*
- * MultiLookup from corner mask to edge mask.
+ * Lookup from corner mask to edge mask.
  */
 template<class Dummy>
 const short PolyBase<3, Dummy>::vtx_mask [] = {
@@ -361,7 +353,7 @@ const short PolyBase<3, Dummy>::vtx_mask [] = {
 	0xe90, 0xf99, 0xc93, 0xd9a, 0xa96, 0xb9f, 0x895, 0x99c,
 	0x69c, 0x795, 0x49f, 0x596, 0x29a, 0x393, 0x99 , 0x190,
 	0xf00, 0xe09, 0xd03, 0xc0a, 0xb06, 0xa0f, 0x905, 0x80c,
-	0x70c, 0x605, 0x50f, 0x406, 0x30a, 0x203, 0x109, 0x0   
+	0x70c, 0x605, 0x50f, 0x406, 0x30a, 0x203, 0x109, 0x0
 };
 
 /**
@@ -398,7 +390,7 @@ const typename PolyBase<3, Dummy>::Edge PolyBase<3, Dummy>::edges [] = {
 	{ Vec3i( 1,  0, -1), 	1 },	// e10
 	{ Vec3i( 0,  0, -1), 	1 }		// e11
 };
-	
+
 template<class Dummy>
 const Vec3i PolyBase<3, Dummy>::SpxGridPosOffset(0,0,-1);
 
@@ -664,7 +656,4 @@ const short PolyBase<3, Dummy>::vtx_order [][16] = {
 	{0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 };
-/**
- * @}
- */
 }

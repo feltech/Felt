@@ -4,7 +4,7 @@
 #include <string>
 
 // Utility: turn a number into a bit string.
-std::string felt::stringifyBitmask(long mask, short length)
+std::string felt::stringify_bitmask(long mask, short length)
 {
 	std::string str;
 	for (unsigned bitIdx = 0; bitIdx < length; bitIdx++)

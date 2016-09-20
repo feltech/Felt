@@ -15,10 +15,22 @@
 #include "Util.hpp"
 #include "SingleTrackedPartitionedGrid.hpp"
 
+#ifndef FELT_SURFACE_OMP_CHUNK_SIZE
+/**
+ * Minimum number of (active) spatial partitions required before enabling OpenMP loop parallelism.
+ *
+ * OpenMP loop parallelisation has signficant overhead (a few milliseconds), so the amount of work
+ * done by each thread must be enough to warrant this overhead.
+ */
+#define FELT_SURFACE_OMP_MIN_CHUNK_SIZE 32
+#endif
+
+/// Transform args to a char* string.
 #define FELT_STR(args) #args
+/// The OpenMP parallel loop command.
 #define FELT_PARALLEL_FOR_CMD(num, args)\
 	FELT_STR(omp parallel for if(num >= 32) args)
-
+/// The #pragma containing the OpenMP parallel loop command
 #define FELT_PARALLEL_FOR(num, args) _Pragma(FELT_PARALLEL_FOR_CMD(num, args))
 
 
@@ -42,8 +54,6 @@ public:
 	static constexpr INT LAYER_MAX	= INT(L);
 	/// Total number of layers.
 	static constexpr UINT NUM_LAYERS = 2*L+1;
-	/// Total number of layers inlcuding ephemeral expanding points.
-	static constexpr UINT NUM_LISTS = NUM_LAYERS;
 	/// A tiny number used for error margin when raycasting.
 	static constexpr FLOAT TINY = 0.00001f;
 
@@ -51,12 +61,12 @@ public:
 	/**
 	 * A delta isogrid update grid with active (non-zero) grid points tracked.
 	 */
-	using DeltaIsoGrid = SingleTrackedPartitionedGrid<FLOAT, D, NUM_LISTS>;
+	using DeltaIsoGrid = SingleTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
 	/**
 	 * A level set embedding isogrid grid, with active grid points (the narrow
 	 * band) tracked.
 	 */
-	using IsoGrid = SingleTrackedPartitionedGrid<FLOAT, D, NUM_LISTS>;
+	using IsoGrid = SingleTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
 	/**
 	 * A resizable array of D-dimensional grid positions.
 	 */
@@ -76,15 +86,22 @@ public:
 	/**
 	 * Grid to track positions that require an update.
 	 */
-	using AffectedLookupGrid = SingleLookupPartitionedGrid<D, NUM_LISTS>;
+	using AffectedLookupGrid = SingleLookupPartitionedGrid<D, NUM_LAYERS>;
 
 	/// D-dimensional hyperplane type (using Eigen library), for raycasting.
 	using Plane = Eigen::Hyperplane<FLOAT, D>;
 	/// D-dimensional parameterised line, for raycasting.
 	using Line = Eigen::ParametrizedLine<FLOAT, D>;
+	/**
+	 * Grid tracking locations that are to be moved to another narrow band layer.
+	 *
+	 * The tracking list index encodes the "from" layer and the value in the grid encodes the
+	 * "to" layer.
+	 */
+	using StatusChangeGrid = SingleTrackedPartitionedGrid<INT, D, NUM_LAYERS>;
 
 
-protected:
+private:
 	/**
 	 * Structure to store raycast intermediate results.
 	 */
@@ -96,16 +113,6 @@ protected:
 		VecDf pos_intersect;
 		VecDi pos_child;
 	};
-
-	/**
-	 * Grid tracking locations that are to be moved to another narrow band layer.
-	 *
-	 * The tracking list index encodes the "from" layer and the value in the grid encodes the
-	 * "to" layer.
-	 */
-	using StatusChangeGrid = SingleTrackedPartitionedGrid<INT, D, NUM_LISTS>;
-
-protected:
 
 	/**
 	 * Grid for preventing duplicates when doing neighbourhood queries.
@@ -295,69 +302,6 @@ public:
 	}
 
 	/**
-	 * Get narrow band layer id of location in isogrid grid.
-	 *
-	 * Calculates layer ID based on value in grid (i.e. is the layer the location *should*
-	 * be in).
-	 *
-	 * The position vector type is templated, so that interpolation overloads can be used
-	 * if a float vector (e.g. Vec3f) is provided.
-	 *
-	 * @param pos_ position vector of location
-	 * @return integer layer ID that given location should belong to.
-	 */
-	template <class PosType>
-	INT layer_id(const PosType& pos_) const
-	{
-		const INT layer_id_pos = layer_id(m_grid_isogrid(pos_));
-
-		return layer_id_pos;
-	}
-
-	/**
-	 * Get narrow band layer ID of given value.
-	 *
-	 * Rounds value to nearest integer, but with an epsilon to prefer rounding up, to keep
-	 * consistent when we have floating point rounding errors.
-	 *
-	 * @param val value to round to give narrow band layer ID.
-	 * @return layer ID that given value should belong to
-	 */
-	INT layer_id(const FLOAT val) const
-	{
-		// Round to value+epsilon, to catch cases of precisely +/-0.5.
-		return boost::math::round(
-			val + std::numeric_limits<FLOAT>::epsilon()
-		);
-	}
-
-	/**
-	 * Get narrow band layer index of ID for indexing into arrays.
-	 *
-	 * Internally we can of course not have negative array indices, so must convert to an
-	 * index first.
-	 *
-	 * @param id narrow band layer ID.
-	 * @return index to use to get given layer in narrow band array.
-	 */
-	UINT layer_idx(const INT id) const
-	{
-		return id + NUM_LISTS / 2;
-	}
-
-	/**
-	 * Test whether a given value lies (or should lie) within the narrow band or not.
-	 *
-	 * @param val float or int value to test
-	 * @return true if inside the narrow band, false otherwise.
-	 */
-	template <typename ValType>
-	bool inside_band (const ValType& val) const
-	{
-		return (UINT)std::abs(val) <= LAYER_MAX;
-	}
-
-	/**
 	 * Update delta isogrid grid, adding to tracking list if not already tracked.
 	 *
 	 * @snippet test_Surface.cpp Simple delta isogrid update
@@ -383,168 +327,6 @@ public:
 		#endif
 
 		m_grid_delta.add(pos_, val_, layer_idx(0));
-	}
-
-	/**
-	 * Update delta isogrid grid surrounding a zero layer point found via a
-	 * raycast by amount spread using Gaussian distribution.
-	 *
-	 * @param pos_origin real-valued position vector cast ray from.
-	 * @param dir direction normal vector of the ray.
-	 * @param val amount to update by, spread across Gaussian window.
-	 * @param stddev standard deviation of Gaussian.
-	 */
-	template <UINT Distance>
-	FLOAT delta_gauss (
-		const VecDf& pos_origin, const VecDf& dir,
-		const FLOAT val, const float stddev
-	) {
-		const VecDf& pos_hit = this->ray(pos_origin, dir);
-
-		if (pos_hit == NULL_POS<FLOAT>())
-		{
-//			std::cout << "MISS" << std::endl;
-			return val;
-		}
-		return this->delta_gauss<Distance>(pos_hit, val, stddev);
-	}
-
-	/**
-	 * Update delta isogrid grid surrounding a given point with amount determined
-	 * by Gaussian distribution about (real-valued) central point.
-	 *
-	 * Will be normalised so that the total amount distributed over the points
-	 * sums to val. Locks mutexes of affected spatial partitions so thread safe.
-	 *
-	 * @param pos_centre centre of the Gaussian distribution.
-	 * @param val amount to spread over the points.
-	 * @param stddev standard deviation of Gaussian.
-	 */
-	template <UINT Distance>
-	FLOAT delta_gauss (
-		const VecDf& pos_centre, const FLOAT val, const FLOAT stddev
-	) {
-		const EagerSingleLookupGrid<D, NUM_LAYERS>& lookup = this->walk_band<Distance>(
-			felt::round(pos_centre)
-		);
-		return this->delta_gauss(lookup.list(this->layer_idx(0)), pos_centre, val, stddev);
-	}
-
-	/**
-	 * Update delta isogrid grid at given points with amount determined by Gaussian
-	 * distribution about (real-valued) central point.
-	 *
-	 * Will be normalised so that the total amount distributed over the points
-	 * sums to val. Locks mutexes of affected spatial partitions so thread safe.
-	 *
-	 * TODO: better handling of overlapping Gaussians - current just clamps,
-	 * so can lose mass.
-	 *
-	 * @param list the points to spread the amount over.
-	 * @param pos_centre centre of the Gaussian distribution.
-	 * @param val amount to spread over the points.
-	 * @param stddev standard deviation of Gaussian.
-	 */
-	FLOAT delta_gauss (
-		const typename DeltaIsoGrid::PosArray& list, const VecDf& pos_centre,
-		const FLOAT val, const FLOAT stddev
-	) {
-		constexpr FLOAT sqrt2piDinv = 1.0f/sqrt(pow(2*boost::math::constants::pi<FLOAT>(), D));
-
-		Eigen::VectorXf weights(list.size());
-
-		// Calculate Gaussian weights.
-		for (UINT idx = 0; idx < list.size(); idx++)
-		{
-			const VecDf& pos = list[idx].template cast<FLOAT>();
-			if (m_grid_delta.get(list[idx]) != 0)
-			{
-				weights(idx) = 0;
-				continue;
-			}
-
-			const FLOAT dist_sq = (pos - pos_centre).squaredNorm();
-			const FLOAT weight = sqrt2piDinv * exp(-0.5f * dist_sq);
-			weights(idx) = weight;
-		}
-
-		std::mutex* pmutex_current = NULL;
-		const FLOAT weights_sum = weights.sum();
-
-		if (weights_sum > 0)
-		{
-			// Normalise weights
-			weights *= val / weights_sum;
-
-			VecDi pos_child_current = VecDi::Constant(std::numeric_limits<INT>::max());
-
-
-			for (UINT idx = 0; idx < list.size(); idx++)
-			{
-				const VecDi& pos = list[idx];
-				const VecDi& pos_child = m_grid_delta.pos_child(pos);
-
-				if (pos_child_current != pos_child)
-				{
-					if (pmutex_current)
-					{
-						pmutex_current->unlock();
-					}
-					pos_child_current = pos_child;
-					pmutex_current = &m_grid_delta.children().get(pos_child_current).lookup().mutex();
-					pmutex_current->lock();
-				}
-
-				const FLOAT amount = this->clamp(weights(idx) + m_grid_delta(pos));
-
-				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-
-				if (std::abs(amount) > 1)
-				{
-					std::stringstream strs;
-					strs << "Delta isogrid value out of bounds at " << felt::format(pos)
-						<< ": " << amount;
-					std::string str = strs.str();
-					throw std::domain_error(str);
-				}
-				if (this->layer_id(pos) != 0)
-				{
-					std::stringstream strs;
-					strs << "Attempting to Gaussian update non-zero layer " << felt::format(pos)
-						<< ": " << m_grid_isogrid(pos) << " += " << amount;
-					std::string str = strs.str();
-					throw std::domain_error(str);
-				}
-
-				#endif
-
-				weights(idx) -= (weights(idx) - amount);
-
-				m_grid_delta.add(pos, amount, this->layer_idx(0));
-			} // End for list of leafs.
-		} // End if weights > 0
-
-		if (pmutex_current)
-		{
-			pmutex_current->unlock();
-		}
-
-		return val - weights.sum();
-	}
-
-
-	/**
-	 * Clamp delta isogrid value such that it doesn't cause instability.
-	 *
-	 * @param val value to clamp
-	 * @return clamped val
-	 */
-	FLOAT clamp (FLOAT val)
-	{
-		if (std::abs(val) > 1.0f)
-			val = sgn(val);
-
-		return val;
 	}
 
 	/**
@@ -711,6 +493,170 @@ public:
 	}
 
 	/**
+	 * Cast a ray to the zero layer.
+	 *
+	 * @param pos_origin_ originating point of ray
+	 * @param dir_ normal vector in direction of ray
+	 * @return zero curve hit location or NULL_POS.
+	 */
+	VecDf ray(const VecDf& pos_origin_, const VecDf& dir_) const
+	{
+
+		using ChildHits = std::vector<ChildHit>;
+
+		// If ray is cast from within isogrid grid, first check child grid containing origin point.
+		if (m_grid_isogrid.inside(pos_origin_))
+		{
+			const VecDf& pos_hit = ray(
+				pos_origin_, dir_,
+				m_grid_isogrid.children().get(
+					m_grid_isogrid.pos_child(pos_origin_.template cast<INT>())
+				)
+			);
+			if (pos_hit != NULL_POS<FLOAT>())
+				return pos_hit;
+		}
+
+		// Ray to test against.
+		Line line(pos_origin_, dir_);
+
+		// Tracking list for child grids that are hit.
+		ChildHits child_hits;
+
+		// Cycle each axis, casting ray to child grid planes marching away from origin.
+		for (UINT dim = 0; dim < dir_.size(); dim++)
+		{
+			// Direction +/-1 along this axis.
+			FLOAT dir_dim = sgn(dir_(dim));
+			if (dir_dim == 0)
+				continue;
+
+			// Get next child plane along this axis.
+			FLOAT pos_plane_dim = round_to_next(
+				dim, dir_dim, pos_origin_(dim), m_grid_isogrid.child_size()
+			);
+
+			// Construct vector with elements not on this axis at zero.
+			VecDf pos_plane = VecDf::Constant(0);
+			pos_plane(dim) = pos_plane_dim;
+
+			// If the zero point on this plane is not within the grid, then jump to max/min point
+			// on isogrid grid.
+			if (!m_grid_isogrid.inside(pos_plane))
+			{
+				FLOAT pos_grid_dim;
+				// If casting in -'ve direction, get maximum extent.
+				if (dir_dim == -1)
+				{
+					pos_grid_dim = m_grid_isogrid.offset()(dim) + m_grid_isogrid.size()(dim);
+					if (pos_plane_dim < pos_grid_dim)
+						continue;
+				}
+				// Else if casting in +'ve direction, get minimum extent.
+				else
+				{
+					pos_grid_dim = m_grid_isogrid.offset()(dim);
+					if (pos_plane_dim > pos_grid_dim)
+						continue;
+				}
+				// Reset plane position to max/min extent as calculated above.
+				pos_plane(dim) = pos_grid_dim;
+			}
+
+			// Plane normal is opposite to ray direction.
+			VecDf normal = VecDf::Constant(0);
+			normal(dim) = -dir_dim;
+
+			// Cast ray to plane and add any child grids hit on the way to tracking list.
+			// If child size is not a factor of grid size then this first cast could be to outside
+			// the grid.  So cannot quit early here and must try next child.
+			!ray_check_add_child(child_hits, line, Plane(normal, pos_plane(dim) * dir_dim));
+
+			// Round up/down to next child, in case we started at inexact modulo of child grid size
+			// (i.e. when isogrid grid size is not integer multiple of child grid size).
+			pos_plane_dim = round_to_next(
+				dim, dir_dim, pos_plane(dim), m_grid_isogrid.child_size()
+			);
+			// If rounding produced a different plane, then cast to that plane, and potentially add
+			// child grid to tracking list.
+			if (pos_plane_dim != pos_plane(dim))
+			{
+				pos_plane(dim) = pos_plane_dim;
+				if (!ray_check_add_child(child_hits, line, Plane(normal, pos_plane(dim) * dir_dim)))
+					continue;
+			}
+
+			// Keep marching along planes, casting ray to each and adding any candidate child
+			// grids to the tracking list.
+			const FLOAT child_size_dim = m_grid_isogrid.child_size()(dim);
+			while (true)
+			{
+				pos_plane(dim) += dir_dim * child_size_dim;
+				if (!ray_check_add_child(child_hits, line, Plane(normal, pos_plane(dim) * dir_dim)))
+					break;
+			}
+		}
+
+		// Remove children whose raycast hit point lies outside themselves.  Possible if a child
+		// has been allowed to be added in order for the loop above to continue on to the next
+		// child, via dir vs. offset/size check in ray_check_add_child().
+//		child_hits.erase(std::remove_if(
+//			child_hits.begin(), child_hits.end(),
+//			[this](const ChildHit& child_hit) {
+//				return !this->m_grid_isogrid.children()
+//					.get(child_hit.pos_child)
+//					.inside(child_hit.pos_intersect);
+//			}
+//		), child_hits.end());
+
+		// Sort candidate child grids in distance order from front to back.
+		std::sort(
+			child_hits.begin(), child_hits.end(),
+			[&pos_origin_](const ChildHit& a, const ChildHit& b) -> bool {
+				const VecDf& dist_a = (a.pos_intersect - pos_origin_);
+				const VecDf& dist_b = (b.pos_intersect - pos_origin_);
+				return dist_a.squaredNorm() < dist_b.squaredNorm();
+			}
+		);
+		// Remove any duplicate child grids from the sorted list (i.e. where ray intersects
+		// precisely at the interesction of two or more planes).
+		child_hits.erase(std::unique(
+			child_hits.begin(), child_hits.end(),
+			[](const ChildHit& a, const ChildHit& b) -> bool {
+				return a.pos_child == b.pos_child;
+			}
+		), child_hits.end());
+
+		// For each candidate child, cast ray through until the zero-curve is hit.
+		for (const ChildHit& child_hit : child_hits)
+		{
+			const VecDf& pos_hit = this->ray(
+				child_hit.pos_intersect, dir_,
+				m_grid_isogrid.children().get(child_hit.pos_child)
+			);
+
+			if (pos_hit != NULL_POS<FLOAT>())
+				return pos_hit;
+		}
+
+		return NULL_POS<FLOAT>();
+	}
+
+	/**
+	 * Get null position vector for given template typename.
+	 *
+	 * TODO: c++14 should support variable templates, which is a better solution,
+	 * but gcc doesn't yet.
+	 *
+	 * @return D-dimensional vector with each element set to numeric_limits<T>::max.
+	 */
+	template <typename T>
+	static constexpr felt::VecDT<T, D> NULL_POS()
+	{
+		return felt::VecDT<T, D>::Constant(std::numeric_limits<T>::max());
+	}
+
+	/**
 	 * Reset delta isogrid to zero and clear update lists.
 	 *
 	 * @snippet test_Surface.cpp Simple delta isogrid update
@@ -760,6 +706,10 @@ public:
 
 		expand_narrow_band();
 	}
+
+#ifndef _TESTING
+private:
+#endif
 
 	/**
 	 * Find all outer layer points who's distance transform is affected by modified zero-layer
@@ -1168,7 +1118,8 @@ public:
 	 * @param pos_ position in grid to check.
 	 * @param layer_id_from_ layer moving from.
 	 * @param layer_id_to_ layer moving to.
-	 * @param plookup_buffer_ grid to store points that need status change.
+	 * @param plookup_buffer_ grid to store points that need status change, for potential additional
+	 * processing.
 	 * @return true if status change is needed for this position, false otherwise.
 	 */
 	bool status_change (
@@ -1479,31 +1430,10 @@ public:
 			pos_,
 			[this, &pos_nearest, &val_nearest, side_](const VecDi& pos_neigh_) {
 				const FLOAT val_neigh = m_grid_isogrid.get(pos_neigh_);
-
-//				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-//
-//				const INT layer_id_neigh = layer_id(val_neigh);
-//				if (inside_band(layer_id_neigh))
-//				{
-//					const UINT lookup_idx = m_grid_isogrid.children().get(
-//							m_grid_isogrid.pos_child(pos_neigh_)
-//						).lookup().get(pos_neigh_);
-//
-//					if (lookup_idx == IsoGrid::Child::Lookup::NULL_IDX)
-//					{
-//						std::stringstream sstr;
-//						sstr << "Pos not tracked but should be: " <<
-//							str_pos(pos_neigh_);
-//						std::string str = sstr.str();
-//						throw std::domain_error(str);
-//					}
-//				}
-//
-//				#endif
 				// Check absolute value of this neighbour is less than nearest point.
 				// Multiplying by side_ has two effects:
 				// - It has the same effect as abs() for points on the same side of the band.
-				// - If ensures points on the opposite side are negative, so that < comparison
+				// - It ensures points on the opposite side are negative, so that < comparison
 				//   prefers those points, which is good because we're interested in the neighbour
 				//   in the *direction* of the zero-curve.
 				if (val_neigh*side_ < val_nearest) {
@@ -1515,296 +1445,6 @@ public:
 
 		return pos_nearest;
 	}
-
-	struct SortablePos
-	{
-		VecDi pos;
-		UINT hash;
-		SortablePos(const VecDi& pos_, const UINT distance_)
-		: pos(pos_), hash(0)
-		{
-			hash = Grid<UINT, D>::index(
-				pos,
-				VecDu::Constant(distance_ * 2 + 1),
-				pos - VecDi::Constant(distance_)
-			);
-		}
-		bool operator<(const SortablePos& other)
-		{
-			return this->hash < other.hash;
-		}
-	};
-
-	/**
-	 * Walk the narrow band from given position out to given distance.
-	 *
-	 * @param pos_
-	 * @param distance_
-	 * @return SingleLookupGrid with tracking lists for visited points, one list
-	 * for each layer.
-	 */
-	template <UINT Distance>
-	EagerSingleLookupGrid<D, NUM_LAYERS>& walk_band (const VecDi& pos_)
-	{
-		using Lookup = EagerSingleLookupGrid<D, NUM_LAYERS>;
-		using PosArray = typename Lookup::PosArray;
-
-		// Box size is: (Distance * 2 directions) + 1 central.
-		static Lookup lookup(VecDu::Constant(Distance * 2 + 1));
-		lookup.reset_all();
-		lookup.offset(pos_ - VecDi::Constant(Distance));
-
-		const INT layer_id = this->layer_id(pos_);
-		if (!this->inside_band(layer_id))
-			return lookup;
-
-		lookup.add(pos_, this->layer_idx(layer_id));
-
-		// Arrays to store first and last element in tracking list within
-		// each spatial partition of tracking grid.
-		std::array<UINT, NUM_LAYERS> aidx_first_neigh;
-		std::array<UINT, NUM_LAYERS> aidx_last_neigh;
-		aidx_first_neigh.fill(0);
-
-		// Loop round searching outward for zero layer grid nodes.
-		for (UINT udist = 1; udist <= Distance; udist++)
-		{
-			// Copy number of active grid nodes for this partition
-			// into relevant index in the list.
-			for (UINT i = 0; i < NUM_LAYERS; i++)
-				aidx_last_neigh[i] = lookup.list(i).size();
-
-			for (UINT layer_idx = 0; layer_idx < NUM_LAYERS; layer_idx++)
-			{
-				// Loop over leaf grid nodes, using the cached start and end
-				// indices, so that newly added points are skipped.
-				for (
-					UINT idx_neigh = aidx_first_neigh[layer_idx];
-					idx_neigh < aidx_last_neigh[layer_idx];
-					idx_neigh++
-				) {
-					// This leaf grid nodes is the centre to search
-					// about.
-					const VecDi& pos_centre = lookup.list(layer_idx)[idx_neigh];
-
-					// Use utility method from Grid to get neighbouring
-					// grid nodes and call a lambda to add the point
-					// to the appropriate tracking list.
-
-					m_grid_isogrid.neighs(
-						pos_centre,
-						[this](const VecDi& pos_neigh) {
-							// Calculate layer of this neighbouring
-							// point from the isogrid grid.
-							const INT layer_id = this->layer_id(pos_neigh);
-							// If the calculated layer lies within the
-							// narrow band, then we want to track it.
-							if (this->inside_band(layer_id))
-							{
-								// Add the neighbour point to the
-								// tracking grid. Will reject
-								// duplicates.
-								lookup.add(
-									pos_neigh, this->layer_idx(layer_id)
-								);
-							}
-						}
-					); // End neighbourhood query.
-				} // End for leaf grid node.
-			}
-			// Set first index to be the previous last index, so we start there
-			// on next loop around.
-			for (UINT i = 0; i < NUM_LAYERS; i++)
-				aidx_first_neigh[i] = aidx_last_neigh[i];
-		}
-
-		return lookup;
-	}
-
-	/**
-	 * Get null position vector for given template typename.
-	 *
-	 * TODO: c++14 should support variable templates, which is a better solution,
-	 * but gcc doesn't yet.
-	 *
-	 * @return D-dimensional vector with each element set to numeric_limits<T>::max.
-	 */
-	template <typename T>
-	static constexpr felt::VecDT<T, D> NULL_POS()
-	{
-		return felt::VecDT<T, D>::Constant(std::numeric_limits<T>::max());
-	};
-
-	/**
-	 * Get array of offsets to corners of a cube (e.g. 8 for 3D, 4 for 2D).
-	 *
-	 * @return D-dimensional array of offsets.
-	 */
-	constexpr std::array<VecDi, 1 << D> corners () const
-	{
-		std::array<VecDi, 1 << D> acorner;
-		for (UINT mask = 0; mask < acorner.size(); mask++)
-			for (UINT dim = 0; dim < D; dim++)
-				if (mask & (1 << dim))
-					acorner[mask](dim) = 0;
-				else
-					acorner[mask](dim) = -1;
-		return acorner;
-	}
-
-	/**
-	 * Cast a ray to the zero layer, without wrapping around periodic boundary.
-	 *
-	 * @param pos_origin originating point of ray
-	 * @param dir normal vector in direction of ray
-	 * @return zero curve hit location or NULL_POS.
-	 */
-	VecDf ray(const VecDf& pos_origin_, const VecDf& dir_) const
-	{
-
-		using ChildHits = std::vector<ChildHit>;
-
-		// If ray is cast from within isogrid grid, first check child grid containing origin point.
-		if (m_grid_isogrid.inside(pos_origin_))
-		{
-			const VecDf& pos_hit = ray(
-				pos_origin_, dir_,
-				m_grid_isogrid.children().get(
-					m_grid_isogrid.pos_child(pos_origin_.template cast<INT>())
-				)
-			);
-			if (pos_hit != NULL_POS<FLOAT>())
-				return pos_hit;
-		}
-
-		// Ray to test against.
-		Line line(pos_origin_, dir_);
-
-		// Tracking list for child grids that are hit.
-		ChildHits child_hits;
-
-		// Cycle each axis, casting ray to child grid planes marching away from origin.
-		for (UINT dim = 0; dim < dir_.size(); dim++)
-		{
-			// Direction +/-1 along this axis.
-			FLOAT dir_dim = sgn(dir_(dim));
-			if (dir_dim == 0)
-				continue;
-
-			// Get next child plane along this axis.
-			FLOAT pos_plane_dim = round_to_next(
-				dim, dir_dim, pos_origin_(dim), m_grid_isogrid.child_size()
-			);
-
-			// Construct vector with elements not on this axis at zero.
-			VecDf pos_plane = VecDf::Constant(0);
-			pos_plane(dim) = pos_plane_dim;
-
-			// If the zero point on this plane is not within the grid, then jump to max/min point
-			// on isogrid grid.
-			if (!m_grid_isogrid.inside(pos_plane))
-			{
-				FLOAT pos_grid_dim;
-				// If casting in -'ve direction, get maximum extent.
-				if (dir_dim == -1)
-				{
-					pos_grid_dim = m_grid_isogrid.offset()(dim) + m_grid_isogrid.size()(dim);
-					if (pos_plane_dim < pos_grid_dim)
-						continue;
-				}
-				// Else if casting in +'ve direction, get minimum extent.
-				else
-				{
-					pos_grid_dim = m_grid_isogrid.offset()(dim);
-					if (pos_plane_dim > pos_grid_dim)
-						continue;
-				}
-				// Reset plane position to max/min extent as calculated above.
-				pos_plane(dim) = pos_grid_dim;
-			}
-
-			// Plane normal is opposite to ray direction.
-			VecDf normal = VecDf::Constant(0);
-			normal(dim) = -dir_dim;
-
-			// Cast ray to plane and add any child grids hit on the way to tracking list.
-			// If child size is not a factor of grid size then this first cast could be to outside
-			// the grid.  So cannot quit early here and must try next child.
-			!ray_check_add_child(child_hits, line, Plane(normal, pos_plane(dim) * dir_dim));
-
-			// Round up/down to next child, in case we started at inexact modulo of child grid size
-			// (i.e. when isogrid grid size is not integer multiple of child grid size).
-			pos_plane_dim = round_to_next(
-				dim, dir_dim, pos_plane(dim), m_grid_isogrid.child_size()
-			);
-			// If rounding produced a different plane, then cast to that plane, and potentially add
-			// child grid to tracking list.
-			if (pos_plane_dim != pos_plane(dim))
-			{
-				pos_plane(dim) = pos_plane_dim;
-				if (!ray_check_add_child(child_hits, line, Plane(normal, pos_plane(dim) * dir_dim)))
-					continue;
-			}
-
-			// Keep marching along planes, casting ray to each and adding any candidate child
-			// grids to the tracking list.
-			const FLOAT child_size_dim = m_grid_isogrid.child_size()(dim);
-			while (true)
-			{
-				pos_plane(dim) += dir_dim * child_size_dim;
-				if (!ray_check_add_child(child_hits, line, Plane(normal, pos_plane(dim) * dir_dim)))
-					break;
-			}
-		}
-
-		// Remove children whose raycast hit point lies outside themselves.  Possible if a child
-		// has been allowed to be added in order for the loop above to continue on to the next
-		// child, via dir vs. offset/size check in ray_check_add_child().
-//		child_hits.erase(std::remove_if(
-//			child_hits.begin(), child_hits.end(),
-//			[this](const ChildHit& child_hit) {
-//				return !this->m_grid_isogrid.children()
-//					.get(child_hit.pos_child)
-//					.inside(child_hit.pos_intersect);
-//			}
-//		), child_hits.end());
-
-		// Sort candidate child grids in distance order from front to back.
-		std::sort(
-			child_hits.begin(), child_hits.end(),
-			[&pos_origin_](const ChildHit& a, const ChildHit& b) -> bool {
-				const VecDf& dist_a = (a.pos_intersect - pos_origin_);
-				const VecDf& dist_b = (b.pos_intersect - pos_origin_);
-				return dist_a.squaredNorm() < dist_b.squaredNorm();
-			}
-		);
-		// Remove any duplicate child grids from the sorted list (i.e. where ray intersects
-		// precisely at the interesction of two or more planes).
-		child_hits.erase(std::unique(
-			child_hits.begin(), child_hits.end(),
-			[](const ChildHit& a, const ChildHit& b) -> bool {
-				return a.pos_child == b.pos_child;
-			}
-		), child_hits.end());
-
-		// For each candidate child, cast ray through until the zero-curve is hit.
-		for (const ChildHit& child_hit : child_hits)
-		{
-			const VecDf& pos_hit = this->ray(
-				child_hit.pos_intersect, dir_,
-				m_grid_isogrid.children().get(child_hit.pos_child)
-			);
-
-			if (pos_hit != NULL_POS<FLOAT>())
-				return pos_hit;
-		}
-
-		return NULL_POS<FLOAT>();
-	}
-
-#ifndef _TESTING
-protected:
-#endif
 
 	/**
 	 * Cast a ray to the zero layer within a given child grid.
@@ -1967,6 +1607,16 @@ protected:
 
 
 #if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+
+	/**
+	 * Stringify a position vector, including information about the isogrid at that point.
+	 *
+	 * Includes the position vector, spatial partition position, isogrid value, narrow band layer,
+	 * and index in the narrow band tracking list (both spatial partition level and leaf level).
+	 *
+	 * @param pos_ position to stringify
+	 * @return string representation of point and the isogrid state at that point.
+	 */
 	std::string str_pos(const VecDi& pos_) const
 	{
 		const FLOAT dist_pos = m_grid_isogrid.get(pos_);
@@ -1990,6 +1640,12 @@ protected:
 	}
 
 
+	/**
+	 * Call str_pos on all neighbours of given position.
+	 *
+	 * @param pos_ position to report along with it's neighbours.
+	 * @return string representation of the point and its neighbours, with additional isogrid info.
+	 */
 	std::string str_neighs(const VecDi& pos_) const
 	{
 		std::stringstream sstr;
@@ -2001,6 +1657,68 @@ protected:
 	}
 #endif
 
+	/**
+	 * Get narrow band layer id of location in isogrid grid.
+	 *
+	 * Calculates layer ID based on value in grid (i.e. is the layer the location *should*
+	 * be in).
+	 *
+	 * The position vector type is templated, so that interpolation overloads can be used
+	 * if a float vector (e.g. Vec3f) is provided.
+	 *
+	 * @param pos_ position vector of location
+	 * @return integer layer ID that given location should belong to.
+	 */
+	template <class PosType>
+	INT layer_id(const PosType& pos_) const
+	{
+		const INT layer_id_pos = layer_id(m_grid_isogrid(pos_));
+
+		return layer_id_pos;
+	}
+
+	/**
+	 * Get narrow band layer ID of given value.
+	 *
+	 * Rounds value to nearest integer, but with an epsilon to prefer rounding up, to keep
+	 * consistent when we have floating point rounding errors.
+	 *
+	 * @param val value to round to give narrow band layer ID.
+	 * @return layer ID that given value should belong to
+	 */
+	INT layer_id(const FLOAT val) const
+	{
+		// Round to value+epsilon, to catch cases of precisely +/-0.5.
+		return boost::math::round(
+			val + std::numeric_limits<FLOAT>::epsilon()
+		);
+	}
+
+	/**
+	 * Get narrow band layer index of ID for indexing into arrays.
+	 *
+	 * Internally we can of course not have negative array indices, so must convert to an
+	 * index first.
+	 *
+	 * @param id narrow band layer ID.
+	 * @return index to use to get given layer in narrow band array.
+	 */
+	UINT layer_idx(const INT id) const
+	{
+		return id + NUM_LAYERS / 2;
+	}
+
+	/**
+	 * Test whether a given value lies (or should lie) within the narrow band or not.
+	 *
+	 * @param val float or int value to test
+	 * @return true if inside the narrow band, false otherwise.
+	 */
+	template <typename ValType>
+	bool inside_band (const ValType& val) const
+	{
+		return (UINT)std::abs(val) <= LAYER_MAX;
+	}
 };
 }
 #endif
