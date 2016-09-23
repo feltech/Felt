@@ -1,5 +1,4 @@
 #include "catch.hpp"
-#include <boost/test/output_test_stream.hpp>
 
 #define _TESTING
 

@@ -1,4 +1,3 @@
-#include <boost/numeric/ublas/io.hpp>
 #include "catch.hpp"
 #include <omp.h>
 
@@ -393,8 +392,6 @@ SCENARIO("Grid")
 	 */
 	WHEN("delta_x")
 	{
-		using namespace boost::numeric::ublas;
-
 		// Default and explicitly setting.
 		{
 			//! [Delta x setter]

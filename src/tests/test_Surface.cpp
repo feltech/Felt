@@ -1,4 +1,3 @@
-#include <boost/numeric/ublas/io.hpp>
 #include "catch.hpp"
 #include <omp.h>
 

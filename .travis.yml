@@ -1,0 +1,20 @@
+language: cpp
+addons:
+	apt:
+		sources:
+			- ubuntu-toolchain-r-test
+			packages:
+			- g++-5
+			- gcc-5
+			- libeigen3-dev
+
+install:
+	- export CXX="g++-5" CC="gcc-5" OMP_NUM_THREADS=2
+
+compiler:
+	- gcc
+
+script:
+	- cmake .
+	- cmake --build . --target ctests
+	- bin/ctests
