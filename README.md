@@ -1,6 +1,8 @@
 Deformable surface simulation and visualisation library
 -------------------------------------------------------
 
+[![Build Status](https://travis-ci.org/feltech/Felt.svg?branch=master)](https://travis-ci.org/feltech/Felt)
+
 Documentation: http://feltech.github.io/Felt/
 
 Felt is an implementation of the

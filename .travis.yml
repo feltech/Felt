@@ -1,3 +1,5 @@
+sudo: required
+dist: trusty
 language: cpp
 addons:
   apt:
@@ -8,7 +10,6 @@ addons:
       - gcc-5
       - libeigen3-dev
       - libboost-dev
-      - 
 
 install:
   - export CXX="g++-5" CC="gcc-5" OMP_NUM_THREADS=2
