@@ -15,8 +15,8 @@ surface representation.
 Felt makes heavy use of spatial partitioning to reduce memory footprint, provide localised
 deformations and repolygonisation, and aid in parallelism.
 
-Felt leverages C++14 and is header-only, with a dependency on the
-[Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) BLAS library.
+Felt leverages C++14 and is header-only, with a dependencies on [boost](http://www.boost.org/) and
+[Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) libraries.
 
 
 ##To do
