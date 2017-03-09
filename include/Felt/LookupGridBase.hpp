@@ -18,17 +18,17 @@ namespace felt
  *
  * @tparam Derived the CRTP derived class
  */
-template <class Derived, Laziness IsLazy>
-class LookupGridBase : public GridBase<LookupGridBase<Derived, IsLazy>, IsLazy>
+template <class Derived>
+class LookupGridBase : public GridBase< LookupGridBase<Derived> >
 {
 public:
-	using ThisType = LookupGridBase<Derived, IsLazy>;
+	using ThisType = LookupGridBase<Derived>;
 	using Traits = GridTraits<Derived>;
 	using DerivedType = typename Traits::ThisType;
 	/// Type of data stored in grid nodes. For lookup grids this is an N-tuple of array indices.
 	using LeafType = typename Traits::LeafType;
 	/// GridBase base class.
-	using Base = GridBase<ThisType, IsLazy>;
+	using Base = GridBase<ThisType>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 	using typename Base::PosArray;
@@ -425,22 +425,8 @@ protected:
 };
 
 
-template <class Derived, Laziness IsLazy> const UINT
-LookupGridBase<Derived, IsLazy>::NULL_IDX = std::numeric_limits<UINT>::max();
-
-
-/**
- * Base class for static lookup grid.
- *
- * @tparam Derived CRTP derived class.
- */
-template <class Derived>
-class EagerLookupGridBase : public LookupGridBase<EagerLookupGridBase<Derived>, Laziness::EAGER>
-{
-public:
-	using Base = LookupGridBase<EagerLookupGridBase<Derived>, Laziness::EAGER>;
-	using Base::LookupGridBase;
-};
+template <class Derived> const UINT
+LookupGridBase<Derived>::NULL_IDX = std::numeric_limits<UINT>::max();
 
 
 /**
@@ -449,10 +435,10 @@ public:
  * @tparam Derived CRTP derived class.
  */
 template <class Derived>
-class LazyLookupGridBase : public LookupGridBase<LazyLookupGridBase<Derived>, Laziness::LAZY>
+class LazyLookupGridBase : public LookupGridBase<LazyLookupGridBase<Derived>>
 {
 public:
-	using Base = LookupGridBase<LazyLookupGridBase<Derived>, Laziness::LAZY>;
+	using Base = LookupGridBase<LazyLookupGridBase<Derived>>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 	using typename Base::PosArray;
@@ -485,10 +471,9 @@ public:
  * Just forward the traits defined for LookupGridBase subclasses.
  *
  * @tparam Derived the CRTP derived class.
- * @tparam IsLazy true if the direct ancestor is a LazyGridBase.
  */
-template <class Derived, Laziness IsLazy>
-struct GridTraits< LookupGridBase<Derived, IsLazy> > : GridTraits<Derived>
+template <class Derived>
+struct GridTraits< LookupGridBase<Derived> > : GridTraits<Derived>
 {};
 
 } // End namespace felt.

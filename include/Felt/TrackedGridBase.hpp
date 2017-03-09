@@ -5,7 +5,7 @@
 #include <sstream>
 #include <mutex>
 
-#include "SingleLookupGrid.hpp"
+#include "LookupGrid.hpp"
 
 namespace felt
 {
@@ -17,12 +17,12 @@ namespace felt
  *
  * @See MultiTrackedGrid and SingleTrackedGrid.
  */
-template <class Derived, Laziness IsLazy>
-class TrackedGridBase : public GridBase<TrackedGridBase<Derived, IsLazy>, IsLazy>
+template <class Derived>
+class TrackedGridBase : public GridBase< TrackedGridBase<Derived> >
 {
 public:
 	/// GridBase base class.
-	using Base = GridBase<TrackedGridBase<Derived, IsLazy>, IsLazy>;
+	using Base = GridBase< TrackedGridBase<Derived> >;
 	/// MultiLookup grid type to use for tracking active grid positions.
 	using Lookup = typename GridTraits<Derived>::LookupType;
 	/// Type of data to store in the main grid.
@@ -312,8 +312,8 @@ public:
  *
  * Just forward the traits defined for TrackedGridBase subclasses.
  */
-template <class Derived, Laziness IsLazy>
-struct GridTraits<TrackedGridBase<Derived, IsLazy> > : GridTraits<Derived>
+template <class Derived>
+struct GridTraits< TrackedGridBase<Derived> > : GridTraits<Derived>
 {};
 
 }

@@ -17,7 +17,7 @@ namespace felt
 	/// Utility: take a slice of a 3D grid and return a tabulated string.
 	template <class Derived>
 	std::string stringify_grid_slice(
-		const EagerGridBase<Derived>& grid, UINT axis_plane = 2, INT axis_plane_offset = 0
+		const GridBase<Derived>& grid, UINT axis_plane = 2, INT axis_plane_offset = 0
 	) {
 		using GridType = GridBase<Derived>;
 		using VecDu = typename GridBase<Derived>::VecDu;
@@ -80,7 +80,7 @@ namespace felt
 		friend bool operator == ( VecType lhs, ThisType const& rhs ) {
 			bool is_equal = true;
 			for (UINT i = 0; i < lhs.size(); i++)
-				is_equal &= lhs(i) - rhs.m_value(i) < rhs.m_epsilon * (
+				is_equal &= fabs(lhs(i) - rhs.m_value(i)) < rhs.m_epsilon * (
 					rhs.m_scale + std::max( fabs(lhs(i)), fabs(rhs.m_value(i)) )
 				);
 			return is_equal;

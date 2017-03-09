@@ -19,6 +19,8 @@ template <class Derived> struct GridTraits {};
 /**
  * Abstract base class for n-dimensional grid.
  *
+ * Provides the common methods and typedefs of all grid types.
+ *
  * Subclasses can override the get() method to return a datatype other
  * than that stored in the grid, so that grid values can be mutated
  * before e.g. using in gradient calculations.
@@ -58,12 +60,10 @@ public:
 	 * Dynamic 1D vector (a resizeable array of data) for storage of grid data.
 	 */
 	using ArrayData = std::vector<LeafType>;
-
 	/**
 	 * Map type from POD (in usage, std::vector) to Eigen::Array.
 	 */
 	using VArrayData = Eigen::Map< Eigen::Array<LeafType, 1, Eigen::Dynamic> >;
-
 	/**
 	 * Resizeable array of VecDi (grid locations).
 	 */
@@ -71,6 +71,10 @@ public:
 
 	/**
 	 * Iterator for contiguous cycling over entire grid.
+	 *
+	 * @snippet test_Grid.cpp Grid - basics: GIVEN 2x2x2
+	 * @snippet test_Grid.cpp Grid - basics: WHEN we cycle over all
+	 * @snippet test_Grid.cpp Grid - basics: THEN we have visited all
 	 */
 	class iterator : public boost::iterator_facade<
 		EagerGridBase::iterator, const VecDi&, boost::forward_traversal_tag
@@ -171,39 +175,14 @@ public:
 	{}
 
 	/**
-	 * Initialise a zero-size grid.
-	 *
-	 * If custom initialisation is required, then use this constructor
-	 * and call init() in the derived class.
-	 */
-	EagerGridBase () :
-		m_data(),
-		m_offset(VecDi::Zero()),
-		m_size(VecDu::Zero()),
-		m_dx(1),
-		m_background()
-	{}
-
-	/**
-	 * Initialise a zero-size grid with background value to use for eventual initialisation.
-	 *
-	 */
-	EagerGridBase (const LeafType background_) :
-		m_data(),
-		m_offset(VecDi::Zero()),
-		m_size(VecDu::Zero()),
-		m_dx(1),
-		m_background(background_)
-	{}
-
-	/**
 	 *
 	 * Initialise a grid with given dimension, offset, and background value.
 	 *
-	 * @snippet test_Grid.cpp Initialsing grid size
-	 * @snippet test_Grid.cpp Offsetting the grid
-	 * @snippet test_Grid.cpp Divergence
-	 * @snippet test_Grid.cpp LazyGrid initialisation
+	 * @snippet test_Grid.cpp Grid - basics: GIVEN 3x7x11
+	 * @snippet test_Grid.cpp Grid - basics: THEN memory is allocated
+	 * @snippet test_Grid.cpp Grid - basics: GIVEN 2x2x2
+	 * @snippet test_Grid.cpp Grid - basics: WHEN we cycle over all
+	 * @snippet test_Grid.cpp Grid - basics: THEN filled with the background value
 	 *
 	 * @param size_ size of grid.
 	 * @param offset_ spatial offset of grid.
@@ -220,8 +199,6 @@ public:
 
 	/**
 	 * Initialise the grid dimensions, offset, and background value.
-	 *
-	 * @snippet test_Grid.cpp LazyGrid initialisation
 	 *
 	 * @param size_ size of grid.
 	 * @param offset_ spatial offset of grid.
@@ -352,7 +329,7 @@ public:
 	}
 
 	/**
-	 * Get value at position in grid
+	 * Get (reference to) value at position in grid
 	 *
 	 * @snippet test_Grid.cpp Get and set
 	 *
@@ -567,10 +544,12 @@ x = (idx/Dz)/Dy % Dx
 	/**
 	 * Set the dimensions of the grid and resize it.
 	 *
-	 * Values will be default initialised (or not at all).
+	 * Values will be default initialised to the background value.
+	 *
+	 * This is *not* safe to use if data has already been written to the grid, as the memory layout
+	 * of the grid will be modifed.
 	 *
 	 * @param size_ new size of the grid.
-	 * @return
 	 */
 	void size (const VecDu& size_)
 	{
@@ -867,17 +846,17 @@ x = (idx/Dz)/Dy % Dx
 	 * @return vector of entropy satisfying gradient.
 	 */
 	template <typename PosType>
-	VecDT gradE (const felt::VecDT<PosType, Dims>& pos) const
+	VecDT gradE (const felt::VecDT<PosType, Dims>& pos_) const
 	{
 		using VecDp = felt::VecDT<PosType, Dims>;
 		// Value at this point.
-		const LeafType centre = val(pos);
-		// Reference to GridBase dimensions.
+		const LeafType centre = val(pos_);
+		// Reference to grid dimensions.
 		const VecDu& size = this->size();
 		// Vector to store gradient calculation.
 		VecDT vec_grad;
 		// Position for look-around.
-		VecDp pos_test(pos);
+		VecDp pos_test(pos_);
 
 		for (INT axis = 0; axis < size.size(); axis++)
 		{
@@ -887,7 +866,7 @@ x = (idx/Dz)/Dy % Dx
 			LeafType forward = val(pos_test);
 			pos_test(axis) -= 1;
 
-			back = std::max((centre - back), 0.0f);
+			back = std::max(centre - back, 0.0f);
 			forward = std::min(forward - centre, 0.0f);
 
 			vec_grad(axis) = forward + back;
@@ -1052,7 +1031,7 @@ x = (idx/Dz)/Dy % Dx
 	{
 		const VecDT vec_grad_f = gradF(pos_);
 		const VecDT vec_grad_b = gradB(pos_);
-		const VecDT vec_grad_diff = vec_grad_b - vec_grad_f;
+		const VecDT vec_grad_diff = vec_grad_f - vec_grad_b;
 
 		// Component-wise sum.
 		const LeafType val = vec_grad_diff.sum();
@@ -1115,8 +1094,36 @@ x = (idx/Dz)/Dy % Dx
 		}
 	}
 
-#ifndef _TESTING
 protected:
+
+	/**
+	 * Initialise a zero-size grid.
+	 *
+	 * If custom initialisation is required, then use this constructor
+	 * and call init() in the derived class.
+	 */
+	EagerGridBase () :
+		m_data(),
+		m_offset(VecDi::Zero()),
+		m_size(VecDu::Zero()),
+		m_dx(1),
+		m_background()
+	{}
+
+	/**
+	 * Initialise a zero-size grid with background value to use for eventual initialisation.
+	 *
+	 */
+	EagerGridBase (const LeafType background_) :
+		m_data(),
+		m_offset(VecDi::Zero()),
+		m_size(VecDu::Zero()),
+		m_dx(1),
+		m_background(background_)
+	{}
+
+#ifndef _TESTING
+private:
 #else
 public:
 #endif

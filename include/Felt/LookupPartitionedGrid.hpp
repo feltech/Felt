@@ -15,17 +15,17 @@ namespace felt
  * @tparam N number of tracking lists to use.
  */
 template <UINT D, UINT N>
-class SingleLookupPartitionedGrid
-	: public TrackingPartitionedGridBase< SingleLookupPartitionedGrid<D, N> >
+class LookupPartitionedGrid
+	: public TrackingPartitionedGridBase< LookupPartitionedGrid<D, N> >
 {
 public:
-	using ThisType = SingleLookupPartitionedGrid<D, N>;
+	using ThisType = LookupPartitionedGrid<D, N>;
 	using Base = TrackingPartitionedGridBase<ThisType>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 	using typename Base::Child;
 
-	SingleLookupPartitionedGrid() : Base()
+	LookupPartitionedGrid() : Base()
 	{}
 
 	/**
@@ -37,7 +37,7 @@ public:
 	 * @param offset_ spatial offset of the grid.
 	 * @param partition_size_ size of a spatial partition.
 	 */
-	SingleLookupPartitionedGrid (
+	LookupPartitionedGrid (
 		const VecDu& size_, const VecDi& offset_, const VecDu& partition_size_
 	) : Base()
 	{
@@ -67,14 +67,16 @@ public:
  * @tparam N number of tracking lists to use.
  */
 template <UINT D, UINT N>
-struct GridTraits<SingleLookupPartitionedGrid<D, N> > : DefaultSingleLookupGridTraits<D, N>
+struct GridTraits<LookupPartitionedGrid<D, N> > : DefaultSingleLookupGridTraits<D, N>
 {
 	/// The class inheriting from TrackingPartitionedGrid.
-	using ThisType = SingleLookupPartitionedGrid<D, N>;
+	using ThisType = LookupPartitionedGrid<D, N>;
 	/// Child grid class, in this case LazySingleLookupGrid.
-	using ChildType = LazySingleLookupGrid<D, N>;
+	using ChildType = LazyLookupGrid<D, N>;
 	/// Grid class whose interface to copy via CRTP mixin.
 	using MixinType = EagerSingleLookupGridBase<ThisType>;
+	/// Parent grid is eagerly constructed.
+	static const Laziness IsLazy = Laziness::EAGER;
 };
 
 } // End namespace felt

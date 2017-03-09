@@ -78,16 +78,13 @@ UINT assert_partitioned_matches_baseline (
 			);
 
 			INFO(
-				(
-					"Simplex from partition "
-					+ felt::format(polys_vtxs[0]) + "-"
-					+ felt::format(polys_vtxs[1]) + "-"
-					+ felt::format(polys_vtxs[2])
-					+ " found in baseline"
-				)
+				"Simplex from partition "
+				+ felt::format(polys_vtxs[0]) + "-"
+				+ felt::format(polys_vtxs[1]) + "-"
+				+ felt::format(polys_vtxs[2])
+				+ " found in baseline"
 			);
-			CHECK(
-				it != polys.get(pos_child).spx().end());
+			CHECK(it != polys.get(pos_child).spx().end());
 		}
 	}
 
@@ -131,16 +128,13 @@ UINT assert_partitioned_matches_baseline (
 		}
 
 		INFO(
-			(
-				"Simplex from baseline "
-				+ felt::format(poly_vtxs[0]) + "-"
-				+ felt::format(poly_vtxs[1]) + "-"
-				+ felt::format(poly_vtxs[2])
-				+ " found in partition"
-			)
+			"Simplex from baseline "
+			+ felt::format(poly_vtxs[0]) + "-"
+			+ felt::format(poly_vtxs[1]) + "-"
+			+ felt::format(poly_vtxs[2])
+			+ " found in partition"
 		);
-		CHECK(
-			found_match);
+		CHECK(found_match);
 	}
 
 	INFO("Total: " + std::to_string(total_spx) + " spxs");
@@ -154,7 +148,6 @@ UINT assert_partitioned_matches_baseline (
 
 SCENARIO("PolyGrid")
 {
-
 	/**
 	 * Test basic initialisation.
 	 */
@@ -168,8 +161,6 @@ SCENARIO("PolyGrid")
 
 		CHECK((UINT)poly.data().size() == 27);
 	}
-
-
 
 	/**
 	 * Test (re-)polygonisations based on tracked changes.

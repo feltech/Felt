@@ -13,7 +13,7 @@
 #include "MultiLookupGrid.hpp"
 #include "Surface.hpp"
 
-namespace felt 
+namespace felt
 {
 	/**
 	 * General polygonisation class.
@@ -47,7 +47,7 @@ namespace felt
 		/// Vertex array type for primary vertex storage.
 		using VtxArray = std::vector<Vertex>;
 		/// Vertex spatial lookup type.
-		using VtxGrid = EagerSingleTrackedGrid<VtxTuple, D>;
+		using VtxGrid = TrackedGrid<VtxTuple, D>;
 		/// Simplex type (line or triangle).
 		using typename PolyBase<D, void>::Simplex;
 		/// Simplex array type for primary simplex (line or triangle) storage.
@@ -58,15 +58,15 @@ namespace felt
 		/// A lookup of cube edges defined by offset and axis
 		using PolyBase<D, void>::edges;
 		/// Defines simplices of cubes as D-tuples of vertex indices.
-		using PolyBase<D, void>::vtx_order;		
+		using PolyBase<D, void>::vtx_order;
 		/**
 		 * A lookup from corner inside/outside status bitmask to cut edge status
 		 * bitmask.
 		 */
-		using PolyBase<D, void>::vtx_mask;		
+		using PolyBase<D, void>::vtx_mask;
 		/// Offset to transform corners to more standard configuration.
 		using PolyBase<D, void>::SpxGridPosOffset;
-		
+
 		/// Null index for flagging lack of reference into an array.
 		static const UINT NULL_IDX;
 		/// Null vertex tuple value for flagging no vertices at a grid position.
@@ -74,7 +74,7 @@ namespace felt
 
 	protected:
 		/// Lookup grid type used for avoiding duplicates.
-		using LookupGridType = EagerSingleLookupGrid<D>;
+		using LookupGridType = LookupGrid<D>;
 
 		/**
 		 * List of interpolated vertices.
@@ -104,10 +104,10 @@ namespace felt
 		 * Calculate corner mask of cube at pos, based on inside-outside status
 		 * of corners in isogrid.
 		 *
-         * @param isogrid
-         * @param pos
-         * @return
-         */
+		 * @param isogrid
+		 * @param pos
+		 * @return
+		 */
 		template <class Derived>
 		static unsigned short mask (const IsoGrid<Derived>& isogrid, const VecDi& pos)
 		{
@@ -139,8 +139,8 @@ namespace felt
 		/**
 		 * Construct a new polygonisation enclosing a signed distance grid.
 		 *
-         * @param isogrid the signed distance grid to polygonise.
-          */
+		 * @param isogrid the signed distance grid to polygonise.
+		  */
 		Poly (const VecDu& size_, const VecDi& offset_) : m_grid_vtx()
 		{
 			this->init(size_, offset_);
@@ -160,8 +160,8 @@ namespace felt
 		/**
 		 * Get the vertex array.
 		 *
-         * @return
-         */
+		 * @return
+		 */
 		VtxArray& vtx ()
 		{
 			return m_a_vtx;
@@ -170,8 +170,8 @@ namespace felt
 		/**
 		 * Get the vertex array.
 		 *
-         * @return
-         */
+		 * @return
+		 */
 		const VtxArray& vtx() const
 		{
 			return m_a_vtx;
@@ -180,8 +180,8 @@ namespace felt
 		/**
 		 * Get the vertex at idx.
 		 *
-         * @return
-         */
+		 * @return
+		 */
 		const Vertex& vtx(const UINT idx) const
 		{
 			return this->vtx()[idx];
@@ -192,8 +192,8 @@ namespace felt
 		 * MultiLookup, or calculate then store, and return the index into the vertex
 		 * array of a vertex at the zero-crossing of isogrid at pos_a along axis.
 		 *
-         * @return
-         */
+		 * @return
+		 */
 		template <class Derived>
 		UINT idx(
 			const VecDi& pos_a, const UINT axis, const IsoGrid<Derived>& grid_isogrid
@@ -258,7 +258,7 @@ namespace felt
 		 * Get the array of simplices.
 		 *
 		 * @return
-         */
+		 */
 		SpxArray& spx()
 		{
 			return m_a_spx;
@@ -268,7 +268,7 @@ namespace felt
 		 * Get the array of simplices.
 		 *
 		 * @return
-         */
+		 */
 		const SpxArray& spx() const
 		{
 			return m_a_spx;
@@ -277,8 +277,8 @@ namespace felt
 		/**
 		 * Get the simplex at index idx in the array.
 		 *
-         * @return
-         */
+		 * @return
+		 */
 		const Simplex& spx(const UINT idx) const
 		{
 			return this->spx()[idx];
@@ -289,11 +289,11 @@ namespace felt
 		/**
 		 * Generate simplex(es) for isogrid grid at position pos.
 		 *
-         * @param isogrid
-         * @param pos
-         * @param mask
-         * @param spxs
-         */
+		 * @param isogrid
+		 * @param pos
+		 * @param mask
+		 * @param spxs
+		 */
 		template <class Derived>
 		void spx(const VecDi& pos, const IsoGrid<Derived>& grid_isogrid)
 		{
@@ -419,8 +419,8 @@ namespace felt
 		/**
 		 * Destroy vertices and fill the lookup grid with nulls.
 		 *
-         * @return
-         */
+		 * @return
+		 */
 		void reset()
 		{
 			// Fill vertex grid with null values.

@@ -23,10 +23,10 @@ namespace felt
  * @tparam N the number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N=1>
-class EagerMultiTrackedGrid : public TrackedGridBase< EagerMultiTrackedGrid<T, D, N>, Laziness::EAGER >
+class MultiTrackedGrid : public TrackedGridBase< MultiTrackedGrid<T, D, N> >
 {
 public:
-	using TrackedGridBase<EagerMultiTrackedGrid<T, D, N>, Laziness::EAGER >::TrackedGridBase;
+	using TrackedGridBase< MultiTrackedGrid<T, D, N> >::TrackedGridBase;
 };
 
 
@@ -38,11 +38,13 @@ public:
  * @tparam N the number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N>
-struct GridTraits<EagerMultiTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
+struct GridTraits<MultiTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
 {
-	using ThisType = EagerMultiTrackedGrid<T, D, N>;
+	using ThisType = MultiTrackedGrid<T, D, N>;
 	/// Type of lookup grid to use.  This is what differentiates this from SingleTrackedGrid.
-	using LookupType = EagerMultiLookupGrid<D, N>;
+	using LookupType = MultiLookupGrid<D, N>;
+	/// Set as eagerly initialised.
+	static const Laziness IsLazy = Laziness::EAGER;
 };
 
 }

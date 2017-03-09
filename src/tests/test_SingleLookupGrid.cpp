@@ -2,15 +2,15 @@
 
 #define _TESTING
 
-#include <Felt/SingleLookupGrid.hpp>
+#include <Felt/LookupGrid.hpp>
 
 using namespace felt;
 
-SCENARIO("SingleLookupGrid")
+SCENARIO("LookupGrid")
 {
 	GIVEN("a grid and some locations")
 	{
-		using GridType = EagerSingleLookupGrid<3, 3>;
+		using GridType = LookupGrid<3, 3>;
 		GridType grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
 
 		const Vec3i pos1(1, 0, -1);
@@ -37,7 +37,7 @@ SCENARIO("SingleLookupGrid")
 				CHECK(grid.list(2).size() == 1);
 			}
 
-			THEN("the tracking list elements contain the position vectors")
+			THEN("the tracking list elements contain the positions")
 			{
 				CHECK(grid.list(0)[0] == pos1);
 				CHECK(grid.list(1)[0] == pos2);
@@ -45,7 +45,7 @@ SCENARIO("SingleLookupGrid")
 				CHECK(grid.list(2)[0] == pos4);
 			}
 
-			THEN("the grid contains the indices of the position vectors in the tracking list")
+			THEN("the grid contains the indices of the positions in the tracking list")
 			{
 				CHECK((UINT)grid(pos1) == 0);
 				CHECK((UINT)grid(pos2) == 0);
@@ -80,7 +80,7 @@ SCENARIO("SingleLookupGrid")
 				}
 			}
 
-			AND_WHEN("we remove a position vector from tracking in list 0")
+			AND_WHEN("we remove a position from tracking in list 0")
 			{
 				grid.remove(pos2, 1);
 
@@ -210,8 +210,8 @@ SCENARIO("LazySingleLookupGrid")
 	{
 		/// [LazySingleLookupGrid initialisation]
 		// ==== Setup ====
-		LazySingleLookupGrid<3, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1));
-		const UINT NULL_IDX_DATA = LazySingleLookupGrid<3, 3>::NULL_IDX;
+		LazyLookupGrid<3, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1));
+		const UINT NULL_IDX_DATA = LazyLookupGrid<3, 3>::NULL_IDX;
 
 		// ==== Confirm ====
 		CHECK(grid.is_active() == false);

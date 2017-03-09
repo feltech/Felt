@@ -16,43 +16,19 @@ namespace felt
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N=1>
-class EagerMultiLookupGrid : public EagerLookupGridBase<EagerMultiLookupGrid<D, N> >
+class MultiLookupGrid : public LookupGridBase< MultiLookupGrid<D, N> >
 {
 public:
-	using ThisType = EagerMultiLookupGrid<D, N>;
-	using Base = EagerLookupGridBase<ThisType>;
+	using ThisType = MultiLookupGrid<D, N>;
+	using Base = LookupGridBase<ThisType>;
 	using typename Base::PosArray;
 public:
-	using Base::EagerLookupGridBase;
+	using Base::LookupGridBase;
 	using Base::list;
 private:
+	/// Make private, forcing use of overrides that specify list id.
 	const PosArray& list() const {}
 };
-
-
-/**
- * Traits for StaticLookupGridBase.
- *
- * Just forward the traits defined in subclasses.
- *
- * @tparam Derived the CRTP derived class.
- */
-template <class Derived>
-struct GridTraits< EagerLookupGridBase<Derived> > : GridTraits<Derived>
-{};
-
-
-
-/**
- * Traits for LazyLookupGridBase.
- *
- * Just forward the traits defined in subclasses.
- *
- * @tparam Derived the CRTP derived class.
- */
-template <class Derived>
-struct GridTraits< LazyLookupGridBase<Derived> > : GridTraits<Derived>
-{};
 
 
 /**
@@ -86,9 +62,11 @@ const VecDu<N> DefaultMultiLookupGridTraits<D, N>::NULL_IDX_DATA = (
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N>
-struct GridTraits<EagerMultiLookupGrid<D, N> > : DefaultMultiLookupGridTraits<D, N>
+struct GridTraits<MultiLookupGrid<D, N> > : DefaultMultiLookupGridTraits<D, N>
 {
-	using ThisType = EagerMultiLookupGrid<D, N>;
+	using ThisType = MultiLookupGrid<D, N>;
+	/// Set as eagerly constructed.
+	static const Laziness IsLazy = Laziness::EAGER;
 };
 
 

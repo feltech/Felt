@@ -10,7 +10,7 @@ SCENARIO("MultiLookupGrid")
 {
 	GIVEN("a 10x10x10 EagerMultiLookupGrid with 3 tracking lists, and some locations")
 	{
-		using GridType = EagerMultiLookupGrid<3, 3>;
+		using GridType = MultiLookupGrid<3, 3>;
 		GridType grid(Vec3u(10,10,10), Vec3i(0, -5, -5));
 
 		const Vec3i pos1(1, 0, -1);

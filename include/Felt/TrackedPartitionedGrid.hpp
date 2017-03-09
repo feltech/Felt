@@ -1,7 +1,7 @@
 #ifndef INCLUDE_FELT_SINGLETRACKEDPARTITIONEDGRID_HPP_
 #define INCLUDE_FELT_SINGLETRACKEDPARTITIONEDGRID_HPP_
 
-#include "SingleTrackedGrid.hpp"
+#include "TrackedGrid.hpp"
 #include "TrackingPartitionedGridBase.hpp"
 
 
@@ -9,19 +9,19 @@ namespace felt
 {
 
 /**
- * LazySingleTrackedPartitionedGrid.
+ * SingleTrackedPartitionedGrid.
  *
  * @tparam T type of value stored in leaf grid nodes.
  * @tparam D dimension of the grid.
  * @tparam N number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N>
-class SingleTrackedPartitionedGrid
-	: public TrackingPartitionedGridBase < SingleTrackedPartitionedGrid<T, D, N> >
+class TrackedPartitionedGrid
+	: public TrackingPartitionedGridBase < TrackedPartitionedGrid<T, D, N> >
 {
 public:
 	/// This class.
-	using ThisType = SingleTrackedPartitionedGrid<T, D, N>;
+	using ThisType = TrackedPartitionedGrid<T, D, N>;
 	/// Base class
 	using Base = TrackingPartitionedGridBase<ThisType>;
 
@@ -228,18 +228,20 @@ private:
  * @tparam N number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N>
-struct GridTraits<SingleTrackedPartitionedGrid<T, D, N> > : DefaultGridTraits<T, D>
+struct GridTraits<TrackedPartitionedGrid<T, D, N> > : DefaultGridTraits<T, D>
 {
 	/// The class inheriting from the base.
-	using ThisType = SingleTrackedPartitionedGrid<T, D, N>;
+	using ThisType = TrackedPartitionedGrid<T, D, N>;
 	/// Child grid class, in this case LazySingleTrackedGrid.
-	using ChildType = LazySingleTrackedGrid<T, D, N>;
+	using ChildType = LazyTrackedGrid<T, D, N>;
 	/// The type of lookup grid to use for tracking active grid nodes.
 	using LookupType = typename ChildType::Traits::LookupType;
 	/// Base grid class to partition, in this case TrackedGridBase.
-	using MixinType = TrackedGridBase<ThisType, Laziness::EAGER>;
+	using MixinType = TrackedGridBase<ThisType>;
 	/// Number of tracking lists, from template parameter.
 	static const UINT NumLists = N;
+	/// Parent grid is eagerly constructed.
+	static const Laziness IsLazy = Laziness::EAGER;
 };
 
 } // End namespace felt.

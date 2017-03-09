@@ -21,13 +21,13 @@ namespace felt
  * @tparam IsLazy either EAGER for memory allocated at construction, or LAZY for allocation on
  * `activate`.
  */
-template <class Derived, Laziness IsLazy>
-class SingleLookupGridBase : public LookupGridBase<SingleLookupGridBase<Derived, IsLazy>, IsLazy>
+template <class Derived>
+class SingleLookupGridBase : public LookupGridBase<SingleLookupGridBase<Derived>>
 {
 public:
-	friend class LookupGridBase<SingleLookupGridBase<Derived, IsLazy>, IsLazy>;
-	using ThisType = SingleLookupGridBase<Derived, IsLazy>;
-	using Base = LookupGridBase<ThisType, IsLazy>;
+	friend class LookupGridBase< SingleLookupGridBase<Derived> >;
+	using ThisType = SingleLookupGridBase<Derived>;
+	using Base = LookupGridBase<ThisType>;
 	using Base::NULL_IDX;
 	using typename Base::PosArray;
 	using typename Base::LeafType;
@@ -201,10 +201,10 @@ protected:
  */
 template <class Derived>
 class EagerSingleLookupGridBase : public SingleLookupGridBase <
-	EagerSingleLookupGridBase<Derived>, Laziness::EAGER
+	EagerSingleLookupGridBase<Derived>
 > {
 public:
-	using Base = SingleLookupGridBase<EagerSingleLookupGridBase<Derived>, Laziness::EAGER>;
+	using Base = SingleLookupGridBase<EagerSingleLookupGridBase<Derived>>;
 	using Base::SingleLookupGridBase;
 };
 
@@ -216,11 +216,11 @@ public:
  */
 template <class Derived>
 class LazySingleLookupGridBase : public SingleLookupGridBase <
-	LazySingleLookupGridBase<Derived>, Laziness::LAZY
+	LazySingleLookupGridBase<Derived>
 > {
 public:
 	using ThisType = LazySingleLookupGridBase<Derived>;
-	using Base = SingleLookupGridBase<LazySingleLookupGridBase<Derived>, Laziness::LAZY>;
+	using Base = SingleLookupGridBase<LazySingleLookupGridBase<Derived>>;
 	using typename Base::VecDu;
 	using typename Base::VecDi;
 	using Base::Base::Base::is_active;
@@ -314,10 +314,10 @@ const UINT DefaultSingleLookupGridTraits<D, N>::NULL_IDX_DATA = std::numeric_lim
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N=1>
-class EagerSingleLookupGrid : public EagerSingleLookupGridBase<EagerSingleLookupGrid<D, N> >
+class LookupGrid : public EagerSingleLookupGridBase<LookupGrid<D, N> >
 {
 public:
-	using ThisType = EagerSingleLookupGrid<D, N>;
+	using ThisType = LookupGrid<D, N>;
 	using Base = EagerSingleLookupGridBase<ThisType>;
 	using Base::EagerSingleLookupGridBase;
 };
@@ -335,10 +335,10 @@ public:
  * @tparam N the number of tracking lists to use.
  */
 template <UINT D, UINT N=1>
-class LazySingleLookupGrid : public LazySingleLookupGridBase<LazySingleLookupGrid<D, N> >
+class LazyLookupGrid : public LazySingleLookupGridBase<LazyLookupGrid<D, N> >
 {
 public:
-	using ThisType = LazySingleLookupGrid<D, N>;
+	using ThisType = LazyLookupGrid<D, N>;
 	using Base = LazySingleLookupGridBase<ThisType>;
 	using Base::LazySingleLookupGridBase;
 };
@@ -349,8 +349,8 @@ public:
  *
  * Just forward the traits defined for SingleLookupGridBase subclasses.
  */
-template <class Derived, Laziness IsLazy>
-struct GridTraits< SingleLookupGridBase<Derived, IsLazy> > : GridTraits<Derived>
+template <class Derived>
+struct GridTraits< SingleLookupGridBase<Derived>> : GridTraits<Derived>
 {};
 
 
@@ -360,7 +360,7 @@ struct GridTraits< SingleLookupGridBase<Derived, IsLazy> > : GridTraits<Derived>
  * Just forward the traits defined for SingleLookupGridBase subclasses.
  */
 template <class Derived>
-struct GridTraits<LazySingleLookupGridBase<Derived> > : GridTraits<Derived>
+struct GridTraits< LazySingleLookupGridBase<Derived> > : GridTraits<Derived>
 {};
 
 
@@ -381,10 +381,12 @@ struct GridTraits<EagerSingleLookupGridBase<Derived> > : GridTraits<Derived>
  * @tparam N number of tracking lists to use.
  */
 template <UINT D, UINT N>
-struct GridTraits<EagerSingleLookupGrid<D, N> > : DefaultSingleLookupGridTraits<D, N>
+struct GridTraits<LookupGrid<D, N> > : DefaultSingleLookupGridTraits<D, N>
 {
 	/// The derived type.
-	using ThisType = EagerSingleLookupGrid<D, N>;
+	using ThisType = LookupGrid<D, N>;
+	/// Set as eagerly initialised.
+	static const Laziness IsLazy = Laziness::EAGER;
 };
 
 
@@ -395,10 +397,12 @@ struct GridTraits<EagerSingleLookupGrid<D, N> > : DefaultSingleLookupGridTraits<
  * @tparam N number of tracking lists to use.
  */
 template <UINT D, UINT N>
-struct GridTraits<LazySingleLookupGrid<D, N> > : DefaultSingleLookupGridTraits<D, N>
+struct GridTraits<LazyLookupGrid<D, N> > : DefaultSingleLookupGridTraits<D, N>
 {
 	/// The derived type.
-	using ThisType = LazySingleLookupGrid<D, N>;
+	using ThisType = LazyLookupGrid<D, N>;
+	/// Set as lazily initialised.
+	static const Laziness IsLazy = Laziness::LAZY;
 };
 
 } // End namespace felt

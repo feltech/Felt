@@ -8,6 +8,7 @@
 
 using namespace felt;
 
+/// Alias std::to_string for compactness.
 template <typename... Args>
 auto s(Args&&... args) -> decltype(std::to_string(std::forward<Args>(args)...)) {
 	return std::to_string(std::forward<Args>(args)...);
@@ -1040,7 +1041,7 @@ GIVEN("a 9x9 2-layer surface with a seed point in the centre")
 				}
 			);
 
-			THEN("we only visit the points in the region")
+			THEN("we only visit the valid points")
 			{
 				CHECK(num_visited == 4);
 			}
@@ -1443,7 +1444,6 @@ WHEN("ray")
 
 //	INFO(stringify_grid_slice(surface.isogrid()));
 /*
-/home/dave/Dropbox/Workspace/Felt/src/tests/test_Surface.cpp(1,185): Message:
 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |
 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |
 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |    4 |
@@ -1659,9 +1659,29 @@ GIVEN("a 3-layer flat surface in an 20x20x20 grid with 16x16x16 partitions")
 			else
 				return -1;
 		});
-	INFO(stringify_grid_slice(surface.isogrid()));
-
-
+//	INFO(stringify_grid_slice(surface.isogrid()));
+/*
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+*/
 	WHEN("we cast a ray diagonally downward from outside the isogrid")
 	{
 		const Vec3f& pos_hit = surface.ray(

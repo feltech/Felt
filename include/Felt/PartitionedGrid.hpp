@@ -251,11 +251,11 @@ public:
  * @tparam D the dimensions of the grid.
  */
 template <typename T, UINT D>
-class PartitionedGrid : public PartitionedGridBase<PartitionedGrid<T, D> >
+class PartitionedGrid : public PartitionedGridBase< PartitionedGrid<T, D> >
 {
 public:
 	/// Base class.
-	using Base = PartitionedGridBase<PartitionedGrid<T, D> >;
+	using Base = PartitionedGridBase< PartitionedGrid<T, D> >;
 	/// Inherited constructor.
 	using Base::PartitionedGridBase;
 };
@@ -280,14 +280,14 @@ struct GridTraits<PartitionedGridBase<Derived> > : GridTraits<Derived>
  * @tparam D the number of dimensions of the grid.
  */
 template <typename T, UINT D>
-struct GridTraits<PartitionedGrid<T, D> > : DefaultGridTraits<T, D>
+struct GridTraits< PartitionedGrid<T, D> > : DefaultGridTraits<T, D>
 {
 	/// The class inheriting from the base.
 	using ThisType = PartitionedGrid<T, D>;
 	/// Child type to store in spatial partitions - in this case a standard Grid.
 	using ChildType = Grid<T, D>;
-	/// Mixin type whose signature to spoof - in this case a standard GridBase.
-	using MixinType = GridBase<ThisType>;
+	/// Mixin type whose signature to spoof - in this case an EagerGridBase.
+	using MixinType = EagerGridBase<ThisType>;
 	/// Numer of tracking lists to use, in this case only 1.
 	static const UINT NumLists = 1;
 };

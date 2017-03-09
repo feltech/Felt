@@ -22,17 +22,14 @@ namespace felt
  * @tparam N the number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N=1>
-class EagerSingleTrackedGrid
-	: public TrackedGridBase<EagerSingleTrackedGrid<T, D, N>, Laziness::EAGER>
+class TrackedGrid : public TrackedGridBase< TrackedGrid<T, D, N> >
 {
 public:
-	using ThisType = EagerSingleTrackedGrid<T, D, N>;
-	using Base = TrackedGridBase<ThisType, Laziness::EAGER>;
+	using ThisType = TrackedGrid<T, D, N>;
+	using Base = TrackedGridBase<ThisType>;
 	using Base::TrackedGridBase;
 };
 
-template <typename T, UINT D, UINT N=1>
-using SingleTrackedGrid = EagerSingleTrackedGrid<T, D, N>;
 
 /**
  * A lazy tracked grid that assumes non-overlapping tracking lists.
@@ -46,13 +43,12 @@ using SingleTrackedGrid = EagerSingleTrackedGrid<T, D, N>;
  * @tparam N the number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N=1>
-class LazySingleTrackedGrid
-	: public TrackedGridBase<LazySingleTrackedGrid<T, D, N>, Laziness::LAZY>
+class LazyTrackedGrid : public TrackedGridBase<LazyTrackedGrid<T, D, N>>
 {
 public:
-	using ThisType = LazySingleTrackedGrid<T, D, N>;
+	using ThisType = LazyTrackedGrid<T, D, N>;
 	using Traits = GridTraits<ThisType>;
-	using Base = TrackedGridBase<ThisType, Laziness::LAZY>;
+	using Base = TrackedGridBase<ThisType>;
 	using typename Base::VecDi;
 
 public:
@@ -87,34 +83,38 @@ public:
 
 
 /**
- * Traits of SingleTrackedGrid.
+ * Traits of TrackedGrid.
  *
  * @tparam T the type of data to store in the grid.
  * @tparam D the dimension of the grid.
  * @tparam N the number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N>
-struct GridTraits<EagerSingleTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
+struct GridTraits<TrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
 {
-	using ThisType = EagerSingleTrackedGrid<T, D, N>;
+	using ThisType = TrackedGrid<T, D, N>;
 	/// Type of lookup grid to use.  This is what differentiates this from MultiTrackedGrid.
-	using LookupType = EagerSingleLookupGrid<D, N>;
+	using LookupType = LookupGrid<D, N>;
+	/// Set as eagerly initialised.
+	static const Laziness IsLazy = Laziness::EAGER;
 };
 
 
 /**
- * Traits of LazySingleTrackedGrid.
+ * Traits of LazyTrackedGrid.
  *
  * @tparam T the type of data to store in the grid.
  * @tparam D the dimension of the grid.
  * @tparam N the number of tracking lists to use.
  */
 template <typename T, UINT D, UINT N>
-struct GridTraits<LazySingleTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
+struct GridTraits<LazyTrackedGrid<T, D, N> > : DefaultGridTraits<T, D>
 {
-	using ThisType = LazySingleTrackedGrid<T, D, N>;
+	using ThisType = LazyTrackedGrid<T, D, N>;
 	/// Type of lookup grid to use.  This is what differentiates this from MultiTrackedGrid.
-	using LookupType = LazySingleLookupGrid<D, N>;
+	using LookupType = LazyLookupGrid<D, N>;
+	/// Set as lazily initialised.
+	static const Laziness IsLazy = Laziness::LAZY;
 };
 
 }

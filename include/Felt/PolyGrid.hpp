@@ -37,7 +37,7 @@ namespace felt
 		using PolySurface = Surface<Dims, 3>;
 
 		/// Lookup grid to track partitions containing zero-layer points.
-		using PolyChanges = EagerSingleLookupGrid<Dims>;
+		using PolyChanges = LookupGrid<Dims>;
 
 	protected:
 		/// Lookup grid to track partitions containing zero-layer points.
@@ -254,12 +254,20 @@ namespace felt
 	struct GridTraits< PolyGridBase<Derived> > : GridTraits<Derived> {};
 
 
+	/**
+	 * Traits for PolyGrid.
+	 */
 	template <UINT D>
 	struct GridTraits< PolyGrid<D> >
 	{
+		/// Derived type.
 		using ThisType = PolyGrid<D>;
+		/// Type to store in leaf nodes, in this case Poly objects.
 		using LeafType = Poly<D>;
+		/// Number of dimensions of the grid.
 		static const UINT Dims = D;
+		/// Set as eagerly initialised.
+		static const Laziness IsLazy = Laziness::EAGER;
 	};
 
 }

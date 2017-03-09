@@ -11,9 +11,9 @@
 #include <eigen3/Eigen/Dense>
 #include <omp.h>
 
-#include "SingleLookupPartitionedGrid.hpp"
+#include "LookupPartitionedGrid.hpp"
 #include "Util.hpp"
-#include "SingleTrackedPartitionedGrid.hpp"
+#include "TrackedPartitionedGrid.hpp"
 
 #ifndef FELT_SURFACE_OMP_CHUNK_SIZE
 /**
@@ -61,12 +61,12 @@ public:
 	/**
 	 * A delta isogrid update grid with active (non-zero) grid points tracked.
 	 */
-	using DeltaIsoGrid = SingleTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
+	using DeltaIsoGrid = TrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
 	/**
 	 * A level set embedding isogrid grid, with active grid points (the narrow
 	 * band) tracked.
 	 */
-	using IsoGrid = SingleTrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
+	using IsoGrid = TrackedPartitionedGrid<FLOAT, D, NUM_LAYERS>;
 	/**
 	 * A resizable array of D-dimensional grid positions.
 	 */
@@ -86,7 +86,7 @@ public:
 	/**
 	 * Grid to track positions that require an update.
 	 */
-	using AffectedLookupGrid = SingleLookupPartitionedGrid<D, NUM_LAYERS>;
+	using AffectedLookupGrid = LookupPartitionedGrid<D, NUM_LAYERS>;
 
 	/// D-dimensional hyperplane type (using Eigen library), for raycasting.
 	using Plane = Eigen::Hyperplane<FLOAT, D>;
@@ -98,7 +98,7 @@ public:
 	 * The tracking list index encodes the "from" layer and the value in the grid encodes the
 	 * "to" layer.
 	 */
-	using StatusChangeGrid = SingleTrackedPartitionedGrid<INT, D, NUM_LAYERS>;
+	using StatusChangeGrid = TrackedPartitionedGrid<INT, D, NUM_LAYERS>;
 
 
 private:

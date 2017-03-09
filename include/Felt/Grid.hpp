@@ -4,6 +4,7 @@
 #include "EagerGridBase.hpp"
 #include "LazyGridBase.hpp"
 
+
 namespace felt
 {
 
@@ -12,14 +13,15 @@ enum Laziness
 	EAGER, LAZY
 };
 
+
 /**
- * Placeholder GridBase to be specialised based on IsLazy template parameter.
+ * Placeholder grid to be specialised based on IsLazy trait.
  *
  * @tparam Derived the CRTP derived class.
  * @tparam Lazy EAGER or LAZY depending whether the grid is lazy activated/deactivated, or
- * always active.
+ * always active - determined from the GridTraits of the Derived class.
  */
-template <class Derived, Laziness IsLazy=Laziness::EAGER>
+template <class Derived, Laziness IsLazy=GridTraits<Derived>::IsLazy>
 class GridBase
 {};
 
@@ -61,12 +63,12 @@ public:
  * @tparam D the dimensions of the grid.
  */
 template <typename T, UINT D>
-class Grid : public EagerGridBase< Grid<T, D> >
+class Grid : public GridBase< Grid<T, D> >
 {
 public:
 	using ThisType = Grid<T, D>;
-	using Base = EagerGridBase< Grid<T, D> >;
-	using Base::EagerGridBase;
+	using Base = GridBase<ThisType>;
+	using Base::GridBase;
 };
 
 
@@ -77,16 +79,17 @@ public:
  * @tparam D the dimensions of the grid.
  */
 template <typename T, UINT D>
-class LazyGrid : public LazyGridBase< LazyGrid<T, D> >
+class LazyGrid : public GridBase< LazyGrid<T, D> >
 {
 public:
-	using Base = LazyGridBase< LazyGrid<T, D> >;
-	using Base::LazyGridBase;
+	using ThisType = LazyGrid<T, D>;
+	using Base = GridBase<ThisType>;
+	using Base::GridBase;
 };
 
 
 /**
- * Default traits for grids to derive from.clipse clip
+ * Default traits for grids to derive from.
  *
  * @tparam T the type of data to store in the grid.
  * @tparam D the number of dimensions of the grid.
@@ -112,6 +115,8 @@ struct GridTraits<Grid<T, D> > : DefaultGridTraits<T, D>
 {
 	/// The class inheriting from the base.
 	using ThisType = Grid<T, D>;
+	/// Set as eagerly constructed.
+	static const Laziness IsLazy = Laziness::EAGER;
 };
 
 
@@ -126,6 +131,8 @@ struct GridTraits<LazyGrid<T, D> > : DefaultGridTraits<T, D>
 {
 	/// The class inheriting from the base.
 	using ThisType = LazyGrid<T, D>;
+	/// Set as lazily constructed.
+	static const Laziness IsLazy = Laziness::LAZY;
 };
 
 /** @} */ // End group Grid.

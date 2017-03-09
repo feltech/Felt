@@ -45,7 +45,7 @@ public:
 		 * Construct an iterator over leafs of a partitioned grid.
 		 *
 		 * @param pgrid grid to iterate through
-		 * @param listIdx tracking list id within grid
+		 * @param list_idx tracking list id within grid
 		 * @param it_child iterator over child grids
 		 * @param it_leaf iterator over lowest level leaf grid point.
 		 */

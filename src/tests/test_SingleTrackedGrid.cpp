@@ -2,71 +2,62 @@
 
 #define _TESTING
 
-#include <Felt/SingleTrackedGrid.hpp>
+#include <Felt/TrackedGrid.hpp>
 
 using namespace felt;
 
-SCENARIO("LazySingleTrackedGrid")
+SCENARIO("LazyTrackedGrid")
 {
-	WHEN("initialisation")
+	GIVEN("a 3x3x3 grid with (-1,-1,-1) offset and background value of 3")
 	{
-		// ==== Setup ====
-		LazySingleTrackedGrid<FLOAT, 3, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1), 3);
-		const UINT NULL_IDX = LazySingleTrackedGrid<FLOAT, 3, 3>::Lookup::NULL_IDX;
+		LazyTrackedGrid<FLOAT, 3, 3> grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1), 3);
 
-		// ==== Confirm ====
-		CHECK(grid.is_active() == false);
-		CHECK(grid.data().size() == 0);
-		CHECK(grid.background() == 3);
-		CHECK(grid.get(Vec3i(1,1,1)) == 3);
-		CHECK(grid.lookup().is_active() == false);
-		CHECK(grid.lookup().data().size() == 0);
-		CHECK(grid.lookup().background() == NULL_IDX);
-		CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
+		const UINT NULL_IDX = LazyTrackedGrid<FLOAT, 3, 3>::Lookup::NULL_IDX;
+
+		THEN("the data grid and associated lookup grid state is inactive")
+		{
+			CHECK(grid.is_active() == false);
+			CHECK(grid.data().size() == 0);
+			CHECK(grid.background() == 3);
+			CHECK(grid.get(Vec3i(1,1,1)) == 3);
+			CHECK(grid.lookup().is_active() == false);
+			CHECK(grid.lookup().data().size() == 0);
+			CHECK(grid.lookup().background() == NULL_IDX);
+			CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
+		}
+
+		/// [LazySingleTrackedGrid activate]
+		WHEN("the grid is activated")
+		{
+			grid.activate();
+
+			THEN("the data grid and associated lookup grid state is active")
+			{
+				CHECK(grid.is_active() == true);
+				CHECK(grid.data().size() == 3*3*3);
+				CHECK(grid.get(Vec3i(1,1,1)) == 3);
+				CHECK(grid.lookup().is_active() == true);
+				CHECK(grid.lookup().data().size() == 3*3*3);
+				CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
+				/// [LazySingleTrackedGrid activate]
+			}
+
+			AND_WHEN("the grid is deactivated")
+			{
+				grid.deactivate();
+
+				THEN("the data grid and associated lookup grid state is inactive")
+				{
+					CHECK(grid.is_active() == false);
+					CHECK(grid.data().size() == 0);
+					CHECK(grid.background() == 3);
+					CHECK(grid.get(Vec3i(1,1,1)) == 3);
+					CHECK(grid.lookup().is_active() == false);
+					CHECK(grid.lookup().data().size() == 0);
+					CHECK(grid.lookup().background() == NULL_IDX);
+					CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
+				}
+			}
+		}
 	}
 }
-
-
-struct LazySingleTrackedGridFixture {
-	const UINT NULL_IDX = LazySingleTrackedGrid<FLOAT, 3, 3>::Lookup::NULL_IDX;
-	LazySingleTrackedGrid<FLOAT, 3, 3> grid;
-	LazySingleTrackedGridFixture()
-			: grid(Vec3u(3, 3, 3), Vec3i(-1,-1,-1), 3)
-	{}
-};
-
-TEST_CASE_METHOD(LazySingleTrackedGridFixture, "LazySingleTrackedGrid: activate_should_activate_lookup", "[LazySingleTrackedGrid]")
-{
-	/// [LazySingleTrackedGrid activate]
-	// ==== Action ====
-	grid.activate();
-
-	// ==== Confirm ====
-	CHECK(grid.is_active() == true);
-	CHECK(grid.data().size() == 3*3*3);
-	CHECK(grid.get(Vec3i(1,1,1)) == 3);
-	CHECK(grid.lookup().is_active() == true);
-	CHECK(grid.lookup().data().size() == 3*3*3);
-	CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
-	/// [LazySingleTrackedGrid activate]
-}
-
-TEST_CASE_METHOD(LazySingleTrackedGridFixture, "LazySingleTrackedGrid: deactivate_should_deactivate_lookup", "[LazySingleTrackedGrid]")
-{
-	/// [LazySingleTrackedGrid deactivate]
-	// ==== Action ====
-	grid.activate();
-	grid.deactivate();
-
-	// ==== Confirm ====
-	CHECK(grid.is_active() == false);
-	CHECK(grid.data().size() == 0);
-	CHECK(grid.background() == 3);
-	CHECK(grid.get(Vec3i(1,1,1)) == 3);
-	CHECK(grid.lookup().is_active() == false);
-	CHECK(grid.lookup().data().size() == 0);
-	CHECK(grid.lookup().background() == NULL_IDX);
-	CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
-	/// [LazySingleTrackedGrid deactivate]
-}
-

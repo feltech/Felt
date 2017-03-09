@@ -3,17 +3,17 @@
 
 #define _TESTING
 
-#include <Felt/SingleTrackedPartitionedGrid.hpp>
+#include <Felt/TrackedPartitionedGrid.hpp>
 
 using namespace felt;
 
-SCENARIO("LazySingleTrackedPartitionedGrid")
+SCENARIO("LazyTrackedPartitionedGrid")
 {
 	WHEN("initialisation")
 	{
 		/// [LazySingleTrackedPartitionedGrid initialisation]
 		// ==== Setup ====
-		using GridType = SingleTrackedPartitionedGrid<FLOAT, 3, 3>;
+		using GridType = TrackedPartitionedGrid<FLOAT, 3, 3>;
 		const UINT NULL_IDX = GridType::Child::Lookup::NULL_IDX;
 
 		// ==== Action ====
@@ -34,7 +34,7 @@ SCENARIO("LazySingleTrackedPartitionedGrid")
 
 struct LazySingleTrackedPartitionedGridFixture
 {
-	using GridType = SingleTrackedPartitionedGrid<FLOAT, 3, 3>;
+	using GridType = TrackedPartitionedGrid<FLOAT, 3, 3>;
 	const UINT NULL_IDX = GridType::Lookup::NULL_IDX;
 	GridType grid;
 	LazySingleTrackedPartitionedGridFixture()
