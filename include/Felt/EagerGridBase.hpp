@@ -1131,10 +1131,10 @@ public:
 	/**
 	 * Interpolate down one dimension.
 	 *
-	 * The values of val_corners_in_ are interpolated to one dimension smaller than they are
+	 * The values of val_corners_ are interpolated to one dimension smaller than they are
 	 * currently (cube->square, square->line, line->point).
 	 *
-	 * @param val_corners_in_ list of corner values.
+	 * @param val_corners_ list of corner values.
 	 * @param pos_ real-valued position to interpolate to.
 	 * @return list of interpolated values
 	 */

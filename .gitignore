@@ -26,3 +26,10 @@
 /.kdev4/
 /build/
 /Testing/
+/Release/
+/build.ninja
+/CTestTestfile.cmake
+/.ninja_deps
+/.ninja_log
+/Doxyfile
+/rules.ninja

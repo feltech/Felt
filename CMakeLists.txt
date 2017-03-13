@@ -31,12 +31,12 @@ add_definitions(
 
 # C++ unit tests
 enable_testing()
-file(GLOB CTEST_CPPS "${TESTS_ROOT}/test*.cpp")
+file(GLOB_RECURSE CTEST_CPPS "${TESTS_ROOT}/test*.cpp")
 add_executable(ctests ${CTEST_CPPS} ${TESTS_ROOT}/Utils.cpp)
 include_directories(${PROJECT_ROOT}/include ${EIGEN3_INCLUDE_DIR})
 target_link_libraries(ctests gomp pthread)
 add_test(
-	NAME felt 
-	WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} 
+	NAME felt
+	WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 	COMMAND ctests
 )
