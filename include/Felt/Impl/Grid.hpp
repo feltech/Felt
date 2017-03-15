@@ -14,9 +14,37 @@ namespace Grid
 
 
 template <class Derived>
+class Activator : private Base<Derived>
+{
+private:
+	/// CRTP derived class.
+	using DerivedType = Derived;
+	/// Dimension of the grid.
+	static const UINT Dims = Traits<Derived>::Dims;
+	/// Type of data to store in grid nodes.
+	using LeafType = typename Traits<Derived>::LeafType;
+
+	/// D-dimensional signed integer vector.
+	using VecDi = Felt::VecDi<Dims>;
+
+protected:
+	/**
+	 * Construct the internal data array, initialising nodes to the background value.
+	 */
+	void activate()
+	{
+		INT arr_size = cself->m_size(0);
+		for (INT i = 1; i < cself->m_size.size(); i++)
+			arr_size *= cself->m_size(i);
+		nself->m_data.resize(arr_size, cself->m_background);
+	}
+};
+
+
+template <class Derived>
 class Data : private Base<Derived>
 {
-protected:
+private:
 	/// CRTP derived class.
 	using DerivedType = Derived;
 	/// Dimension of the grid.
@@ -35,15 +63,13 @@ protected:
 
 private:
 	/**
-	 * The dimensions (size) of the grid.
-	 */
-	VecDi	m_size;
-	/**
 	 * The translational offset of the grid's zero coordinate.
 	 */
 	VecDi	m_offset;
 
 protected:
+	///The dimensions (size) of the grid.
+	VecDi	m_size;
 	/// The actual grid data store.
 	ArrayData	m_data;
 	/// Default/initial value of grid nodes.
@@ -70,28 +96,6 @@ protected:
 	const VecDi& offset () const
 	{
 		return m_offset;
-	}
-
-	/**
-	 * Construct the internal data array, initialising nodes to the background value.
-	 */
-	void activate()
-	{
-		INT arr_size = m_size(0);
-		for (INT i = 1; i < m_size.size(); i++)
-			arr_size *= m_size(i);
-		m_data.resize(arr_size, m_background);
-	}
-
-	/**
-	 * Destroy the internal data array.
-	 *
-	 * @snippet test_Grid.cpp LazyGrid deactivation
-	 */
-	void deactivate()
-	{
-		this->m_data.clear();
-		this->m_data.shrink_to_fit();
 	}
 
 	/**
@@ -428,6 +432,8 @@ class LazyByValue : protected ByValue<Derived>
 private:
 	/// CRTP derived class.
 	using DerivedType = Derived;
+	/// Base class
+	using BaseType = ByValue<Derived>;
 	/// Dimension of the grid.
 	static const UINT Dims = Traits<Derived>::Dims;
 	/// Type of data to store in grid nodes.
@@ -454,8 +460,7 @@ protected:
 		#endif
 		if (cself->data().size())
 		{
-			const UINT idx = cself->index(pos_);
-			return cself->data()[idx];
+			return BaseType::get(pos_);
 		}
 		else
 		{

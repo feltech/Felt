@@ -11,14 +11,6 @@ template <class Derived>
 class Base
 {
 protected:
-	Derived* self()
-	{
-		return (Derived*)(this);
-	}
-	const Derived* self() const
-	{
-		return (const Derived*)(this);
-	}
 };
 
 }

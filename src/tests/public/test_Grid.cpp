@@ -1,4 +1,5 @@
 #include <Felt/public/Grid.hpp>
+#include <Felt/public/Tracked.hpp>
 
 #include "../catch.hpp"
 
@@ -650,14 +651,13 @@ SCENARIO("Lazy SingleLookupGrid")
 
 		THEN("queries return the NULL background value")
 		{
-			grid.get(Vec3i(1,1,1));
 			CHECK(grid.get(Vec3i(1,1,1)) == Felt::NULL_IDX);
 			CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::NULL_IDX);
 		}
 
+		/// [LazySingleLookupGrid activation]
 		WHEN("the grid is activated")
 		{
-			/// [LazySingleLookupGrid activation]
 			grid.activate();
 
 			THEN("memory is allocated and the grid filled with background value")
@@ -684,7 +684,6 @@ SCENARIO("Lazy SingleLookupGrid")
 
 				AND_WHEN("the grid is deactivated")
 				{
-					/// [LazySingleLookupGrid deactivation]
 					grid.deactivate();
 
 					THEN("the grid is once again inactive")
@@ -694,17 +693,63 @@ SCENARIO("Lazy SingleLookupGrid")
 						CHECK(grid.list(1).size() == 0);
 						CHECK(grid.list(2).size() == 0);
 					}
-					/// [LazySingleLookupGrid initialisation]
 
 					THEN("queries once again return the NULL background value")
 					{
-						grid.get(Vec3i(1,1,1));
 						CHECK(grid.get(Vec3i(1,1,1)) == Felt::NULL_IDX);
 						CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::NULL_IDX);
 					}
 				}
 			}
 			/// [LazySingleLookupGrid activation]
+		}
+	}
+}
+
+
+SCENARIO("LazySingleTrackedGrid")
+{
+	GIVEN("a 3x3x3 grid with (-1,-1,-1) offset and background value of 3")
+	{
+		using GridType = Tracked::LazySingle<FLOAT, 3, 3>;
+		GridType grid(Vec3i(3, 3, 3), Vec3i(-1,-1,-1), 3.14159);
+
+		const UINT NULL_IDX = Felt::NULL_IDX;
+
+		THEN("the data grid and associated lookup grid state is inactive")
+		{
+			CHECK(grid.data().size() == 0);
+			CHECK(grid.get(Vec3i(1,1,1)) == 3.14159f);
+			CHECK(grid.lookup().data().size() == 0);
+			CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
+		}
+
+		/// [LazySingleTrackedGrid activate]
+		WHEN("the grid is activated")
+		{
+			grid.activate();
+
+			THEN("the data grid and associated lookup grid state is active")
+			{
+				CHECK(grid.data().size() == 3*3*3);
+				CHECK(grid.get(Vec3i(1,1,1)) == 3.14159f);
+				CHECK(grid.lookup().data().size() == 3*3*3);
+				CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
+				/// [LazySingleTrackedGrid activate]
+			}
+
+			AND_WHEN("the grid is deactivated")
+			{
+				grid.deactivate();
+
+				THEN("the data grid and associated lookup grid state is inactive")
+				{
+					CHECK(grid.data().size() == 0);
+					CHECK(grid.get(Vec3i(1,1,1)) == 3.14159f);
+					CHECK(grid.lookup().data().size() == 0);
+					CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
+				}
+			}
 		}
 	}
 }

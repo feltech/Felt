@@ -31,21 +31,23 @@ protected:
 
 
 template <class Derived>
-class Deactivator : private Base<Derived>
+class Activator : protected Impl::Grid::Activator<Derived>
 {
 protected:
 	/// CRTP derived class.
 	using DerivedType = Derived;
+	/// CRTP derived class.
+	using Base =  Felt::Impl::Grid::Activator<Derived>;
 	/// Traits of derived class.
 	using TraitsType = Traits<Derived>;
 	/// Number of tracking lists.
 	static constexpr UINT NumLists = TraitsType::NumLists;
+
 protected:
+	using Base::activate;
 
 	/**
 	 * Destroy the internal data array.
-	 *
-	 * @snippet test_Grid.cpp LazyGrid deactivation
 	 */
 	void deactivate()
 	{
@@ -61,7 +63,7 @@ protected:
 
 
 template <class Derived>
-class Simple : private Base<Derived>
+class Simple : protected Base<Derived>
 {
 private:
 	/// CRTP derived class.
@@ -199,9 +201,6 @@ protected:
 };
 
 
-
-
-
 template <class Derived>
 class Single : protected Base<Derived>
 {
@@ -212,21 +211,17 @@ private:
 	using BaseType = Base<Derived>;
 	/// Traits of derived class.
 	using TraitsType = Traits<Derived>;
-
 	/// Integer vector
 	using typename BaseType::VecDi;
-	/// List of position vectors.
-	using typename BaseType::PosArray;
 	/// Number of tracking lists.
 	static const UINT NumLists = TraitsType::NumLists;
-
 protected:
-	/// List of position vectors, each of which have a corresponding grid node storing it's index.
+	/// List of position vectors.
+	using typename BaseType::PosArray;
+protected:
 	/// N-tuple of lists of grid positions - the tracking lists.
 	std::array<PosArray, NumLists>	m_a_list_pos;
-
 protected:
-
 	/**
 	 * Get tracking list by id.
 	 *

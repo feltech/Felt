@@ -1,3 +1,6 @@
+#ifndef FELT_PUBLIC_GRID_HPP_
+#define FELT_PUBLIC_GRID_HPP_
+
 #include <type_traits>
 #include <Felt/public/Util.hpp>
 #include <Felt/Impl/Base.hpp>
@@ -10,6 +13,7 @@ namespace Felt
 template <typename T, UINT D>
 class Grid :
 		private Impl::Grid::Accessor::ByValue< Grid<T, D> >,
+		private Impl::Grid::Activator< Grid<T, D> >,
 		private Impl::Grid::Data< Grid<T, D> >
 {
 private:
@@ -17,9 +21,11 @@ private:
 	using ThisTraits = Impl::Traits<ThisType>;
 
 	using AccessorImpl = Impl::Grid::Accessor::ByValue<ThisType>;
+	using ActivatorImpl = Impl::Grid::Activator< Grid<T, D> >;
 	using DataImpl = Impl::Grid::Data<ThisType>;
 
 	friend AccessorImpl;
+	friend ActivatorImpl;
 	friend DataImpl;
 	friend typename AccessorImpl::Base;
 
@@ -47,6 +53,7 @@ template <UINT D>
 class SimpleLookupGrid :
 		private Impl::Grid::Accessor::ByValue< SimpleLookupGrid<D> >,
 		private Impl::Grid::Accessor::Ref< SimpleLookupGrid<D> >,
+		private Impl::Grid::Activator< SimpleLookupGrid<D> >,
 		private Impl::Grid::Data< SimpleLookupGrid<D> >,
 		private Impl::Lookup::Simple< SimpleLookupGrid<D> >
 {
@@ -56,11 +63,13 @@ private:
 
 	using AccessorImpl = Impl::Grid::Accessor::ByValue<ThisType>;
 	using AccessorRefImpl = Impl::Grid::Accessor::Ref<ThisType>;
+	using ActivatorImpl = Impl::Grid::Activator<ThisType>;
 	using DataImpl = Impl::Grid::Data<ThisType>;
 	using LookupImpl = Impl::Lookup::Simple<ThisType>;
 
 	friend AccessorImpl;
 	friend AccessorRefImpl;
+	friend ActivatorImpl;
 	friend DataImpl;
 	friend LookupImpl;
 	friend typename AccessorImpl::Base;
@@ -88,6 +97,7 @@ template <UINT D, UINT N>
 class SingleLookupGrid :
 		private Impl::Grid::Accessor::ByValue< SingleLookupGrid<D, N> >,
 		private Impl::Grid::Accessor::Ref< SingleLookupGrid<D, N> >,
+		private Impl::Grid::Activator< SingleLookupGrid<D, N> >,
 		private Impl::Grid::Data< SingleLookupGrid<D, N> >,
 		private Impl::Lookup::Single< SingleLookupGrid<D, N> >
 {
@@ -97,11 +107,13 @@ private:
 
 	using AccessorImpl = Impl::Grid::Accessor::ByValue<ThisType>;
 	using AccessorRefImpl = Impl::Grid::Accessor::Ref<ThisType>;
+	using ActivatorImpl = Impl::Grid::Activator<ThisType>;
 	using DataImpl = Impl::Grid::Data<ThisType>;
 	using LookupImpl = Impl::Lookup::Single<ThisType>;
 
 	friend AccessorImpl;
 	friend AccessorRefImpl;
+	friend ActivatorImpl;
 	friend DataImpl;
 	friend LookupImpl;
 	friend typename AccessorImpl::Base;
@@ -130,7 +142,7 @@ class LazySingleLookupGrid :
 		private Impl::Grid::Accessor::LazyByValue< LazySingleLookupGrid<D, N> >,
 		private Impl::Grid::Accessor::Ref< LazySingleLookupGrid<D, N> >,
 		private Impl::Grid::Data< LazySingleLookupGrid<D, N> >,
-		private Impl::Lookup::Deactivator< LazySingleLookupGrid<D, N> >,
+		private Impl::Lookup::Activator< LazySingleLookupGrid<D, N> >,
 		private Impl::Lookup::Single< LazySingleLookupGrid<D, N> >
 {
 private:
@@ -140,19 +152,23 @@ private:
 	using AccessorImpl = Impl::Grid::Accessor::LazyByValue<ThisType>;
 	using AccessorRefImpl = Impl::Grid::Accessor::Ref<ThisType>;
 	using DataImpl = Impl::Grid::Data<ThisType>;
-	using DeactivatorImpl = Impl::Lookup::Deactivator<ThisType>;
+	using ActivatorImpl = Impl::Lookup::Activator<ThisType>;
 	using LookupImpl = Impl::Lookup::Single<ThisType>;
 
 	friend AccessorImpl;
 	friend AccessorRefImpl;
 	friend DataImpl;
-	friend DeactivatorImpl;
+	friend ActivatorImpl;
 	friend LookupImpl;
 	friend typename AccessorImpl::Base;
 	friend typename AccessorImpl::Base::Base;
+	friend typename ActivatorImpl::Base;
 
 	using VecDi = Felt::VecDi<ThisTraits::Dims>;
 	using LeafType = typename ThisTraits::LeafType;
+
+public:
+	using LookupImpl::PosArray;
 
 public:
 	LazySingleLookupGrid(const VecDi& size, const VecDi& offset) :
@@ -160,9 +176,9 @@ public:
 	{}
 
 	using AccessorImpl::get;
-	using DataImpl::activate;
+	using ActivatorImpl::activate;
+	using ActivatorImpl::deactivate;
 	using DataImpl::data;
-	using DeactivatorImpl::deactivate;
 	using LookupImpl::add;
 	using LookupImpl::is_active;
 	using LookupImpl::list;
@@ -174,6 +190,7 @@ public:
 template <UINT D, UINT N>
 class MultiLookupGrid :
 		private Impl::Grid::Accessor::ByRef< MultiLookupGrid<D, N> >,
+		private Impl::Grid::Activator< MultiLookupGrid<D, N> >,
 		private Impl::Grid::Data< MultiLookupGrid<D, N> >,
 		private Impl::Lookup::Multi< MultiLookupGrid<D, N> >
 {
@@ -182,10 +199,12 @@ private:
 	using ThisTraits = Impl::Traits<ThisType>;
 
 	using AccessorImpl = Impl::Grid::Accessor::ByRef<ThisType>;
+	using ActivatorImpl = Impl::Grid::Activator<ThisType>;
 	using DataImpl = Impl::Grid::Data<ThisType>;
 	using LookupImpl = Impl::Lookup::Multi<ThisType>;
 
 	friend AccessorImpl;
+	friend ActivatorImpl;
 	friend DataImpl;
 	friend LookupImpl;
 	friend typename AccessorImpl::Base;
@@ -207,7 +226,6 @@ public:
 	using LookupImpl::remove;
 	using LookupImpl::reset;
 };
-
 
 
 namespace Impl
@@ -278,6 +296,9 @@ struct Traits< Felt::MultiLookupGrid<D, N> >
 	static constexpr UINT Dims = D;
 	static constexpr UINT NumLists = N;
 };
-} // Impl
 
+
+} // Impl
 } // Felt
+
+#endif
