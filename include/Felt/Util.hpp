@@ -12,6 +12,7 @@ namespace felt
 /// Shorthand cast to const CRTP derived type.
 #define cself static_cast<const DerivedType*>(this)
 
+
 /**
  * Use 32 bit float by default.
  */

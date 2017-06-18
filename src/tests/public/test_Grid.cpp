@@ -1,5 +1,6 @@
-#include <Felt/public/Grid.hpp>
-#include <Felt/public/Tracked.hpp>
+#include <Felt/Impl/Grid.hpp>
+#include <Felt/Impl/Lookup.hpp>
+#include <Felt/Impl/Tracked.hpp>
 
 #include "../catch.hpp"
 
@@ -8,12 +9,13 @@ using namespace Felt;
 /**
  * Test the Grid class.
  */
-SCENARIO("Grid - by value")
+SCENARIO("Grid::Simple")
 {
+	using GridType = Impl::Grid::Simple<FLOAT, 3>;
 	/// [Grid - basics: GIVEN 3x7x11]
 	GIVEN("a 3x7x11 grid with no offset and background value of 0")
 	{
-		Grid<FLOAT, 3> grid(Vec3i(3, 7, 11), Vec3i::Zero(), 0);
+		GridType grid(Vec3i(3, 7, 11), Vec3i::Zero(), 0);
 		/// [Grid - basics: GIVEN 3x7x11]
 
 		/// [Grid - basics: THEN memory is allocated]
@@ -59,7 +61,6 @@ SCENARIO("Grid - by value")
 
 	GIVEN("a 7x11x13 grid with (-3,-3,-3) offset and background value of 0")
 	{
-		using GridType = Grid <FLOAT, 3>;
 		Vec3i size(7, 11, 13);
 		Vec3i offset(-3, -3, -3);
 		GridType grid(size, offset, 0);
@@ -100,11 +101,11 @@ SCENARIO("Grid - by value")
 }
 
 
-SCENARIO("SimpleLookupGrid")
+SCENARIO("Lookup::Simple")
 {
+	using GridType = Impl::Lookup::Simple<3>;
 	GIVEN("a grid and some locations")
 	{
-		using GridType = SimpleLookupGrid<3>;
 		GridType grid(Vec3i(10,10,10), Vec3i(0, -5, -5));
 
 		const Vec3i pos1(1, 0, -1);
@@ -255,7 +256,6 @@ SCENARIO("SimpleLookupGrid")
 					CHECK(grid.get(pos4) == NULL_IDX);
 				}
 
-
 				THEN("the grid reports the active state of positions correctly")
 				{
 					CHECK(grid.is_active(pos1) == false);
@@ -272,11 +272,12 @@ SCENARIO("SimpleLookupGrid")
 
 
 
-SCENARIO("SingleLookupGrid")
+SCENARIO("Lookup::Single")
 {
+	using GridType = Impl::Lookup::Single<3, 3>;
+
 	GIVEN("a grid and some locations")
 	{
-		using GridType = SingleLookupGrid<3, 3>;
 		GridType grid(Vec3i(10,10,10), Vec3i(0, -5, -5));
 
 		const Vec3i pos1(1, 0, -1);
@@ -435,11 +436,12 @@ SCENARIO("SingleLookupGrid")
 
 
 
-SCENARIO("Multi LookupGrid")
+SCENARIO("Lookup::Multi")
 {
+	using GridType = Impl::Lookup::Multi<3, 3>;
+
 	GIVEN("a 10x10x10 EagerMultiLookupGrid with 3 tracking lists, and some locations")
 	{
-		using GridType = MultiLookupGrid<3, 3>;
 		GridType grid(Vec3i(10,10,10), Vec3i(0, -5, -5));
 
 		const Vec3i pos1(1, 0, -1);
@@ -631,12 +633,13 @@ SCENARIO("Multi LookupGrid")
 }
 
 
-SCENARIO("Lazy SingleLookupGrid")
+SCENARIO("Lookup::LazySingle")
 {
+	using GridType = Impl::Lookup::LazySingle<3, 3>;
+
 	GIVEN("a 3x3x3 lazy single-index lookup grid with 3 tracking lists")
 	{
 		/// [LazySingleLookupGrid initialisation]
-		using GridType = LazySingleLookupGrid<3, 3>;
 
 		GridType grid(Vec3i(3, 3, 3), Vec3i(-1,-1,-1));
 
@@ -707,11 +710,11 @@ SCENARIO("Lazy SingleLookupGrid")
 }
 
 
-SCENARIO("LazySingleTrackedGrid")
+SCENARIO("Tracked::LazySingle")
 {
+	using GridType = Tracked::LazySingle<FLOAT, 3, 3>;
 	GIVEN("a 3x3x3 grid with (-1,-1,-1) offset and background value of 3")
 	{
-		using GridType = Tracked::LazySingle<FLOAT, 3, 3>;
 		GridType grid(Vec3i(3, 3, 3), Vec3i(-1,-1,-1), 3.14159);
 
 		const UINT NULL_IDX = Felt::NULL_IDX;

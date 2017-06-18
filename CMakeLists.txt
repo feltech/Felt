@@ -3,8 +3,6 @@ project(Felt)
 cmake_minimum_required(VERSION 2.8)
 include(CMakeToolsHelpers OPTIONAL)
 find_program(CTEST_MEMORYCHECK_COMMAND NAMES valgrind)
-include(Dart)
-
 
 cmake_policy(SET CMP0015 NEW)
 
@@ -20,9 +18,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_ROOT}/bin)
 include_directories(
 	${PROJECT_ROOT}/include ${EIGEN3_INCLUDE_DIR}
 )
-
-FILE(GLOB_RECURSE HPPS "${PROJECT_ROOT}/include/*")
-add_custom_target(headers SOURCES ${HPPS})
 
 add_definitions(
 	-std=c++14 -fopenmp -Wfatal-errors -fdiagnostics-color=auto -DCATCH_CONFIG_CONSOLE_WIDTH=200
