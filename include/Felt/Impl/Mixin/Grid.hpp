@@ -2,7 +2,7 @@
 #define FELT_IMPL_GRID_HPP
 
 #include <vector>
-#include <Felt/public/Util.hpp>
+#include <Felt/Impl/Util.hpp>
 #include <Felt/Impl/Common.hpp>
 
 namespace Felt
@@ -34,10 +34,10 @@ protected:
 	 */
 	void activate()
 	{
-		INT arr_size = cself->m_size(0);
-		for (INT i = 1; i < cself->m_size.size(); i++)
-			arr_size *= cself->m_size(i);
-		nself->m_data.resize(arr_size, cself->m_background);
+		INT arr_size = pself->m_size(0);
+		for (INT i = 1; i < pself->m_size.size(); i++)
+			arr_size *= pself->m_size(i);
+		pself->m_data.resize(arr_size, pself->m_background);
 	}
 };
 
@@ -109,7 +109,7 @@ protected:
 	template <typename PosType>
 	bool inside (const Felt::VecDT<PosType, Dims>& pos_) const
 	{
-		return inside(pos_, cself->offset(), cself->offset() + cself->size());
+		return inside(pos_, pself->offset(), pself->offset() + pself->size());
 	}
 
 	/**
@@ -143,11 +143,11 @@ protected:
 	 */
 	void assert_pos_bounds (const VecDi& pos_, std::string title_) const
 	{
-		if (!cself->inside(pos_))
+		if (!pself->inside(pos_))
 		{
-			const VecDi& pos_min = cself->offset();
+			const VecDi& pos_min = pself->offset();
 			const VecDi& pos_max = (
-				cself->size() + pos_min - VecDi::Constant(1)
+				pself->size() + pos_min - VecDi::Constant(1)
 			);
 			std::stringstream err;
 			err << title_ << format(pos_.transpose())
@@ -189,7 +189,7 @@ protected:
 	 */
 	INT index (const VecDi& pos_) const
 	{
-		return index(pos_, cself->size(), cself->offset());
+		return index(pos_, pself->size(), pself->offset());
 	}
 
 	/**
@@ -204,7 +204,7 @@ protected:
 	 */
 	VecDi index (const UINT idx_) const
 	{
-		return index(idx_, cself->size(), cself->offset());
+		return index(idx_, pself->size(), pself->offset());
 	}
 
 
@@ -304,10 +304,10 @@ protected:
 	LeafType& ref(const VecDi& pos_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		cself->assert_pos_bounds(pos_, "ref: ");
+		pself->assert_pos_bounds(pos_, "ref: ");
 		#endif
-		const UINT idx = cself->index(pos_);
-		return nself->data()[idx];
+		const UINT idx = pself->index(pos_);
+		return pself->data()[idx];
 	}
 
 	/**
@@ -316,10 +316,10 @@ protected:
 	const LeafType& ref(const VecDi& pos_) const
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		cself->assert_pos_bounds(pos_, "ref: ");
+		pself->assert_pos_bounds(pos_, "ref: ");
 		#endif
-		const UINT idx = cself->index(pos_);
-		return cself->data()[idx];
+		const UINT idx = pself->index(pos_);
+		return pself->data()[idx];
 	}
 };
 
@@ -348,10 +348,10 @@ protected:
 	LeafType get (const VecDi& pos_) const
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		cself->assert_pos_bounds(pos_, "get: ");
+		pself->assert_pos_bounds(pos_, "get: ");
 		#endif
-		const UINT idx = cself->index(pos_);
-		return cself->data()[idx];
+		const UINT idx = pself->index(pos_);
+		return pself->data()[idx];
 	}
 
 
@@ -364,10 +364,10 @@ protected:
 	void set (const VecDi& pos_, LeafType val_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		cself->assert_pos_bounds(pos_, "get: ");
+		pself->assert_pos_bounds(pos_, "get: ");
 		#endif
-		const UINT idx = cself->index(pos_);
-		nself->data()[idx] = val_;
+		const UINT idx = pself->index(pos_);
+		pself->data()[idx] = val_;
 	}
 };
 
@@ -396,10 +396,10 @@ protected:
 	LeafType& get (const VecDi& pos_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		cself->assert_pos_bounds(pos_, "get: ");
+		pself->assert_pos_bounds(pos_, "get: ");
 		#endif
-		const UINT idx = cself->index(pos_);
-		return nself->data()[idx];
+		const UINT idx = pself->index(pos_);
+		return pself->data()[idx];
 	}
 
 	/**
@@ -411,10 +411,10 @@ protected:
 	const LeafType& get (const VecDi& pos_) const
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		cself->assert_pos_bounds(pos_, "get: ");
+		pself->assert_pos_bounds(pos_, "get: ");
 		#endif
-		const UINT idx = cself->index(pos_);
-		return cself->data()[idx];
+		const UINT idx = pself->index(pos_);
+		return pself->data()[idx];
 	}
 };
 
@@ -449,15 +449,15 @@ protected:
 	LeafType get (const VecDi& pos_) const
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		cself->assert_pos_bounds(pos_, "get: ");
+		pself->assert_pos_bounds(pos_, "get: ");
 		#endif
-		if (cself->data().size())
+		if (pself->data().size())
 		{
 			return BaseType::get(pos_);
 		}
 		else
 		{
-			return cself->m_background;
+			return pself->m_background;
 		}
 	}
 };

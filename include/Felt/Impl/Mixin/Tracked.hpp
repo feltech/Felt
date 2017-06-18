@@ -4,7 +4,7 @@
 #include <Felt/Impl/Common.hpp>
 #include <Felt/Impl/Grid.hpp>
 #include <Felt/Impl/Lookup.hpp>
-#include <Felt/public/Util.hpp>
+#include <Felt/Impl/Util.hpp>
 
 namespace Felt
 {
@@ -36,16 +36,16 @@ protected:
 	void activate()
 	{
 		Base::activate();
-		nself->m_grid_lookup.activate();
+		pself->m_grid_lookup.activate();
 	}
 	/**
 	 * Destroy the internal data array and lookup grid.
 	 */
 	void deactivate()
 	{
-		nself->m_data.clear();
-		nself->m_data.shrink_to_fit();
-		nself->m_grid_lookup.deactivate();
+		pself->m_data.clear();
+		pself->m_data.shrink_to_fit();
+		pself->m_grid_lookup.deactivate();
 	}
 };
 
@@ -88,8 +88,8 @@ protected:
 	 */
 	void deactivate()
 	{
-		nself->m_data.clear();
-		nself->m_data.shrink_to_fit();
+		pself->m_data.clear();
+		pself->m_data.shrink_to_fit();
 		m_grid_lookup.deactivate();
 	}
 
@@ -150,7 +150,7 @@ protected:
 	 */
 	bool add(const VecDi& pos_, const LeafType val_, const UINT list_idx_)
 	{
-		nself->set(pos_, val_);
+		pself->set(pos_, val_);
 		return add(pos_, list_idx_);
 	}
 
@@ -180,7 +180,7 @@ protected:
 	void reset(const UINT list_idx_)
 	{
 		for (VecDi pos : m_grid_lookup.list(list_idx_))
-			nself->set(pos, cself->m_background);
+			pself->set(pos, pself->m_background);
 		m_grid_lookup.reset(list_idx_);
 	}
 
@@ -209,7 +209,7 @@ protected:
 	}
 };
 
-} // Lookup
+} // Tracked
 } // Mixin
 } // Impl
 } // Felt

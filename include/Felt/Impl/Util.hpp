@@ -2,77 +2,10 @@
 #define INCLUDE_FELT_PUBLIC_UTIL_HPP_
 
 #include <eigen3/Eigen/Dense>
-
+#include <Felt/Impl/Common.hpp>
 
 namespace Felt
 {
-
-/// Shorthand cast to CRTP derived type.
-#define nself static_cast<DerivedType*>(this)
-/// Shorthand cast to const CRTP derived type.
-#define cself static_cast<const DerivedType*>(this)
-
-/**
- * Use 32 bit float by default.
- */
-using FLOAT = float;
-
-/**
- * Use 32 bit int by default.
- */
-using INT = int;
-
-/**
- * Use 32 bit unsigned int by default.
- */
-using UINT = unsigned;
-
-/**
- * Shorthand for D-dimensional vector with elements of T type.
- */
-template <typename T, UINT D>
-using VecDT = Eigen::Matrix<T, D, 1>;
-/**
- * Shorthand for D-dimensional float vector.
- */
-template <UINT D>
-using VecDf = VecDT<FLOAT, D>;
-/**
- * Shorthand for D-dimensional integer vector.
- */
-template <UINT D>
-using VecDi = VecDT<INT, D>;
-/**
- * Shorthand for D-dimensional unsigned integer vector.
- */
-template <UINT D>
-using VecDu = VecDT<UINT, D>;
-
-/**
- * Shorthand for 2D float vector.
- */
-using Vec2f = VecDf<2u>;
-/**
- * Shorthand for 2D unsigned integer vector.
- */
-using Vec2u = VecDu<2u>;
-/**
- * Shorthand for 2D integer vector.
- */
-using Vec2i = VecDi<2u>;
-/**
- * Shorthand for 3D float vector.
- */
-using Vec3f = VecDf<3u>;
-/**
- * Shorthand for 3D unsigned integer vector.
- */
-using Vec3u = VecDu<3u>;
-/**
- * Shorthand for 3D integer vector.
- */
-using Vec3i = VecDi<3u>;
-
 /**
  * String format a vector (useful for logging).
  *
@@ -166,7 +99,6 @@ VecDf<D> floorf(const VecDf<D>& pos_)
 		pos_rounded(dim) = std::floor(pos_(dim));
 	return pos_rounded;
 }
-
-} // End namespace felt.
+} // Felt.
 
 #endif /* INCLUDE_FELT_PUBLIC_UTIL_HPP_ */

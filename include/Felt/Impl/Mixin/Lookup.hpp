@@ -1,7 +1,7 @@
 #ifndef FELT_IMPL_LOOKUP_HPP
 #define FELT_IMPL_LOOKUP_HPP
 
-#include <Felt/public/Util.hpp>
+#include <Felt/Impl/Util.hpp>
 #include <Felt/Impl/Common.hpp>
 #include <Felt/Impl/Mixin/Grid.hpp>
 
@@ -52,12 +52,12 @@ protected:
 	 */
 	void deactivate()
 	{
-		nself->m_data.clear();
-		nself->m_data.shrink_to_fit();
+		pself->m_data.clear();
+		pself->m_data.shrink_to_fit();
 		for (UINT list_idx = 0; list_idx < NumLists; list_idx++)
 		{
-			nself->m_a_list_pos[list_idx].clear();
-			nself->m_a_list_pos[list_idx].shrink_to_fit();
+			pself->m_a_list_pos[list_idx].clear();
+			pself->m_a_list_pos[list_idx].shrink_to_fit();
 		}
 	}
 };
@@ -113,7 +113,7 @@ protected:
 	 */
 	bool is_active (const VecDi& pos_) const
 	{
-		return cself->get(pos_) != NULL_IDX;
+		return pself->get(pos_) != NULL_IDX;
 	}
 
 	/**
@@ -128,10 +128,10 @@ protected:
 	bool add(const VecDi& pos_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		cself->assert_pos_bounds(pos_, "add: ");
+		pself->assert_pos_bounds(pos_, "add: ");
 		#endif
 
-		UINT idx = cself->get(pos_);
+		UINT idx = pself->get(pos_);
 		// Do not allow duplicates.
 		if (idx != NULL_IDX)
 		{
@@ -148,7 +148,7 @@ protected:
 			return false;
 		}
 
-		nself->set(pos_, m_list_pos.size());
+		pself->set(pos_, m_list_pos.size());
 		m_list_pos.push_back(pos_);
 
 		return true;
@@ -163,10 +163,10 @@ protected:
 	void remove(const VecDi& pos_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		cself->assert_pos_bounds(pos_, "remove: ");
+		pself->assert_pos_bounds(pos_, "remove: ");
 		#endif
 		// By reference, so we don't have to query again.
-		UINT& idx_at_pos = nself->ref(pos_);
+		UINT& idx_at_pos = pself->ref(pos_);
 
 		if (idx_at_pos == NULL_IDX)
 			return;
@@ -181,7 +181,7 @@ protected:
 			const VecDi& pos_last = m_list_pos[last_idx];
 			m_list_pos[idx_at_pos] = m_list_pos[last_idx];
 			// Set the lookup grid to reference the new index in the array.
-			nself->set(pos_last, idx_at_pos);
+			pself->set(pos_last, idx_at_pos);
 		}
 		// NULL out the value in the grid now that we're done with it.
 		idx_at_pos = NULL_IDX;
@@ -196,7 +196,7 @@ protected:
 	void reset()
 	{
 		for (const VecDi& pos : m_list_pos)
-			nself->set(pos, NULL_IDX);
+			pself->set(pos, NULL_IDX);
 		m_list_pos.clear();
 	}
 };
@@ -253,7 +253,7 @@ protected:
 	 */
 	bool is_active (const VecDi& pos_) const
 	{
-		return cself->get(pos_) != NULL_IDX;
+		return pself->get(pos_) != NULL_IDX;
 	}
 
 	/**
@@ -269,10 +269,10 @@ protected:
 	bool add(const VecDi& pos_, const UINT list_idx_)
 	{
 #if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		cself->assert_pos_bounds(pos_, "add: ");
+		pself->assert_pos_bounds(pos_, "add: ");
 #endif
 
-		const UINT idx = cself->get(pos_);
+		const UINT idx = pself->get(pos_);
 		// Do not allow duplicates.
 		if (idx != NULL_IDX)
 		{
@@ -295,7 +295,7 @@ protected:
 			return false;
 		}
 		PosArray& list_to_update = m_a_list_pos[list_idx_];
-		nself->set(pos_, list_to_update.size());
+		pself->set(pos_, list_to_update.size());
 		list_to_update.push_back(pos_);
 		return true;
 	}
@@ -309,11 +309,11 @@ protected:
 	void remove(const VecDi& pos_, const UINT list_idx_)
 	{
 #if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		cself->assert_pos_bounds(pos_, "remove: ");
+		pself->assert_pos_bounds(pos_, "remove: ");
 #endif
 
 		// Set index lookup to null value.
-		UINT& idx_at_pos = nself->ref(pos_);
+		UINT& idx_at_pos = pself->ref(pos_);
 
 		if (idx_at_pos == NULL_IDX)
 			return;
@@ -331,7 +331,7 @@ protected:
 			const VecDi& pos_last = list_to_update[last_idx];
 			list_to_update[idx_at_pos] = pos_last;
 			// Set the lookup grid to reference the new index in the array.
-			nself->set(pos_last, idx_at_pos);
+			pself->set(pos_last, idx_at_pos);
 		}
 		// NULL out the old value in the grid now that we're done with it.
 		idx_at_pos = NULL_IDX;
@@ -348,7 +348,7 @@ protected:
 	void reset(const UINT list_idx_)
 	{
 		for (const VecDi& pos : m_a_list_pos[list_idx_])
-			nself->set(pos, NULL_IDX);
+			pself->set(pos, NULL_IDX);
 		m_a_list_pos[list_idx_].clear();
 	}
 };
@@ -416,7 +416,7 @@ protected:
 	 */
 	bool is_active (const VecDi& pos_, const UINT list_idx_) const
 	{
-		return cself->get(pos_)[list_idx_] != NULL_IDX;
+		return pself->get(pos_)[list_idx_] != NULL_IDX;
 	}
 
 	/**
@@ -432,9 +432,9 @@ protected:
 	bool add(const VecDi& pos_, const UINT list_idx_)
 	{
 #if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		cself->assert_pos_bounds(pos_, "add: ");
+		pself->assert_pos_bounds(pos_, "add: ");
 #endif
-		UINT& idx = nself->get(pos_)[list_idx_];
+		UINT& idx = pself->get(pos_)[list_idx_];
 		// Do not allow duplicates.
 		if (idx != NULL_IDX)
 		{
@@ -472,11 +472,11 @@ protected:
 	void remove(const VecDi& pos_, const UINT list_idx_)
 	{
 #if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		cself->assert_pos_bounds(pos_, "remove: ");
+		pself->assert_pos_bounds(pos_, "remove: ");
 #endif
 
 		// Set index lookup to null value.
-		UINT& idx_at_pos = nself->get(pos_)[list_idx_];
+		UINT& idx_at_pos = pself->get(pos_)[list_idx_];
 
 		if (idx_at_pos == NULL_IDX)
 			return;
@@ -494,7 +494,7 @@ protected:
 			const VecDi& pos_last = list_to_update[last_idx];
 			list_to_update[idx_at_pos] = pos_last;
 			// Set the lookup grid to reference the new index in the array.
-			nself->get(pos_last)[list_idx_] = idx_at_pos;
+			pself->get(pos_last)[list_idx_] = idx_at_pos;
 		}
 		// NULL out the old value in the grid now that we're done with it.
 		idx_at_pos = NULL_IDX;
@@ -511,7 +511,7 @@ protected:
 	void reset(const UINT list_idx_)
 	{
 		for (const VecDi& pos : m_a_list_pos[list_idx_])
-			nself->get(pos) = NULL_IDX_TUPLE;
+			pself->get(pos) = NULL_IDX_TUPLE;
 		m_a_list_pos[list_idx_].clear();
 	}
 };

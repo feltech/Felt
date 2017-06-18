@@ -2,7 +2,7 @@
 #define FELT_PUBLIC_LOOKUP_HPP_
 
 #include <type_traits>
-#include <Felt/public/Util.hpp>
+#include <Felt/Impl/Util.hpp>
 #include <Felt/Impl/Common.hpp>
 #include <Felt/Impl/Mixin/Grid.hpp>
 #include <Felt/Impl/Mixin/Lookup.hpp>
