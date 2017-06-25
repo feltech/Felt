@@ -27,7 +27,7 @@ add_definitions(
 # C++ unit tests
 enable_testing()
 file(GLOB_RECURSE CTEST_CPPS "${TESTS_ROOT}/test*.cpp")
-add_executable(ctests ${CTEST_CPPS} ${TESTS_ROOT}/Utils.cpp)
+add_executable(ctests "${TESTS_ROOT}/test_main.cpp" ${CTEST_CPPS} ${TESTS_ROOT}/Utils.cpp)
 include_directories(${PROJECT_ROOT}/include ${EIGEN3_INCLUDE_DIR})
 target_link_libraries(ctests gomp pthread)
 add_test(

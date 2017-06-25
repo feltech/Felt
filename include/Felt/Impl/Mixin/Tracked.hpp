@@ -19,9 +19,7 @@ namespace Tracked
 template <class Derived>
 class Activator : protected Grid::Activator<Derived>
 {
-protected:
-	/// CRTP derived class.
-	using DerivedType = Derived;
+private:
 	/// Base class.
 	using Base = Felt::Impl::Mixin::Grid::Activator<Derived>;
 	/// Traits of derived class.
@@ -30,6 +28,7 @@ protected:
 	static constexpr UINT NumLists = TraitsType::NumLists;
 
 protected:
+	using Base::Activator;
 	/**
 	 * Allocate the internal data array and lookup grid.
 	 */
@@ -51,90 +50,78 @@ protected:
 
 
 template <class Derived>
-class LazySingleByValue
+class Resize : protected Grid::Resize<Derived>
 {
 private:
-	/// CRTP derived class.
-	using DerivedType = Derived;
-	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
-
-	/// Dimensions of the grid.
-	static constexpr UINT Dims = TraitsType::Dims;
-	/// Number of tracking lists.
-	static constexpr UINT NumLists = TraitsType::NumLists;
-
-	/// Integer vector.
+	using Base = Grid::Resize<Derived>;
+	/// Dimension of the grid.
+	static const UINT Dims = Traits<Derived>::Dims;
+	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<Dims>;
 
+protected:
+	using Base::Resize;
+
+	void resize(const VecDi& size_, const VecDi& offset_)
+	{
+		Base::resize(size_, offset_);
+		pself->m_grid_lookup.resize(size_, offset_);
+	}
+};
+
+
+template <class Derived>
+class ByRef
+{
+private:
+	/// Traits of derived class.
+	using TraitsType = Traits<Derived>;
+	static constexpr UINT Dims = TraitsType::Dims;
+	/// Integer vector.
+	using VecDi = Felt::VecDi<Dims>;
 	using LeafType = typename TraitsType::LeafType;
-
 protected:
-	using Lookup = Felt::Impl::Lookup::LazySingle<Dims, NumLists>;
-	using PosArray = typename Lookup::PosArray;
-
-protected:
-	Lookup m_grid_lookup;
-
-protected:
-	LazySingleByValue(const VecDi& size, const VecDi& offset) :
-		m_grid_lookup{size, offset}
-	{}
-
 	/**
-	 * Destroy the internal and lookup data.
+	 * Set value in grid at given position and add position to lookup grid.
 	 *
-	 * @snippet test_Grid.cpp LazyGrid deactivation
-	 */
-	void deactivate()
-	{
-		pself->m_data.clear();
-		pself->m_data.shrink_to_fit();
-		m_grid_lookup.deactivate();
-	}
-
-	/**
-	 * Get lookup grid.
+	 * Will set value regardless whether lookup grid already set for given
+	 * position + tracking list.
 	 *
-	 * @return the internal lookup grid tracking active grid positions.
-	 */
-	Lookup& lookup()
-	{
-		return m_grid_lookup;
-	}
-
-	/**
-	 * Get lookup grid.
-	 *
-	 * @return the internal lookup grid tracking active grid positions.
-	 */
-	const Lookup& lookup() const
-	{
-		return m_grid_lookup;
-	}
-
-	/**
-	 * Get list of active grid points from lookup grid.
-	 *
+	 * @param pos_ position in grid.
+	 * @param val_ value to set.
 	 * @param list_idx_ tracking list id.
-	 * @return the tracking list of active grid positions from the internal lookup grid.
+	 * @return true if grid node set in lookup grid and position added to
+	 * tracking list, false if grid node was already set so position already
+	 * in a list.
 	 */
-	PosArray& list(const UINT list_idx_)
+	bool add(const VecDi& pos_, const LeafType& val_, const UINT list_idx_)
 	{
-		return m_grid_lookup.list(list_idx_);
+		pself->get(pos_) = val_;
+		return pself->lookup().add(pos_, list_idx_);
 	}
 
 	/**
-	 * Get list of active grid points from lookup grid.
-	 *
-	 * @param list_idx_ tracking list id.
-	 * @return the tracking list of active grid positions from the internal lookup grid.
+	 * @copydoc add(const VecDi&, const LeafType&, const UINT)
 	 */
-	const PosArray& list(const UINT list_idx_) const
+	bool add(const VecDi& pos_, LeafType&& val_, const UINT list_idx_)
 	{
-		return m_grid_lookup.list(list_idx_);
+		pself->get(pos_) = val_;
+		return pself->lookup().add(pos_, list_idx_);
 	}
+};
 
+
+template <class Derived>
+class ByValue
+{
+private:
+	/// Traits of derived class.
+	using TraitsType = Traits<Derived>;
+	static constexpr UINT Dims = TraitsType::Dims;
+	/// Integer vector.
+	using VecDi = Felt::VecDi<Dims>;
+	using LeafType = typename TraitsType::LeafType;
+protected:
 	/**
 	 * Set value in grid at given position and add position to lookup grid.
 	 *
@@ -151,22 +138,70 @@ protected:
 	bool add(const VecDi& pos_, const LeafType val_, const UINT list_idx_)
 	{
 		pself->set(pos_, val_);
-		return add(pos_, list_idx_);
+		return pself->lookup().add(pos_, list_idx_);
+	}
+};
+
+
+template <class Derived>
+class LookupInterface
+{
+private:
+	/// Traits of derived class.
+	using TraitsType = Traits<Derived>;
+
+	/// Dimensions of the grid.
+	static constexpr UINT Dims = TraitsType::Dims;
+	/// Number of tracking lists.
+	static constexpr UINT NumLists = TraitsType::NumLists;
+
+	/// Integer vector.
+	using VecDi = Felt::VecDi<Dims>;
+
+	using LeafType = typename TraitsType::LeafType;
+	using LookupType = typename TraitsType::LookupType;
+	using PosArray = typename LookupType::PosArray;
+
+protected:
+	LookupType m_grid_lookup;
+
+protected:
+	LookupInterface(LookupType&& grid_lookup_)
+		: m_grid_lookup(grid_lookup_)
+	{}
+
+	/**
+	 * Get lookup grid.
+	 *
+	 * @return the internal lookup grid tracking active grid positions.
+	 */
+	LookupType& lookup()
+	{
+		return m_grid_lookup;
 	}
 
 	/**
-	 * Add a position to the lookup grid with given tracking list ID.
+	 * Get lookup grid.
 	 *
-	 * @param pos_ position in the grid to add.
-	 * @param list_idx_ tracking list id.
-	 * @return true if grid node set in lookup grid and position added to
-	 * tracking list, false if grid node was already set so position already
-	 * in a list.
+	 * @return the internal lookup grid tracking active grid positions.
 	 */
-	bool add(const VecDi& pos_, const UINT list_idx_)
+	const LookupType& lookup() const
 	{
-		return m_grid_lookup.add(pos_, list_idx_);
+		return m_grid_lookup;
 	}
+};
+
+
+template <class Derived>
+class Resetter
+{
+private:
+	/// Traits of derived class.
+	using TraitsType = Traits<Derived>;
+	static constexpr UINT Dims = TraitsType::Dims;
+	/// Integer vector.
+	using VecDi = Felt::VecDi<Dims>;
+protected:
 
 	/**
 	 * Set every active grid node (those referenced by lookup grid) to background value and reset
@@ -174,40 +209,16 @@ protected:
 	 *
 	 * Lookup grid will then be full of NULL indices and it's tracking list(s) will be empty.
 	 *
-	 * @param val_ value to set in main grid.
 	 * @param list_idx_ tracking list id to cycle over and clear.
 	 */
 	void reset(const UINT list_idx_)
 	{
-		for (VecDi pos : m_grid_lookup.list(list_idx_))
+		for (VecDi pos : pself->m_grid_lookup.list(list_idx_))
 			pself->set(pos, pself->m_background);
-		m_grid_lookup.reset(list_idx_);
-	}
-
-	/**
-	 * Get tracking list index from lookup grid, remove from list and set lookup
-	 * grid node to NULL index.
-	 *
-	 * @param pos_ position in lookup grid.
-	 * @param list_idx_ tracking list id.
-	 */
-	void remove (const VecDi& pos_, const UINT list_idx_)
-	{
-		m_grid_lookup.remove(pos_, list_idx_);
-	}
-
-	/**
-	 * Check if position currently tracked for given list ID.
-	 *
-	 * @param pos_ position in grid to query.
-	 * @param list_idx_ tracking list id to query.
-	 * @return true if position currently tracked, false otherwise.
-	 */
-	const bool is_active (const VecDi& pos_, const UINT list_idx_) const
-	{
-		return m_grid_lookup.is_active(pos_, list_idx_);
+		pself->m_grid_lookup.reset(list_idx_);
 	}
 };
+
 
 } // Tracked
 } // Mixin

@@ -1,10 +1,15 @@
+#include <type_traits>
+#include <experimental/type_traits>
+
 #include <Felt/Impl/Grid.hpp>
 #include <Felt/Impl/Lookup.hpp>
+#include <Felt/Impl/Partitioned.hpp>
 #include <Felt/Impl/Tracked.hpp>
 
 #include "../catch.hpp"
 
 using namespace Felt;
+
 
 /**
  * Test the Grid class.
@@ -440,7 +445,7 @@ SCENARIO("Lookup::Multi")
 {
 	using GridType = Impl::Lookup::Multi<3, 3>;
 
-	GIVEN("a 10x10x10 EagerMultiLookupGrid with 3 tracking lists, and some locations")
+	GIVEN("a 10x10x10 grid with 3 tracking lists, and some locations")
 	{
 		GridType grid(Vec3i(10,10,10), Vec3i(0, -5, -5));
 
@@ -641,7 +646,7 @@ SCENARIO("Lookup::LazySingle")
 	{
 		/// [LazySingleLookupGrid initialisation]
 
-		GridType grid(Vec3i(3, 3, 3), Vec3i(-1,-1,-1));
+		GridType grid = GridType();
 
 		THEN("the grid is initially inactive")
 		{
@@ -652,107 +657,338 @@ SCENARIO("Lookup::LazySingle")
 		}
 		/// [LazySingleLookupGrid initialisation]
 
-		THEN("queries return the NULL background value")
+		WHEN("the grid size is set")
 		{
-			CHECK(grid.get(Vec3i(1,1,1)) == Felt::NULL_IDX);
-			CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::NULL_IDX);
-		}
+			grid.resize(Vec3i(3, 3, 3), Vec3i(-1,-1,-1));
 
-		/// [LazySingleLookupGrid activation]
-		WHEN("the grid is activated")
-		{
-			grid.activate();
-
-			THEN("memory is allocated and the grid filled with background value")
+			THEN("the grid is still inactive but now reports new size")
 			{
-				CHECK(grid.data().size() == 3 * 3 * 3);
+				CHECK(grid.data().size() == 0);
+				CHECK(grid.list(0).size() == 0);
+				CHECK(grid.list(1).size() == 0);
+				CHECK(grid.list(2).size() == 0);
+				CHECK(grid.size() == Vec3i(3, 3, 3));
+				CHECK(grid.offset() == Vec3i(-1,-1,-1));
 			}
 
-			THEN("queries still return the NULL background value")
+			THEN("queries return the NULL background value")
 			{
 				CHECK(grid.get(Vec3i(1, 1, 1)) == Felt::NULL_IDX);
 				CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::NULL_IDX);
 			}
 
-			AND_WHEN("we add a position to be tracked to list 1")
+			/// [LazySingleLookupGrid activation]
+			WHEN("the grid is activated")
 			{
-				grid.add(Vec3i(1, 1, 1), 1);
+				grid.activate();
 
-				THEN("that position's value is updated and is added to the tracking list")
+				THEN("memory is allocated and the grid filled with background value")
 				{
-					CHECK(grid.get(Vec3i(1, 1, 1)) == 0);
+					CHECK(grid.data().size() == 3 * 3 * 3);
+				}
+
+				THEN("queries still return the NULL background value")
+				{
+					CHECK(grid.get(Vec3i(1, 1, 1)) == Felt::NULL_IDX);
 					CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::NULL_IDX);
-					CHECK(grid.list(1)[0] == Vec3i(1, 1, 1));
+				}
+
+				AND_WHEN("we add a position to be tracked to list 1")
+				{
+					grid.add(Vec3i(1, 1, 1), 1);
+
+					THEN("that position's value is updated and is added to the tracking list")
+					{
+						CHECK(grid.get(Vec3i(1, 1, 1)) == 0);
+						CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::NULL_IDX);
+						CHECK(grid.list(1)[0] == Vec3i(1, 1, 1));
+					}
+
+					AND_WHEN("the grid is deactivated")
+					{
+						grid.deactivate();
+
+						THEN("the grid is once again inactive")
+						{
+							CHECK(grid.data().size() == 0);
+							CHECK(grid.list(0).size() == 0);
+							CHECK(grid.list(1).size() == 0);
+							CHECK(grid.list(2).size() == 0);
+						}
+
+						THEN("queries once again return the NULL background value")
+						{
+							CHECK(grid.get(Vec3i(1,1,1)) == Felt::NULL_IDX);
+							CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::NULL_IDX);
+						}
+					}
+				}
+				/// [LazySingleLookupGrid activation]
+			}
+		}
+	}
+}
+
+
+/// Utility for static_assert of presence of reset method.
+template <typename T> using has_reset_t = decltype(&T::reset);
+
+
+SCENARIO("Tracked::LazySingle")
+{
+	GIVEN("a 3x3x3 grid with (-1,-1,-1) offset and background value of 3.14159")
+	{
+		using GridType = Impl::Tracked::LazySingleByValue<FLOAT, 3, 3>;
+
+		static_assert(
+			std::experimental::is_detected<has_reset_t, GridType>::value,
+			"Tracked grids with a single lookup index per grid node should have a reset method."
+		);
+
+		GridType grid = GridType(3.14159);
+
+		const UINT NULL_IDX = Felt::NULL_IDX;
+
+		THEN("the data grid and associated lookup grid state is zero size and inactive")
+		{
+			CHECK(grid.data().size() == 0);
+			CHECK(grid.lookup().data().size() == 0);
+		}
+
+		WHEN("the grid is resized")
+		{
+			grid.resize(Vec3i(3, 3, 3), Vec3i(-1,-1,-1));
+
+			THEN("the data grid and associated lookup grid report new size and remains inactive")
+			{
+				CHECK(grid.data().size() == 0);
+				CHECK(grid.lookup().data().size() == 0);
+
+				CHECK(grid.size() == Vec3i(3,3,3));
+				CHECK(grid.offset() == Vec3i(-1,-1,-1));
+				CHECK(grid.lookup().size() == Vec3i(3,3,3));
+				CHECK(grid.lookup().offset() == Vec3i(-1,-1,-1));
+
+				CHECK(grid.get(Vec3i(1,1,1)) == 3.14159f);
+				CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
+			}
+
+			/// [LazySingleTrackedGrid activate]
+			WHEN("the grid is activated")
+			{
+				grid.activate();
+
+				THEN("the data grid and associated lookup grid state is active")
+				{
+					CHECK(grid.data().size() == 3*3*3);
+					CHECK(grid.get(Vec3i(1,1,1)) == 3.14159f);
+					CHECK(grid.lookup().data().size() == 3*3*3);
+					CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
+					/// [LazySingleTrackedGrid activate]
 				}
 
 				AND_WHEN("the grid is deactivated")
 				{
 					grid.deactivate();
 
-					THEN("the grid is once again inactive")
+					THEN("the data grid and associated lookup grid state is inactive")
 					{
 						CHECK(grid.data().size() == 0);
-						CHECK(grid.list(0).size() == 0);
-						CHECK(grid.list(1).size() == 0);
-						CHECK(grid.list(2).size() == 0);
+						CHECK(grid.get(Vec3i(1,1,1)) == 3.14159f);
+						CHECK(grid.lookup().data().size() == 0);
+						CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
+					}
+				}
+
+				AND_WHEN("a location is updated and tracked in list 1")
+				{
+					grid.add(Vec3i(1,1,1), 42.0f, 1);
+
+					THEN("the data grid is updated and the lookup grid tracks the point")
+					{
+						CHECK(grid.get(Vec3i(1,1,1)) == 42);
+						CHECK(grid.lookup().get(Vec3i(1,1,1)) == 0);
+						CHECK(grid.lookup().list(0).size() == 0);
+						CHECK(grid.lookup().list(1).size() == 1);
+						CHECK(grid.lookup().list(1)[0] == Vec3i(1,1,1));
+						CHECK(grid.lookup().list(2).size() == 0);
 					}
 
-					THEN("queries once again return the NULL background value")
+					AND_WHEN("list 1 is reset")
 					{
-						CHECK(grid.get(Vec3i(1,1,1)) == Felt::NULL_IDX);
-						CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::NULL_IDX);
+						grid.reset(1);
+
+						THEN(
+							"the value in the data grid is reset to background value and location is"
+							" no longer tracked"
+						) {
+							CHECK(grid.get(Vec3i(1,1,1)) == 3.14159f);
+							CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
+							CHECK(grid.lookup().list(0).size() == 0);
+							CHECK(grid.lookup().list(1).size() == 0);
+							CHECK(grid.lookup().list(2).size() == 0);
+						}
 					}
 				}
 			}
-			/// [LazySingleLookupGrid activation]
+		}
+	}
+
+	GIVEN("a 9x9x9 grid of std::vectors with (-4,-4,-4) offset")
+	{
+		using LeafType = std::vector<int>;
+		using GridType = Impl::Tracked::LazySingleByValue<LeafType, 3, 3>;
+
+		GridType grid(LeafType{1,2,3});
+		grid.resize(Vec3i(9,9,9), Vec3i(-4,-4,-4));
+		grid.activate();
+
+		WHEN("a value is set with an lvalue reference")
+		{
+			LeafType move_me{5,6,7};
+			int* pdata = &move_me[0];
+			grid.set(Vec3i(2,2,2), move_me);
+
+			THEN("the data from the input has been copied into the grid")
+			{
+				CHECK(grid.get(Vec3i(2,2,2)) == move_me);
+				CHECK(&grid.get(Vec3i(2,2,2))[0] != pdata);
+			}
+		}
+
+		WHEN("a value is set with an rvalue reference")
+		{
+			LeafType move_me{5,6,7};
+			LeafType copied = move_me;
+			int* pdata = &move_me[0];
+			grid.set(Vec3i(2,2,2), std::move(move_me));
+
+			THEN("the data from the input has been copied into the grid")
+			{
+				CHECK(grid.get(Vec3i(2,2,2)) == copied);
+				CHECK(&grid.get(Vec3i(2,2,2))[0] != pdata);
+			}
 		}
 	}
 }
 
 
-SCENARIO("Tracked::LazySingle")
+SCENARIO("Tracked::MultiByRef")
 {
-	using GridType = Tracked::LazySingle<FLOAT, 3, 3>;
-	GIVEN("a 3x3x3 grid with (-1,-1,-1) offset and background value of 3")
+	GIVEN("a 9x9x9 grid of floats with (-4,-4,-4) offset and background value of 0")
 	{
-		GridType grid(Vec3i(3, 3, 3), Vec3i(-1,-1,-1), 3.14159);
+		using GridType = Impl::Tracked::MultiByRef<FLOAT, 3, 3>;
 
-		const UINT NULL_IDX = Felt::NULL_IDX;
+		static_assert(
+			!std::experimental::is_detected<has_reset_t, GridType>::value,
+			"Tracked grids with multiple lookup indices per grid node should not have a reset"
+			" method."
+		);
 
-		THEN("the data grid and associated lookup grid state is inactive")
+		GridType grid(Vec3i(9,9,9), Vec3i(-4,-4,-4), 0);
+
+		THEN("the grid size is as expected and is initialised to all zero")
 		{
-			CHECK(grid.data().size() == 0);
-			CHECK(grid.get(Vec3i(1,1,1)) == 3.14159f);
-			CHECK(grid.lookup().data().size() == 0);
-			CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
+			CHECK(grid.data().size() == 9*9*9);
+			for (const FLOAT val : grid.data())
+				CHECK(val == 0);
 		}
 
-		/// [LazySingleTrackedGrid activate]
-		WHEN("the grid is activated")
+		THEN("the associated lookup grid's size is as expected and initialised to NULL indices")
 		{
-			grid.activate();
+			CHECK(grid.lookup().data().size() == 9*9*9);
+			for (const Vec3u& val : grid.lookup().data())
+				CHECK(val == Vec3u::Constant(Felt::NULL_IDX));
+		}
 
-			THEN("the data grid and associated lookup grid state is active")
+		AND_WHEN("a simple value is added to the grid to be tracked by list 1 and 2")
+		{
+			grid.add(Vec3i(2,2,2), 42.0f, 1);
+			grid.lookup().add(Vec3i(2,2,2), 2);
+
+			THEN("the value stored in the grid is correct")
 			{
-				CHECK(grid.data().size() == 3*3*3);
-				CHECK(grid.get(Vec3i(1,1,1)) == 3.14159f);
-				CHECK(grid.lookup().data().size() == 3*3*3);
-				CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
-				/// [LazySingleTrackedGrid activate]
+				CHECK(grid.get(Vec3i(2,2,2)) == 42.0f);
 			}
 
-			AND_WHEN("the grid is deactivated")
+			THEN("the lookup grid is tracking the location just added")
 			{
-				grid.deactivate();
+				CHECK(grid.lookup().get(Vec3i(2,2,2)) == Vec3u(Felt::NULL_IDX, 0, 0));
+				CHECK(grid.lookup().list(0).size() == 0);
+				CHECK(grid.lookup().list(1).size() == 1);
+				CHECK(grid.lookup().list(2).size() == 1);
+				CHECK(grid.lookup().list(1)[0] == Vec3i(2,2,2));
+				CHECK(grid.lookup().list(2)[0] == Vec3i(2,2,2));
+			}
 
-				THEN("the data grid and associated lookup grid state is inactive")
+			AND_WHEN("the value is modified by reference")
+			{
+				grid.get(Vec3i(2,2,2)) = 3;
+
+				THEN("the value in the grid is updated")
 				{
-					CHECK(grid.data().size() == 0);
-					CHECK(grid.get(Vec3i(1,1,1)) == 3.14159f);
-					CHECK(grid.lookup().data().size() == 0);
-					CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
+					CHECK(grid.get(Vec3i(2,2,2)) == 3.0f);
 				}
 			}
+		}
+	}
+
+	GIVEN("a 9x9x9 grid of std::vectors with (-4,-4,-4) offset")
+	{
+		using LeafType = std::vector<int>;
+		using GridType = Impl::Tracked::MultiByRef<LeafType, 3, 3>;
+		GridType grid(Vec3i(9,9,9), Vec3i(-4,-4,-4), LeafType{1,2,3});
+
+		WHEN("a value is set with an lvalue reference")
+		{
+			LeafType move_me{5,6,7};
+			int* pdata = &move_me[0];
+			grid.get(Vec3i(2,2,2)) = move_me;
+
+			THEN("the data from the input has been copied into the grid")
+			{
+				CHECK(grid.get(Vec3i(2,2,2)) == move_me);
+				CHECK(&grid.get(Vec3i(2,2,2))[0] != pdata);
+			}
+		}
+
+		WHEN("a value is set with an rvalue reference")
+		{
+			LeafType move_me{5,6,7};
+			LeafType copied = move_me;
+			int* pdata = &move_me[0];
+			grid.get(Vec3i(2,2,2)) = std::move(move_me);
+
+			THEN("the data from the input has been moved into the grid")
+			{
+				CHECK(grid.get(Vec3i(2,2,2)) == copied);
+				CHECK(&grid.get(Vec3i(2,2,2))[0] == pdata);
+			}
+		}
+	}
+}
+
+
+SCENARIO("Paritioned::Lookup")
+{
+	using GridType = Impl::Partitioned::Lookup<3, 3>;
+	using ChildrenGrid = GridType::ChildrenGrid;
+
+	static_assert(
+		std::is_same<
+			ChildrenGrid, Impl::Tracked::MultiByRef<Impl::Lookup::LazySingle<3, 3>, 3, 3>
+		>::value,
+		"Children grid of partitioned lookup must be a multi-list multi-index tracked grid with"
+		" lazily activated lookup sub-grids as the leaf type."
+	);
+
+	GIVEN("a 9x9x9 grid with (-4,-4,-4) offset in 3x3x3 partitions")
+	{
+		GridType grid(Vec3i(9,9,9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3));
+
+		THEN("the children tracking grid has been initialised")
+		{
+			CHECK(grid.children().data().size() == 3*3*3);
 		}
 	}
 }

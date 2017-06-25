@@ -36,8 +36,6 @@ class Activator : protected Impl::Mixin::Grid::Activator<Derived>
 {
 protected:
 	/// CRTP derived class.
-	using DerivedType = Derived;
-	/// CRTP derived class.
 	using Base =  Felt::Impl::Mixin::Grid::Activator<Derived>;
 	/// Traits of derived class.
 	using TraitsType = Traits<Derived>;
@@ -45,6 +43,7 @@ protected:
 	static constexpr UINT NumLists = TraitsType::NumLists;
 
 protected:
+	using Base::Activator;
 	using Base::activate;
 
 	/**
@@ -367,8 +366,6 @@ private:
 
 	/// Integer vector
 	using typename BaseType::VecDi;
-	/// List of position vectors.
-	using typename BaseType::PosArray;
 
 	/// Number of tracking lists.
 	static constexpr UINT NumLists = TraitsType::NumLists;
@@ -376,14 +373,14 @@ private:
 	using IndexTuple = typename TraitsType::LeafType;
 
 protected:
+	/// List of position vectors.
+	using typename BaseType::PosArray;
+protected:
 	static const IndexTuple NULL_IDX_TUPLE;
-
 private:
-
 	/// List of position vectors, each of which have a corresponding grid node storing it's index.
 	/// N-tuple of lists of grid positions - the tracking lists.
 	std::array<PosArray, NumLists>	m_a_list_pos;
-
 protected:
 
 	/**

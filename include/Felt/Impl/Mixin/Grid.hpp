@@ -18,8 +18,6 @@ template <class Derived>
 class Activator
 {
 private:
-	/// CRTP derived class.
-	using DerivedType = Derived;
 	/// Dimension of the grid.
 	static const UINT Dims = Traits<Derived>::Dims;
 	/// Type of data to store in grid nodes.
@@ -29,6 +27,14 @@ private:
 	using VecDi = Felt::VecDi<Dims>;
 
 protected:
+	/// Default/initial value of grid nodes.
+	LeafType	m_background;
+
+protected:
+	Activator(const LeafType background_) :
+		m_background{background_}
+	{}
+
 	/**
 	 * Construct the internal data array, initialising nodes to the background value.
 	 */
@@ -37,7 +43,7 @@ protected:
 		INT arr_size = pself->m_size(0);
 		for (INT i = 1; i < pself->m_size.size(); i++)
 			arr_size *= pself->m_size(i);
-		pself->m_data.resize(arr_size, pself->m_background);
+		pself->m_data.resize(arr_size, m_background);
 	}
 };
 
@@ -46,117 +52,24 @@ template <class Derived>
 class Data
 {
 private:
-	/// CRTP derived class.
-	using DerivedType = Derived;
-	/// Dimension of the grid.
-	static const UINT Dims = Traits<Derived>::Dims;
 	/// Type of data to store in grid nodes.
 	using LeafType = typename Traits<Derived>::LeafType;
-
-	/**
-	 * D-dimensional signed integer vector.
-	 */
-	using VecDi = Felt::VecDi<Dims>;
-	/**
-	 * Dynamic 1D vector (a resizeable array of data) for storage of grid data.
-	 */
+	/// Dynamic 1D vector (a resizeable array of data) for storage of grid data.
 	using ArrayData = std::vector<LeafType>;
 
-private:
-	/**
-	 * The translational offset of the grid's zero coordinate.
-	 */
-	VecDi	m_offset;
-
 protected:
-	///The dimensions (size) of the grid.
-	VecDi	m_size;
-	/// The actual grid data store.
 	ArrayData	m_data;
-	/// Default/initial value of grid nodes.
-	LeafType	m_background;
 
 protected:
-
-	Data(const VecDi& size, const VecDi& offset, const LeafType background) :
-		m_size{size}, m_offset{offset}, m_background{background}
-	{}
 
 	ArrayData& data ()
 	{
 		return m_data;
 	}
+
 	const ArrayData& data () const
 	{
 		return m_data;
-	}
-	const VecDi& size () const
-	{
-		return m_size;
-	}
-	const VecDi& offset () const
-	{
-		return m_offset;
-	}
-
-	/**
-	 * Test if a position is inside the grid bounds.
-	 *
-	 * @tparam PosType the type of position vector (i.e. float vs. int).
-	 * @param pos_ position in grid to query.
-	 * @return true if position lies inside the grid, false otherwise.
-	 */
-	template <typename PosType>
-	bool inside (const Felt::VecDT<PosType, Dims>& pos_) const
-	{
-		return inside(pos_, pself->offset(), pself->offset() + pself->size());
-	}
-
-	/**
-	 * Test if a position is inside given bounds.
-	 *
-	 * @tparam PosType the type of position vector (i.e. float vs. int).
-	 * @param pos_ position in grid to query.
-	 * @param pos_min_ minimum allowed position.
-	 * @param pos_max_ one more than the maximum allowed position.
-	 * @return true if position lies inside the grid, false otherwise.
-	 */
-	template <typename ElemType>
-	static bool inside (
-		const Felt::VecDT<ElemType, Dims>& pos_, const VecDi& pos_min_, const VecDi& pos_max_
-	) {
-		for (INT i = 0; i < pos_.size(); i++)
-		{
-			if (pos_(i) >= static_cast<ElemType>(pos_max_(i)))
-				return false;
-			if (pos_(i) < static_cast<ElemType>(pos_min_(i)))
-				return false;
-		}
-		return true;
-	}
-
-	/**
-	 * Check if given position is within the grid and raise a domain_error if not.
-	 *
-	 * @param pos_ position in grid to query.
-	 * @param title_ message to include in generated exception.
-	 */
-	void assert_pos_bounds (const VecDi& pos_, std::string title_) const
-	{
-		if (!pself->inside(pos_))
-		{
-			const VecDi& pos_min = pself->offset();
-			const VecDi& pos_max = (
-				pself->size() + pos_min - VecDi::Constant(1)
-			);
-			std::stringstream err;
-			err << title_ << format(pos_.transpose())
-				<< " is outside grid "
-				<< format(pos_min) << "-" << format(pos_max)
-				<< std::endl;
-			std::string err_str = err.str();
-			throw std::domain_error(err_str);
-		}
 	}
 };
 
@@ -277,6 +190,121 @@ x = (idx/Dz)/Dy % Dx
 };
 
 
+template <class Derived>
+class Size
+{
+private:
+	/// Dimension of the grid.
+	static const UINT Dims = Traits<Derived>::Dims;
+	/// D-dimensional signed integer vector.
+	using VecDi = Felt::VecDi<Dims>;
+
+protected:
+	/// The translational offset of the grid's zero coordinate.
+	VecDi	m_offset;
+
+	///The dimensions (size) of the grid.
+	VecDi	m_size;
+
+protected:
+
+	Size(const VecDi& size, const VecDi& offset) :
+		m_size{size}, m_offset{offset}
+	{}
+
+	const VecDi& size () const
+	{
+		return m_size;
+	}
+
+	const VecDi& offset () const
+	{
+		return m_offset;
+	}
+
+	/**
+	 * Test if a position is inside the grid bounds.
+	 *
+	 * @tparam PosType the type of position vector (i.e. float vs. int).
+	 * @param pos_ position in grid to query.
+	 * @return true if position lies inside the grid, false otherwise.
+	 */
+	template <typename PosType>
+	bool inside (const Felt::VecDT<PosType, Dims>& pos_) const
+	{
+		return inside(pos_, pself->offset(), pself->offset() + pself->size());
+	}
+
+	/**
+	 * Test if a position is inside given bounds.
+	 *
+	 * @tparam PosType the type of position vector (i.e. float vs. int).
+	 * @param pos_ position in grid to query.
+	 * @param pos_min_ minimum allowed position.
+	 * @param pos_max_ one more than the maximum allowed position.
+	 * @return true if position lies inside the grid, false otherwise.
+	 */
+	template <typename ElemType>
+	static bool inside (
+		const Felt::VecDT<ElemType, Dims>& pos_, const VecDi& pos_min_, const VecDi& pos_max_
+	) {
+		for (INT i = 0; i < pos_.size(); i++)
+		{
+			if (pos_(i) >= static_cast<ElemType>(pos_max_(i)))
+				return false;
+			if (pos_(i) < static_cast<ElemType>(pos_min_(i)))
+				return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Check if given position is within the grid and raise a domain_error if not.
+	 *
+	 * @param pos_ position in grid to query.
+	 * @param title_ message to include in generated exception.
+	 */
+	void assert_pos_bounds (const VecDi& pos_, std::string title_) const
+	{
+		if (!pself->inside(pos_))
+		{
+			const VecDi& pos_min = pself->offset();
+			const VecDi& pos_max = (
+				pself->size() + pos_min - VecDi::Constant(1)
+			);
+			std::stringstream err;
+			err << title_ << format(pos_.transpose())
+				<< " is outside grid "
+				<< format(pos_min) << "-" << format(pos_max)
+				<< std::endl;
+			std::string err_str = err.str();
+			throw std::domain_error(err_str);
+		}
+	}
+};
+
+
+template <class Derived>
+class Resize : protected Size<Derived>
+{
+private:
+	using Base = Size<Derived>;
+	/// Dimension of the grid.
+	static const UINT Dims = Traits<Derived>::Dims;
+	/// D-dimensional signed integer vector.
+	using VecDi = Felt::VecDi<Dims>;
+
+protected:
+	Resize() : Base::Size(VecDi(), VecDi())
+	{}
+
+	void resize(const VecDi& size_, const VecDi& offset_)
+	{
+		this->m_size = size_;
+		this->m_offset = offset_;
+	}
+};
+
 
 namespace Accessor
 {
@@ -285,8 +313,6 @@ template <class Derived>
 class Ref
 {
 private:
-	/// CRTP derived class.
-	using DerivedType = Derived;
 	/// Dimension of the grid.
 	static const UINT Dims = Traits<Derived>::Dims;
 	/// Type of data to store in grid nodes.

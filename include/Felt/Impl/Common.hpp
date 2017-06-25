@@ -121,7 +121,8 @@ template <class Derived> struct Traits {};
  *
  * Sequence is defined as in BOOST_PP_SEQ style: (arg1)(arg2)(arg3)...
  *
- * Variadic part allows additional `friend`s - useful for derived classes of mixins.
+ * Variadic part allows additional `friend`s - useful for base classes of `mixins` that require
+ * access to `derived`.
  */
 #define FELT_MIXINS(derived, mixins, ...)\
 	BOOST_PP_SEQ_FOR_EACH_I(_FELT_MIXIN_INHERIT, derived, mixins)\

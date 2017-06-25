@@ -17,7 +17,7 @@ template <typename T, UINT D>
 class Simple :
 	FELT_MIXINS(
 		(Simple<T, D>),
-		(Grid::Accessor::ByValue)(Grid::Activator)(Grid::Data),
+		(Grid::Accessor::ByValue)(Grid::Activator)(Grid::Data)(Grid::Size),
 		(Grid::Index)
 	)
 private:
@@ -25,14 +25,16 @@ private:
 	using ThisTraits = Impl::Traits<ThisType>;
 
 	using AccessorImpl = Impl::Mixin::Grid::Accessor::ByValue<ThisType>;
+	using ActivatorImpl = Impl::Mixin::Grid::Activator<ThisType>;
 	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
+	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
 
 	using VecDi = Felt::VecDi<ThisTraits::Dims>;
 	using LeafType = typename ThisTraits::LeafType;
 
 public:
 	Simple(const VecDi& size, const VecDi& offset, const LeafType background) :
-		DataImpl{size, offset, background}
+		SizeImpl{size, offset}, ActivatorImpl{background}
 	{
 		this->activate();
 	}
@@ -41,9 +43,9 @@ public:
 	using AccessorImpl::index;
 	using AccessorImpl::set;
 	using DataImpl::data;
-	using DataImpl::inside;
-	using DataImpl::offset;
-	using DataImpl::size;
+	using SizeImpl::inside;
+	using SizeImpl::offset;
+	using SizeImpl::size;
 };
 } // Grid
 /**
