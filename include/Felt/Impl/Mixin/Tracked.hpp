@@ -94,19 +94,19 @@ protected:
 	 * tracking list, false if grid node was already set so position already
 	 * in a list.
 	 */
-	bool add(const VecDi& pos_, const LeafType& val_, const UINT list_idx_)
+	bool add(const Idx pos_idx_, const LeafType& val_, const UINT list_idx_)
 	{
-		pself->get(pos_) = val_;
-		return pself->lookup().add(pos_, list_idx_);
+		pself->get(pos_idx_) = val_;
+		return pself->lookup().add(pos_idx_, list_idx_);
 	}
 
 	/**
 	 * @copydoc add(const VecDi&, const LeafType&, const UINT)
 	 */
-	bool add(const VecDi& pos_, LeafType&& val_, const UINT list_idx_)
+	bool add(const Idx pos_idx_, LeafType&& val_, const UINT list_idx_)
 	{
-		pself->get(pos_) = val_;
-		return pself->lookup().add(pos_, list_idx_);
+		pself->get(pos_idx_) = val_;
+		return pself->lookup().add(pos_idx_, list_idx_);
 	}
 };
 
@@ -135,10 +135,10 @@ protected:
 	 * tracking list, false if grid node was already set so position already
 	 * in a list.
 	 */
-	bool add(const VecDi& pos_, const LeafType val_, const UINT list_idx_)
+	bool add(const Idx pos_idx_, const LeafType val_, const UINT list_idx_)
 	{
-		pself->set(pos_, val_);
-		return pself->lookup().add(pos_, list_idx_);
+		pself->set(pos_idx_, val_);
+		return pself->lookup().add(pos_idx_, list_idx_);
 	}
 };
 
@@ -213,8 +213,8 @@ protected:
 	 */
 	void reset(const UINT list_idx_)
 	{
-		for (VecDi pos : pself->m_grid_lookup.list(list_idx_))
-			pself->set(pos, pself->m_background);
+		for (const Idx pos_idx : pself->m_grid_lookup.list(list_idx_))
+			pself->set(pos_idx, pself->m_background);
 		pself->m_grid_lookup.reset(list_idx_);
 	}
 };

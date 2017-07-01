@@ -25,6 +25,11 @@ using INT = int;
 using UINT = unsigned;
 
 /**
+ * Integer (large) array index type.
+ */
+using Idx = UINT;
+
+/**
  * Shorthand for D-dimensional vector with elements of T type.
  */
 template <typename T, UINT D>
@@ -130,5 +135,12 @@ template <class Derived> struct Traits {};
 	BOOST_PP_SEQ_FOR_EACH(_FELT_MIXIN_GRANT, derived, mixins)\
 	BOOST_PP_SEQ_FOR_EACH(_FELT_MIXIN_GRANT, derived, __VA_ARGS__)\
 	_FELT_ENABLE_UPCAST(derived)
+
+#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+#define FELT_DEBUG(...) __VA_ARGS__;
+#else
+#define FELT_DEBUG(...)
+#endif
+
 
 #endif /* INCLUDE_FELT_IMPL_COMMON_HPP_ */

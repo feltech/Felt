@@ -2,8 +2,9 @@
 #define FELT_IMPL_GRID_HPP
 
 #include <vector>
-#include <Felt/Impl/Util.hpp>
+
 #include <Felt/Impl/Common.hpp>
+#include <Felt/Impl/Util.hpp>
 
 namespace Felt
 {
@@ -100,7 +101,7 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return index in internal data array of this grid position.
 	 */
-	INT index (const VecDi& pos_) const
+	Idx index (const VecDi& pos_) const
 	{
 		return index(pos_, pself->size(), pself->offset());
 	}
@@ -115,7 +116,7 @@ protected:
 	 * @param idx_ index in internal data array to query.
 	 * @return the position in the grid represented in the data array at given index.
 	 */
-	VecDi index (const UINT idx_) const
+	VecDi index (const Idx idx_) const
 	{
 		return index(idx_, pself->size(), pself->offset());
 	}
@@ -134,7 +135,7 @@ protected:
 	 * @param offset_ spatial offset of grid.
 	 * @return index in data array of pos in grid of given size and offset.
 	 */
-	static INT index (
+	static Idx index (
 		const VecDi& pos_, const VecDi& size_, const VecDi& offset_ = VecDi::Constant(0)
 	) {
 		INT idx = 0;
@@ -164,7 +165,7 @@ protected:
 	 * @param offset_ spatial offset of grid.
 	 * @return position that the given index would represent in a grid of given size and offset.
 	 */
-	static VecDi index (UINT idx_, const VecDi& size_, const VecDi& offset_ = VecDi::Zero())
+	static VecDi index (Idx idx_, const VecDi& size_, const VecDi& offset_ = VecDi::Zero())
 	{
 /*
 Eg. 2D: row major order (3x4=12): (x,y)[idx] =>
@@ -259,6 +260,56 @@ protected:
 	}
 
 	/**
+	 * Check if given position's index is within the data array and raise a domain_error if not.
+	 *
+	 * @param pos_idx_ position in grid to query.
+	 * @param title_ message to include in generated exception.
+	 */
+	void assert_pos_idx_bounds (const Idx pos_idx_, std::string title_) const
+	{
+		assert_pos_idx_bounds(pself->index(pos_idx_), title_);
+	}
+
+	/**
+	 * Check if given position's index is within the data array and raise a domain_error if not.
+	 *
+	 * @param pos_ position in grid to query.
+	 * @param title_ message to include in generated exception.
+	 */
+	void assert_pos_idx_bounds (const VecDi& pos_, std::string title_) const
+	{
+		const Idx pos_idx = pself->index(pos_);
+
+		if (pos_idx > pself->data().size())
+		{
+			const VecDi& pos_min = pself->offset();
+			const VecDi& pos_max = (
+				pself->size() + pos_min - VecDi::Constant(1)
+			);
+			std::stringstream err;
+			err << title_ << format(pos_.transpose())
+				<< " data index " << pos_idx << " is less than data size " <<
+				pself->data().size() << " for grid " <<
+				format(pos_min) << "-" << format(pos_max) << std::endl;
+			std::string err_str = err.str();
+			throw std::domain_error(err_str);
+		}
+
+		assert_pos_bounds(pos_, title_);
+	}
+
+	/**
+	 * Check if given position is within the grid and raise a domain_error if not.
+	 *
+	 * @param pos_ position in grid to query.
+	 * @param title_ message to include in generated exception.
+	 */
+	void assert_pos_bounds (const Idx pos_idx_, std::string title_) const
+	{
+		assert_pos_bounds(pself->index(pos_idx_), title_);
+	}
+
+	/**
 	 * Check if given position is within the grid and raise a domain_error if not.
 	 *
 	 * @param pos_ position in grid to query.
@@ -273,10 +324,8 @@ protected:
 				pself->size() + pos_min - VecDi::Constant(1)
 			);
 			std::stringstream err;
-			err << title_ << format(pos_.transpose())
-				<< " is outside grid "
-				<< format(pos_min) << "-" << format(pos_max)
-				<< std::endl;
+			err << title_ << format(pos_.transpose()) << " is outside grid " <<
+				format(pos_min) << "-" << format(pos_max) << std::endl;
 			std::string err_str = err.str();
 			throw std::domain_error(err_str);
 		}
@@ -324,6 +373,31 @@ protected:
 	/**
 	 * Get a reference to the underlying data in the grid.
 	 *
+	 * @param pos_idx_ data index of position to query.
+	 * @return reference to grid value.
+	 */
+	LeafType& ref(const UINT pos_idx_)
+	{
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		pself->assert_pos_bounds(pself->index(pos_idx_), "ref: ");
+		#endif
+		return pself->data()[pos_idx_];
+	}
+
+	/**
+	 * @copydoc LeafType& ref(const UINT)
+	 */
+	const LeafType& ref(const UINT pos_idx_) const
+	{
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		pself->assert_pos_bounds(pself->index(pos_idx_), "ref: ");
+		#endif
+		return pself->data()[pos_idx_];
+	}
+
+	/**
+	 * Get a reference to the underlying data in the grid.
+	 *
 	 * @param pos_ position to query.
 	 * @return reference to grid value.
 	 */
@@ -333,7 +407,7 @@ protected:
 		pself->assert_pos_bounds(pos_, "ref: ");
 		#endif
 		const UINT idx = pself->index(pos_);
-		return pself->data()[idx];
+		return ref(idx);
 	}
 
 	/**
@@ -345,7 +419,7 @@ protected:
 		pself->assert_pos_bounds(pos_, "ref: ");
 		#endif
 		const UINT idx = pself->index(pos_);
-		return pself->data()[idx];
+		return ref(idx);
 	}
 };
 
@@ -376,24 +450,51 @@ protected:
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_, "get: ");
 		#endif
-		const UINT idx = pself->index(pos_);
-		return pself->data()[idx];
+		const UINT idx = this->index(pos_);
+		return get(idx);
 	}
 
+	/**
+	 * Get a copy of the value stored in the grid.
+	 *
+	 * @param pos_idx_ data index of position to query.
+	 * @return internally stored value at given grid position
+	 */
+	LeafType get (const UINT pos_idx_) const
+	{
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		pself->assert_pos_bounds(this->index(pos_idx_), "get: ");
+		#endif
+		return pself->data()[pos_idx_];
+	}
 
 	/**
 	 * Set the value stored in the grid.
 	 *
 	 * @param pos_ position in grid to query.
-	 * @return internally stored value at given grid position
+	 * @param val_ value to copy into grid at pos_.
 	 */
 	void set (const VecDi& pos_, LeafType val_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		pself->assert_pos_bounds(pos_, "get: ");
+		pself->assert_pos_bounds(pos_, "set: ");
 		#endif
-		const UINT idx = pself->index(pos_);
-		pself->data()[idx] = val_;
+		const UINT idx = this->index(pos_);
+		set(idx, val_);
+	}
+
+	/**
+	 * Set the value stored in the grid.
+	 *
+	 * @param pos_idx_ data index of position to query.
+	 * @param val_ value to copy into grid at pos_.
+	 */
+	void set (const UINT pos_idx_, LeafType val_)
+	{
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		pself->assert_pos_bounds(pos_idx_, "set: ");
+		#endif
+		pself->data()[pos_idx_] = val_;
 	}
 };
 
@@ -424,8 +525,8 @@ protected:
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_, "get: ");
 		#endif
-		const UINT idx = pself->index(pos_);
-		return pself->data()[idx];
+		const UINT idx = this->index(pos_);
+		return get(idx);
 	}
 
 	/**
@@ -439,9 +540,38 @@ protected:
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_, "get: ");
 		#endif
-		const UINT idx = pself->index(pos_);
-		return pself->data()[idx];
+		const UINT idx = this->index(pos_);
+		return get(idx);
 	}
+
+	/**
+	 * Get a reference to the value stored in the grid.
+	 *
+	 * @param pos_idx_ data index of position to query.
+	 * @return internally stored value at given grid position
+	 */
+	LeafType& get (const UINT pos_idx_)
+	{
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		pself->assert_pos_bounds(this->index(pos_idx_), "get: ");
+		#endif
+		return pself->data()[pos_idx_];
+	}
+
+	/**
+	 * Get a const reference to the value stored in the grid.
+	 *
+	 * @param pos_idx_ data index of position to query.
+	 * @return internally stored value at given grid position
+	 */
+	const LeafType& get (const UINT pos_idx_) const
+	{
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		pself->assert_pos_bounds(this->index(pos_idx_), "get: ");
+		#endif
+		return pself->data()[pos_idx_];
+	}
+
 };
 
 
@@ -480,6 +610,27 @@ protected:
 		if (pself->data().size())
 		{
 			return BaseType::get(pos_);
+		}
+		else
+		{
+			return pself->m_background;
+		}
+	}
+
+	/**
+	 * Get a copy of the value stored in the grid or background value if inactive.
+	 *
+	 * @param pos_idx_ index of position in grid to query.
+	 * @return internally stored value at given grid position
+	 */
+	LeafType get (const UINT pos_idx_) const
+	{
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		pself->assert_pos_bounds(pself->index(pos_idx_), "get: ");
+		#endif
+		if (pself->data().size())
+		{
+			return BaseType::get(pos_idx_);
 		}
 		else
 		{

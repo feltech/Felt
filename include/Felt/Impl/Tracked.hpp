@@ -43,6 +43,7 @@ public:
 	{}
 
 	using AccessorImpl::get;
+	using AccessorImpl::index;
 	using AccessorImpl::set;
 	using ActivatorImpl::activate;
 	using ActivatorImpl::deactivate;
@@ -53,6 +54,7 @@ public:
 	using SizeImpl::resize;
 	using SizeImpl::size;
 	using TrackedImpl::add;
+
 };
 
 
@@ -88,8 +90,11 @@ public:
 	}
 
 	using AccessorImpl::get;
+	using AccessorImpl::index;
 	using ActivatorImpl::activate;
 	using DataImpl::data;
+	using SizeImpl::assert_pos_idx_bounds;
+	using SizeImpl::offset;
 	using SizeImpl::size;
 	using LookupInterfaceImpl::lookup;
 	using TrackedImpl::add;

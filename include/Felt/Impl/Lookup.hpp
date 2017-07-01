@@ -43,6 +43,7 @@ public:
 	}
 
 	using AccessorImpl::get;
+	using AccessorImpl::index;
 	using LookupImpl::add;
 	using LookupImpl::is_active;
 	using LookupImpl::list;
@@ -80,6 +81,7 @@ public:
 	}
 
 	using AccessorImpl::get;
+	using AccessorImpl::index;
 	using LookupImpl::add;
 	using LookupImpl::is_active;
 	using LookupImpl::list;
@@ -119,6 +121,7 @@ public:
 	{}
 
 	using AccessorImpl::get;
+	using AccessorImpl::index;
 	using ActivatorImpl::activate;
 	using ActivatorImpl::deactivate;
 	using DataImpl::data;
@@ -127,6 +130,7 @@ public:
 	using LookupImpl::list;
 	using LookupImpl::remove;
 	using LookupImpl::reset;
+	using SizeImpl::assert_pos_idx_bounds;
 	using SizeImpl::offset;
 	using SizeImpl::resize;
 	using SizeImpl::size;
@@ -164,6 +168,7 @@ public:
 	}
 
 	using AccessorImpl::get;
+	using AccessorImpl::index;
 	using ActivatorImpl::activate;
 	using ActivatorImpl::deactivate;
 	using DataImpl::data;
@@ -172,6 +177,7 @@ public:
 	using LookupImpl::list;
 	using LookupImpl::remove;
 	using LookupImpl::reset;
+	using LookupImpl::NULL_IDX_TUPLE;
 };
 
 } // Lookup

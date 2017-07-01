@@ -35,6 +35,7 @@ public:
 		ChildrenImpl{size_, offset_, child_size_, ChildType()}, SizeImpl{size_, offset_}
 	{}
 
+	using ChildrenImpl::add;
 	using ChildrenImpl::children;
 };
 

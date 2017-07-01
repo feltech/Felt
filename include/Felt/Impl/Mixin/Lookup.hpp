@@ -27,7 +27,7 @@ protected:
 	/// Integer vector.
 	using VecDi = Felt::VecDi<Dims>;
 	/// List of position vectors.
-	using PosArray = std::vector<VecDi>;
+	using PosArray = std::vector<Idx>;
 };
 
 
@@ -55,8 +55,8 @@ protected:
 		pself->m_data.shrink_to_fit();
 		for (UINT list_idx = 0; list_idx < NumLists; list_idx++)
 		{
-			pself->m_a_list_pos[list_idx].clear();
-			pself->m_a_list_pos[list_idx].shrink_to_fit();
+			pself->m_a_list_pos_idxs[list_idx].clear();
+			pself->m_a_list_pos_idxs[list_idx].shrink_to_fit();
 		}
 	}
 };
@@ -78,7 +78,7 @@ private:
 
 private:
 	/// List of position vectors, each of which have a corresponding grid node storing it's index.
-	PosArray	m_list_pos;
+	PosArray	m_list_pos_idxs;
 
 protected:
 
@@ -92,7 +92,7 @@ protected:
 	 */
 	const PosArray& list() const
 	{
-		return m_list_pos;;
+		return m_list_pos_idxs;;
 	}
 	/**
 	 * Get tracking list.
@@ -101,7 +101,7 @@ protected:
 	 */
 	PosArray& list()
 	{
-		return m_list_pos;;
+		return m_list_pos_idxs;;
 	}
 
 	/**
@@ -110,9 +110,9 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return true if grid position tracked, false otherwise.
 	 */
-	bool is_active (const VecDi& pos_) const
+	bool is_active (const Idx pos_idx_) const
 	{
-		return pself->get(pos_) != NULL_IDX;
+		return pself->get(pos_idx_) != NULL_IDX;
 	}
 
 	/**
@@ -124,22 +124,23 @@ protected:
 	* @return true if grid node was set and position added to list,
 	* false if grid node was already set so position already in a list.
 	*/
-	bool add(const VecDi& pos_)
+	bool add(const Idx pos_idx_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		pself->assert_pos_bounds(pos_, "add: ");
+		pself->assert_pos_bounds(pos_idx_, "add: ");
 		#endif
 
-		UINT idx = pself->get(pos_);
+		UINT idx = pself->get(pos_idx_);
 		// Do not allow duplicates.
 		if (idx != NULL_IDX)
 		{
 			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-			if (!m_list_pos.size() > idx)
+			if (!m_list_pos_idxs.size() > idx)
 			{
 				std::stringstream sstr;
-				sstr << "Position " << Felt::format(pos_) << " detected as a duplicate, since " <<
-					idx << " is not " << NULL_IDX << ", but no list is that big";
+				sstr << "Position " << Felt::format(pself->index(pos_idx_)) <<
+					" detected as a duplicate, since " << idx << " is not " << NULL_IDX <<
+					", but no list is that big";
 				std::string str = sstr.str();
 				throw std::domain_error(str);
 			}
@@ -147,8 +148,8 @@ protected:
 			return false;
 		}
 
-		pself->set(pos_, m_list_pos.size());
-		m_list_pos.push_back(pos_);
+		pself->set(pos_idx_, m_list_pos_idxs.size());
+		m_list_pos_idxs.push_back(pos_idx_);
 
 		return true;
 	}
@@ -173,20 +174,20 @@ protected:
 		// If this is not the last remaining position in the array, then
 		// we must move the last position to this position and update the
 		// lookup grid.
-		const UINT last_idx = m_list_pos.size() - 1;
+		const UINT last_idx = m_list_pos_idxs.size() - 1;
 		if (idx_at_pos < last_idx)
 		{
 			// Duplicate last element into this index.
-			const VecDi& pos_last = m_list_pos[last_idx];
-			m_list_pos[idx_at_pos] = m_list_pos[last_idx];
+			const UINT pos_idx_last = m_list_pos_idxs[last_idx];
+			m_list_pos_idxs[idx_at_pos] = m_list_pos_idxs[last_idx];
 			// Set the lookup grid to reference the new index in the array.
-			pself->set(pos_last, idx_at_pos);
+			pself->set(pos_idx_last, idx_at_pos);
 		}
 		// NULL out the value in the grid now that we're done with it.
 		idx_at_pos = NULL_IDX;
 		// Remove the last element in the array (which is at this point
 		// either the last remaining element or a duplicate).
-		m_list_pos.pop_back();
+		m_list_pos_idxs.pop_back();
 	}
 
 	/**
@@ -194,9 +195,9 @@ protected:
 	 */
 	void reset()
 	{
-		for (const VecDi& pos : m_list_pos)
-			pself->set(pos, NULL_IDX);
-		m_list_pos.clear();
+		for (const UINT pos_idx : m_list_pos_idxs)
+			pself->set(pos_idx, NULL_IDX);
+		m_list_pos_idxs.clear();
 	}
 };
 
@@ -220,7 +221,7 @@ protected:
 	using typename BaseType::PosArray;
 protected:
 	/// N-tuple of lists of grid positions - the tracking lists.
-	std::array<PosArray, NumLists>	m_a_list_pos;
+	std::array<PosArray, NumLists>	m_a_list_pos_idxs;
 protected:
 	/**
 	 * Get tracking list by id.
@@ -230,7 +231,7 @@ protected:
 	 */
 	PosArray& list (const UINT list_idx_)
 	{
-		return m_a_list_pos[list_idx_];
+		return m_a_list_pos_idxs[list_idx_];
 	}
 
 	/**
@@ -241,7 +242,7 @@ protected:
 	 */
 	const PosArray& list (const UINT list_idx_) const
 	{
-		return m_a_list_pos[list_idx_];
+		return m_a_list_pos_idxs[list_idx_];
 	}
 
 	/**
@@ -265,37 +266,38 @@ protected:
 	 * @return true if grid node was set and position added to list,
 	 * false if grid node was already set so position already in a list.
 	 */
-	bool add(const VecDi& pos_, const UINT list_idx_)
+	bool add(const Idx pos_idx_, const UINT list_idx_)
 	{
-#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		pself->assert_pos_bounds(pos_, "add: ");
-#endif
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		pself->assert_pos_bounds(pos_idx_, "add: ");
+		#endif
 
-		const UINT idx = pself->get(pos_);
+		const Idx idx = pself->get(pos_idx_);
 		// Do not allow duplicates.
 		if (idx != NULL_IDX)
 		{
-#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 			bool found = false;
 
-			for (UINT list_idx = 0; list_idx < m_a_list_pos.size() && !found; list_idx++)
-				if (m_a_list_pos[list_idx].size() > idx)
+			for (UINT list_idx = 0; list_idx < m_a_list_pos_idxs.size() && !found; list_idx++)
+				if (m_a_list_pos_idxs[list_idx].size() > idx)
 					found = true;
 
 			if (!found)
 			{
 				std::stringstream sstr;
-				sstr << "Position " << Felt::format(pos_) << " detected as a duplicate, since " <<
-				idx << " is not " << NULL_IDX << ", but no list is that big";
+				sstr << "Position " << Felt::format(pself->index(pos_idx_)) <<
+					" detected as a duplicate, since " << idx << " is not " << NULL_IDX <<
+					", but no list is that big";
 				std::string str = sstr.str();
 				throw std::domain_error(str);
 			}
-#endif
+			#endif
 			return false;
 		}
-		PosArray& list_to_update = m_a_list_pos[list_idx_];
-		pself->set(pos_, list_to_update.size());
-		list_to_update.push_back(pos_);
+		PosArray& list_to_update = m_a_list_pos_idxs[list_idx_];
+		pself->set(pos_idx_, list_to_update.size());
+		list_to_update.push_back(pos_idx_);
 		return true;
 	}
 
@@ -305,35 +307,35 @@ protected:
 	 * @param pos_ position in grid matching index in tracking list to remove.
 	 * @param list_idx_ tracking list id to remove element from.
 	 */
-	void remove(const VecDi& pos_, const UINT list_idx_)
+	void remove(const Idx pos_idx_, const UINT list_idx_)
 	{
 #if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		pself->assert_pos_bounds(pos_, "remove: ");
+		pself->assert_pos_bounds(pos_idx_, "remove: ");
 #endif
 
-		// Set index lookup to null value.
-		UINT& idx_at_pos = pself->ref(pos_);
+		// Get reference to list index stored at given position in grid.
+		UINT& list_idx_at_pos = pself->ref(pos_idx_);
 
-		if (idx_at_pos == NULL_IDX)
+		if (list_idx_at_pos == NULL_IDX)
 			return;
 
 		// Get a reference to the tracking list that we now need to update.
-		PosArray& list_to_update = m_a_list_pos[list_idx_];
+		PosArray& list_to_update = m_a_list_pos_idxs[list_idx_];
 
 		// If this is not the last remaining position in the array, then
 		// we must move the last position to this position and update the
 		// lookup grid.
 		const UINT last_idx = list_to_update.size() - 1;
-		if (idx_at_pos < last_idx)
+		if (list_idx_at_pos < last_idx)
 		{
 			// Duplicate last element into this index.
-			const VecDi& pos_last = list_to_update[last_idx];
-			list_to_update[idx_at_pos] = pos_last;
+			const Idx pos_idx_last = list_to_update[last_idx];
+			list_to_update[list_idx_at_pos] = pos_idx_last;
 			// Set the lookup grid to reference the new index in the array.
-			pself->set(pos_last, idx_at_pos);
+			pself->set(pos_idx_last, list_idx_at_pos);
 		}
 		// NULL out the old value in the grid now that we're done with it.
-		idx_at_pos = NULL_IDX;
+		list_idx_at_pos = NULL_IDX;
 		// Remove the last element in the array (which is at this point
 		// either the last remaining element or a duplicate).
 		list_to_update.pop_back();
@@ -346,9 +348,9 @@ protected:
 	 */
 	void reset(const UINT list_idx_)
 	{
-		for (const VecDi& pos : m_a_list_pos[list_idx_])
-			pself->set(pos, NULL_IDX);
-		m_a_list_pos[list_idx_].clear();
+		for (const Idx pos_idx : m_a_list_pos_idxs[list_idx_])
+			pself->set(pos_idx, NULL_IDX);
+		m_a_list_pos_idxs[list_idx_].clear();
 	}
 };
 
@@ -380,7 +382,7 @@ protected:
 private:
 	/// List of position vectors, each of which have a corresponding grid node storing it's index.
 	/// N-tuple of lists of grid positions - the tracking lists.
-	std::array<PosArray, NumLists>	m_a_list_pos;
+	std::array<PosArray, NumLists>	m_a_list_pos_idxs;
 protected:
 
 	/**
@@ -391,7 +393,7 @@ protected:
 	 */
 	PosArray& list (const UINT list_idx_)
 	{
-		return m_a_list_pos[list_idx_];
+		return m_a_list_pos_idxs[list_idx_];
 	}
 
 	/**
@@ -402,18 +404,19 @@ protected:
 	 */
 	const PosArray& list (const UINT list_idx_) const
 	{
-		return m_a_list_pos[list_idx_];
+		return m_a_list_pos_idxs[list_idx_];
 	}
 
 	/**
-	 * Return true if position currently tracked for given list id, false otherwise.
+	 * Check whether a given position is tracked by given tracking list.
 	 *
-	 * @param pos_ position in grid to query.
+	 * @param pos_idx_ position in grid to query.
+	 * @param list_idx_ tracking list id.
 	 * @return true if grid position tracked, false otherwise.
 	 */
-	bool is_active (const VecDi& pos_, const UINT list_idx_) const
+	bool is_active (const Idx pos_idx_, const UINT list_idx_) const
 	{
-		return pself->get(pos_)[list_idx_] != NULL_IDX;
+		return pself->get(pos_idx_)[list_idx_] != NULL_IDX;
 	}
 
 	/**
@@ -426,37 +429,38 @@ protected:
 	 * @return true if grid node was set and position added to list,
 	 * false if grid node was already set so position already in a list.
 	 */
-	bool add(const VecDi& pos_, const UINT list_idx_)
+	bool add(const Idx pos_idx_, const UINT list_idx_)
 	{
-#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		pself->assert_pos_bounds(pos_, "add: ");
-#endif
-		UINT& idx = pself->get(pos_)[list_idx_];
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		pself->assert_pos_bounds(pos_idx_, "add: ");
+		#endif
+		UINT& idx = pself->get(pos_idx_)[list_idx_];
 		// Do not allow duplicates.
 		if (idx != NULL_IDX)
 		{
-#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 			bool found = false;
 
-			for (UINT list_idx = 0; list_idx < m_a_list_pos.size() && !found; list_idx++)
-				if (m_a_list_pos[list_idx].size() > idx)
+			for (UINT list_idx = 0; list_idx < m_a_list_pos_idxs.size() && !found; list_idx++)
+				if (m_a_list_pos_idxs[list_idx].size() > idx)
 					found = true;
 
 			if (!found)
 			{
 				std::stringstream sstr;
-				sstr << "Position " << Felt::format(pos_) << " detected as a duplicate, since " <<
-				idx << " is not " << NULL_IDX << ", but no list is that big";
+				sstr << "Position " << Felt::format(pself->index(pos_idx_)) <<
+					" detected as a duplicate, since " << idx << " is not " << NULL_IDX <<
+					", but no list is that big";
 				std::string str = sstr.str();
 				throw std::domain_error(str);
 			}
-#endif
+			#endif
 			return false;
 		}
-		PosArray& list_to_update = m_a_list_pos[list_idx_];
+		PosArray& list_to_update = m_a_list_pos_idxs[list_idx_];
 		// Update value in grid at appropriate tuple index.
 		idx = list_to_update.size();
-		list_to_update.push_back(pos_);
+		list_to_update.push_back(pos_idx_);
 		return true;
 	}
 
@@ -466,20 +470,20 @@ protected:
 	 * @param pos_ position in grid matching index in tracking list to remove.
 	 * @param list_idx_ tracking list id to remove element from.
 	 */
-	void remove(const VecDi& pos_, const UINT list_idx_)
+	void remove(const Idx pos_idx_, const UINT list_idx_)
 	{
 #if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		pself->assert_pos_bounds(pos_, "remove: ");
+		pself->assert_pos_bounds(pos_idx_, "remove: ");
 #endif
 
 		// Set index lookup to null value.
-		UINT& idx_at_pos = pself->get(pos_)[list_idx_];
+		UINT& idx_at_pos = pself->get(pos_idx_)[list_idx_];
 
 		if (idx_at_pos == NULL_IDX)
 			return;
 
 		// Get a reference to the tracking list that we now need to update.
-		PosArray& list_to_update = m_a_list_pos[list_idx_];
+		PosArray& list_to_update = m_a_list_pos_idxs[list_idx_];
 
 		// If this is not the last remaining position in the array, then
 		// we must move the last position to this position and update the
@@ -488,10 +492,10 @@ protected:
 		if (idx_at_pos < last_idx)
 		{
 			// Duplicate last element into this index.
-			const VecDi& pos_last = list_to_update[last_idx];
-			list_to_update[idx_at_pos] = pos_last;
+			const Idx pos_idx_last = list_to_update[last_idx];
+			list_to_update[idx_at_pos] = pos_idx_last;
 			// Set the lookup grid to reference the new index in the array.
-			pself->get(pos_last)[list_idx_] = idx_at_pos;
+			pself->get(pos_idx_last)[list_idx_] = idx_at_pos;
 		}
 		// NULL out the old value in the grid now that we're done with it.
 		idx_at_pos = NULL_IDX;
@@ -507,9 +511,9 @@ protected:
 	 */
 	void reset(const UINT list_idx_)
 	{
-		for (const VecDi& pos : m_a_list_pos[list_idx_])
-			pself->get(pos) = NULL_IDX_TUPLE;
-		m_a_list_pos[list_idx_].clear();
+		for (const Idx pos_idx : m_a_list_pos_idxs[list_idx_])
+			pself->get(pos_idx) = NULL_IDX_TUPLE;
+		m_a_list_pos_idxs[list_idx_].clear();
 	}
 };
 
