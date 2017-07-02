@@ -4,8 +4,8 @@
 #include <type_traits>
 #include <Felt/Impl/Util.hpp>
 #include <Felt/Impl/Common.hpp>
-#include <Felt/Impl/Mixin/Grid.hpp>
-#include <Felt/Impl/Mixin/Lookup.hpp>
+#include <Felt/Impl/Mixin/GridMixin.hpp>
+#include <Felt/Impl/Mixin/LookupMixin.hpp>
 
 namespace Felt
 {
@@ -44,8 +44,8 @@ public:
 
 	using AccessorImpl::get;
 	using AccessorImpl::index;
-	using LookupImpl::add;
-	using LookupImpl::is_active;
+	using LookupImpl::track;
+	using LookupImpl::is_tracked;
 	using LookupImpl::list;
 	using LookupImpl::remove;
 	using LookupImpl::reset;
@@ -82,8 +82,8 @@ public:
 
 	using AccessorImpl::get;
 	using AccessorImpl::index;
-	using LookupImpl::add;
-	using LookupImpl::is_active;
+	using LookupImpl::track;
+	using LookupImpl::is_tracked;
 	using LookupImpl::list;
 	using LookupImpl::remove;
 	using LookupImpl::reset;
@@ -124,9 +124,10 @@ public:
 	using AccessorImpl::index;
 	using ActivatorImpl::activate;
 	using ActivatorImpl::deactivate;
+	using ActivatorImpl::is_active;
 	using DataImpl::data;
-	using LookupImpl::add;
-	using LookupImpl::is_active;
+	using LookupImpl::track;
+	using LookupImpl::is_tracked;
 	using LookupImpl::list;
 	using LookupImpl::remove;
 	using LookupImpl::reset;
@@ -172,8 +173,8 @@ public:
 	using ActivatorImpl::activate;
 	using ActivatorImpl::deactivate;
 	using DataImpl::data;
-	using LookupImpl::add;
-	using LookupImpl::is_active;
+	using LookupImpl::track;
+	using LookupImpl::is_tracked;
 	using LookupImpl::list;
 	using LookupImpl::remove;
 	using LookupImpl::reset;

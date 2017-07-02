@@ -3,8 +3,8 @@
 
 #include <Felt/Impl/Common.hpp>
 #include <Felt/Impl/Lookup.hpp>
-#include <Felt/Impl/Mixin/Grid.hpp>
-#include <Felt/Impl/Mixin/Tracked.hpp>
+#include <Felt/Impl/Mixin/GridMixin.hpp>
+#include <Felt/Impl/Mixin/TrackedMixin.hpp>
 
 namespace Felt
 {
@@ -53,7 +53,7 @@ public:
 	using SizeImpl::offset;
 	using SizeImpl::resize;
 	using SizeImpl::size;
-	using TrackedImpl::add;
+	using TrackedImpl::track;
 
 };
 
@@ -97,7 +97,7 @@ public:
 	using SizeImpl::offset;
 	using SizeImpl::size;
 	using LookupInterfaceImpl::lookup;
-	using TrackedImpl::add;
+	using TrackedImpl::track;
 };
 
 } // Tracked.

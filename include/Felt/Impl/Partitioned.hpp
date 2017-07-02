@@ -3,7 +3,7 @@
 
 #include <Felt/Impl/Common.hpp>
 #include <Felt/Impl/Lookup.hpp>
-#include <Felt/Impl/Mixin/Partitioned.hpp>
+#include <Felt/Impl/Mixin/PartitionedMixin.hpp>
 
 namespace Felt
 {
@@ -16,7 +16,7 @@ template <UINT D, UINT N>
 class Lookup :
 	FELT_MIXINS(
 		(Lookup<D, N>),
-		(Partitioned::Children)(Grid::Size)
+		(Grid::Size)(Partitioned::Children)(Partitioned::Lookup)
 	)
 private:
 	using ThisType = Lookup<D, N>;
@@ -25,6 +25,7 @@ private:
 	using ChildType = typename TraitsType::ChildType;
 
 	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
+	using LookupImpl = Impl::Mixin::Partitioned::Lookup<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
 	using VecDi = Felt::VecDi<D>;
 
@@ -35,8 +36,9 @@ public:
 		ChildrenImpl{size_, offset_, child_size_, ChildType()}, SizeImpl{size_, offset_}
 	{}
 
-	using ChildrenImpl::add;
+	using LookupImpl::track;
 	using ChildrenImpl::children;
+	using ChildrenImpl::reset;
 };
 
 } // Partitioned.

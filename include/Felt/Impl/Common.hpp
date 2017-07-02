@@ -27,7 +27,12 @@ using UINT = unsigned;
 /**
  * Integer (large) array index type.
  */
-using Idx = UINT;
+using PosIdx = UINT;
+
+/**
+ * Integer (small) array index type.
+ */
+using ListIdx = UINT;
 
 /**
  * Shorthand for D-dimensional vector with elements of T type.
@@ -93,7 +98,7 @@ template <class Derived> struct Traits {};
 #define _FELT_UNWRAP(...) __VA_ARGS__
 
 /**
- * Helper to add private inheritance of mixin to derived, comma-separated.
+ * Helper to track private inheritance of mixin to derived, comma-separated.
  */
 #define _FELT_MIXIN_INHERIT(r, derived, idx, mixin)\
 	BOOST_PP_COMMA_IF(idx) private Impl::Mixin::mixin<_FELT_UNWRAP derived>

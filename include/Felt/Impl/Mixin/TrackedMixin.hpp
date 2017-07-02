@@ -29,6 +29,8 @@ private:
 
 protected:
 	using Base::Activator;
+	using Base::is_active;
+
 	/**
 	 * Allocate the internal data array and lookup grid.
 	 */
@@ -82,7 +84,7 @@ private:
 	using LeafType = typename TraitsType::LeafType;
 protected:
 	/**
-	 * Set value in grid at given position and add position to lookup grid.
+	 * Set value in grid at given position and track position to lookup grid.
 	 *
 	 * Will set value regardless whether lookup grid already set for given
 	 * position + tracking list.
@@ -94,19 +96,19 @@ protected:
 	 * tracking list, false if grid node was already set so position already
 	 * in a list.
 	 */
-	bool add(const Idx pos_idx_, const LeafType& val_, const UINT list_idx_)
+	bool track(const PosIdx pos_idx_, const LeafType& val_, const UINT list_idx_)
 	{
 		pself->get(pos_idx_) = val_;
-		return pself->lookup().add(pos_idx_, list_idx_);
+		return pself->lookup().track(pos_idx_, list_idx_);
 	}
 
 	/**
-	 * @copydoc add(const VecDi&, const LeafType&, const UINT)
+	 * @copydoc track(const VecDi&, const LeafType&, const UINT)
 	 */
-	bool add(const Idx pos_idx_, LeafType&& val_, const UINT list_idx_)
+	bool track(const PosIdx pos_idx_, LeafType&& val_, const UINT list_idx_)
 	{
 		pself->get(pos_idx_) = val_;
-		return pself->lookup().add(pos_idx_, list_idx_);
+		return pself->lookup().track(pos_idx_, list_idx_);
 	}
 };
 
@@ -123,7 +125,7 @@ private:
 	using LeafType = typename TraitsType::LeafType;
 protected:
 	/**
-	 * Set value in grid at given position and add position to lookup grid.
+	 * Set value in grid at given position and track position to lookup grid.
 	 *
 	 * Will set value regardless whether lookup grid already set for given
 	 * position + tracking list.
@@ -135,10 +137,10 @@ protected:
 	 * tracking list, false if grid node was already set so position already
 	 * in a list.
 	 */
-	bool add(const Idx pos_idx_, const LeafType val_, const UINT list_idx_)
+	bool track(const PosIdx pos_idx_, const LeafType val_, const UINT list_idx_)
 	{
 		pself->set(pos_idx_, val_);
-		return pself->lookup().add(pos_idx_, list_idx_);
+		return pself->lookup().track(pos_idx_, list_idx_);
 	}
 };
 
@@ -213,7 +215,7 @@ protected:
 	 */
 	void reset(const UINT list_idx_)
 	{
-		for (const Idx pos_idx : pself->m_grid_lookup.list(list_idx_))
+		for (const PosIdx pos_idx : pself->m_grid_lookup.list(list_idx_))
 			pself->set(pos_idx, pself->m_background);
 		pself->m_grid_lookup.reset(list_idx_);
 	}

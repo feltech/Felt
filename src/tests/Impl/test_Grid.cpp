@@ -131,13 +131,13 @@ SCENARIO("Lookup::Simple")
 		const UINT pos6_idx = grid.index(pos6);
 		const UINT pos7_idx = grid.index(pos7);
 
-		WHEN("we add 4 locations to be tracked")
+		WHEN("we track 4 locations to be tracked")
 		{
 			// Add the positions to the array and set index lookup values.
-			grid.add(pos1_idx);
-			grid.add(pos2_idx);
-			grid.add(pos3_idx);
-			grid.add(pos4_idx);
+			grid.track(pos1_idx);
+			grid.track(pos2_idx);
+			grid.track(pos3_idx);
+			grid.track(pos4_idx);
 
 
 			THEN("the tracking lists contain the expected number of elements")
@@ -147,11 +147,11 @@ SCENARIO("Lookup::Simple")
 
 			THEN("the grid reports the active state of positions correctly")
 			{
-				CHECK(grid.is_active(pos1_idx) == true);
-				CHECK(grid.is_active(pos2_idx) == true);
-				CHECK(grid.is_active(pos3_idx) == true);
-				CHECK(grid.is_active(pos4_idx) == true);
-				CHECK(grid.is_active(pos5_idx) == false);
+				CHECK(grid.is_tracked(pos1_idx) == true);
+				CHECK(grid.is_tracked(pos2_idx) == true);
+				CHECK(grid.is_tracked(pos3_idx) == true);
+				CHECK(grid.is_tracked(pos4_idx) == true);
+				CHECK(grid.is_tracked(pos5_idx) == false);
 			}
 
 			THEN("the tracking list elements contain the positions")
@@ -220,11 +220,11 @@ SCENARIO("Lookup::Simple")
 					CHECK(grid.get(pos4) == 1);
 				}
 
-				AND_WHEN("we add two more points")
+				AND_WHEN("we track two more points")
 				{
 
-					grid.add(pos5_idx);
-					grid.add(pos6_idx);
+					grid.track(pos5_idx);
+					grid.track(pos6_idx);
 
 					THEN("the tracking lists contain an extra of element")
 					{
@@ -273,11 +273,11 @@ SCENARIO("Lookup::Simple")
 
 				THEN("the grid reports the active state of positions correctly")
 				{
-					CHECK(grid.is_active(pos1_idx) == false);
-					CHECK(grid.is_active(pos2_idx) == false);
-					CHECK(grid.is_active(pos3_idx) == false);
-					CHECK(grid.is_active(pos4_idx) == false);
-					CHECK(grid.is_active(pos5_idx) == false);
+					CHECK(grid.is_tracked(pos1_idx) == false);
+					CHECK(grid.is_tracked(pos2_idx) == false);
+					CHECK(grid.is_tracked(pos3_idx) == false);
+					CHECK(grid.is_tracked(pos4_idx) == false);
+					CHECK(grid.is_tracked(pos5_idx) == false);
 				}
 			}
 		}
@@ -311,13 +311,13 @@ SCENARIO("Lookup::Single")
 		const UINT pos7_idx = grid.index(pos7);
 
 
-		WHEN("we add 4 locations to be tracked")
+		WHEN("we track 4 locations to be tracked")
 		{
 			// Add the positions to the array and set index lookup values.
-			grid.add(pos1_idx, 0);
-			grid.add(pos2_idx, 1);
-			grid.add(pos3_idx, 1);
-			grid.add(pos4_idx, 2);
+			grid.track(pos1_idx, 0);
+			grid.track(pos2_idx, 1);
+			grid.track(pos3_idx, 1);
+			grid.track(pos4_idx, 2);
 
 
 			THEN("the tracking lists contain the expected number of elements")
@@ -398,11 +398,11 @@ SCENARIO("Lookup::Single")
 					CHECK(grid.get(pos4) == 0);
 				}
 
-				AND_WHEN("we add two more points")
+				AND_WHEN("we track two more points")
 				{
 
-					grid.add(pos5_idx, 2);
-					grid.add(pos6_idx, 2);
+					grid.track(pos5_idx, 2);
+					grid.track(pos6_idx, 2);
 
 					THEN("the tracking lists contain the expected number of elements")
 					{
@@ -495,10 +495,10 @@ SCENARIO("Lookup::Multi")
 
 		WHEN("we append 4 locations to be tracked in list 0")
 		{
-			grid.add(pos1_idx, 0);
-			grid.add(pos2_idx, 0);
-			grid.add(pos3_idx, 0);
-			grid.add(pos4_idx, 0);
+			grid.track(pos1_idx, 0);
+			grid.track(pos2_idx, 0);
+			grid.track(pos3_idx, 0);
+			grid.track(pos4_idx, 0);
 
 			THEN(
 				"the tracking list is populated and the grid locations hold their indices in the"
@@ -515,9 +515,9 @@ SCENARIO("Lookup::Multi")
 				CHECK(grid.get(pos4)(0) == 3);
 			}
 
-			AND_WHEN("we add a location that is already tracked")
+			AND_WHEN("we track a location that is already tracked")
 			{
-				grid.add(pos2_idx, 0);
+				grid.track(pos2_idx, 0);
 
 				THEN("the grid state is just as if the final point was not added")
 				{
@@ -552,10 +552,10 @@ SCENARIO("Lookup::Multi")
 
 		WHEN("we append 4 locations to be tracked spread across all 3 lists")
 		{
-			grid.add(pos1_idx, 0);
-			grid.add(pos2_idx, 1);
-			grid.add(pos3_idx, 1);
-			grid.add(pos4_idx, 2);
+			grid.track(pos1_idx, 0);
+			grid.track(pos2_idx, 1);
+			grid.track(pos3_idx, 1);
+			grid.track(pos4_idx, 2);
 
 			THEN("the tracking lists and index tuples within the grid are updated")
 			{
@@ -590,10 +590,10 @@ SCENARIO("Lookup::Multi")
 					CHECK(grid.get(pos4)(2) == 0);
 				}
 
-				AND_WHEN("we add 2 more points to tracking list 2")
+				AND_WHEN("we track 2 more points to tracking list 2")
 				{
-					grid.add(pos5_idx, 2);
-					grid.add(pos6_idx, 2);
+					grid.track(pos5_idx, 2);
+					grid.track(pos6_idx, 2);
 
 					THEN("the grid and tracking list is updated")
 					{
@@ -717,9 +717,9 @@ SCENARIO("Lookup::LazySingle")
 					CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::NULL_IDX);
 				}
 
-				AND_WHEN("we add a position to be tracked to list 1")
+				AND_WHEN("we track a position to be tracked to list 1")
 				{
-					grid.add(grid.index(Vec3i(1, 1, 1)), 1);
+					grid.track(grid.index(Vec3i(1, 1, 1)), 1);
 
 					THEN("that position's value is updated and is added to the tracking list")
 					{
@@ -771,7 +771,7 @@ SCENARIO("Tracked::LazySingle")
 
 		GridType grid = GridType(3.14159);
 
-		const Idx NULL_IDX = Felt::NULL_IDX;
+		const PosIdx NULL_IDX = Felt::NULL_IDX;
 
 		THEN("the data grid and associated lookup grid state is zero size and inactive")
 		{
@@ -826,7 +826,7 @@ SCENARIO("Tracked::LazySingle")
 
 				AND_WHEN("a location is updated and tracked in list 1")
 				{
-					grid.add(grid.index(Vec3i(1,1,1)), 42.0f, 1);
+					grid.track(grid.index(Vec3i(1,1,1)), 42.0f, 1);
 
 					THEN("the data grid is updated and the lookup grid tracks the point")
 					{
@@ -927,8 +927,8 @@ SCENARIO("Tracked::MultiByRef")
 
 		WHEN("a simple value is added to the grid to be tracked by list 1 and 2")
 		{
-			grid.add(grid.index(Vec3i(2,2,2)), 42.0f, 1);
-			grid.lookup().add(grid.index(Vec3i(2,2,2)), 2);
+			grid.track(grid.index(Vec3i(2,2,2)), 42.0f, 1);
+			grid.lookup().track(grid.index(Vec3i(2,2,2)), 2);
 
 			THEN("the value stored in the grid is correct")
 			{
@@ -1022,24 +1022,24 @@ SCENARIO("Paritioned::Lookup")
 			CHECK(grid.children().get(Vec3i( 1, 1, 1)).offset() == Vec3i( 2, 2, 2));
 		}
 
-		const Vec3i pos1(1, -4, -1);
-		const Vec3i pos2(2, -3, -2);
-		const Vec3i pos3(3, -2, -3);
-		const Vec3i pos4(4, -1, -4);
-		const Vec3i part1(0, -1,  0);
-		const Vec3i part2_3(1, -1, -1);
-		const Vec3i part4(1,  0, -1);
-		const Idx part1_idx = grid.children().index(part1);
-		const Idx part2_3_idx = grid.children().index(part2_3);
-		const Idx part4_idx = grid.children().index(part4);
-
 		WHEN("some locations are tracked")
 		{
-			grid.add(pos1, 0);
-			grid.add(pos2, 0);
+			const Vec3i pos1(1, -4, -1);
+			const Vec3i pos2(2, -3, -2);
+			const Vec3i pos3(3, -2, -3);
+			const Vec3i pos4(4, -1, -4);
+			const Vec3i part1(0, -1,  0);
+			const Vec3i part2_3(1, -1, -1);
+			const Vec3i part4(1,  0, -1);
+			const PosIdx part1_idx = grid.children().index(part1);
+			const PosIdx part2_3_idx = grid.children().index(part2_3);
+			const PosIdx part4_idx = grid.children().index(part4);
+
+			grid.track(pos1, 0);
+			grid.track(pos2, 0);
 			// Will not activate partition, but already activated by previous line.
-			grid.add(part2_3_idx, grid.children().get(part2_3_idx).index(pos3), 0);
-			grid.add(pos4, 2);
+			grid.track(part2_3_idx, grid.children().get(part2_3_idx).index(pos3), 0);
+			grid.track(pos4, 2);
 
 			THEN("the underlying data is as expected")
 			{
@@ -1059,6 +1059,62 @@ SCENARIO("Paritioned::Lookup")
 				CHECK(grid.children().get(part2_3).get(pos2) == 0);
 				CHECK(grid.children().get(part2_3).get(pos3) == 1);
 				CHECK(grid.children().get(part4).get(pos4) == 0);
+			}
+		}
+
+		WHEN("some points are tracked which overlap points tracked in another masking grid")
+		{
+			GridType grid_master(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3));
+
+			const Vec3i pos_list_0(0, 0, 0);
+			const Vec3i pos_active_because_master(-4, 0, 4);
+			const Vec3i pos_list_1(4, 0, 0);
+			const Vec3i pos_child_list_0(0, 0, 0);
+			const Vec3i pos_child_active_because_master(-1, 0, 1);
+			const Vec3i pos_child_list_1(1, 0, 0);
+
+			grid_master.track(pos_active_because_master, 0);
+			grid.track(pos_active_because_master, 0);
+			grid.track(pos_list_0, 0);
+			grid.track(pos_list_1, 1);
+
+			AND_WHEN("resetting the grid")
+			{
+				grid.reset(grid_master);
+
+				THEN("all children are reset")
+				{
+					CHECK(
+						grid.children().get(
+							pos_child_active_because_master
+						).get(pos_active_because_master) == NULL_IDX
+					);
+					CHECK(grid.children().get(pos_child_list_0).get(pos_list_0) == NULL_IDX);
+					CHECK(grid.children().get(pos_child_list_1).get(pos_list_1) == NULL_IDX);
+					CHECK(
+						grid.children().get(pos_child_active_because_master).list(0).size() == 0
+					);
+					CHECK(grid.children().get(pos_child_list_0).list(0).size() == 0);
+					CHECK(grid.children().get(pos_child_list_1).list(1).size() == 0);
+				}
+
+				THEN("all children not tracked by mask grid are deactivated")
+				{
+					CHECK(grid.children().get(Vec3i(pos_child_list_0)).is_active() == false);
+					CHECK(grid.children().get(Vec3i(pos_child_list_0)).data().size() == 0);
+					CHECK(grid.children().get(pos_child_list_1).is_active() == false);
+					CHECK(grid.children().get(pos_child_list_1).data().size() == 0);
+					CHECK(grid.children().lookup().list(1).size() == 0);
+				}
+
+				THEN("children that are tracked by mask grid remain active")
+				{
+					CHECK(grid.children().get(pos_child_active_because_master).is_active() == true);
+					CHECK(
+						grid.children().get(pos_child_active_because_master).data().size() == 3*3*3
+					);
+					CHECK(grid.children().lookup().list(0).size() == 0);
+				}
 			}
 		}
 	}

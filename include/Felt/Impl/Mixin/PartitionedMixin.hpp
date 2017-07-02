@@ -1,5 +1,5 @@
-#ifndef INCLUDE_FELT_IMPL_MIXIN_PARTITIONED_HPP_
-#define INCLUDE_FELT_IMPL_MIXIN_PARTITIONED_HPP_
+#ifndef INCLUDE_FELT_IMPL_MIXIN_PARTITIONEDMIXIN_HPP_
+#define INCLUDE_FELT_IMPL_MIXIN_PARTITIONEDMIXIN_HPP_
 #include <mutex>
 
 #include <Felt/Impl/Tracked.hpp>
@@ -20,7 +20,7 @@ private:
 	/// Traits of derived class.
 	using TraitsType = Traits<Derived>;
 	/// Child grid type.
-	using Child = typename TraitsType::ChildType;
+	using ChildType = typename TraitsType::ChildType;
 	/// Number of tracking lists.
 	static constexpr UINT NumLists = TraitsType::NumLists;
 	/// Dimension of grid.
@@ -30,7 +30,7 @@ private:
 
 protected:
 	/// Grid of partitions with tracking list(s) of active partitions.
-	using ChildrenGrid = Impl::Tracked::MultiByRef<Child, Dims, NumLists>;
+	using ChildrenGrid = Impl::Tracked::MultiByRef<ChildType, Dims, NumLists>;
 
 protected:
 	/// Grid of child grids.
@@ -51,7 +51,7 @@ protected:
 	 */
 	Children(
 		const VecDi& size_, const VecDi& offset_, const VecDi& child_size_,
-		const Child& background_
+		const ChildType& background_
 	) :
 		m_child_size(child_size_),
 		m_children(
@@ -97,38 +97,6 @@ protected:
 	}
 
 	/**
-	 * Add a leaf position to be tracked to given tracking list.
-	 *
-	 * Descend to relevant child grid to add to their tracking structure.
-	 *
-	 * @param pos_idx_leaf_ position to track.
-	 * @param list_idx_ tracking list id.
-	 */
-	void add(const VecDi& pos_leaf_, const UINT list_idx_)
-	{
-		const Idx pos_idx_child_ = pos_idx_child(pos_leaf_);
-		add_child(pos_idx_child_, list_idx_);
-		const Idx pos_idx_leaf = m_children.get(pos_idx_child_).index(pos_leaf_);
-		add(pos_idx_child_, pos_idx_leaf, list_idx_);
-	}
-
-
-	/**
-	 * Add a leaf position to be tracked to given tracking list.
-	 *
-	 * Descend to relevant child grid to add to their tracking structure.
-	 *
-	 * @param pos_idx_leaf_ position to track.
-	 * @param pos_idx_child_ position of child sub-grid containing leaf position to track.
-	 * @param list_idx_ tracking list id.
-	 */
-	void add(const Idx pos_idx_child_, const Idx pos_idx_leaf_, const UINT list_idx_)
-	{
-		FELT_DEBUG(m_children.get(pos_idx_child_).assert_pos_idx_bounds(pos_idx_leaf_, "add:"));
-		m_children.get(pos_idx_child_).add(pos_idx_leaf_, list_idx_);
-	}
-
-	/**
 	 * Add a spatial partition to children grid's tracking sub-grid.
 	 *
 	 * Uses mutex for thread safety. Activates the child grid.
@@ -136,26 +104,67 @@ protected:
 	 * @param pos_idx_child_ position index of child sub-grid in parent grid.
 	 * @param list_idx_ index of tracking list used to track position.
 	 */
-	void add_child(const Idx pos_idx_child_, const UINT list_idx_)
+	void track_child(const PosIdx pos_idx_child_, const ListIdx list_idx_)
 	{
-		FELT_DEBUG(m_children.assert_pos_idx_bounds(pos_idx_child_, "add:"));
+		FELT_DEBUG(m_children.assert_pos_idx_bounds(pos_idx_child_, "track:"));
 		std::lock_guard<std::mutex> lock(m_mutex);
-		if (m_children.lookup().is_active(pos_idx_child_, list_idx_))
+		if (m_children.lookup().is_tracked(pos_idx_child_, list_idx_))
 			return;
-		Child& child = m_children.get(pos_idx_child_);
-		if (!child.data().size())
+		ChildType& child = m_children.get(pos_idx_child_);
+		if (!child.is_active())
 			child.activate();
-		m_children.lookup().add(pos_idx_child_, list_idx_);
+		m_children.lookup().track(pos_idx_child_, list_idx_);
 	}
 
-private:
+	/**
+	 * Reset all tracked points, deactivating all children except those active in given mask grid.
+	 *
+	 * Mask grid is an optimisation to prevent constant reallocation of the same partitions.
+	 *
+	 * @param grid_mask_ any partitions also tracked by this grid will not be deactivated.
+	 */
+	template <class MaskGrid>
+	void reset(const MaskGrid& grid_mask_)
+	{
+		for (ListIdx list_idx = 0; list_idx < NumLists; list_idx++)
+		{
+			for (const PosIdx pos_idx_child : m_children.lookup().list(list_idx))
+			{
+				ChildType& child = m_children.get(pos_idx_child);
+				m_children.lookup().remove(pos_idx_child, list_idx);
+
+				// If the master grid is not tracking this child, then remove it from tracking
+				// under this list id, potentially destroying it.
+				if (
+					!grid_mask_.children().lookup().is_tracked(pos_idx_child) &&
+					!m_children.lookup().is_tracked(pos_idx_child)
+				) {
+					child.deactivate();
+				}
+
+				// If the child has not been destroyed by the above, then reset as normal (loop
+				// over tracking list resetting values in grid, before resizing list to 0).
+				if (child.is_active())
+				{
+					child.reset(list_idx);
+				}
+				// If the child was destroyed above, then no need to loop over grid resetting
+				// values, so just reset list.
+				else
+				{
+					child.list(list_idx).clear();
+				}
+			}
+		}
+	}
+
 	/**
 	 * Calculate the position of a child grid (i.e. partition) given the position of leaf grid node.
 	 *
 	 * @param pos_leaf_
 	 * @return position of spatial partition in which leaf position lies.
 	 */
-	Idx pos_idx_child (const VecDi& pos_leaf_) const
+	PosIdx pos_idx_child (const VecDi& pos_leaf_) const
 	{
 		// Position of leaf, without offset.
 		const VecDi& pos_leaf_offset =  pos_leaf_ - pself->offset();
@@ -167,6 +176,7 @@ private:
 		return m_children.index(pos_child);
 	}
 
+private:
 	/**
 	 * Calculate required size of children grid to contain child sub-grids.
 	 */
@@ -184,10 +194,59 @@ private:
 };
 
 
+template <class Derived>
+class Lookup
+{
+private:
+	/// Traits of derived class.
+	using TraitsType = Traits<Derived>;
+	/// Child grid type.
+	using ChildType = typename TraitsType::ChildType;
+	/// Dimension of grid.
+	static constexpr UINT Dims = TraitsType::Dims;
+	/// D-dimensional integer vector.
+	using VecDi = Felt::VecDi<Dims>;
+
+protected:
+	/**
+	 * Add a leaf position to be tracked to given tracking list.
+	 *
+	 * Descend to relevant child grid to track to their tracking structure.
+	 *
+	 * @param pos_idx_leaf_ position to track.
+	 * @param list_idx_ tracking list id.
+	 */
+	void track(const VecDi& pos_leaf_, const ListIdx list_idx_)
+	{
+		const PosIdx pos_idx_child_ = pself->pos_idx_child(pos_leaf_);
+		pself->track_child(pos_idx_child_, list_idx_);
+		const PosIdx pos_idx_leaf = pself->children().get(pos_idx_child_).index(pos_leaf_);
+		track(pos_idx_child_, pos_idx_leaf, list_idx_);
+	}
+
+	/**
+	 * Add a leaf position to be tracked to given tracking list.
+	 *
+	 * Descend to relevant child grid to track to their tracking structure.
+	 *
+	 * @param pos_idx_leaf_ position to track.
+	 * @param pos_idx_child_ position of child sub-grid containing leaf position to track.
+	 * @param list_idx_ tracking list id.
+	 */
+	void track(const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_, const ListIdx list_idx_)
+	{
+		FELT_DEBUG(
+			pself->children().get(pos_idx_child_).assert_pos_idx_bounds(pos_idx_leaf_, "track:")
+		);
+		pself->children().get(pos_idx_child_).track(pos_idx_leaf_, list_idx_);
+	}
+};
+
+
 } // Partitioned.
 } // Mixin.
 } // Impl.
 } // Felt.
 
 
-#endif /* INCLUDE_FELT_IMPL_MIXIN_PARTITIONED_HPP_ */
+#endif /* INCLUDE_FELT_IMPL_MIXIN_PARTITIONEDMIXIN_HPP_ */

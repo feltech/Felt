@@ -4,8 +4,8 @@
 #include <type_traits>
 #include <Felt/Impl/Util.hpp>
 #include <Felt/Impl/Common.hpp>
-#include <Felt/Impl/Mixin/Grid.hpp>
-#include <Felt/Impl/Mixin/Lookup.hpp>
+#include <Felt/Impl/Mixin/GridMixin.hpp>
+#include <Felt/Impl/Mixin/LookupMixin.hpp>
 
 namespace Felt
 {

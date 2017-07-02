@@ -37,6 +37,16 @@ protected:
 	{}
 
 	/**
+	 * Get whether this grid has been activated (data allocated) or not.
+	 *
+	 * @return true if data allocated, false if not.
+	 */
+	bool is_active()
+	{
+		return bool(pself->data().size());
+	}
+
+	/**
 	 * Construct the internal data array, initialising nodes to the background value.
 	 */
 	void activate()
@@ -101,7 +111,7 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return index in internal data array of this grid position.
 	 */
-	Idx index (const VecDi& pos_) const
+	PosIdx index (const VecDi& pos_) const
 	{
 		return index(pos_, pself->size(), pself->offset());
 	}
@@ -116,7 +126,7 @@ protected:
 	 * @param idx_ index in internal data array to query.
 	 * @return the position in the grid represented in the data array at given index.
 	 */
-	VecDi index (const Idx idx_) const
+	VecDi index (const PosIdx idx_) const
 	{
 		return index(idx_, pself->size(), pself->offset());
 	}
@@ -135,7 +145,7 @@ protected:
 	 * @param offset_ spatial offset of grid.
 	 * @return index in data array of pos in grid of given size and offset.
 	 */
-	static Idx index (
+	static PosIdx index (
 		const VecDi& pos_, const VecDi& size_, const VecDi& offset_ = VecDi::Constant(0)
 	) {
 		INT idx = 0;
@@ -165,7 +175,7 @@ protected:
 	 * @param offset_ spatial offset of grid.
 	 * @return position that the given index would represent in a grid of given size and offset.
 	 */
-	static VecDi index (Idx idx_, const VecDi& size_, const VecDi& offset_ = VecDi::Zero())
+	static VecDi index (PosIdx idx_, const VecDi& size_, const VecDi& offset_ = VecDi::Zero())
 	{
 /*
 Eg. 2D: row major order (3x4=12): (x,y)[idx] =>
@@ -265,7 +275,7 @@ protected:
 	 * @param pos_idx_ position in grid to query.
 	 * @param title_ message to include in generated exception.
 	 */
-	void assert_pos_idx_bounds (const Idx pos_idx_, std::string title_) const
+	void assert_pos_idx_bounds (const PosIdx pos_idx_, std::string title_) const
 	{
 		assert_pos_idx_bounds(pself->index(pos_idx_), title_);
 	}
@@ -278,7 +288,7 @@ protected:
 	 */
 	void assert_pos_idx_bounds (const VecDi& pos_, std::string title_) const
 	{
-		const Idx pos_idx = pself->index(pos_);
+		const PosIdx pos_idx = pself->index(pos_);
 
 		if (pos_idx > pself->data().size())
 		{
@@ -304,7 +314,7 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @param title_ message to include in generated exception.
 	 */
-	void assert_pos_bounds (const Idx pos_idx_, std::string title_) const
+	void assert_pos_bounds (const PosIdx pos_idx_, std::string title_) const
 	{
 		assert_pos_bounds(pself->index(pos_idx_), title_);
 	}

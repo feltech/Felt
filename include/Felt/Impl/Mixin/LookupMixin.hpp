@@ -3,7 +3,7 @@
 
 #include <Felt/Impl/Util.hpp>
 #include <Felt/Impl/Common.hpp>
-#include <Felt/Impl/Mixin/Grid.hpp>
+#include <Felt/Impl/Mixin/GridMixin.hpp>
 
 namespace Felt
 {
@@ -27,16 +27,16 @@ protected:
 	/// Integer vector.
 	using VecDi = Felt::VecDi<Dims>;
 	/// List of position vectors.
-	using PosArray = std::vector<Idx>;
+	using PosArray = std::vector<PosIdx>;
 };
 
 
 template <class Derived>
-class Activator : protected Impl::Mixin::Grid::Activator<Derived>
+class Activator : protected Grid::Activator<Derived>
 {
 protected:
 	/// CRTP derived class.
-	using Base =  Felt::Impl::Mixin::Grid::Activator<Derived>;
+	using Base =  Grid::Activator<Derived>;
 	/// Traits of derived class.
 	using TraitsType = Traits<Derived>;
 	/// Number of tracking lists.
@@ -45,6 +45,7 @@ protected:
 protected:
 	using Base::Activator;
 	using Base::activate;
+	using Base::is_active;
 
 	/**
 	 * Destroy the internal data array.
@@ -110,7 +111,7 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return true if grid position tracked, false otherwise.
 	 */
-	bool is_active (const Idx pos_idx_) const
+	bool is_tracked (const PosIdx pos_idx_) const
 	{
 		return pself->get(pos_idx_) != NULL_IDX;
 	}
@@ -124,10 +125,10 @@ protected:
 	* @return true if grid node was set and position added to list,
 	* false if grid node was already set so position already in a list.
 	*/
-	bool add(const Idx pos_idx_)
+	bool track(const PosIdx pos_idx_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		pself->assert_pos_bounds(pos_idx_, "add: ");
+		pself->assert_pos_bounds(pos_idx_, "track: ");
 		#endif
 
 		UINT idx = pself->get(pos_idx_);
@@ -251,7 +252,7 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return true if grid position tracked, false otherwise.
 	 */
-	bool is_active (const VecDi& pos_) const
+	bool is_tracked (const VecDi& pos_) const
 	{
 		return pself->get(pos_) != NULL_IDX;
 	}
@@ -266,13 +267,13 @@ protected:
 	 * @return true if grid node was set and position added to list,
 	 * false if grid node was already set so position already in a list.
 	 */
-	bool add(const Idx pos_idx_, const UINT list_idx_)
+	bool track(const PosIdx pos_idx_, const UINT list_idx_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		pself->assert_pos_bounds(pos_idx_, "add: ");
+		pself->assert_pos_bounds(pos_idx_, "track: ");
 		#endif
 
-		const Idx idx = pself->get(pos_idx_);
+		const PosIdx idx = pself->get(pos_idx_);
 		// Do not allow duplicates.
 		if (idx != NULL_IDX)
 		{
@@ -307,7 +308,7 @@ protected:
 	 * @param pos_ position in grid matching index in tracking list to remove.
 	 * @param list_idx_ tracking list id to remove element from.
 	 */
-	void remove(const Idx pos_idx_, const UINT list_idx_)
+	void remove(const PosIdx pos_idx_, const UINT list_idx_)
 	{
 #if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_idx_, "remove: ");
@@ -329,7 +330,7 @@ protected:
 		if (list_idx_at_pos < last_idx)
 		{
 			// Duplicate last element into this index.
-			const Idx pos_idx_last = list_to_update[last_idx];
+			const PosIdx pos_idx_last = list_to_update[last_idx];
 			list_to_update[list_idx_at_pos] = pos_idx_last;
 			// Set the lookup grid to reference the new index in the array.
 			pself->set(pos_idx_last, list_idx_at_pos);
@@ -348,7 +349,7 @@ protected:
 	 */
 	void reset(const UINT list_idx_)
 	{
-		for (const Idx pos_idx : m_a_list_pos_idxs[list_idx_])
+		for (const PosIdx pos_idx : m_a_list_pos_idxs[list_idx_])
 			pself->set(pos_idx, NULL_IDX);
 		m_a_list_pos_idxs[list_idx_].clear();
 	}
@@ -414,9 +415,20 @@ protected:
 	 * @param list_idx_ tracking list id.
 	 * @return true if grid position tracked, false otherwise.
 	 */
-	bool is_active (const Idx pos_idx_, const UINT list_idx_) const
+	bool is_tracked (const PosIdx pos_idx_, const UINT list_idx_) const
 	{
 		return pself->get(pos_idx_)[list_idx_] != NULL_IDX;
+	}
+
+	/**
+	 * Check whether a given position is tracked by any tracking list.
+	 *
+	 * @param pos_idx_ position in grid to query.
+	 * @return true if grid position tracked, false otherwise.
+	 */
+	bool is_tracked (const PosIdx pos_idx_) const
+	{
+		return pself->get(pos_idx_) != NULL_IDX_TUPLE;
 	}
 
 	/**
@@ -429,10 +441,10 @@ protected:
 	 * @return true if grid node was set and position added to list,
 	 * false if grid node was already set so position already in a list.
 	 */
-	bool add(const Idx pos_idx_, const UINT list_idx_)
+	bool track(const PosIdx pos_idx_, const UINT list_idx_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		pself->assert_pos_bounds(pos_idx_, "add: ");
+		pself->assert_pos_bounds(pos_idx_, "track: ");
 		#endif
 		UINT& idx = pself->get(pos_idx_)[list_idx_];
 		// Do not allow duplicates.
@@ -470,7 +482,7 @@ protected:
 	 * @param pos_ position in grid matching index in tracking list to remove.
 	 * @param list_idx_ tracking list id to remove element from.
 	 */
-	void remove(const Idx pos_idx_, const UINT list_idx_)
+	void remove(const PosIdx pos_idx_, const UINT list_idx_)
 	{
 #if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_idx_, "remove: ");
@@ -492,7 +504,7 @@ protected:
 		if (idx_at_pos < last_idx)
 		{
 			// Duplicate last element into this index.
-			const Idx pos_idx_last = list_to_update[last_idx];
+			const PosIdx pos_idx_last = list_to_update[last_idx];
 			list_to_update[idx_at_pos] = pos_idx_last;
 			// Set the lookup grid to reference the new index in the array.
 			pself->get(pos_idx_last)[list_idx_] = idx_at_pos;
@@ -511,7 +523,7 @@ protected:
 	 */
 	void reset(const UINT list_idx_)
 	{
-		for (const Idx pos_idx : m_a_list_pos_idxs[list_idx_])
+		for (const PosIdx pos_idx : m_a_list_pos_idxs[list_idx_])
 			pself->get(pos_idx) = NULL_IDX_TUPLE;
 		m_a_list_pos_idxs[list_idx_].clear();
 	}
