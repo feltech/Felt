@@ -826,7 +826,7 @@ SCENARIO("Tracked::LazySingle")
 
 				AND_WHEN("a location is updated and tracked in list 1")
 				{
-					grid.track(grid.index(Vec3i(1,1,1)), 42.0f, 1);
+					grid.track(42.0f, grid.index(Vec3i(1,1,1)), 1);
 
 					THEN("the data grid is updated and the lookup grid tracks the point")
 					{
@@ -927,7 +927,7 @@ SCENARIO("Tracked::MultiByRef")
 
 		WHEN("a simple value is added to the grid to be tracked by list 1 and 2")
 		{
-			grid.track(grid.index(Vec3i(2,2,2)), 42.0f, 1);
+			grid.track(42.0f, grid.index(Vec3i(2,2,2)), 1);
 			grid.lookup().track(grid.index(Vec3i(2,2,2)), 2);
 
 			THEN("the value stored in the grid is correct")
@@ -1116,6 +1116,26 @@ SCENARIO("Paritioned::Lookup")
 					CHECK(grid.children().lookup().list(0).size() == 0);
 				}
 			}
+		}
+	}
+}
+
+
+SCENARIO("Paritioned::Tracked")
+{
+	using GridType = Impl::Partitioned::Tracked<INT, 3, 3>;
+
+	GIVEN("a 9x9x9 grid with (-4,-4,-4) offset in 3x3x3 partitions with background value -42")
+	{
+		GridType grid(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3), -42);
+
+		THEN("grid is initialised as inactive with no tracking and queries give background value")
+		{
+			CHECK(grid.children().get(Vec3i(1,1,1)).is_active() == false);
+			CHECK(grid.children().get(Vec3i(1,1,1)).data().size() == 0);
+			CHECK(grid.children().get(Vec3i(1,1,1)).get(Vec3i(2,2,2)) == -42);
+			CHECK(grid.children().get(Vec3i(1,1,1)).lookup().data().size() == 0);
+			CHECK(grid.children().get(Vec3i(1,1,1)).lookup().get(Vec3i(2,2,2)) == NULL_IDX);
 		}
 	}
 }

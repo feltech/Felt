@@ -39,6 +39,7 @@ protected:
 		Base::activate();
 		pself->m_grid_lookup.activate();
 	}
+
 	/**
 	 * Destroy the internal data array and lookup grid.
 	 */
@@ -96,7 +97,7 @@ protected:
 	 * tracking list, false if grid node was already set so position already
 	 * in a list.
 	 */
-	bool track(const PosIdx pos_idx_, const LeafType& val_, const UINT list_idx_)
+	bool track(const LeafType& val_, const PosIdx pos_idx_, const UINT list_idx_)
 	{
 		pself->get(pos_idx_) = val_;
 		return pself->lookup().track(pos_idx_, list_idx_);
@@ -105,7 +106,7 @@ protected:
 	/**
 	 * @copydoc track(const VecDi&, const LeafType&, const UINT)
 	 */
-	bool track(const PosIdx pos_idx_, LeafType&& val_, const UINT list_idx_)
+	bool track(LeafType&& val_, const PosIdx pos_idx_, const UINT list_idx_)
 	{
 		pself->get(pos_idx_) = val_;
 		return pself->lookup().track(pos_idx_, list_idx_);
@@ -137,7 +138,7 @@ protected:
 	 * tracking list, false if grid node was already set so position already
 	 * in a list.
 	 */
-	bool track(const PosIdx pos_idx_, const LeafType val_, const UINT list_idx_)
+	bool track(const LeafType val_, const PosIdx pos_idx_, const UINT list_idx_)
 	{
 		pself->set(pos_idx_, val_);
 		return pself->lookup().track(pos_idx_, list_idx_);

@@ -47,6 +47,7 @@ public:
 	using AccessorImpl::set;
 	using ActivatorImpl::activate;
 	using ActivatorImpl::deactivate;
+	using ActivatorImpl::is_active;
 	using DataImpl::data;
 	using LookupInterfaceImpl::lookup;
 	using ResetterImpl::reset;
@@ -102,6 +103,26 @@ public:
 
 } // Tracked.
 
+
+/**
+ * Common base traits for tracked grids with multiple tracking lists but single index per grid node.
+ *
+ * @tparam T type of data to store in the grid.
+ * @tparam D number of dimensions of the grid.
+ * @tparam N number of tracking lists.
+ */
+template <typename T, UINT D, UINT N>
+struct DefaultTrackedTraits
+{
+	/// Single index stored in each grid node.
+	using LeafType = T;
+	/// Dimension of grid.
+	static constexpr UINT Dims = D;
+	/// Number of lists tracking grid nodes.
+	static constexpr UINT NumLists = N;
+};
+
+
 /**
  * Traits for Tracked::LazySingle.
  *
@@ -110,12 +131,9 @@ public:
  * @tparam N number of tracking lists.
  */
 template <typename T, UINT D, UINT N>
-struct Traits< Tracked::LazySingleByValue<T, D, N> >
+struct Traits< Tracked::LazySingleByValue<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
-	static constexpr UINT Dims = D;
-	static constexpr UINT NumLists = N;
-	using LeafType = T;
-	using LookupType = Lookup::LazySingle<Dims, NumLists>;
+	using LookupType = Lookup::LazySingle<D, N>;
 };
 
 /**
@@ -126,12 +144,9 @@ struct Traits< Tracked::LazySingleByValue<T, D, N> >
  * @tparam N number of tracking lists.
  */
 template <typename T, UINT D, UINT N>
-struct Traits< Tracked::MultiByRef<T, D, N> >
+struct Traits< Tracked::MultiByRef<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
-	static constexpr UINT Dims = D;
-	static constexpr UINT NumLists = N;
-	using LeafType = T;
-	using LookupType = Lookup::Multi<Dims, NumLists>;
+	using LookupType = Lookup::Multi<D, N>;
 };
 
 } // Impl
