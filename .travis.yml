@@ -6,13 +6,13 @@ addons:
     sources:
       - ubuntu-toolchain-r-test
     packages:
-      - g++-5
-      - gcc-5
+      - g++-6
+      - gcc-6
       - libeigen3-dev
       - libboost-dev
 
 install:
-  - export CXX="g++-5" CC="gcc-5" OMP_NUM_THREADS=2
+  - export CXX="g++-6" CC="gcc-6" OMP_NUM_THREADS=2
 
 compiler:
   - gcc
