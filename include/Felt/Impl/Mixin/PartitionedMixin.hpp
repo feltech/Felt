@@ -22,7 +22,7 @@ private:
 	/// Child grid type.
 	using ChildType = typename TraitsType::ChildType;
 	/// Number of tracking lists.
-	static constexpr UINT NumLists = TraitsType::NumLists;
+	static constexpr ListIdx NumLists = TraitsType::NumLists;
 	/// Dimension of grid.
 	static constexpr UINT Dims = TraitsType::Dims;
 	/// D-dimensional integer vector.
@@ -31,6 +31,7 @@ private:
 protected:
 	/// Grid of partitions with tracking list(s) of active partitions.
 	using ChildrenGrid = Impl::Tracked::MultiByRef<ChildType, Dims, NumLists>;
+	using PosArray = typename ChildrenGrid::PosArray;
 
 protected:
 	/// Grid of child grids.
@@ -117,12 +118,29 @@ protected:
 	}
 
 	/**
-	 * Reset all tracked points, deactivating all children except those active in given mask grid.
+	 * Bulk add children to tracking list, activating if not already active.
 	 *
-	 * Mask grid is an optimisation to prevent constant reallocation of the same partitions.
+	 * Not thread-safe.
 	 *
-	 * @param grid_mask_ any partitions also tracked by this grid will not be deactivated.
+	 * @param grid_mask_ grid to match partition activation with.
 	 */
+	template <class MaskGrid>
+	void track_children(const MaskGrid& grid_mask_)
+	{
+		for (ListIdx list_idx = 0; list_idx < grid_mask_.children().NumLists; list_idx++)
+		{
+			for (const PosIdx pos_idx_child : grid_mask_.children().lookup().list(list_idx))
+			{
+				if (m_children.lookup().is_tracked(pos_idx_child, list_idx))
+					continue;
+				ChildType& child = m_children.get(pos_idx_child);
+				if (!child.is_active())
+					child.activate();
+				m_children.lookup().track(pos_idx_child, list_idx);
+			}
+		}
+	}
+
 	template <class MaskGrid>
 	void reset(const MaskGrid& grid_mask_)
 	{
@@ -146,13 +164,13 @@ protected:
 				// over tracking list resetting values in grid, before resizing list to 0).
 				if (child.is_active())
 				{
-					child.reset(list_idx);
+					child.reset();
 				}
 				// If the child was destroyed above, then no need to loop over grid resetting
 				// values, so just reset list.
 				else
 				{
-					child.list(list_idx).clear();
+					pself->clear_list(child, list_idx);
 				}
 			}
 		}
@@ -240,8 +258,71 @@ protected:
 		);
 		pself->children().get(pos_idx_child_).track(pos_idx_leaf_, list_idx_);
 	}
+
+	void clear_list(ChildType& child, ListIdx list_idx_)
+	{
+		child.list(list_idx_).clear();
+	}
 };
 
+
+template <class Derived>
+class Tracked
+{
+private:
+	/// Traits of derived class.
+	using TraitsType = Traits<Derived>;
+	/// Child grid type.
+	using ChildType = typename TraitsType::ChildType;
+	/// Leaf type.
+	using LeafType = typename TraitsType::LeafType;
+	/// Dimension of grid.
+	static constexpr UINT Dims = TraitsType::Dims;
+	/// D-dimensional integer vector.
+	using VecDi = Felt::VecDi<Dims>;
+
+protected:
+	/**
+	 * Add a leaf position to be tracked to given tracking list.
+	 *
+	 * Descend to relevant child grid to track to their tracking structure.
+	 *
+	 * @param pos_idx_leaf_ position to track.
+	 * @param list_idx_ tracking list id.
+	 */
+	void track(const LeafType val_, const VecDi& pos_leaf_, const ListIdx list_idx_)
+	{
+		const PosIdx pos_idx_child_ = pself->pos_idx_child(pos_leaf_);
+		pself->track_child(pos_idx_child_, list_idx_);
+		const PosIdx pos_idx_leaf = pself->children().get(pos_idx_child_).index(pos_leaf_);
+		track(val_, pos_idx_child_, pos_idx_leaf, list_idx_);
+	}
+
+	/**
+	 * Add a leaf position to be tracked to given tracking list.
+	 *
+	 * Descend to relevant child grid to track to their tracking structure.
+	 *
+	 * @param pos_idx_leaf_ position to track.
+	 * @param pos_idx_child_ position of child sub-grid containing leaf position to track.
+	 * @param list_idx_ tracking list id.
+	 */
+	void track(
+		const LeafType val_, const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_,
+		const ListIdx list_idx_
+	) {
+		FELT_DEBUG(
+			pself->children().get(pos_idx_child_).assert_pos_idx_bounds(pos_idx_leaf_, "track:")
+		);
+		ChildType& child = pself->children().get(pos_idx_child_);
+		child.track(val_, pos_idx_leaf_, list_idx_);
+	}
+
+	void clear_list(ChildType& child, ListIdx list_idx_)
+	{
+		child.lookup().list(list_idx_).clear();
+	}
+};
 
 } // Partitioned.
 } // Mixin.

@@ -42,7 +42,7 @@ protected:
 	/// Number of tracking lists.
 	static constexpr UINT NumLists = TraitsType::NumLists;
 
-protected:
+	// Base class methods.
 	using Base::Activator;
 	using Base::activate;
 	using Base::is_active;
@@ -342,16 +342,19 @@ protected:
 		list_to_update.pop_back();
 	}
 
+
 	/**
-	 * Set all lookup grid nodes to NULL index and clear the list.
-	 *
-	 * @param list_idx_ tracking list id.
+	 * Set all lookup grid nodes to NULL index and clear the lists.
 	 */
-	void reset(const UINT list_idx_)
+	void reset()
 	{
-		for (const PosIdx pos_idx : m_a_list_pos_idxs[list_idx_])
-			pself->set(pos_idx, NULL_IDX);
-		m_a_list_pos_idxs[list_idx_].clear();
+		for (ListIdx list_idx = 0; list_idx < NumLists; list_idx++)
+		{
+			PosArray& list_pos_idxs = m_a_list_pos_idxs[list_idx];
+			for (const PosIdx pos_idx : list_pos_idxs)
+				pself->set(pos_idx, NULL_IDX);
+			list_pos_idxs.clear();
+		}
 	}
 };
 
@@ -517,16 +520,19 @@ protected:
 	}
 
 	/**
-	 * Set all lookup grid nodes to NULL index and clear the list.
-	 *
-	 * @param list_idx_ tracking list id.
+	 * Set all lookup grid nodes to NULL index and clear the lists.
 	 */
-	void reset(const UINT list_idx_)
+	void reset()
 	{
-		for (const PosIdx pos_idx : m_a_list_pos_idxs[list_idx_])
-			pself->get(pos_idx) = NULL_IDX_TUPLE;
-		m_a_list_pos_idxs[list_idx_].clear();
+		for (ListIdx list_idx = 0; list_idx < NumLists; list_idx++)
+		{
+			PosArray& list_pos_idxs = m_a_list_pos_idxs[list_idx];
+			for (const PosIdx pos_idx : list_pos_idxs)
+				pself->get(pos_idx)[list_idx] = NULL_IDX;
+			list_pos_idxs.clear();
+		}
 	}
+
 };
 
 template <class Derived>

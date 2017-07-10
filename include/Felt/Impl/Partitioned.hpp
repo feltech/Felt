@@ -49,7 +49,7 @@ template <typename T, UINT D, UINT N>
 class Tracked :
 	FELT_MIXINS(
 		(Tracked<T, D, N>),
-		(Grid::Size)(Partitioned::Children)
+		(Grid::Size)(Partitioned::Children)(Partitioned::Tracked)
 	)
 private:
 	using VecDi = Felt::VecDi<D>;
@@ -61,8 +61,10 @@ private:
 
 	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
+	using TrackedImpl = Impl::Mixin::Partitioned::Tracked<ThisType>;
 public:
 	using ChildrenGrid = typename ChildrenImpl::ChildrenGrid;
+	using PosArray = typename ChildrenImpl::ChildrenGrid::PosArray;
 public:
 	Tracked(
 		const VecDi& size_, const VecDi& offset_, const VecDi& child_size_,
@@ -73,6 +75,9 @@ public:
 	{}
 
 	using ChildrenImpl::children;
+	using ChildrenImpl::reset;
+	using ChildrenImpl::track_children;
+	using TrackedImpl::track;
 };
 
 } // Partitioned.

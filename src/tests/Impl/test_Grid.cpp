@@ -433,23 +433,23 @@ SCENARIO("Lookup::Single")
 				}
 			}
 
-			AND_WHEN("we reset list 1")
+			AND_WHEN("we reset the grid")
 			{
-				grid.reset(1);
+				grid.reset();
 
-				THEN("list 1 is empty but the other lists are unaffected")
+				THEN("lists are empty ")
 				{
-					CHECK(grid.list(0).size() == 1);
+					CHECK(grid.list(0).size() == 0);
 					CHECK(grid.list(1).size() == 0);
-					CHECK(grid.list(2).size() == 1);
+					CHECK(grid.list(2).size() == 0);
 				}
 
-				THEN("the locations in the grid that were in list 2 are now NULL index")
+				THEN("the locations in the grid are now NULL index")
 				{
-					CHECK(grid.get(pos1) == 0);
+					CHECK(grid.get(pos1) == Felt::NULL_IDX);
 					CHECK(grid.get(pos2) == Felt::NULL_IDX);
 					CHECK(grid.get(pos3) == Felt::NULL_IDX);
-					CHECK(grid.get(pos4) == 0);
+					CHECK(grid.get(pos4) == Felt::NULL_IDX);
 				}
 			}
 		}
@@ -533,9 +533,9 @@ SCENARIO("Lookup::Multi")
 				}
 			}
 
-			AND_WHEN("we reset the grid for tracking list 0")
+			AND_WHEN("we reset the grid")
 			{
-				grid.reset(0);
+				grid.reset();
 
 				THEN(
 					"all added location are NULL in the grid and the tracking list contains no"
@@ -556,19 +556,22 @@ SCENARIO("Lookup::Multi")
 			grid.track(pos2_idx, 1);
 			grid.track(pos3_idx, 1);
 			grid.track(pos4_idx, 2);
+			grid.track(pos3_idx, 2);
 
 			THEN("the tracking lists and index tuples within the grid are updated")
 			{
 				CHECK(grid.list(0).size() == 1);
 				CHECK(grid.list(1).size() == 2);
-				CHECK(grid.list(2).size() == 1);
+				CHECK(grid.list(2).size() == 2);
 				CHECK(grid.list(0)[0] == pos1_idx);
 				CHECK(grid.list(1)[0] == pos2_idx);
 				CHECK(grid.list(1)[1] == pos3_idx);
 				CHECK(grid.list(2)[0] == pos4_idx);
+				CHECK(grid.list(2)[1] == pos3_idx);
 				CHECK(grid.get(pos1)(0) == 0);
 				CHECK(grid.get(pos2)(1) == 0);
 				CHECK(grid.get(pos3)(1) == 1);
+				CHECK(grid.get(pos3)(2) == 1);
 				CHECK(grid.get(pos4)(2) == 0);
 			}
 
@@ -580,14 +583,16 @@ SCENARIO("Lookup::Multi")
 				{
 					CHECK(grid.list(0).size() == 1);
 					CHECK(grid.list(1).size() == 1);
-					CHECK(grid.list(2).size() == 1);
+					CHECK(grid.list(2).size() == 2);
 					CHECK(grid.list(0)[0] == pos1_idx);
 					CHECK(grid.list(1)[0] == pos3_idx);
 					CHECK(grid.list(2)[0] == pos4_idx);
+					CHECK(grid.list(2)[1] == pos3_idx);
 					CHECK(grid.get(pos1)(0) == 0);
 					CHECK(grid.get(pos2)(1) == Felt::NULL_IDX);
 					CHECK(grid.get(pos3)(1) == 0);
 					CHECK(grid.get(pos4)(2) == 0);
+					CHECK(grid.get(pos3)(2) == 1);
 				}
 
 				AND_WHEN("we track 2 more points to tracking list 2")
@@ -599,18 +604,20 @@ SCENARIO("Lookup::Multi")
 					{
 						CHECK(grid.list(0).size() == 1);
 						CHECK(grid.list(1).size() == 1);
-						CHECK(grid.list(2).size() == 3);
+						CHECK(grid.list(2).size() == 4);
 						CHECK(grid.list(0)[0] == pos1_idx);
 						CHECK(grid.list(1)[0] == pos3_idx);
 						CHECK(grid.list(2)[0] == pos4_idx);
-						CHECK(grid.list(2)[1] == pos5_idx);
-						CHECK(grid.list(2)[2] == pos6_idx);
+						CHECK(grid.list(2)[1] == pos3_idx);
+						CHECK(grid.list(2)[2] == pos5_idx);
+						CHECK(grid.list(2)[3] == pos6_idx);
 						CHECK(grid.get(pos1)(0) == 0);
 						CHECK(grid.get(pos2)(1) == Felt::NULL_IDX);
 						CHECK(grid.get(pos3)(1) == 0);
 						CHECK(grid.get(pos4)(2) == 0);
-						CHECK(grid.get(pos5)(2) == 1);
-						CHECK(grid.get(pos6)(2) == 2);
+						CHECK(grid.get(pos3)(2) == 1);
+						CHECK(grid.get(pos5)(2) == 2);
+						CHECK(grid.get(pos6)(2) == 3);
 					}
 
 					AND_WHEN("we remove 2 points from different tracking lists")
@@ -622,32 +629,34 @@ SCENARIO("Lookup::Multi")
 						{
 							CHECK(grid.list(0).size() == 0);
 							CHECK(grid.list(1).size() == 1);
-							CHECK(grid.list(2).size() == 2);
+							CHECK(grid.list(2).size() == 3);
 							CHECK(grid.list(0)[0] == pos1_idx);
 							CHECK(grid.list(1)[0] == pos3_idx);
-							CHECK(grid.list(2)[1] == pos5_idx);
 							CHECK(grid.list(2)[0] == pos6_idx);
+							CHECK(grid.list(2)[1] == pos3_idx);
+							CHECK(grid.list(2)[2] == pos5_idx);
 							CHECK(grid.get(pos1)(0) == Felt::NULL_IDX);
 							CHECK(grid.get(pos2)(1) == Felt::NULL_IDX);
 							CHECK(grid.get(pos3)(1) == 0);
+							CHECK(grid.get(pos3)(2) == 1);
 							CHECK(grid.get(pos4)(2) == Felt::NULL_IDX);
-							CHECK(grid.get(pos5)(2) == 1);
+							CHECK(grid.get(pos5)(2) == 2);
 							CHECK(grid.get(pos6)(2) == 0);
 						}
 
-						AND_WHEN("we reset tracking list 2")
+						AND_WHEN("the grid is reset")
 						{
-							grid.reset(2);
+							grid.reset();
 
-							THEN("only tracking list 2 is affected")
+							THEN("the lists are reset and the grid contains null indices")
 							{
 								CHECK(grid.list(0).size() == 0);
-								CHECK(grid.list(1).size() == 1);
+								CHECK(grid.list(1).size() == 0);
 								CHECK(grid.list(2).size() == 0);
-								CHECK(grid.list(1)[0] == pos3_idx);
 								CHECK(grid.get(pos1)(0) == Felt::NULL_IDX);
 								CHECK(grid.get(pos2)(1) == Felt::NULL_IDX);
-								CHECK(grid.get(pos3)(1) == 0);
+								CHECK(grid.get(pos3)(1) == Felt::NULL_IDX);
+								CHECK(grid.get(pos3)(2) == Felt::NULL_IDX);
 								CHECK(grid.get(pos4)(2) == Felt::NULL_IDX);
 								CHECK(grid.get(pos5)(2) == Felt::NULL_IDX);
 								CHECK(grid.get(pos6)(2) == Felt::NULL_IDX);
@@ -838,13 +847,13 @@ SCENARIO("Tracked::LazySingle")
 						CHECK(grid.lookup().list(2).size() == 0);
 					}
 
-					AND_WHEN("list 1 is reset")
+					AND_WHEN("the grid is reset")
 					{
-						grid.reset(1);
+						grid.reset();
 
 						THEN(
-							"the value in the data grid is reset to background value and location is"
-							" no longer tracked"
+							"the value in the data grid is reset to background value and locations"
+							" are no longer tracked"
 						) {
 							CHECK(grid.get(Vec3i(1,1,1)) == 3.14159f);
 							CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
@@ -1062,7 +1071,7 @@ SCENARIO("Paritioned::Lookup")
 			}
 		}
 
-		WHEN("some points are tracked which overlap points tracked in another masking grid")
+		WHEN("some points are tracked which overlap points tracked in a masking grid")
 		{
 			GridType grid_master(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3));
 
@@ -1129,13 +1138,207 @@ SCENARIO("Paritioned::Tracked")
 	{
 		GridType grid(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3), -42);
 
+		const Vec3i pos12_child(-1, -1, -1);
+		const Vec3i pos3_child(0, 0, 0);
+		const Vec3i pos4_child(1, 1, 1);
+		const PosIdx pos12_child_idx = grid.children().index(pos12_child);
+		const PosIdx pos3_child_idx = grid.children().index(pos3_child);
+		const PosIdx pos4_child_idx = grid.children().index(pos4_child);
+
+		const Vec3i pos1(-4, -4, -4);
+		const Vec3i pos2(-3, -4, -4);
+		const Vec3i pos3(0, 0, 0);
+		const Vec3i pos4(4, 4, 4);
+		const PosIdx pos1_idx = grid.children().get(pos12_child_idx).index(pos1);
+		const PosIdx pos2_idx = grid.children().get(pos12_child_idx).index(pos2);
+		const PosIdx pos3_idx = grid.children().get(pos3_child_idx).index(pos3);
+		const PosIdx pos4_idx = grid.children().get(pos4_child_idx).index(pos4);
+
 		THEN("grid is initialised as inactive with no tracking and queries give background value")
 		{
-			CHECK(grid.children().get(Vec3i(1,1,1)).is_active() == false);
-			CHECK(grid.children().get(Vec3i(1,1,1)).data().size() == 0);
-			CHECK(grid.children().get(Vec3i(1,1,1)).get(Vec3i(2,2,2)) == -42);
-			CHECK(grid.children().get(Vec3i(1,1,1)).lookup().data().size() == 0);
-			CHECK(grid.children().get(Vec3i(1,1,1)).lookup().get(Vec3i(2,2,2)) == NULL_IDX);
+			CHECK(grid.children().get(pos12_child_idx).is_active() == false);
+			CHECK(grid.children().get(pos12_child_idx).data().size() == 0);
+			CHECK(grid.children().get(pos12_child_idx).get(pos1_idx) == -42);
+			CHECK(grid.children().get(pos12_child_idx).lookup().data().size() == 0);
+			CHECK(grid.children().get(pos12_child_idx).lookup().get(pos1_idx) == NULL_IDX);
+			CHECK(grid.children().get(pos12_child_idx).get(pos2_idx) == -42);
+			CHECK(grid.children().get(pos12_child_idx).lookup().get(pos2_idx) == NULL_IDX);
+
+			CHECK(grid.children().get(pos3_child_idx).is_active() == false);
+			CHECK(grid.children().get(pos3_child_idx).data().size() == 0);
+			CHECK(grid.children().get(pos3_child_idx).get(pos3_idx) == -42);
+			CHECK(grid.children().get(pos3_child_idx).lookup().data().size() == 0);
+			CHECK(grid.children().get(pos3_child_idx).lookup().get(pos3_idx) == NULL_IDX);
+
+			CHECK(grid.children().get(pos4_child_idx).is_active() == false);
+			CHECK(grid.children().get(pos4_child_idx).data().size() == 0);
+			CHECK(grid.children().get(pos4_child_idx).get(pos4_idx) == -42);
+			CHECK(grid.children().get(pos4_child_idx).lookup().data().size() == 0);
+			CHECK(grid.children().get(pos4_child_idx).lookup().get(pos4_idx) == NULL_IDX);
+		}
+
+		AND_WHEN("a mask grid is tracking some partitions")
+		{
+			GridType grid_master(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3), 3.14159);
+			grid_master.track(1234, pos1, 0);
+			grid_master.track(1234, pos3, 0);
+
+			AND_WHEN("children are added based on the mask grid")
+			{
+				grid.track_children(grid_master);
+
+				THEN("those children are now active and initialised to background value")
+				{
+					CHECK(grid.children().get(pos12_child_idx).is_active() == true);
+					CHECK(grid.children().get(pos12_child_idx).data().size() == 3*3*3);
+					CHECK(grid.children().get(pos12_child_idx).get(pos1_idx) == -42);
+					CHECK(grid.children().get(pos12_child_idx).lookup().data().size() == 3*3*3);
+					CHECK(grid.children().get(pos12_child_idx).lookup().get(pos1_idx) == NULL_IDX);
+					CHECK(grid.children().get(pos12_child_idx).get(pos2_idx) == -42);
+					CHECK(grid.children().get(pos12_child_idx).lookup().get(pos2_idx) == NULL_IDX);
+
+					CHECK(grid.children().get(pos3_child_idx).is_active() == true);
+					CHECK(grid.children().get(pos3_child_idx).data().size() == 3*3*3);
+					CHECK(grid.children().get(pos3_child_idx).get(pos3_idx) == -42);
+					CHECK(grid.children().get(pos3_child_idx).lookup().data().size() == 3*3*3);
+					CHECK(grid.children().get(pos3_child_idx).lookup().get(pos3_idx) == NULL_IDX);
+
+					CHECK(grid.children().lookup().list(0).size() == 2);
+					CHECK(grid.children().lookup().list(1).size() == 0);
+					CHECK(grid.children().lookup().list(2).size() == 0);
+				}
+
+				THEN("other children are remain inactive")
+				{
+					CHECK(grid.children().get(pos4_child_idx).is_active() == false);
+					CHECK(grid.children().get(pos4_child_idx).data().size() == 0);
+					CHECK(grid.children().get(pos4_child_idx).get(pos4_idx) == -42);
+					CHECK(grid.children().get(pos4_child_idx).lookup().data().size() == 0);
+					CHECK(grid.children().get(pos4_child_idx).lookup().get(pos4_idx) == NULL_IDX);
+				}
+
+				AND_WHEN("a position in an active partition is tracked by index for list 1")
+				{
+					grid.track(345, pos12_child_idx, pos1_idx, 1);
+
+					THEN("the grid value is updated")
+					{
+						CHECK(grid.children().get(pos12_child_idx).get(pos1_idx) == 345);
+					}
+
+					THEN("list 1 is *not* tracked by the children grid")
+					{
+						CHECK(grid.children().lookup().list(1).size() == 0);
+					}
+
+					THEN("list 1 tracks the leaf position in the child's lookup grid")
+					{
+						CHECK(grid.children().get(pos12_child_idx).lookup().get(pos1_idx) == 0);
+						CHECK(grid.children().get(pos12_child_idx).lookup().list(1).size() == 1);
+						CHECK(grid.children().get(pos12_child_idx).lookup().list(1)[0] == pos1_idx);
+
+						CHECK(grid.children().get(pos12_child_idx).lookup().list(0).size() == 0);
+						CHECK(grid.children().get(pos12_child_idx).lookup().list(2).size() == 0);
+
+					}
+				}
+
+				AND_WHEN("a position in an active partition is tracked by location for list 1")
+				{
+					grid.track(345, pos1, 1);
+
+					THEN("the grid value is updated")
+					{
+						CHECK(grid.children().get(pos12_child_idx).get(pos1_idx) == 345);
+					}
+
+					THEN("list 1 is tracked by the children grid")
+					{
+						CHECK(grid.children().lookup().list(1).size() == 1);
+						CHECK(grid.children().lookup().get(pos12_child_idx)[1] == 0);
+					}
+
+					THEN("list 1 tracks the leaf position in the child's lookup grid")
+					{
+						CHECK(grid.children().get(pos12_child_idx).lookup().get(pos1_idx) == 0);
+						CHECK(grid.children().get(pos12_child_idx).lookup().list(1).size() == 1);
+						CHECK(grid.children().get(pos12_child_idx).lookup().list(1)[0] == pos1_idx);
+					}
+				}
+
+				AND_WHEN("a position in an inactive partition is tracked by location")
+				{
+					grid.track(345, pos4, 0);
+
+					THEN("the partition is activated")
+					{
+						CHECK(grid.children().get(pos4_child_idx).is_active() == true);
+						CHECK(grid.children().get(pos4_child_idx).data().size() == 3*3*3);
+					}
+
+					THEN("the grid value is updated")
+					{
+						CHECK(grid.children().get(pos4_child_idx).get(pos4_idx) == 345);
+					}
+
+					THEN("child is tracked by the children grid")
+					{
+						CHECK(grid.children().lookup().list(0).size() == 3);
+						CHECK(grid.children().lookup().list(0)[2] == pos4_child_idx);
+						CHECK(grid.children().lookup().get(pos4_child_idx)[0] == 2);
+					}
+
+					THEN("child tracks the leaf position in the child's lookup grid")
+					{
+						CHECK(grid.children().get(pos4_child_idx).lookup().get(pos4_idx) == 0);
+						CHECK(grid.children().get(pos4_child_idx).lookup().list(0).size() == 1);
+						CHECK(grid.children().get(pos4_child_idx).lookup().list(0)[0] == pos4_idx);
+					}
+
+					AND_WHEN("the grid is reset")
+					{
+						grid.reset(grid_master);
+
+						THEN("partitions tracked in master remain active")
+						{
+							CHECK(grid.children().get(pos12_child_idx).is_active() == true);
+							CHECK(grid.children().get(pos12_child_idx).data().size() == 3*3*3);
+							CHECK(grid.children().get(pos3_child_idx).is_active() == true);
+							CHECK(grid.children().get(pos3_child_idx).data().size() == 3*3*3);
+						}
+
+						THEN("partitions not tracked in master are deactivated")
+						{
+							CHECK(grid.children().get(pos4_child_idx).is_active() == false);
+							CHECK(grid.children().get(pos4_child_idx).data().size() == 0);
+						}
+
+						THEN("children grid lookup is reset")
+						{
+							auto NULL_IDX_TUPLE = grid.children().lookup().NULL_IDX_TUPLE;
+							CHECK(grid.children().lookup().list(0).size() == 0);
+							CHECK(grid.children().lookup().list(1).size() == 0);
+							CHECK(grid.children().lookup().list(2).size() == 0);
+							CHECK(grid.children().lookup().get(pos12_child_idx) == NULL_IDX_TUPLE);
+							CHECK(grid.children().lookup().get(pos3_child_idx) == NULL_IDX_TUPLE);
+							CHECK(grid.children().lookup().get(pos4_child_idx) == NULL_IDX_TUPLE);
+						}
+
+						THEN("child grids' lookups are reset")
+						{
+							CHECK(grid.children().get(pos12_child_idx).lookup().list(0).size() == 0);
+							CHECK(grid.children().get(pos12_child_idx).lookup().list(1).size() == 0);
+							CHECK(grid.children().get(pos12_child_idx).lookup().list(2).size() == 0);
+							CHECK(grid.children().get(pos3_child_idx).lookup().list(0).size() == 0);
+							CHECK(grid.children().get(pos3_child_idx).lookup().list(1).size() == 0);
+							CHECK(grid.children().get(pos3_child_idx).lookup().list(2).size() == 0);
+							CHECK(grid.children().get(pos4_child_idx).lookup().list(0).size() == 0);
+							CHECK(grid.children().get(pos4_child_idx).lookup().list(1).size() == 0);
+							CHECK(grid.children().get(pos4_child_idx).lookup().list(2).size() == 0);
+						}
+					}
+				}
+			}
 		}
 	}
 }

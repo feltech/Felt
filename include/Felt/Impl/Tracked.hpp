@@ -51,6 +51,7 @@ public:
 	using DataImpl::data;
 	using LookupInterfaceImpl::lookup;
 	using ResetterImpl::reset;
+	using SizeImpl::assert_pos_idx_bounds;
 	using SizeImpl::offset;
 	using SizeImpl::resize;
 	using SizeImpl::size;
@@ -81,6 +82,10 @@ private:
 	using VecDi = Felt::VecDi<ThisTraits::Dims>;
 	using LeafType = typename ThisTraits::LeafType;
 	using LookupType = typename ThisTraits::LookupType;
+
+public:
+	using LookupInterfaceImpl::PosArray;
+	static constexpr ListIdx NumLists = ThisTraits::NumLists;
 
 public:
 	MultiByRef(const VecDi& size_, const VecDi& offset_, const LeafType background_) :

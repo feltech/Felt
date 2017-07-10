@@ -163,10 +163,13 @@ private:
 
 	using LeafType = typename TraitsType::LeafType;
 	using LookupType = typename TraitsType::LookupType;
+
+protected:
 	using PosArray = typename LookupType::PosArray;
 
 protected:
 	LookupType m_grid_lookup;
+
 
 protected:
 	LookupInterface(LookupType&& grid_lookup_)
@@ -202,6 +205,7 @@ private:
 	/// Traits of derived class.
 	using TraitsType = Traits<Derived>;
 	static constexpr UINT Dims = TraitsType::Dims;
+	static constexpr ListIdx NumLists = TraitsType::NumLists;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<Dims>;
 protected:
@@ -214,11 +218,14 @@ protected:
 	 *
 	 * @param list_idx_ tracking list id to cycle over and clear.
 	 */
-	void reset(const UINT list_idx_)
+	void reset()
 	{
-		for (const PosIdx pos_idx : pself->m_grid_lookup.list(list_idx_))
-			pself->set(pos_idx, pself->m_background);
-		pself->m_grid_lookup.reset(list_idx_);
+		for (ListIdx list_idx = 0; list_idx < NumLists; list_idx++)
+		{
+			for (const PosIdx pos_idx : pself->m_grid_lookup.list(list_idx))
+				pself->set(pos_idx, pself->m_background);
+		}
+		pself->m_grid_lookup.reset();
 	}
 };
 
