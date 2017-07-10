@@ -24,6 +24,8 @@ private:
 	using Base = Felt::Impl::Mixin::Grid::Activator<Derived>;
 	/// Traits of derived class.
 	using TraitsType = Traits<Derived>;
+	/// Type of data to store in grid nodes.
+	using LeafType = typename TraitsType::LeafType;
 	/// Number of tracking lists.
 	static constexpr UINT NumLists = TraitsType::NumLists;
 
@@ -38,6 +40,12 @@ protected:
 	{
 		Base::activate();
 		pself->m_grid_lookup.activate();
+	}
+
+	void deactivate(LeafType background_)
+	{
+		this->m_background = background_;
+		deactivate();
 	}
 
 	/**

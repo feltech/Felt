@@ -98,6 +98,16 @@ protected:
 	}
 
 	/**
+	 * Get size of child sub-grids.
+	 *
+	 * @return size of child sub-grid.
+	 */
+	const VecDi& child_size() const
+	{
+		return m_child_size;
+	}
+
+	/**
 	 * Add a spatial partition to children grid's tracking sub-grid.
 	 *
 	 * Uses mutex for thread safety. Activates the child grid.
@@ -322,6 +332,44 @@ protected:
 	{
 		child.lookup().list(list_idx_).clear();
 	}
+};
+
+
+
+template <class Derived>
+class Untrack
+{
+private:
+	/// Traits of derived class.
+	using TraitsType = Traits<Derived>;
+	/// Child grid type.
+	using ChildType = typename TraitsType::ChildType;
+	/// Leaf type.
+	using LeafType = typename TraitsType::LeafType;
+	/// Dimension of grid.
+	static constexpr UINT Dims = TraitsType::Dims;
+	/// D-dimensional integer vector.
+	using VecDi = Felt::VecDi<Dims>;
+
+protected:
+	void remove(
+		const LeafType background_, const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_,
+		const ListIdx list_idx_
+	) {
+		ChildType& child = pself->children().get(pos_idx_child_);
+
+		child.lookup().remove(pos_idx_leaf_, list_idx_);
+
+		if (child.lookup().list(list_idx_).size() == 0)
+			pself->children().lookup().remove(pos_idx_child_, list_idx_);
+
+		if (pself->children().lookup().is_tracked(pos_idx_child_) == false)
+			child.deactivate(background_);
+		else
+			child.set(pos_idx_leaf_, background_);
+
+	}
+
 };
 
 } // Partitioned.

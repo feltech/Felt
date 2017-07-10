@@ -171,7 +171,7 @@ SCENARIO("Lookup::Simple")
 			}
 			AND_WHEN("we remove a position that is not tracked")
 			{
-				grid.remove(pos7);
+				grid.remove(grid.index(pos7));
 
 				THEN("the tracking lists contain the same number of elements")
 				{
@@ -197,7 +197,7 @@ SCENARIO("Lookup::Simple")
 
 			AND_WHEN("we remove a position from tracking")
 			{
-				grid.remove(pos2);
+				grid.remove(grid.index(pos2));
 
 				THEN("the tracking lists contain the expected number of elements")
 				{
@@ -1130,9 +1130,9 @@ SCENARIO("Paritioned::Lookup")
 }
 
 
-SCENARIO("Paritioned::Tracked")
+SCENARIO("Paritioned::Tracked::Simple")
 {
-	using GridType = Impl::Partitioned::Tracked<INT, 3, 3>;
+	using GridType = Impl::Partitioned::Tracked::Simple<INT, 3, 3>;
 
 	GIVEN("a 9x9x9 grid with (-4,-4,-4) offset in 3x3x3 partitions with background value -42")
 	{
@@ -1335,6 +1335,170 @@ SCENARIO("Paritioned::Tracked")
 							CHECK(grid.children().get(pos4_child_idx).lookup().list(0).size() == 0);
 							CHECK(grid.children().get(pos4_child_idx).lookup().list(1).size() == 0);
 							CHECK(grid.children().get(pos4_child_idx).lookup().list(2).size() == 0);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+
+SCENARIO("Paritioned::Tracked::Numeric")
+{
+	using GridType = Impl::Partitioned::Tracked::Numeric<INT, 3, 3>;
+
+	GIVEN("a 9x9x9 grid with (-4,-4,-4) offset in 3x3x3 partitions with background value -42")
+	{
+		GridType grid(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3), -42);
+
+		const Vec3i pos123_child(-1, -1, -1);
+		const Vec3i pos3_child(-1, -1, -1);
+		const Vec3i pos4_child(1, 1, 1);
+		const PosIdx pos123_child_idx = grid.children().index(pos123_child);
+		const PosIdx pos3_child_idx = grid.children().index(pos3_child);
+		const PosIdx pos4_child_idx = grid.children().index(pos4_child);
+
+		const Vec3i pos1(-4, -4, -4);
+		const Vec3i pos2(-3, -4, -4);
+		const Vec3i pos3(-4, -3, -4);
+		const Vec3i pos4(4, 4, 4);
+		const PosIdx pos1_idx = grid.children().get(pos123_child_idx).index(pos1);
+		const PosIdx pos2_idx = grid.children().get(pos123_child_idx).index(pos2);
+		const PosIdx pos3_idx = grid.children().get(pos3_child_idx).index(pos3);
+		const PosIdx pos4_idx = grid.children().get(pos4_child_idx).index(pos4);
+
+		const GridType::ChildType& child = grid.children().get(pos123_child_idx);
+
+		WHEN("two positions in the same partition are tracked")
+		{
+			grid.track(345, pos1, 0);
+			grid.track(789, pos2, 0);
+			grid.track(123, pos3, 1);
+
+			THEN("the grid values are updated")
+			{
+				CHECK(child.get(pos1_idx) == 345);
+				CHECK(child.get(pos2_idx) == 789);
+				CHECK(child.get(pos3_idx) == 123);
+			}
+
+			THEN("partition is tracked by the children grid")
+			{
+				CHECK(grid.children().lookup().list(0).size() == 1);
+				CHECK(grid.children().lookup().list(1).size() == 1);
+				CHECK(grid.children().lookup().list(2).size() == 0);
+				CHECK(grid.children().lookup().get(pos123_child_idx)[0] == 0);
+				CHECK(grid.children().lookup().get(pos123_child_idx)[1] == 0);
+				CHECK(grid.children().lookup().get(pos123_child_idx)[2] == NULL_IDX);
+			}
+
+			THEN("child tracks the leaf positions")
+			{
+				CHECK(child.lookup().list(0).size() == 2);
+				CHECK(child.lookup().list(0)[0] == pos1_idx);
+				CHECK(child.lookup().list(0)[1] == pos2_idx);
+				CHECK(child.lookup().list(1).size() == 1);
+				CHECK(child.lookup().list(1)[0] == pos3_idx);
+				CHECK(child.lookup().get(pos1_idx) == 0);
+				CHECK(child.lookup().get(pos2_idx) == 1);
+				CHECK(child.lookup().get(pos3_idx) == 0);
+			}
+
+			AND_WHEN("a position is removed")
+			{
+				grid.remove(-100, pos123_child_idx, pos1_idx, 0);
+
+				THEN("the partition is still tracked by the children grid")
+				{
+					CHECK(grid.children().lookup().list(0).size() == 1);
+					CHECK(grid.children().lookup().list(1).size() == 1);
+					CHECK(grid.children().lookup().list(2).size() == 0);
+					CHECK(grid.children().lookup().get(pos123_child_idx)[0] == 0);
+					CHECK(grid.children().lookup().get(pos123_child_idx)[1] == 0);
+					CHECK(grid.children().lookup().get(pos123_child_idx)[2] == NULL_IDX);
+
+				}
+
+				THEN("the child now tracks just the other positions")
+				{
+					CHECK(child.lookup().list(0).size() == 1);
+					CHECK(child.lookup().list(1).size() == 1);
+					CHECK(child.lookup().list(2).size() == 0);
+					CHECK(child.lookup().list(0)[0] == pos2_idx);
+					CHECK(child.lookup().list(1)[0] == pos3_idx);
+					CHECK(child.lookup().get(pos1_idx) == NULL_IDX);
+					CHECK(child.lookup().get(pos2_idx) == 0);
+					CHECK(child.lookup().get(pos3_idx) == 0);
+				}
+
+				THEN("the grid value of the removed position is set to the passed background value")
+				{
+					CHECK(child.get(pos1_idx) == -100);
+					CHECK(child.get(pos2_idx) == 789);
+					CHECK(child.get(pos3_idx) == 123);
+				}
+
+				AND_WHEN("another postion is removed from the same tracking list")
+				{
+					grid.remove(-102, pos123_child_idx, pos2_idx, 0);
+
+					THEN("the partition is still tracked by the children grid")
+					{
+						CHECK(grid.children().lookup().list(0).size() == 0);
+						CHECK(grid.children().lookup().list(1).size() == 1);
+						CHECK(grid.children().lookup().list(2).size() == 0);
+						CHECK(grid.children().lookup().get(pos123_child_idx)[0] == NULL_IDX);
+						CHECK(grid.children().lookup().get(pos123_child_idx)[1] == 0);
+						CHECK(grid.children().lookup().get(pos123_child_idx)[2] == NULL_IDX);
+					}
+
+					THEN("the child now tracks just the final position")
+					{
+						CHECK(child.lookup().list(0).size() == 0);
+						CHECK(child.lookup().list(1).size() == 1);
+						CHECK(child.lookup().list(2).size() == 0);
+						CHECK(child.lookup().list(1)[0] == pos3_idx);
+						CHECK(child.lookup().get(pos1_idx) == NULL_IDX);
+						CHECK(child.lookup().get(pos2_idx) == NULL_IDX);
+						CHECK(child.lookup().get(pos3_idx) == 0);
+					}
+
+					AND_WHEN("the final postion is removed from tracking")
+					{
+						grid.remove(-999, pos123_child_idx, pos3_idx, 1);
+
+						THEN("the partition is no longer tracked by the children grid")
+						{
+							CHECK(grid.children().lookup().list(0).size() == 0);
+							CHECK(grid.children().lookup().list(1).size() == 0);
+							CHECK(grid.children().lookup().list(2).size() == 0);
+							CHECK(grid.children().lookup().get(pos123_child_idx)[0] == NULL_IDX);
+							CHECK(grid.children().lookup().get(pos123_child_idx)[1] == NULL_IDX);
+							CHECK(grid.children().lookup().get(pos123_child_idx)[2] == NULL_IDX);
+						}
+
+						THEN("the child no longer tracks any final positions")
+						{
+							CHECK(child.lookup().list(0).size() == 0);
+							CHECK(child.lookup().list(1).size() == 0);
+							CHECK(child.lookup().list(2).size() == 0);
+							CHECK(child.lookup().get(pos1_idx) == NULL_IDX);
+							CHECK(child.lookup().get(pos2_idx) == NULL_IDX);
+							CHECK(child.lookup().get(pos3_idx) == NULL_IDX);
+						}
+
+						THEN("the child has been deactivated")
+						{
+							CHECK(child.is_active() == false);
+							CHECK(child.data().size() == 0);
+						}
+
+						THEN("all positions report the final background value")
+						{
+							CHECK(child.get(pos1_idx) == -999);
+							CHECK(child.get(pos2_idx) == -999);
+							CHECK(child.get(pos3_idx) == -999);
 						}
 					}
 				}

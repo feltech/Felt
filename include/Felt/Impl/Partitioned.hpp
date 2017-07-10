@@ -44,17 +44,19 @@ public:
 };
 
 
+namespace Tracked
+{
 
 template <typename T, UINT D, UINT N>
-class Tracked :
+class Simple :
 	FELT_MIXINS(
-		(Tracked<T, D, N>),
+		(Simple<T, D, N>),
 		(Grid::Size)(Partitioned::Children)(Partitioned::Tracked)
 	)
 private:
 	using VecDi = Felt::VecDi<D>;
 
-	using ThisType = Tracked<T, D, N>;
+	using ThisType = Simple<T, D, N>;
 	using TraitsType = Traits<ThisType>;
 	using ChildType = typename TraitsType::ChildType;
 	using LeafType = typename TraitsType::LeafType;
@@ -66,7 +68,7 @@ public:
 	using ChildrenGrid = typename ChildrenImpl::ChildrenGrid;
 	using PosArray = typename ChildrenImpl::ChildrenGrid::PosArray;
 public:
-	Tracked(
+	Simple(
 		const VecDi& size_, const VecDi& offset_, const VecDi& child_size_,
 		const LeafType background_
 	) :
@@ -80,6 +82,45 @@ public:
 	using TrackedImpl::track;
 };
 
+
+template <typename T, UINT D, UINT N>
+class Numeric :
+	FELT_MIXINS(
+		(Numeric<T, D, N>),
+		(Grid::Size)(Partitioned::Children)(Partitioned::Tracked)(Partitioned::Untrack)
+	)
+private:
+	using VecDi = Felt::VecDi<D>;
+
+	using ThisType = Numeric<T, D, N>;
+	using TraitsType = Traits<ThisType>;
+	using LeafType = typename TraitsType::LeafType;
+
+	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
+	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
+	using TrackedImpl = Impl::Mixin::Partitioned::Tracked<ThisType>;
+	using UntrackImpl = Impl::Mixin::Partitioned::Untrack<ThisType>;
+public:
+	using ChildType = typename TraitsType::ChildType;
+	using ChildrenGrid = typename ChildrenImpl::ChildrenGrid;
+	using PosArray = typename ChildrenImpl::ChildrenGrid::PosArray;
+public:
+	Numeric(
+		const VecDi& size_, const VecDi& offset_, const VecDi& child_size_,
+		const LeafType background_
+	) :
+		ChildrenImpl{size_, offset_, child_size_, ChildType(background_)},
+		SizeImpl{size_, offset_}
+	{}
+
+	using ChildrenImpl::children;
+	using ChildrenImpl::reset;
+	using ChildrenImpl::track_children;
+	using TrackedImpl::track;
+	using UntrackImpl::remove;
+};
+
+} // Tracked.
 } // Partitioned.
 
 
@@ -97,14 +138,27 @@ struct Traits< Partitioned::Lookup<D, N> > : public DefaultLookupTraits<D, N>
 
 
 /**
- * Traits for Partitioned::Tracked.
+ * Traits for Partitioned::Tracked::simple.
  *
  * @tparam T type to store in leaf nodes.
  * @tparam D number of dimensions of the grid.
  * @tparam N number of tracking lists.
  */
 template <typename T, UINT D, UINT N>
-struct Traits< Partitioned::Tracked<T, D, N> > : public DefaultTrackedTraits<T, D, N>
+struct Traits< Partitioned::Tracked::Simple<T, D, N> > : public DefaultTrackedTraits<T, D, N>
+{
+	using ChildType = Impl::Tracked::LazySingleByValue<T, D, N>;
+};
+
+/**
+ * Traits for Partitioned::Tracked::Numeric.
+ *
+ * @tparam T type to store in leaf nodes.
+ * @tparam D number of dimensions of the grid.
+ * @tparam N number of tracking lists.
+ */
+template <typename T, UINT D, UINT N>
+struct Traits< Partitioned::Tracked::Numeric<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
 	using ChildType = Impl::Tracked::LazySingleByValue<T, D, N>;
 };

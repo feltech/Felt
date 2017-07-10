@@ -161,13 +161,13 @@ protected:
 	 *
 	 * @param pos_ position in grid matching index in tracking list to remove.
 	 */
-	void remove(const VecDi& pos_)
+	void remove(const PosIdx pos_idx_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		pself->assert_pos_bounds(pos_, "remove: ");
+		pself->assert_pos_idx_bounds(pos_idx_, "remove: ");
 		#endif
 		// By reference, so we don't have to query again.
-		UINT& idx_at_pos = pself->ref(pos_);
+		UINT& idx_at_pos = pself->ref(pos_idx_);
 
 		if (idx_at_pos == NULL_IDX)
 			return;

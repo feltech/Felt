@@ -41,7 +41,7 @@ protected:
 	 *
 	 * @return true if data allocated, false if not.
 	 */
-	bool is_active()
+	bool is_active() const
 	{
 		return bool(pself->data().size());
 	}
