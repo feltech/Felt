@@ -117,7 +117,8 @@ public:
 	using ChildrenImpl::reset;
 	using ChildrenImpl::track_children;
 	using TrackedImpl::track;
-	using UntrackImpl::remove;
+	using UntrackImpl::untrack;
+	using UntrackImpl::retrack;
 };
 
 } // Tracked.

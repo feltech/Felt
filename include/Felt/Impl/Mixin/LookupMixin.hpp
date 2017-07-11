@@ -159,12 +159,12 @@ protected:
 	/**
 	 * Remove pos from the array and set lookup at pos to NULL index.
 	 *
-	 * @param pos_ position in grid matching index in tracking list to remove.
+	 * @param pos_ position in grid matching index in tracking list to untrack.
 	 */
-	void remove(const PosIdx pos_idx_)
+	void untrack(const PosIdx pos_idx_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		pself->assert_pos_idx_bounds(pos_idx_, "remove: ");
+		pself->assert_pos_idx_bounds(pos_idx_, "untrack: ");
 		#endif
 		// By reference, so we don't have to query again.
 		UINT& idx_at_pos = pself->ref(pos_idx_);
@@ -305,13 +305,13 @@ protected:
 	/**
 	 * Remove pos from tracking list and set lookup at pos to NULL index.
 	 *
-	 * @param pos_ position in grid matching index in tracking list to remove.
-	 * @param list_idx_ tracking list id to remove element from.
+	 * @param pos_ position in grid matching index in tracking list to untrack.
+	 * @param list_idx_ tracking list id to untrack element from.
 	 */
-	void remove(const PosIdx pos_idx_, const UINT list_idx_)
+	void untrack(const PosIdx pos_idx_, const UINT list_idx_)
 	{
 #if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		pself->assert_pos_bounds(pos_idx_, "remove: ");
+		pself->assert_pos_bounds(pos_idx_, "untrack: ");
 #endif
 
 		// Get reference to list index stored at given position in grid.
@@ -482,13 +482,13 @@ protected:
 	/**
 	 * Remove pos from tracking list and set lookup at pos to NULL index.
 	 *
-	 * @param pos_ position in grid matching index in tracking list to remove.
-	 * @param list_idx_ tracking list id to remove element from.
+	 * @param pos_ position in grid matching index in tracking list to untrack.
+	 * @param list_idx_ tracking list id to untrack element from.
 	 */
-	void remove(const PosIdx pos_idx_, const UINT list_idx_)
+	void untrack(const PosIdx pos_idx_, const UINT list_idx_)
 	{
 #if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		pself->assert_pos_bounds(pos_idx_, "remove: ");
+		pself->assert_pos_bounds(pos_idx_, "untrack: ");
 #endif
 
 		// Set index lookup to null value.

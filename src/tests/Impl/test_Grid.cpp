@@ -169,9 +169,9 @@ SCENARIO("Lookup::Simple")
 				CHECK(grid.get(pos3) == 2);
 				CHECK(grid.get(pos4) == 3);
 			}
-			AND_WHEN("we remove a position that is not tracked")
+			AND_WHEN("we untrack a position that is not tracked")
 			{
-				grid.remove(grid.index(pos7));
+				grid.untrack(grid.index(pos7));
 
 				THEN("the tracking lists contain the same number of elements")
 				{
@@ -195,9 +195,9 @@ SCENARIO("Lookup::Simple")
 				}
 			}
 
-			AND_WHEN("we remove a position from tracking")
+			AND_WHEN("we untrack a position from tracking")
 			{
-				grid.remove(grid.index(pos2));
+				grid.untrack(grid.index(pos2));
 
 				THEN("the tracking lists contain the expected number of elements")
 				{
@@ -205,14 +205,14 @@ SCENARIO("Lookup::Simple")
 				}
 
 				THEN(
-				"the removed position is gone from the list to be replaced by the final position"
+				"the untrackd position is gone from the list to be replaced by the final position"
 				) {
 					CHECK(grid.list()[0] == pos1_idx);
 					CHECK(grid.list()[1] == pos4_idx);
 					CHECK(grid.list()[2] == pos3_idx);
 				}
 
-				THEN("the grid location corresponding to the removed point gives NULL index")
+				THEN("the grid location corresponding to the untrackd point gives NULL index")
 				{
 					CHECK(grid.get(pos1) == 0);
 					CHECK(grid.get(pos2) == NULL_IDX);
@@ -342,9 +342,9 @@ SCENARIO("Lookup::Single")
 				CHECK(grid.get(pos3) == 1);
 				CHECK(grid.get(pos4) == 0);
 			}
-			AND_WHEN("we remove a position that is not tracked")
+			AND_WHEN("we untrack a position that is not tracked")
 			{
-				grid.remove(pos7_idx, 1);
+				grid.untrack(pos7_idx, 1);
 
 				THEN("the tracking lists contain the expected number of elements")
 				{
@@ -370,9 +370,9 @@ SCENARIO("Lookup::Single")
 				}
 			}
 
-			AND_WHEN("we remove a position from tracking in list 0")
+			AND_WHEN("we untrack a position from tracking in list 0")
 			{
-				grid.remove(pos2_idx, 1);
+				grid.untrack(pos2_idx, 1);
 
 				THEN("the tracking lists contain the expected number of elements")
 				{
@@ -390,7 +390,7 @@ SCENARIO("Lookup::Single")
 					CHECK(grid.list(2)[0] == pos4_idx);
 				}
 
-				THEN("the grid location corresponding to the removed point gives NULL index")
+				THEN("the grid location corresponding to the untrackd point gives NULL index")
 				{
 					CHECK(grid.get(pos1) == 0);
 					CHECK(grid.get(pos2) == Felt::NULL_IDX);
@@ -575,9 +575,9 @@ SCENARIO("Lookup::Multi")
 				CHECK(grid.get(pos4)(2) == 0);
 			}
 
-			AND_WHEN("we remove a location from tracking list 1")
+			AND_WHEN("we untrack a location from tracking list 1")
 			{
-				grid.remove(pos2_idx, 1);
+				grid.untrack(pos2_idx, 1);
 
 				THEN("the grid and tracking list is updated")
 				{
@@ -620,10 +620,10 @@ SCENARIO("Lookup::Multi")
 						CHECK(grid.get(pos6)(2) == 3);
 					}
 
-					AND_WHEN("we remove 2 points from different tracking lists")
+					AND_WHEN("we untrack 2 points from different tracking lists")
 					{
-						grid.remove(pos4_idx, 2);
-						grid.remove(pos1_idx, 0);
+						grid.untrack(pos4_idx, 2);
+						grid.untrack(pos1_idx, 0);
 
 						THEN("the grid and tracking lists are updated")
 						{
@@ -1405,9 +1405,9 @@ SCENARIO("Paritioned::Tracked::Numeric")
 				CHECK(child.lookup().get(pos3_idx) == 0);
 			}
 
-			AND_WHEN("a position is removed")
+			AND_WHEN("a position is untrackd")
 			{
-				grid.remove(-100, pos123_child_idx, pos1_idx, 0);
+				grid.untrack(-100, pos123_child_idx, pos1_idx, 0);
 
 				THEN("the partition is still tracked by the children grid")
 				{
@@ -1417,7 +1417,6 @@ SCENARIO("Paritioned::Tracked::Numeric")
 					CHECK(grid.children().lookup().get(pos123_child_idx)[0] == 0);
 					CHECK(grid.children().lookup().get(pos123_child_idx)[1] == 0);
 					CHECK(grid.children().lookup().get(pos123_child_idx)[2] == NULL_IDX);
-
 				}
 
 				THEN("the child now tracks just the other positions")
@@ -1432,16 +1431,16 @@ SCENARIO("Paritioned::Tracked::Numeric")
 					CHECK(child.lookup().get(pos3_idx) == 0);
 				}
 
-				THEN("the grid value of the removed position is set to the passed background value")
+				THEN("value at the untracked position is set to the passed background value")
 				{
 					CHECK(child.get(pos1_idx) == -100);
 					CHECK(child.get(pos2_idx) == 789);
 					CHECK(child.get(pos3_idx) == 123);
 				}
 
-				AND_WHEN("another postion is removed from the same tracking list")
+				AND_WHEN("another postion is untrackd from the same tracking list")
 				{
-					grid.remove(-102, pos123_child_idx, pos2_idx, 0);
+					grid.untrack(-102, pos123_child_idx, pos2_idx, 0);
 
 					THEN("the partition is still tracked by the children grid")
 					{
@@ -1464,9 +1463,9 @@ SCENARIO("Paritioned::Tracked::Numeric")
 						CHECK(child.lookup().get(pos3_idx) == 0);
 					}
 
-					AND_WHEN("the final postion is removed from tracking")
+					AND_WHEN("the final postion is untrackd from tracking")
 					{
-						grid.remove(-999, pos123_child_idx, pos3_idx, 1);
+						grid.untrack(-999, pos123_child_idx, pos3_idx, 1);
 
 						THEN("the partition is no longer tracked by the children grid")
 						{
@@ -1478,7 +1477,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 							CHECK(grid.children().lookup().get(pos123_child_idx)[2] == NULL_IDX);
 						}
 
-						THEN("the child no longer tracks any final positions")
+						THEN("the child no longer tracks any positions")
 						{
 							CHECK(child.lookup().list(0).size() == 0);
 							CHECK(child.lookup().list(1).size() == 0);
@@ -1500,6 +1499,54 @@ SCENARIO("Paritioned::Tracked::Numeric")
 							CHECK(child.get(pos2_idx) == -999);
 							CHECK(child.get(pos3_idx) == -999);
 						}
+					}
+				}
+			} // End WHEN "a position is untrackd"
+
+			AND_WHEN("a position is moved from one tracking list to another")
+			{
+				grid.retrack(pos123_child_idx, pos1_idx, 0, 1);
+
+				THEN("the value at the retracked position is unchanged")
+				{
+					CHECK(child.get(pos1_idx) == 345);
+				}
+
+				THEN("the children grid still tracks the list")
+				{
+					CHECK(grid.children().lookup().list(0).size() == 1);
+					CHECK(grid.children().lookup().list(1).size() == 1);
+					CHECK(grid.children().lookup().list(2).size() == 0);
+					CHECK(grid.children().lookup().get(pos123_child_idx)[0] == 0);
+					CHECK(grid.children().lookup().get(pos123_child_idx)[1] == 0);
+					CHECK(grid.children().lookup().get(pos123_child_idx)[2] == NULL_IDX);
+				}
+
+				THEN("the position has been appended to the other list")
+				{
+					CHECK(child.lookup().list(0).size() == 1);
+					CHECK(child.lookup().list(1).size() == 2);
+					CHECK(child.lookup().list(2).size() == 0);
+					CHECK(child.lookup().list(0)[0] == pos2_idx);
+					CHECK(child.lookup().list(1)[0] == pos3_idx);
+					CHECK(child.lookup().list(1)[1] == pos1_idx);
+					CHECK(child.lookup().get(pos1_idx) == 1);
+					CHECK(child.lookup().get(pos2_idx) == 0);
+					CHECK(child.lookup().get(pos3_idx) == 0);
+				}
+
+				AND_WHEN("the final position in a list is moved to another list")
+				{
+					grid.retrack(pos123_child_idx, pos2_idx, 0, 1);
+
+					THEN("the children grid no longer tracks the empty list")
+					{
+						CHECK(grid.children().lookup().list(0).size() == 0);
+						CHECK(grid.children().lookup().list(1).size() == 1);
+						CHECK(grid.children().lookup().list(2).size() == 0);
+						CHECK(grid.children().lookup().get(pos123_child_idx)[0] == NULL_IDX);
+						CHECK(grid.children().lookup().get(pos123_child_idx)[1] == 0);
+						CHECK(grid.children().lookup().get(pos123_child_idx)[2] == NULL_IDX);
 					}
 				}
 			}

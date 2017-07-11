@@ -36,10 +36,10 @@ protected:
 protected:
 	/// Grid of child grids.
 	ChildrenGrid m_children;
-
-private:
 	/// Mutex used to synchrnonise the adding/removing of elements from the tracking list(s).
 	std::mutex	m_mutex;
+
+private:
 	/// Size of a child sub-grid.
 	VecDi m_child_size;
 
@@ -159,9 +159,9 @@ protected:
 			for (const PosIdx pos_idx_child : m_children.lookup().list(list_idx))
 			{
 				ChildType& child = m_children.get(pos_idx_child);
-				m_children.lookup().remove(pos_idx_child, list_idx);
+				m_children.lookup().untrack(pos_idx_child, list_idx);
 
-				// If the master grid is not tracking this child, then remove it from tracking
+				// If the master grid is not tracking this child, then untrack it from tracking
 				// under this list id, potentially destroying it.
 				if (
 					!grid_mask_.children().lookup().is_tracked(pos_idx_child) &&
@@ -352,22 +352,61 @@ private:
 	using VecDi = Felt::VecDi<Dims>;
 
 protected:
-	void remove(
+	void untrack(
 		const LeafType background_, const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_,
 		const ListIdx list_idx_
 	) {
 		ChildType& child = pself->children().get(pos_idx_child_);
 
-		child.lookup().remove(pos_idx_leaf_, list_idx_);
+		// Untrack position in child sub-grid.
+		child.lookup().untrack(pos_idx_leaf_, list_idx_);
+		child.set(pos_idx_leaf_, background_);
 
+		// If tracking list is empty in child, untrack parent.
 		if (child.lookup().list(list_idx_).size() == 0)
-			pself->children().lookup().remove(pos_idx_child_, list_idx_);
+		{
+			// Mutex lock for children grid.
+			std::lock_guard<std::mutex> lock(pself->m_mutex);
+			// Untrack this list in children grid.
+			pself->children().lookup().untrack(pos_idx_child_, list_idx_);
 
-		if (pself->children().lookup().is_tracked(pos_idx_child_) == false)
-			child.deactivate(background_);
-		else
-			child.set(pos_idx_leaf_, background_);
+			// If no position is being tracked at all in any tracking list, then deactivate child.
+			// Otherwise just reset to background value.
+			if (pself->children().lookup().is_tracked(pos_idx_child_) == false)
+				child.deactivate(background_);
+		}
+	}
 
+	void retrack(
+		const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_, const ListIdx list_idx_from_,
+		const ListIdx list_idx_to_
+	) {
+		ChildType& child = pself->children().get(pos_idx_child_);
+
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		if (!pself->children().lookup().is_tracked(pos_idx_child_))
+		{
+			std::stringstream strs;
+			strs << "Attempting to move lists within an inactive child: " <<
+				format(child.index(pos_idx_leaf_)) << " from list " << list_idx_from_ <<
+				" to list " << list_idx_to_ << " in partition " <<
+				format(pself->children().index(pos_idx_child_));
+			std::string str = strs.str();
+			throw std::domain_error(str);
+		}
+		#endif
+
+		// Move position between tracking lists in child grid.
+		child.lookup().untrack(pos_idx_leaf_, list_idx_from_);
+		child.lookup().track(pos_idx_leaf_, list_idx_to_);
+
+		// Mutex lock for children grid modifications.
+		std::lock_guard<std::mutex> lock(pself->m_mutex);
+		// Ensure list being moved to is tracked by parent grid.
+		pself->children().lookup().track(pos_idx_child_, list_idx_to_);
+		// If list is now empty, stop tracking in parent grid.
+		if (child.lookup().list(list_idx_from_).size() == 0)
+			pself->children().lookup().untrack(pos_idx_child_, list_idx_from_);
 	}
 
 };

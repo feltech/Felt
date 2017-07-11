@@ -47,7 +47,7 @@ public:
 	using LookupImpl::track;
 	using LookupImpl::is_tracked;
 	using LookupImpl::list;
-	using LookupImpl::remove;
+	using LookupImpl::untrack;
 	using LookupImpl::reset;
 };
 
@@ -85,7 +85,7 @@ public:
 	using LookupImpl::track;
 	using LookupImpl::is_tracked;
 	using LookupImpl::list;
-	using LookupImpl::remove;
+	using LookupImpl::untrack;
 	using LookupImpl::reset;
 };
 
@@ -129,7 +129,7 @@ public:
 	using LookupImpl::track;
 	using LookupImpl::is_tracked;
 	using LookupImpl::list;
-	using LookupImpl::remove;
+	using LookupImpl::untrack;
 	using LookupImpl::reset;
 	using SizeImpl::assert_pos_idx_bounds;
 	using SizeImpl::offset;
@@ -176,7 +176,7 @@ public:
 	using LookupImpl::track;
 	using LookupImpl::is_tracked;
 	using LookupImpl::list;
-	using LookupImpl::remove;
+	using LookupImpl::untrack;
 	using LookupImpl::reset;
 	using LookupImpl::NULL_IDX_TUPLE;
 };
