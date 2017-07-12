@@ -46,6 +46,7 @@ public:
 	using AccessorImpl::index;
 	using AccessorImpl::set;
 	using ActivatorImpl::activate;
+	using ActivatorImpl::background;
 	using ActivatorImpl::deactivate;
 	using ActivatorImpl::is_active;
 	using DataImpl::data;

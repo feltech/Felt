@@ -230,8 +230,8 @@ protected:
 	{
 		for (ListIdx list_idx = 0; list_idx < NumLists; list_idx++)
 		{
-			for (const PosIdx pos_idx : pself->m_grid_lookup.list(list_idx))
-				pself->set(pos_idx, pself->m_background);
+			for (const PosIdx pos_idx : pself->lookup().list(list_idx))
+				pself->set(pos_idx, pself->background());
 		}
 		pself->m_grid_lookup.reset();
 	}

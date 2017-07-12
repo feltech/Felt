@@ -47,6 +47,16 @@ protected:
 	}
 
 	/**
+	 * Get the background value used to initially fill the grid.
+	 *
+	 * @return backround value.
+	 */
+	LeafType background() const
+	{
+		return this->m_background;
+	}
+
+	/**
 	 * Construct the internal data array, initialising nodes to the background value.
 	 */
 	void activate()
@@ -55,6 +65,27 @@ protected:
 		for (INT i = 1; i < pself->m_size.size(); i++)
 			arr_size *= pself->m_size(i);
 		pself->m_data.resize(arr_size, m_background);
+	}
+
+	/**
+	 * Throw exception if grid is inactive
+	 *
+	 * @param title_ text to prefix exception message with.
+	 */
+	void assert_is_active(std::string title_) const
+	{
+		if (!is_active())
+		{
+			const VecDi& pos_min = pself->offset();
+			const VecDi& pos_max = (
+				pself->size() + pos_min - VecDi::Constant(1)
+			);
+			std::stringstream err;
+			err << title_ << "inactive grid " <<
+				format(pos_min) << "-" << format(pos_max) << std::endl;
+			std::string err_str = err.str();
+			throw std::domain_error(err_str);
+		}
 	}
 };
 
@@ -488,6 +519,7 @@ protected:
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_, "set: ");
+		pself->assert_is_active("set: ");
 		#endif
 		const UINT idx = this->index(pos_);
 		set(idx, val_);
@@ -503,6 +535,7 @@ protected:
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_idx_, "set: ");
+		pself->assert_is_active("set: ");
 		#endif
 		pself->data()[pos_idx_] = val_;
 	}

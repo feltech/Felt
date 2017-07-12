@@ -87,7 +87,8 @@ template <typename T, UINT D, UINT N>
 class Numeric :
 	FELT_MIXINS(
 		(Numeric<T, D, N>),
-		(Grid::Size)(Partitioned::Children)(Partitioned::Tracked)(Partitioned::Untrack)
+		(Grid::Size)(Partitioned::Accessor)(Partitioned::Children)(Partitioned::Snapshot)
+		(Partitioned::Tracked)(Partitioned::Untrack)
 	)
 private:
 	using VecDi = Felt::VecDi<D>;
@@ -96,14 +97,17 @@ private:
 	using TraitsType = Traits<ThisType>;
 	using LeafType = typename TraitsType::LeafType;
 
+	using AccessorImpl = Impl::Mixin::Partitioned::Accessor<ThisType>;
 	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
+	using SnapshotImpl = Impl::Mixin::Partitioned::Snapshot<ThisType>;
 	using TrackedImpl = Impl::Mixin::Partitioned::Tracked<ThisType>;
 	using UntrackImpl = Impl::Mixin::Partitioned::Untrack<ThisType>;
 public:
 	using ChildType = typename TraitsType::ChildType;
 	using ChildrenGrid = typename ChildrenImpl::ChildrenGrid;
 	using PosArray = typename ChildrenImpl::ChildrenGrid::PosArray;
+	using SnapshotPtr = typename SnapshotImpl::SnapshotGridPtr;
 public:
 	Numeric(
 		const VecDi& size_, const VecDi& offset_, const VecDi& child_size_,
@@ -113,9 +117,12 @@ public:
 		SizeImpl{size_, offset_}
 	{}
 
+	using AccessorImpl::get;
+	using AccessorImpl::set;
 	using ChildrenImpl::children;
 	using ChildrenImpl::reset;
 	using ChildrenImpl::track_children;
+	using SnapshotImpl::snapshot;
 	using TrackedImpl::track;
 	using UntrackImpl::untrack;
 	using UntrackImpl::retrack;

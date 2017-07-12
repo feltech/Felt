@@ -1346,17 +1346,16 @@ SCENARIO("Paritioned::Tracked::Simple")
 
 SCENARIO("Paritioned::Tracked::Numeric")
 {
-	using GridType = Impl::Partitioned::Tracked::Numeric<INT, 3, 3>;
+	using GridType = Impl::Partitioned::Tracked::Numeric<FLOAT, 3, 3>;
 
 	GIVEN("a 9x9x9 grid with (-4,-4,-4) offset in 3x3x3 partitions with background value -42")
 	{
 		GridType grid(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3), -42);
 
 		const Vec3i pos123_child(-1, -1, -1);
-		const Vec3i pos3_child(-1, -1, -1);
 		const Vec3i pos4_child(1, 1, 1);
+		const Vec3i pos_inactive_child(1, 0, -1);
 		const PosIdx pos123_child_idx = grid.children().index(pos123_child);
-		const PosIdx pos3_child_idx = grid.children().index(pos3_child);
 		const PosIdx pos4_child_idx = grid.children().index(pos4_child);
 
 		const Vec3i pos1(-4, -4, -4);
@@ -1365,12 +1364,12 @@ SCENARIO("Paritioned::Tracked::Numeric")
 		const Vec3i pos4(4, 4, 4);
 		const PosIdx pos1_idx = grid.children().get(pos123_child_idx).index(pos1);
 		const PosIdx pos2_idx = grid.children().get(pos123_child_idx).index(pos2);
-		const PosIdx pos3_idx = grid.children().get(pos3_child_idx).index(pos3);
+		const PosIdx pos3_idx = grid.children().get(pos123_child_idx).index(pos3);
 		const PosIdx pos4_idx = grid.children().get(pos4_child_idx).index(pos4);
 
-		const GridType::ChildType& child = grid.children().get(pos123_child_idx);
+		GridType::ChildType& child = grid.children().get(pos123_child_idx);
 
-		WHEN("two positions in the same partition are tracked")
+		WHEN("positions in the same partition are tracked")
 		{
 			grid.track(345, pos1, 0);
 			grid.track(789, pos2, 0);
@@ -1438,7 +1437,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 					CHECK(child.get(pos3_idx) == 123);
 				}
 
-				AND_WHEN("another postion is untrackd from the same tracking list")
+				AND_WHEN("another postion is untracked from the same tracking list")
 				{
 					grid.untrack(-102, pos123_child_idx, pos2_idx, 0);
 
@@ -1463,7 +1462,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 						CHECK(child.lookup().get(pos3_idx) == 0);
 					}
 
-					AND_WHEN("the final postion is untrackd from tracking")
+					AND_WHEN("the final postion is untracked from tracking")
 					{
 						grid.untrack(-999, pos123_child_idx, pos3_idx, 1);
 
@@ -1550,7 +1549,64 @@ SCENARIO("Paritioned::Tracked::Numeric")
 					}
 				}
 			}
+		} // End WHEN positions in the same partition are tracked
+
+		WHEN("values are changed in a child sub-grid")
+		{
+			child.activate();
+			child.set(pos1_idx, 3.14f);
+
+			THEN("the value can be retrieved by position vector through the parent grid")
+			{
+				CHECK(grid.get(pos1) == 3.14f);
+			}
+
+			AND_WHEN("a snapshot is taken of the grid")
+			{
+				static_assert(
+					std::is_same<
+						GridType::SnapshotPtr, std::unique_ptr< Impl::Grid::Simple<FLOAT, 3> >
+					>::value,
+					"Snapshot grid must be smart pointer to a simple by-value grid."
+				);
+				GridType::SnapshotPtr psnapshot = grid.snapshot();
+
+				THEN("the snapshot grid is of the correct size")
+				{
+					CHECK(psnapshot->size() == Vec3i(9,9,9));
+					CHECK(psnapshot->offset() == Vec3i(-4,-4,-4));
+				}
+
+				THEN("the snapshot reports the same values as the main grid")
+				{
+					CHECK(psnapshot->get(pos1_idx) == 3.14f);
+					CHECK(psnapshot->get(pos2_idx) == -42);
+					CHECK(psnapshot->get(pos3_idx) == -42);
+					CHECK(psnapshot->get(pos4_idx) == -42);
+				}
+
+				AND_WHEN("a value is changed in the snapshot and the snapshot is flushed")
+				{
+					psnapshot->set(pos4, 567);
+					grid.snapshot(psnapshot);
+
+					THEN("the main grid value is updated")
+					{
+						CHECK(grid.get(pos4) == 567);
+					}
+
+					THEN("only required children are activated")
+					{
+						CHECK(child.is_active() == true);
+						CHECK(grid.children().get(pos4_child_idx).is_active() == true);
+						CHECK(grid.children().get(pos_inactive_child).is_active() == false);
+					}
+
+				}
+			}
 		}
+
+
 	}
 }
 

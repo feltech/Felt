@@ -1,7 +1,9 @@
 #ifndef INCLUDE_FELT_IMPL_MIXIN_PARTITIONEDMIXIN_HPP_
 #define INCLUDE_FELT_IMPL_MIXIN_PARTITIONEDMIXIN_HPP_
+#include <memory>
 #include <mutex>
 
+#include <Felt/Impl/Grid.hpp>
 #include <Felt/Impl/Tracked.hpp>
 
 namespace Felt
@@ -32,16 +34,13 @@ protected:
 	/// Grid of partitions with tracking list(s) of active partitions.
 	using ChildrenGrid = Impl::Tracked::MultiByRef<ChildType, Dims, NumLists>;
 	using PosArray = typename ChildrenGrid::PosArray;
-
-protected:
+private:
 	/// Grid of child grids.
 	ChildrenGrid m_children;
-	/// Mutex used to synchrnonise the adding/removing of elements from the tracking list(s).
-	std::mutex	m_mutex;
-
-private:
 	/// Size of a child sub-grid.
 	VecDi m_child_size;
+	/// Mutex used to synchrnonise the adding/removing of elements from the tracking list(s).
+	std::mutex	m_mutex;
 
 protected:
 	/// Deleted default constructor.
@@ -204,6 +203,11 @@ protected:
 		return m_children.index(pos_child);
 	}
 
+	std::mutex& mutex_children()
+	{
+		return m_mutex;
+	}
+
 private:
 	/**
 	 * Calculate required size of children grid to contain child sub-grids.
@@ -248,8 +252,9 @@ protected:
 	{
 		const PosIdx pos_idx_child_ = pself->pos_idx_child(pos_leaf_);
 		pself->track_child(pos_idx_child_, list_idx_);
-		const PosIdx pos_idx_leaf = pself->children().get(pos_idx_child_).index(pos_leaf_);
-		track(pos_idx_child_, pos_idx_leaf, list_idx_);
+		ChildType& child = pself->children().get(pos_idx_child_);
+		const PosIdx pos_idx_leaf = child.index(pos_leaf_);
+		child.track(pos_idx_leaf, list_idx_);
 	}
 
 	/**
@@ -269,6 +274,12 @@ protected:
 		pself->children().get(pos_idx_child_).track(pos_idx_leaf_, list_idx_);
 	}
 
+	/**
+	 * Clear tracking list in child grid for given list id.
+	 *
+	 * @param child child grid to clear list within.
+	 * @param list_idx_ list id to clear.
+	 */
 	void clear_list(ChildType& child, ListIdx list_idx_)
 	{
 		child.list(list_idx_).clear();
@@ -304,8 +315,9 @@ protected:
 	{
 		const PosIdx pos_idx_child_ = pself->pos_idx_child(pos_leaf_);
 		pself->track_child(pos_idx_child_, list_idx_);
-		const PosIdx pos_idx_leaf = pself->children().get(pos_idx_child_).index(pos_leaf_);
-		track(val_, pos_idx_child_, pos_idx_leaf, list_idx_);
+		ChildType& child = pself->children().get(pos_idx_child_);
+		const PosIdx pos_idx_leaf = child.index(pos_leaf_);
+		child.track(val_, pos_idx_leaf, list_idx_);
 	}
 
 	/**
@@ -328,12 +340,17 @@ protected:
 		child.track(val_, pos_idx_leaf_, list_idx_);
 	}
 
+	/**
+	 * Clear tracking list in child grid for given list id.
+	 *
+	 * @param child child grid to clear list within.
+	 * @param list_idx_ list id to clear.
+	 */
 	void clear_list(ChildType& child, ListIdx list_idx_)
 	{
 		child.lookup().list(list_idx_).clear();
 	}
 };
-
 
 
 template <class Derived>
@@ -366,7 +383,7 @@ protected:
 		if (child.lookup().list(list_idx_).size() == 0)
 		{
 			// Mutex lock for children grid.
-			std::lock_guard<std::mutex> lock(pself->m_mutex);
+			std::lock_guard<std::mutex> lock(pself->mutex_children());
 			// Untrack this list in children grid.
 			pself->children().lookup().untrack(pos_idx_child_, list_idx_);
 
@@ -401,14 +418,124 @@ protected:
 		child.lookup().track(pos_idx_leaf_, list_idx_to_);
 
 		// Mutex lock for children grid modifications.
-		std::lock_guard<std::mutex> lock(pself->m_mutex);
+		std::lock_guard<std::mutex> lock(pself->mutex_children());
 		// Ensure list being moved to is tracked by parent grid.
 		pself->children().lookup().track(pos_idx_child_, list_idx_to_);
 		// If list is now empty, stop tracking in parent grid.
 		if (child.lookup().list(list_idx_from_).size() == 0)
 			pself->children().lookup().untrack(pos_idx_child_, list_idx_from_);
 	}
+};
 
+template <class Derived>
+class Accessor
+{
+private:
+	/// Traits of derived class.
+	using TraitsType = Traits<Derived>;
+	/// Child grid type.
+	using ChildType = typename TraitsType::ChildType;
+	/// Leaf type.
+	using LeafType = typename TraitsType::LeafType;
+	/// Dimension of grid.
+	static constexpr UINT Dims = TraitsType::Dims;
+	/// D-dimensional integer vector.
+	using VecDi = Felt::VecDi<Dims>;
+
+protected:
+	/**
+	 * Get the leaf grid node at pos by navigating to the correct partition.
+	 *
+	 * @param pos_ position in grid to fetch.
+	 * @return value stored at grid point.
+	 */
+	LeafType get (const VecDi& pos_) const
+	{
+		const PosIdx pos_idx_child = pself->pos_idx_child(pos_);
+		const ChildType& child = pself->children().get(pos_idx_child);
+		return child.get(pos_);
+	}
+
+	/**
+	 * Set the leaf grid node at pos by navigating to the correct partition.
+	 *
+	 * @param pos_ position in grid to store at.
+	 * @param value_ value to store at grid point.
+	 */
+	void set (const VecDi& pos_, const LeafType value_) const
+	{
+		const PosIdx pos_idx_child = pself->pos_idx_child(pos_);
+		ChildType& child = pself->children().get(pos_idx_child);
+		child.set(pos_, value_);
+	}
+};
+
+
+template <class Derived>
+class Snapshot
+{
+private:
+	/// Traits of derived class.
+	using TraitsType = Traits<Derived>;
+	/// Child grid type.
+	using ChildType = typename TraitsType::ChildType;
+	/// Leaf type.
+	using LeafType = typename TraitsType::LeafType;
+	/// Dimension of grid.
+	static constexpr UINT Dims = TraitsType::Dims;
+	/// D-dimensional integer vector.
+	using VecDi = Felt::VecDi<Dims>;
+
+	using SnapshotGrid = Impl::Grid::Simple<LeafType, Dims>;
+protected:
+	/**
+	 * Non-partitioned Grid class to store snapshots of partitioned grids.
+	 *
+	 * Useful for serialisation or logging.
+	 */
+	using SnapshotGridPtr = std::unique_ptr<SnapshotGrid>;
+
+public:
+	SnapshotGridPtr snapshot() const
+	{
+		SnapshotGridPtr psnapshot = std::make_unique<SnapshotGrid>(
+			pself->size(), pself->offset(), LeafType()
+		);
+
+		const VecDi pos_max = (
+			psnapshot->size() - VecDi::Constant(1) + psnapshot->offset()
+		);
+		const PosIdx pos_idx_max = psnapshot->index(pos_max);
+
+		for (PosIdx pos_idx = 0; pos_idx <= pos_idx_max; pos_idx++)
+		{
+			const VecDi pos = psnapshot->index(pos_idx);
+			psnapshot->set(pos_idx, pself->get(pos));
+		}
+
+		return psnapshot;
+	}
+
+	void snapshot(const SnapshotGridPtr& psnapshot)
+	{
+		for (PosIdx pos_idx = 0; pos_idx < psnapshot->data().size(); pos_idx++)
+		{
+			const LeafType val = psnapshot->get(pos_idx);
+			const Vec3i& pos = psnapshot->index(pos_idx);
+
+			const PosIdx pos_idx_child = pself->pos_idx_child(pos);
+			ChildType& child = pself->children().get(pos_idx_child);
+			const PosIdx pos_idx_leaf = child.index(pos);
+
+			if (!child.is_active())
+			{
+				if (val == child.background())
+					continue;
+				child.activate();
+			}
+			child.set(pos_idx_leaf, psnapshot->get(pos_idx));
+		}
+	}
 };
 
 } // Partitioned.
