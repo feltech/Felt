@@ -7,6 +7,7 @@
 #include <Felt/Impl/Tracked.hpp>
 
 #include "../catch.hpp"
+#include "Utils.hpp"
 
 using namespace Felt;
 
@@ -109,10 +110,47 @@ SCENARIO("Grid::Simple")
 }
 
 
+SCENARIO("Grid::Snapshot")
+{
+	using GridType = Impl::Grid::Snapshot<FLOAT, 3>;
+	GIVEN("a 7x11x13 grid with (-3,-3,-3) offset and background value of 2")
+	{
+		GridType grid(Vec3i(7, 11, 13), Vec3i(-3, -3, -3), 2);
+
+		static_assert(
+			std::is_same<
+				GridType::VArrayData, Eigen::Map< Eigen::Array<FLOAT, 1, Eigen::Dynamic> >
+			>::value,
+			"Vector form of underlying data should be an Eigen::Map to an Eigen::Array type"
+		);
+
+		WHEN("the underlying data is wrapped in an Eigen vector")
+		{
+			GridType::VArrayData vdata = grid.vdata();
+
+			THEN("the data contains the expected (background) values")
+			{
+				CHECK(vdata(123) == 2);
+			}
+
+			AND_WHEN("values in the wrapped data are modified")
+			{
+				vdata(123) = 7;
+
+				THEN("the underlying data in the grid is also modified")
+				{
+					CHECK(grid.get(123) == 7);
+				}
+			}
+		}
+	}
+}
+
+
 SCENARIO("Lookup::Simple")
 {
 	using GridType = Impl::Lookup::Simple<3>;
-	GIVEN("a grid and some locations")
+	GIVEN("a 10x10x10 grid with (0,-5,-5) offset")
 	{
 		GridType grid(Vec3i(10,10,10), Vec3i(0, -5, -5));
 
@@ -131,7 +169,7 @@ SCENARIO("Lookup::Simple")
 		const UINT pos6_idx = grid.index(pos6);
 		const UINT pos7_idx = grid.index(pos7);
 
-		WHEN("we track 4 locations to be tracked")
+		WHEN("we track 4 locations")
 		{
 			// Add the positions to the array and set index lookup values.
 			grid.track(pos1_idx);
@@ -145,7 +183,7 @@ SCENARIO("Lookup::Simple")
 				CHECK(grid.list().size() == 4);
 			}
 
-			THEN("the grid reports the active state of positions correctly")
+			THEN("the grid reports the tracked state of positions correctly")
 			{
 				CHECK(grid.is_tracked(pos1_idx) == true);
 				CHECK(grid.is_tracked(pos2_idx) == true);
@@ -154,7 +192,7 @@ SCENARIO("Lookup::Simple")
 				CHECK(grid.is_tracked(pos5_idx) == false);
 			}
 
-			THEN("the tracking list elements contain the positions")
+			THEN("the tracking list elements contain the position indices")
 			{
 				CHECK(grid.list()[0] == pos1_idx);
 				CHECK(grid.list()[1] == pos2_idx);
@@ -178,7 +216,7 @@ SCENARIO("Lookup::Simple")
 					CHECK(grid.list().size() == 4);
 				}
 
-				THEN("the tracking list elements contain the same position vectors")
+				THEN("the tracking list elements contain the same position indices")
 				{
 					CHECK(grid.list()[0] == pos1_idx);
 					CHECK(grid.list()[1] == pos2_idx);
@@ -195,7 +233,7 @@ SCENARIO("Lookup::Simple")
 				}
 			}
 
-			AND_WHEN("we untrack a position from tracking")
+			AND_WHEN("we untrack a tracked position")
 			{
 				grid.untrack(grid.index(pos2));
 
@@ -205,14 +243,15 @@ SCENARIO("Lookup::Simple")
 				}
 
 				THEN(
-				"the untrackd position is gone from the list to be replaced by the final position"
+					"the untracked position is gone from the list to be replaced by the final"
+					" position"
 				) {
 					CHECK(grid.list()[0] == pos1_idx);
 					CHECK(grid.list()[1] == pos4_idx);
 					CHECK(grid.list()[2] == pos3_idx);
 				}
 
-				THEN("the grid location corresponding to the untrackd point gives NULL index")
+				THEN("the grid location corresponding to the untracked point gives NULL index")
 				{
 					CHECK(grid.get(pos1) == 0);
 					CHECK(grid.get(pos2) == NULL_IDX);
@@ -1565,9 +1604,9 @@ SCENARIO("Paritioned::Tracked::Numeric")
 			{
 				static_assert(
 					std::is_same<
-						GridType::SnapshotPtr, std::unique_ptr< Impl::Grid::Simple<FLOAT, 3> >
+						GridType::SnapshotPtr, std::unique_ptr< Impl::Grid::Snapshot<FLOAT, 3> >
 					>::value,
-					"Snapshot grid must be smart pointer to a simple by-value grid."
+					"Snapshot grid must be smart pointer to a simple Grid::Snapshot."
 				);
 				GridType::SnapshotPtr psnapshot = grid.snapshot();
 
@@ -1605,7 +1644,249 @@ SCENARIO("Paritioned::Tracked::Numeric")
 				}
 			}
 		}
+	} // End GIVEN a 9x9x9 grid.
 
+
+	GIVEN("A 1D grid type and input vector of values")
+	{
+		using GridType = Impl::Partitioned::Tracked::Numeric<FLOAT, 1, 3>;
+		std::vector<FLOAT> input = { 1.0f, 0 };
+
+		WHEN("we interpolate a distance of 0.3 between the vector values")
+		{
+			using Vec1f = Eigen::Matrix<FLOAT, 1, 1>;
+			const Vec1f pos(0.3);
+
+			GridType::interp(input, pos);
+
+			THEN("the input vector now contains the single interpolated value")
+			{
+				CHECK(input.size() == 1);
+				CHECK(input[0] == 0.7f);
+			}
+		}
+	}
+
+	GIVEN("A 2D grid type and input vector of values")
+	{
+		using GridType = Impl::Partitioned::Tracked::Numeric<FLOAT, 2, 3>;
+
+		std::vector<FLOAT> input = std::vector<FLOAT>(4);
+		input[0 /*00*/] = 2.0f;
+		input[1 /*01*/] = 0;
+		input[2 /*10*/] = 0.0f;
+		input[3 /*11*/] = 1.0;
+
+		WHEN("we bilinearly interpolate a distance of (0.8, 0.5) between the vector values")
+		{
+			const Vec2f pos(0.8f, 0.5f);
+
+			GridType::interp(input, pos);
+
+			THEN("the input vector now contains the correct interpolated values")
+			{
+				CHECK(input.size() == 2);
+				CHECK(input[0] == Approx(0.4f));
+				CHECK(input[1] == Approx(0.8f));
+
+				AND_WHEN("we interpolate along this line")
+				{
+					GridType::interp(input, pos);
+
+					THEN("the input vector now contains the final interpolated value")
+					{
+						CHECK(input.size() == 1);
+						CHECK(input[0] == Approx(0.6f));
+					}
+				}
+			}
+		}
+	}
+
+	GIVEN("A 3D grid type and input vector of values")
+	{
+		/**
+				  011----111
+				 /|		  /|
+				010----011 |
+				| 100----|101
+				|/		 |/
+				000----001
+		*/
+		using GridType = Impl::Partitioned::Tracked::Numeric<FLOAT, 3, 3>;
+
+		std::vector<FLOAT> input = std::vector<FLOAT>(8);
+		input[0 /**000*/] = 0.0f;
+		input[1 /**001*/] = 0.8f;
+		input[2 /**010*/] = 1.0f;
+		input[3 /**011*/] = 1.0f;
+		input[4 /**100*/] = 0.0f;
+		input[5 /**101*/] = 0.0f;
+		input[6 /**110*/] = 1.0f;
+		input[7 /**111*/] = 1.0f;
+
+		WHEN("we trilinearly interpolate a distance of (0.5, 0.75, 0.5) between the vector values")
+		{
+			Vec3f pos(0.5f, 0.75f, 0.5f);
+
+			GridType::interp(input, pos);
+
+			THEN("the input vector now contains the correct interpolated values")
+			{
+				CHECK(input.size() == 4);
+				CHECK(input[0 /**00x*/] == 0.4f);
+				CHECK(input[1 /**01x*/] == 1.0f);
+				CHECK(input[2 /**10x*/] == 0.0f);
+				CHECK(input[3 /**11x*/] == 1.0f);
+
+				AND_WHEN(
+					"we bilinearly interpolate a distance of (0.8, 0.5) between these vector values"
+				) {
+					GridType::interp(input, pos);
+
+					THEN("the input vector now contains the correct interpolated values")
+					{
+						CHECK(input.size() == 2);
+						CHECK(input[0 /**0yx*/] == Approx(0.85f));
+						CHECK(input[1 /**1yx*/] == Approx(0.75f));
+
+						AND_WHEN("we interpolate along this line")
+						{
+							GridType::interp(input, pos);
+
+							THEN("the input vector now contains the final interpolated value")
+							{
+								CHECK(input.size() == 1);
+								CHECK(input[0 /**zyx*/] == Approx(0.8f));
+							}
+						}
+					}
+				}
+			}
+		}
+	} // End GIVEN A 3D grid type and input vector of values.
+
+
+	GIVEN("a 3x3 grid with (-1,-1) offset and background value of 0")
+	{
+		using GridType = Impl::Partitioned::Tracked::Numeric<FLOAT, 2, 3>;
+		GridType grid(Vec2i(3, 3), Vec2i(-1,-1), Vec2i(3,3), 0);
+		// Only a single partition in this case.
+		grid.children().get(0).activate();
+
+		THEN("the spatial resolution has a default of 1")
+		{
+			CHECK(grid.dx() == 1.0f);
+
+			AND_WHEN("we change the spatial resolution to 2")
+			{
+				grid.dx(2.0f);
+
+				THEN("the resolution is reported as 2")
+				{
+					CHECK(grid.dx() == 2.0f);
+				}
+			}
+		}
+
+
+		WHEN("we modify some values near the centre")
+		{
+			grid.set(Vec2i(-1,-1), 1.0f);
+			grid.set(Vec2i(-1,0), 1.0f);
+			grid.set(Vec2i(0,1), 2.0f);
+			grid.set(Vec2i(1,1), 2.0f);
+
+			AND_WHEN("we interpolate at some real locations using explicit function calls")
+			{
+				const FLOAT val1 = grid.interp(Vec2f(0.0f, 0.0f));
+				const FLOAT val2 = grid.interp(Vec2f(-0.5f, -0.5f));
+				const FLOAT val3 = grid.interp(Vec2f(0.5f, 0.5f));
+
+				THEN("the interpolated values are correct")
+				{
+					CHECK(val1 == Approx(0.0f));
+					CHECK(val2 == Approx(0.5f));
+					CHECK(val3 == Approx(1.0f));
+				}
+			}
+
+			AND_WHEN("we implicitly interpolate at a real location using value getter")
+			{
+				const FLOAT val = grid.get(Vec2f(0.5f, 0.5f));
+
+				THEN("the interpolated value is correct")
+				{
+					CHECK(val == Approx(1.0f));
+				}
+			}
+		}
+
+
+		WHEN("we calculate the forward difference gradient at the centre")
+		{
+			const Vec2f grad = grid.gradF(Vec2i(0,0));
+
+			THEN("the gradient is zero")
+			{
+				CHECK(grad == Vec2f(0, 0));
+			}
+		}
+
+		WHEN("we calculate the backward difference gradient at the centre")
+		{
+			const Vec2f grad = grid.gradB(Vec2i(0,0));
+
+			THEN("the gradient is zero")
+			{
+				CHECK(grad == Vec2f(0, 0));
+			}
+		}
+
+		WHEN("we calculate the central difference gradient at the centre")
+		{
+			const Vec2f grad = grid.gradC(Vec2i(0,0));
+
+			THEN("the gradient is zero")
+			{
+				CHECK(grad == Vec2f(0, 0));
+			}
+		}
+
+		WHEN("we set the central grid location to 1")
+		{
+			grid.set(Vec2i(0,0), 1.0f);
+
+			AND_WHEN("we calculate the forward difference gradient at the centre")
+			{
+				const Vec2f grad = grid.gradF(Vec2i(0,0));
+
+				THEN("the gradient is negative")
+				{
+					CHECK(grad == Vec2f(-1, -1));
+				}
+			}
+
+			AND_WHEN("we calculate the backward difference gradient at the centre")
+			{
+				const Vec2f grad = grid.gradB(Vec2i(0,0));
+
+				THEN("the gradient is positive")
+				{
+					CHECK(grad == Vec2f(1, 1));
+				}
+			}
+
+			AND_WHEN("we calculate the central difference gradient at the centre")
+			{
+				const Vec2f grad = grid.gradC(Vec2i(0,0));
+
+				THEN("the gradient is zero")
+				{
+					CHECK(grad == Vec2f(0, 0));
+				}
+			}
+		}
 
 	}
 }

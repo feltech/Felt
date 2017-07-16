@@ -5,6 +5,7 @@
 #include <Felt/Impl/Lookup.hpp>
 #include <Felt/Impl/Tracked.hpp>
 #include <Felt/Impl/Mixin/PartitionedMixin.hpp>
+#include <Felt/Impl/Mixin/NumericMixin.hpp>
 
 namespace Felt
 {
@@ -87,8 +88,8 @@ template <typename T, UINT D, UINT N>
 class Numeric :
 	FELT_MIXINS(
 		(Numeric<T, D, N>),
-		(Grid::Size)(Partitioned::Accessor)(Partitioned::Children)(Partitioned::Snapshot)
-		(Partitioned::Tracked)(Partitioned::Untrack)
+		(Grid::Size)(Numeric::Spatial)(Partitioned::Accessor)(Partitioned::Children)
+		(Partitioned::Snapshot)(Partitioned::Tracked)(Partitioned::Untrack)
 	)
 private:
 	using VecDi = Felt::VecDi<D>;
@@ -100,6 +101,7 @@ private:
 	using AccessorImpl = Impl::Mixin::Partitioned::Accessor<ThisType>;
 	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
+	using SpatialImpl = Impl::Mixin::Numeric::Spatial<ThisType>;
 	using SnapshotImpl = Impl::Mixin::Partitioned::Snapshot<ThisType>;
 	using TrackedImpl = Impl::Mixin::Partitioned::Tracked<ThisType>;
 	using UntrackImpl = Impl::Mixin::Partitioned::Untrack<ThisType>;
@@ -122,6 +124,12 @@ public:
 	using ChildrenImpl::children;
 	using ChildrenImpl::reset;
 	using ChildrenImpl::track_children;
+	using SpatialImpl::dx;
+	using SpatialImpl::get;
+	using SpatialImpl::gradB;
+	using SpatialImpl::gradC;
+	using SpatialImpl::gradF;
+	using SpatialImpl::interp;
 	using SnapshotImpl::snapshot;
 	using TrackedImpl::track;
 	using UntrackImpl::untrack;

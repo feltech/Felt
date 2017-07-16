@@ -98,13 +98,13 @@ template <class Derived> struct Traits {};
 #define _FELT_UNWRAP(...) __VA_ARGS__
 
 /**
- * Helper to track private inheritance of mixin to derived, comma-separated.
+ * Helper to track private inheritance of mixin to `derived`, comma-separated.
  */
 #define _FELT_MIXIN_INHERIT(r, derived, idx, mixin)\
 	BOOST_PP_COMMA_IF(idx) private Impl::Mixin::mixin<_FELT_UNWRAP derived>
 
 /**
- * Helper to make derived a `friend` of mixin.
+ * Helper to make `derived` a `friend` of `mixin`.
  */
 #define _FELT_MIXIN_GRANT(r, derived, mixin)\
 	friend Impl::Mixin::mixin<_FELT_UNWRAP derived>;
@@ -141,7 +141,9 @@ template <class Derived> struct Traits {};
 	BOOST_PP_SEQ_FOR_EACH(_FELT_MIXIN_GRANT, derived, __VA_ARGS__)\
 	_FELT_ENABLE_UPCAST(derived)
 
+
 #if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+#define FELT_DEBUG_ENABLED
 #define FELT_DEBUG(...) __VA_ARGS__;
 #else
 #define FELT_DEBUG(...)

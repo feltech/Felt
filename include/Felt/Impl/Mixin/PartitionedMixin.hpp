@@ -462,7 +462,7 @@ protected:
 	 * @param pos_ position in grid to store at.
 	 * @param value_ value to store at grid point.
 	 */
-	void set (const VecDi& pos_, const LeafType value_) const
+	void set (const VecDi& pos_, const LeafType value_)
 	{
 		const PosIdx pos_idx_child = pself->pos_idx_child(pos_);
 		ChildType& child = pself->children().get(pos_idx_child);
@@ -486,7 +486,7 @@ private:
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<Dims>;
 
-	using SnapshotGrid = Impl::Grid::Simple<LeafType, Dims>;
+	using SnapshotGrid = Impl::Grid::Snapshot<LeafType, Dims>;
 protected:
 	/**
 	 * Non-partitioned Grid class to store snapshots of partitioned grids.
