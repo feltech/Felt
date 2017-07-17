@@ -124,12 +124,17 @@ public:
 	using ChildrenImpl::children;
 	using ChildrenImpl::reset;
 	using ChildrenImpl::track_children;
+	using SpatialImpl::curv;
+	using SpatialImpl::divergence;
 	using SpatialImpl::dx;
 	using SpatialImpl::get;
+	using SpatialImpl::grad;
 	using SpatialImpl::gradB;
 	using SpatialImpl::gradC;
+	using SpatialImpl::gradE;
 	using SpatialImpl::gradF;
 	using SpatialImpl::interp;
+	using SnapshotImpl::operator=;
 	using SnapshotImpl::snapshot;
 	using TrackedImpl::track;
 	using UntrackImpl::untrack;

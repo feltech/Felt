@@ -55,6 +55,215 @@ protected:
 	}
 
 	/**
+	 * Mean curvature,
+	 * \f$ \frac{1}{2} \nabla \bullet \frac{\nabla\phi}{\left|\nabla\phi\right|} \f$ .
+	 *
+	 * Based on difference of normals method.
+	 *
+	 * @param pos_ position in grid to query.
+	 * @return curvature value
+	 */
+	template <typename PosType>
+	LeafType curv (const Felt::VecDT<PosType, Dims>& pos_) const
+	{
+		using VecDp = Felt::VecDT<PosType, Dims>;
+
+		const LeafType val_centre = pself->get(pos_);
+		const VecDi& size = pself->size();
+		VecDp dir(pos_);
+
+		// Forward directed principal normal.
+		VecDT n_forward;
+
+		for (INT axis = 0; axis < size.size(); axis++)
+		{
+			dir(axis) += 1;
+
+			const LeafType val_axis = pself->get(dir) - val_centre;
+			LeafType val_neighs_sq = 0;
+
+			// Loop other dimensions to get central difference across them.
+			for (INT axis_neigh = 0; axis_neigh < size.size(); axis_neigh++)
+			{
+				// Only getting differences across other axes.
+				if (axis_neigh != axis)
+				{
+					// Central difference across pself forward point.
+					VecDp dir_neigh(dir);
+					dir_neigh(axis_neigh) -= 1;
+					const LeafType val_low = pself->get(dir_neigh);
+					dir_neigh(axis_neigh) += 2;
+					const LeafType val_high = pself->get(dir_neigh);
+
+					const LeafType val_neigh = (val_high - val_low) / 2;
+					val_neighs_sq += val_neigh*val_neigh;
+				}
+			}
+
+			n_forward(axis) =		val_axis /
+						sqrt(val_axis*val_axis + val_neighs_sq);
+
+			dir(axis) -= 1;
+		}
+
+
+		// Backward directed principal normal.
+		VecDT n_backward;
+
+		for (INT axis = 0; axis < size.size(); axis++)
+		{
+			dir(axis) -= 1;
+
+			const LeafType val_axis = val_centre - pself->get(dir);
+			LeafType val_neighs_sq = 0;
+
+			// Loop other dimensions to get central difference across them.
+			for (
+				INT axis_neigh = 0; axis_neigh < size.size(); axis_neigh++
+			) {
+				// Only getting differences across other axes.
+				if (axis_neigh != axis)
+				{
+					// Central difference across pself backward point.
+					VecDp dir_neigh(dir);
+					dir_neigh(axis_neigh) -= 1;
+					const LeafType val_low = pself->get(dir_neigh);
+					dir_neigh(axis_neigh) += 2;
+					const LeafType val_high = pself->get(dir_neigh);
+
+					const LeafType val_neigh = (val_high - val_low) / 2;
+					val_neighs_sq += val_neigh*val_neigh;
+				}
+			}
+
+			n_backward(axis) =		val_axis /
+						sqrt(val_axis*val_axis + val_neighs_sq);
+
+			dir(axis) += 1;
+		}
+
+		const VecDT dn_by_dx = (n_forward - n_backward);
+
+		LeafType curvature = dn_by_dx.sum() / 2;
+
+		return curvature;
+	}
+
+	/**
+	 * Calculate 2nd order divergence \f$ \nabla \bullet \nabla \phi \f$.
+	 *
+	 * @param pos_ position in grid to query.
+	 * @return divergence value
+	 */
+	template <typename PosType>
+	LeafType divergence (const Felt::VecDT<PosType, Dims>& pos_) const
+	{
+		const VecDT vec_grad_f = gradF(pos_);
+		const VecDT vec_grad_b = gradB(pos_);
+		const VecDT vec_grad_diff = vec_grad_f - vec_grad_b;
+
+		// Component-wise sum.
+		const LeafType val = vec_grad_diff.sum();
+
+		return val / (pself->dx()*pself->dx());
+	}
+
+	/**
+	 * Safe gradient, \f$ \nabla \phi \f$ .
+	 *
+	 * Will calculate central, forward or backward difference along each
+	 * axis, depending what grid values are available.
+	 * That is, for grid points at the edge of the grid it will
+	 * return forward/backward differences.
+	 *
+	 * @param pos_ position in grid to query.
+	 * @return vector with 2nd order if possible, 1st order if not, gradient.
+	 */
+	template <typename PosType>
+	VecDT grad (const Felt::VecDT<PosType, Dims>& pos_) const
+	{
+		using VecDR = Felt::VecDT<PosType, Dims>;
+		// Reference to GridBase dimensions.
+		const VecDi& size = pself->size();
+		// Vector to store gradient calculation.
+		VecDT vec_grad;
+		// Position for look-around.
+		VecDR pos_test(pos_);
+
+		// Central value (not reference, since could be interpolated).
+		LeafType centre = pself->get(pos_);
+
+		for (INT axis = 0; axis < size.size(); axis++)
+		{
+			LeafType back = centre;
+			LeafType forward = centre;
+			UINT order = 0;
+			// Check if backward value is within GridBase.
+			pos_test(axis) -= 1;
+			if (pself->inside(pos_test))
+			{
+				back = pself->get(pos_test);
+				order++;
+			}
+			// Check if forward value is within GridBase.
+			pos_test(axis) += 2;
+			if (pself->inside(pos_test))
+			{
+				forward = pself->get(pos_test);
+				order++;
+			}
+			pos_test(axis) -= 1;
+			// Calculate central/forward/backward difference along pself
+			// axis.
+			if (order != 0)
+				vec_grad(axis) = (forward - back) / order;
+			else
+				vec_grad(axis) = 0;
+		}
+
+		return vec_grad / m_dx;
+	}
+
+	/**
+	 * Entropy satisfying gradient, \f$ \nabla \phi \f$ .
+	 *
+	 * Use first order upwind scheme to select from forward or backward difference gradient along
+	 * each cardinal direction.
+	 *
+	 * @param pos_ position in grid to query.
+	 * @return vector of entropy satisfying gradient.
+	 */
+	template <typename PosType>
+	VecDT gradE (const Felt::VecDT<PosType, Dims>& pos_) const
+	{
+		using VecDp = Felt::VecDT<PosType, Dims>;
+		// Value at pself point.
+		const LeafType centre = pself->get(pos_);
+		// Reference to grid dimensions.
+		const VecDi& size = pself->size();
+		// Vector to store gradient calculation.
+		VecDT vec_grad;
+		// Position for look-around.
+		VecDp pos_test(pos_);
+
+		for (INT axis = 0; axis < size.size(); axis++)
+		{
+			pos_test(axis) -= 1;
+			LeafType back = pself->get(pos_test);
+			pos_test(axis) += 2;
+			LeafType forward = pself->get(pos_test);
+			pos_test(axis) -= 1;
+
+			back = std::max(centre - back, 0.0f);
+			forward = std::min(forward - centre, 0.0f);
+
+			vec_grad(axis) = forward + back;
+		}
+
+		return vec_grad / pself->dx();
+	}
+
+	/**
 	 * Forward difference gradient.
 	 *
 	 * @param pos_ position in grid to query.

@@ -96,10 +96,10 @@ class Data
 private:
 	/// Type of data to store in grid nodes.
 	using LeafType = typename Traits<Derived>::LeafType;
+protected:
 	/// Dynamic 1D vector (a resizeable array of data) for storage of grid data.
 	using ArrayData = std::vector<LeafType>;
 
-protected:
 	ArrayData	m_data;
 
 protected:

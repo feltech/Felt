@@ -485,7 +485,7 @@ private:
 	static constexpr UINT Dims = TraitsType::Dims;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<Dims>;
-
+	/// Simple non-partitioned grid type for snapshotting the partitioned data, e.g. for tests.
 	using SnapshotGrid = Impl::Grid::Snapshot<LeafType, Dims>;
 protected:
 	/**
@@ -521,7 +521,7 @@ public:
 		for (PosIdx pos_idx = 0; pos_idx < psnapshot->data().size(); pos_idx++)
 		{
 			const LeafType val = psnapshot->get(pos_idx);
-			const Vec3i& pos = psnapshot->index(pos_idx);
+			const VecDi& pos = psnapshot->index(pos_idx);
 
 			const PosIdx pos_idx_child = pself->pos_idx_child(pos);
 			ChildType& child = pself->children().get(pos_idx_child);
@@ -535,6 +535,13 @@ public:
 			}
 			child.set(pos_idx_leaf, psnapshot->get(pos_idx));
 		}
+	}
+
+	void operator=(std::initializer_list<LeafType> vals_)
+	{
+		SnapshotGridPtr snap = snapshot();
+		snap->data() = vals_;
+		snapshot(snap);
 	}
 };
 

@@ -1888,6 +1888,290 @@ SCENARIO("Paritioned::Tracked::Numeric")
 			}
 		}
 
+
+		WHEN("grid data is set using an initialiser list")
+		{
+			grid = {
+			// <  -	y  + >
+				1,	2,	3,	// -
+				4,	5,	6,	// x
+				7,	8,	9	// +
+			};
+
+			THEN("the underlying data has been updated")
+			{
+				CHECK(grid.get(Vec2i(-1,-1)) == 1);
+				CHECK(grid.get(Vec2i(-1, 0)) == 2);
+				CHECK(grid.get(Vec2i(-1, 1)) == 3);
+				CHECK(grid.get(Vec2i( 0,-1)) == 4);
+				CHECK(grid.get(Vec2i( 0, 0)) == 5);
+				CHECK(grid.get(Vec2i( 0, 1)) == 6);
+				CHECK(grid.get(Vec2i( 1,-1)) == 7);
+				CHECK(grid.get(Vec2i( 1, 0)) == 8);
+				CHECK(grid.get(Vec2i( 1, 1)) == 9);
+			}
+		}
+
+		WHEN("we have a (positively directed) entropic flow")
+		{
+			grid = {
+			//<	  -	y  + >
+				0,	0,	0,	// -
+				0,	1,	3,	// x
+				0,	3,	0	// +
+			};
+
+			THEN("the entropy satisfying gradient gives an upwind value")
+			{
+				CHECK(grid.gradE(Vec2i(0, 0)) == Vec2f(1, 1));
+			}
+		}
+
+		WHEN("we have a (negatively directed) entropic flow")
+		{
+			grid = {
+			//<	  -	y  + >
+				0,	3,	0,	// -
+				3,	1,	0,	// x
+				0,	0,	0	// +
+			};
+
+			THEN("the entropy satisfying gradient gives an upwind value")
+			{
+				CHECK(grid.gradE(Vec2i(0, 0)) == Vec2f(-1, -1));
+			}
+		}
+
+		WHEN("we have a positively divergent flow")
+		{
+			grid = {
+			//<	  -	y  + >
+				0,	2,	0,	// -
+				2,	1,	3,	// x
+				0,	3,	0	// +
+			};
+			THEN("the entropy satisfying gradient is zero")
+			{
+				CHECK(grid.gradE(Vec2i(0, 0)) == Vec2f(0, 0));
+			}
+		}
+
+		WHEN("we have a negatively divergent flow")
+		{
+			grid = {
+			//<	  -	y  + >
+				0,	6,	0,	// -
+				6,	9,	1,	// x
+				0,	1,	0	// +
+			};
+			THEN("the entropy satisfying gradient gives an upwind value")
+			{
+				CHECK(grid.gradE(Vec2i(0, 0)) == Vec2f(-5, -5));
+			}
+		}
+
+		WHEN("we set up a positive divergence at the centre")
+		{
+			grid = {
+				1,	1,	1,
+				1,	0,	1,
+				1,	1,	1
+			};
+
+			THEN("the curvature is at its maximum")
+			{
+				CHECK(grid.curv(Vec2i(0,0)) == 2);
+			}
+		}
+
+		WHEN("we set up a 'corner' at the centre")
+		{
+			grid = {
+				 1,	 1,	 1,
+				 0,	 0,  1,
+				-1,	 0,	 1
+			};
+
+			THEN("the curvature is 1")
+			{
+				CHECK(grid.curv(Vec2i(0,0)) == 1);
+			}
+		}
+
+	} // End GIVEN("a 3x3 grid with (-1,-1) offset and background value of 0")
+
+
+	GIVEN("a 3x3x3 grid with (-1,-1,-1) offset and background value of 0")
+	{
+		using GridType = Impl::Partitioned::Tracked::Numeric<FLOAT, 3, 3>;
+
+		GridType grid(Vec3i(3, 3, 3), Vec3i(-1,-1,-1), Vec3i(3,3,3), 0);
+		grid.children().get(0).activate();
+
+		WHEN("we set up a gradient about the centre")
+		{
+			grid = {
+				0,	0,	0,
+				0,	2,	0,
+				0,	0,	0,
+
+				0,  0,	0,
+				0,	1,	2,
+				0,	0,	0,
+
+				0,	0,	0,
+				0,	0,	0,
+				0,	0,	0
+			};
+
+			THEN("the forward difference at the centre is as expected")
+			{
+				const Vec3f grad = grid.gradF(Vec3i(0,0,0));
+				CHECK(grad == Vec3f(-1, -1, 1));
+			}
+
+			THEN("the backward difference at the centre is as expected")
+			{
+				const Vec3f grad = grid.gradB(Vec3i(0,0,0));
+
+				CHECK(grad == Vec3f(-1, 1, 1));
+			}
+
+			THEN("the central difference at the centre is as expected")
+			{
+				const Vec3f grad = grid.gradC(Vec3i(0,0,0));
+
+				CHECK(grad == Vec3f(-1, 0, 1));
+			}
+
+			THEN("the safe gradient at the centre uses the central difference")
+			{
+				const Vec3f grad = grid.grad(Vec3i(0,0,0));
+
+				CHECK(grad == Vec3f(-1, 0, 1));
+			}
+
+			THEN("the safe gradient at the bottom face uses the forward difference")
+			{
+				const Vec3f grad = grid.grad(Vec3i(0,-1,0));
+
+				CHECK(grad == Vec3f(0, 1, 0));
+			}
+
+			THEN("the safe gradient at the right-forward edge uses the backward difference")
+			{
+				const Vec3f grad = grid.grad(Vec3i(1,0,1));
+
+				CHECK(grad == Vec3f(-2, 0, 0));
+			}
+
+			AND_WHEN("we decrease the spatial resolution")
+			{
+				grid.dx(2);
+
+				THEN("the forward difference at the centre is as expected")
+				{
+					const Vec3f grad = grid.gradF(Vec3i(0,0,0));
+					CHECK(grad == Vec3f(-0.5, -0.5, 0.5));
+				}
+
+				THEN("the backward difference at the centre is as expected")
+				{
+					const Vec3f grad = grid.gradB(Vec3i(0,0,0));
+
+					CHECK(grad == Vec3f(-0.5, 0.5, 0.5));
+				}
+
+				THEN("the central difference at the centre is as expected")
+				{
+					const Vec3f grad = grid.gradC(Vec3i(0,0,0));
+
+					CHECK(grad == Vec3f(-0.5, 0, 0.5));
+				}
+			}
+		}
+
+		WHEN("we set up a positive divergence at the centre")
+		{
+			grid = {
+				1,	1,	1,
+				1,	1,	1,
+				1,	1,	1,
+
+				1,	1,	1,
+				1,	0,	1,
+				1,	1,	1,
+
+				1,	1,	1,
+				1,	1,	1,
+				1,	1,	1
+			};
+
+			THEN("the divergence is calculated correctly")
+			{
+				CHECK(grid.divergence(Vec3i(0,0,0)) == Approx(6));
+			}
+
+			AND_WHEN("we decrease the spatial resolution")
+			{
+				grid.dx(2);
+
+				THEN("the divergence is calculated correctly")
+				{
+					CHECK(grid.divergence(Vec3i(0,0,0)) == Approx(0.75));
+				}
+			}
+
+			THEN("the mean curvature is at the maximum")
+			{
+				CHECK(grid.curv(Vec3i(0,0,0)) == 3);
+			}
+		}
+
+		WHEN("we set up a 'corner' along two dimensions")
+		{
+			grid = {
+				 1,	 1,	 1,
+				 0,	 0,	 1,
+				-1,	 0,	 1,
+
+				 1,	 1,	 1,
+				 0,	 0,	 1,
+				-1,	 0,	 1,
+
+				 1,	 1,	 1,
+				 0,	 0,	 1,
+				-1,	 0,	 1
+			};
+
+			THEN("the mean curvature is 1")
+			{
+				CHECK(grid.curv(Vec3i(0,0,0)) == 1);
+			}
+		}
+
+		WHEN("we set up a sharp 'corner' along all three dimensions")
+		{
+			grid = {
+				 1,	 1,	 1,
+				 1,	 1,	 1,
+				 1,	 1,	 1,
+
+				 1,	 1,	 1,
+				 0,	 0,	 1,
+				 0,	 0,	 1,
+
+				 1,	 1,	 1,
+				 0,	 0,	 1,
+				-1,	 0,	 1
+			};
+
+			THEN("the mean curvature is 1.5")
+			{
+				CHECK(grid.curv(Vec3i(0,0,0)) == 1.5);
+			}
+		}
 	}
+
 }
 
