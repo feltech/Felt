@@ -165,7 +165,7 @@ protected:
 		// Component-wise sum.
 		const LeafType val = vec_grad_diff.sum();
 
-		return val / (pself->dx()*pself->dx());
+		return val / (m_dx*m_dx);
 	}
 
 	/**
@@ -260,7 +260,7 @@ protected:
 			vec_grad(axis) = forward + back;
 		}
 
-		return vec_grad / pself->dx();
+		return vec_grad / m_dx;
 	}
 
 	/**
@@ -468,6 +468,25 @@ protected:
 			val_corners_[i] = val;
 		}
 		val_corners_.resize(num_out);
+	}
+	
+	/**
+	 * Call a lambda passing neighbours of a position in the cardinal directions.
+	 *
+	 * @param pos_ position to search around
+	 * @param fn_ lambda function
+	 */
+	template <typename Fn>
+	static void neighs(Vec3i pos_, Fn fn_)
+	{
+		for (INT axis = 0; axis < Dims; axis++)
+		{
+			pos_(axis) -= 1;
+			fn_(pos_);
+			pos_(axis) += 2;
+			fn_(pos_);
+			pos_(axis) -= 1;
+		}
 	}
 };
 

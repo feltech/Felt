@@ -2171,6 +2171,25 @@ SCENARIO("Paritioned::Tracked::Numeric")
 				CHECK(grid.curv(Vec3i(0,0,0)) == 1.5);
 			}
 		}
+
+		WHEN("neighbours of an arbitrary point are cycled")
+		{
+			std::vector<Vec3i> apos;
+			GridType::neighs(Vec3i(-67, 54, 3), [&apos](const Vec3i& pos) {
+				apos.push_back(pos);
+			});
+
+			THEN("the positions are cycled in the expected order")
+			{
+				CHECK(
+					apos == (std::vector<Vec3i>{
+						Vec3i(-68, 54, 3), Vec3i(-66, 54, 3),
+						Vec3i(-67, 53, 3), Vec3i(-67, 55, 3),
+						Vec3i(-67, 54, 2), Vec3i(-67, 54, 4)
+					})
+				);
+			}
+		}
 	}
 
 }

@@ -134,6 +134,7 @@ public:
 	using SpatialImpl::gradE;
 	using SpatialImpl::gradF;
 	using SpatialImpl::interp;
+	using SpatialImpl::neighs;
 	using SnapshotImpl::operator=;
 	using SnapshotImpl::snapshot;
 	using TrackedImpl::track;
