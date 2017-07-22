@@ -6,6 +6,76 @@
 
 namespace Felt
 {
+
+/**
+ * Get index in data array of position vector.
+ *
+ * The grid is packed in a 1D array, so this method is required to
+ * get the index in that array of the D-dimensional position.
+ *
+ * @snippet test_Grid.cpp Position index
+ *
+ * @param pos_ position in grid.
+ * @param size_ size of grid.
+ * @param offset_ spatial offset of grid.
+ * @return index in data array of pos in grid of given size and offset.
+ */
+template <UINT D>
+PosIdx index (const VecDi<D>& pos_, const VecDi<D>& size_, const VecDi<D>& offset_)
+{
+	PosIdx idx = 0;
+	for (INT i = 0; i < D; i++)
+	{
+		INT u_pos = pos_(i) - offset_(i);
+
+		for (INT j = i+1; j < D; j++)
+			u_pos *= size_(j);
+
+		idx += u_pos;
+	}
+	return idx;
+}
+
+/**
+ * Get position of index.
+ *
+ * Given an index and the dimensions and offset of a grid, calculate
+ * the position vector that the index pertains to in a representative
+ * 1D array.
+ *
+ * @snippet test_Grid.cpp Position index
+ *
+ * @param idx_ index in to query.
+ * @param size_ size of grid.
+ * @param offset_ spatial offset of grid.
+ * @return position that the given index would represent in a grid of given size and offset.
+ */
+template <UINT D>
+VecDi<D> index (PosIdx idx_, const VecDi<D>& size_, const VecDi<D>& offset_ = VecDi<D>::Zero())
+{
+/*
+Eg. 2D: row major order (3x4=12): (x,y)[idx] =>
+(0,0)[0], (0,1)[1], (0,2)[2],  (0,3)[3]
+(1,0)[4], (1,1)[5], (1,2)[6],  (1,3)[7]
+(2,0)[8], (2,1)[9], (2,2)[10], (2,3)[11]
+
+E.g. 3D:
+z = idx % Dz
+y = (idx/Dz) % Dy
+x = (idx/Dz)/Dy % Dx
+*/
+	VecDi<D> pos;
+
+	for (INT axis = D-1; axis >= 0; axis--)
+	{
+		pos(axis) = idx_ % size_(axis) + offset_(axis);
+		idx_ /= size_(axis);
+	}
+
+	return pos;
+}
+
+
 /**
  * String format a vector (useful for logging).
  *

@@ -239,8 +239,9 @@ template <UINT D, UINT N>
 struct Traits< Lookup::Multi<D, N> > : public DefaultLookupTraits<D, N>
 {
 	/// Multiple indices stored at each grid node, one per tracking list.
-	using LeafType = VecDu<D>;
+	using LeafType = VecDu<N>;
 };
+
 
 } // Impl
 } // Felt

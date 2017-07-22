@@ -77,14 +77,14 @@ SCENARIO("Grid::Simple")
 		//! [Position index]
 		THEN("the index of a point in the data array is reported correctly")
 		{
-			CHECK(GridType::index(Vec3i(1, 0, -1), size, offset) == 613);
+			CHECK(Felt::index<3>(Vec3i(1, 0, -1), size, offset) == 613);
 			CHECK(grid.index(Vec3i(1, 0, -1)) == 613);
 		}
 
 		THEN("the point represented by an index in the data array is reported correctly")
 		{
 			CHECK(grid.index(613) == Vec3i(1, 0, -1));
-			CHECK(GridType::index(613, size, offset) == Vec3i(1, 0, -1));
+			CHECK(Felt::index<3>(613, size, offset) == Vec3i(1, 0, -1));
 		}
 		//! [Position index]
 
@@ -500,6 +500,25 @@ SCENARIO("Lookup::Single")
 
 SCENARIO("Lookup::Multi")
 {
+
+	GIVEN("a 2D grid with 5 tracking lists")
+	{
+		using GridType = Impl::Lookup::Multi<2, 5>;
+		GridType grid(Vec2i(3,3), Vec2i(-1,-1));
+
+		THEN("the grid has the correct dimension")
+		{
+			const Vec2i pos1(-1, -1);
+			const PosIdx pos1_idx = grid.index(pos1);
+			CHECK(pos1_idx == 0);
+
+			AND_THEN("the grid holds index tuples of the correct size")
+			{
+				CHECK(grid.get(pos1_idx).size() == 5);
+			}
+		}
+	}
+
 	using GridType = Impl::Lookup::Multi<3, 3>;
 
 	GIVEN("a 10x10x10 grid with 3 tracking lists, and some locations")

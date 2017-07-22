@@ -395,7 +395,7 @@ protected:
 	 * @param list_idx_ id of tracking list to get.
 	 * @return tracking list at given index.
 	 */
-	PosArray& list (const UINT list_idx_)
+	PosArray& list (const ListIdx list_idx_)
 	{
 		return m_a_list_pos_idxs[list_idx_];
 	}
@@ -406,7 +406,7 @@ protected:
 	 * @param list_idx_ id of tracking list to get.
 	 * @return tracking list at given index.
 	 */
-	const PosArray& list (const UINT list_idx_) const
+	const PosArray& list (const ListIdx list_idx_) const
 	{
 		return m_a_list_pos_idxs[list_idx_];
 	}
@@ -418,7 +418,7 @@ protected:
 	 * @param list_idx_ tracking list id.
 	 * @return true if grid position tracked, false otherwise.
 	 */
-	bool is_tracked (const PosIdx pos_idx_, const UINT list_idx_) const
+	bool is_tracked (const PosIdx pos_idx_, const ListIdx list_idx_) const
 	{
 		return pself->get(pos_idx_)[list_idx_] != NULL_IDX;
 	}

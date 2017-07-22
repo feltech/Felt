@@ -11,6 +11,38 @@
 
 namespace Felt
 {
+	/// Utility: take a slice of a 3D grid and return a tabulated string.
+	template <class GridType>
+	std::string stringify_grid_slice(
+		const GridType& grid, UINT axis_plane = 2, INT axis_plane_offset = 0
+	) {
+		static constexpr UINT Dims = Impl::Traits<GridType>::Dims;
+		using VecDi = typename Felt::VecDi<Dims>;
+
+		const VecDi& size = grid.size();
+		const VecDi& offset = grid.offset();
+		std::stringstream strGrid;
+		UINT axis_1 = (axis_plane+1) % Dims;
+		UINT axis_2 = (axis_plane+2) % Dims;
+		INT z = axis_plane_offset;
+		for (INT x = offset(axis_1); x < (INT)size(axis_1) + offset(axis_1); x++)
+		{
+			strGrid << std::endl;
+			for (INT y = offset(axis_2); y < (INT)size(axis_2) + offset(axis_2); y++)
+			{
+				VecDi pos;
+				if (axis_plane < pos.size())
+					pos(axis_plane) = axis_plane_offset;
+				pos(axis_1) = x;
+				pos(axis_2) = y;
+				strGrid << std::setw(5) << (FLOAT)grid.get(pos) << ",";
+			}
+		}
+		strGrid << std::endl;
+		return strGrid.str();
+	}
+
+
 	/**
 	 * Copy of Catch::Detail::Approx to handle vector types.
 	 */

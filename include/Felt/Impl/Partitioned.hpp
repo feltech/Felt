@@ -124,6 +124,8 @@ public:
 	using ChildrenImpl::children;
 	using ChildrenImpl::reset;
 	using ChildrenImpl::track_children;
+	using SizeImpl::offset;
+	using SizeImpl::size;
 	using SpatialImpl::curv;
 	using SpatialImpl::divergence;
 	using SpatialImpl::dx;
