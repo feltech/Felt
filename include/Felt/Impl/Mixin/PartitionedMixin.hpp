@@ -24,21 +24,20 @@ private:
 	/// Child grid type.
 	using ChildType = typename TraitsType::ChildType;
 	/// Number of tracking lists.
-	static constexpr ListIdx NumLists = TraitsType::NumLists;
+	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
 	/// Dimension of grid.
-	static constexpr UINT Dims = TraitsType::Dims;
+	static constexpr UINT t_dims = TraitsType::t_dims;
 	/// D-dimensional integer vector.
-	using VecDi = Felt::VecDi<Dims>;
+	using VecDi = Felt::VecDi<t_dims>;
 
 protected:
 	/// Grid of partitions with tracking list(s) of active partitions.
-	using ChildrenGrid = Impl::Tracked::MultiByRef<ChildType, Dims, NumLists>;
-	using PosArray = typename ChildrenGrid::PosArray;
+	using ChildrenGrid = Impl::Tracked::MultiByRef<ChildType, t_dims, t_num_lists>;
 private:
-	/// Grid of child grids.
-	ChildrenGrid m_children;
 	/// Size of a child sub-grid.
 	VecDi m_child_size;
+	/// Grid of child grids.
+	ChildrenGrid m_children;
 	/// Mutex used to synchrnonise the adding/removing of elements from the tracking list(s).
 	std::mutex	m_mutex;
 
@@ -114,7 +113,7 @@ protected:
 	 * @param pos_idx_child_ position index of child sub-grid in parent grid.
 	 * @param list_idx_ index of tracking list used to track position.
 	 */
-	void track_child(const PosIdx pos_idx_child_, const ListIdx list_idx_)
+	void track_child(const PosIdx pos_idx_child_, const TupleIdx list_idx_)
 	{
 		FELT_DEBUG(m_children.assert_pos_idx_bounds(pos_idx_child_, "track:"));
 		std::lock_guard<std::mutex> lock(m_mutex);
@@ -136,7 +135,7 @@ protected:
 	template <class MaskGrid>
 	void track_children(const MaskGrid& grid_mask_)
 	{
-		for (ListIdx list_idx = 0; list_idx < grid_mask_.children().NumLists; list_idx++)
+		for (TupleIdx list_idx = 0; list_idx < grid_mask_.children().t_num_lists; list_idx++)
 		{
 			for (const PosIdx pos_idx_child : grid_mask_.children().lookup().list(list_idx))
 			{
@@ -153,7 +152,7 @@ protected:
 	template <class MaskGrid>
 	void reset(const MaskGrid& grid_mask_)
 	{
-		for (ListIdx list_idx = 0; list_idx < NumLists; list_idx++)
+		for (TupleIdx list_idx = 0; list_idx < t_num_lists; list_idx++)
 		{
 			for (const PosIdx pos_idx_child : m_children.lookup().list(list_idx))
 			{
@@ -235,9 +234,9 @@ private:
 	/// Child grid type.
 	using ChildType = typename TraitsType::ChildType;
 	/// Dimension of grid.
-	static constexpr UINT Dims = TraitsType::Dims;
+	static constexpr UINT t_dims = TraitsType::t_dims;
 	/// D-dimensional integer vector.
-	using VecDi = Felt::VecDi<Dims>;
+	using VecDi = Felt::VecDi<t_dims>;
 
 protected:
 	/**
@@ -248,7 +247,7 @@ protected:
 	 * @param pos_idx_leaf_ position to track.
 	 * @param list_idx_ tracking list id.
 	 */
-	void track(const VecDi& pos_leaf_, const ListIdx list_idx_)
+	void track(const VecDi& pos_leaf_, const TupleIdx list_idx_)
 	{
 		const PosIdx pos_idx_child_ = pself->pos_idx_child(pos_leaf_);
 		pself->track_child(pos_idx_child_, list_idx_);
@@ -266,7 +265,7 @@ protected:
 	 * @param pos_idx_child_ position of child sub-grid containing leaf position to track.
 	 * @param list_idx_ tracking list id.
 	 */
-	void track(const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_, const ListIdx list_idx_)
+	void track(const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_, const TupleIdx list_idx_)
 	{
 		FELT_DEBUG(
 			pself->children().get(pos_idx_child_).assert_pos_idx_bounds(pos_idx_leaf_, "track:")
@@ -280,7 +279,7 @@ protected:
 	 * @param child child grid to clear list within.
 	 * @param list_idx_ list id to clear.
 	 */
-	void clear_list(ChildType& child, ListIdx list_idx_)
+	void clear_list(ChildType& child, TupleIdx list_idx_)
 	{
 		child.list(list_idx_).clear();
 	}
@@ -298,9 +297,9 @@ private:
 	/// Leaf type.
 	using LeafType = typename TraitsType::LeafType;
 	/// Dimension of grid.
-	static constexpr UINT Dims = TraitsType::Dims;
+	static constexpr UINT t_dims = TraitsType::t_dims;
 	/// D-dimensional integer vector.
-	using VecDi = Felt::VecDi<Dims>;
+	using VecDi = Felt::VecDi<t_dims>;
 
 protected:
 	/**
@@ -311,7 +310,7 @@ protected:
 	 * @param pos_idx_leaf_ position to track.
 	 * @param list_idx_ tracking list id.
 	 */
-	void track(const LeafType val_, const VecDi& pos_leaf_, const ListIdx list_idx_)
+	void track(const LeafType val_, const VecDi& pos_leaf_, const TupleIdx list_idx_)
 	{
 		const PosIdx pos_idx_child_ = pself->pos_idx_child(pos_leaf_);
 		pself->track_child(pos_idx_child_, list_idx_);
@@ -331,7 +330,7 @@ protected:
 	 */
 	void track(
 		const LeafType val_, const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_,
-		const ListIdx list_idx_
+		const TupleIdx list_idx_
 	) {
 		FELT_DEBUG(
 			pself->children().get(pos_idx_child_).assert_pos_idx_bounds(pos_idx_leaf_, "track:")
@@ -346,7 +345,7 @@ protected:
 	 * @param child child grid to clear list within.
 	 * @param list_idx_ list id to clear.
 	 */
-	void clear_list(ChildType& child, ListIdx list_idx_)
+	void clear_list(ChildType& child, TupleIdx list_idx_)
 	{
 		child.lookup().list(list_idx_).clear();
 	}
@@ -364,14 +363,14 @@ private:
 	/// Leaf type.
 	using LeafType = typename TraitsType::LeafType;
 	/// Dimension of grid.
-	static constexpr UINT Dims = TraitsType::Dims;
+	static constexpr UINT t_dims = TraitsType::t_dims;
 	/// D-dimensional integer vector.
-	using VecDi = Felt::VecDi<Dims>;
+	using VecDi = Felt::VecDi<t_dims>;
 
 protected:
 	void untrack(
 		const LeafType background_, const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_,
-		const ListIdx list_idx_
+		const TupleIdx list_idx_
 	) {
 		ChildType& child = pself->children().get(pos_idx_child_);
 
@@ -395,8 +394,8 @@ protected:
 	}
 
 	void retrack(
-		const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_, const ListIdx list_idx_from_,
-		const ListIdx list_idx_to_
+		const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_, const TupleIdx list_idx_from_,
+		const TupleIdx list_idx_to_
 	) {
 		ChildType& child = pself->children().get(pos_idx_child_);
 
@@ -438,9 +437,9 @@ private:
 	/// Leaf type.
 	using LeafType = typename TraitsType::LeafType;
 	/// Dimension of grid.
-	static constexpr UINT Dims = TraitsType::Dims;
+	static constexpr UINT t_dims = TraitsType::t_dims;
 	/// D-dimensional integer vector.
-	using VecDi = Felt::VecDi<Dims>;
+	using VecDi = Felt::VecDi<t_dims>;
 
 protected:
 	/**
@@ -482,11 +481,11 @@ private:
 	/// Leaf type.
 	using LeafType = typename TraitsType::LeafType;
 	/// Dimension of grid.
-	static constexpr UINT Dims = TraitsType::Dims;
+	static constexpr UINT t_dims = TraitsType::t_dims;
 	/// D-dimensional integer vector.
-	using VecDi = Felt::VecDi<Dims>;
+	using VecDi = Felt::VecDi<t_dims>;
 	/// Simple non-partitioned grid type for snapshotting the partitioned data, e.g. for tests.
-	using SnapshotGrid = Impl::Grid::Snapshot<LeafType, Dims>;
+	using SnapshotGrid = Impl::Grid::Snapshot<LeafType, t_dims>;
 protected:
 	/**
 	 * Non-partitioned Grid class to store snapshots of partitioned grids.

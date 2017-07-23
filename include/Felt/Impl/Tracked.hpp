@@ -13,7 +13,7 @@ namespace Impl
 namespace Tracked
 {
 
-template <typename T, UINT D, UINT N>
+template <typename T, Dim D, TupleIdx N>
 class LazySingleByValue :
 	FELT_MIXINS(
 		(LazySingleByValue<T, D, N>),
@@ -33,7 +33,7 @@ private:
 	using SizeImpl = Impl::Mixin::Tracked::Resize<ThisType>;
 	using TrackedImpl = Impl::Mixin::Tracked::ByValue<ThisType>;
 
-	using VecDi = Felt::VecDi<ThisTraits::Dims>;
+	using VecDi = Felt::VecDi<ThisTraits::t_dims>;
 	using LeafType = typename ThisTraits::LeafType;
 	using LookupType = typename ThisTraits::LookupType;
 
@@ -61,7 +61,7 @@ public:
 };
 
 
-template <typename T, UINT D, UINT N>
+template <typename T, Dim D, TupleIdx N>
 class MultiByRef :
 	FELT_MIXINS(
 		(MultiByRef<T, D, N>),
@@ -80,18 +80,16 @@ private:
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
 	using TrackedImpl = Impl::Mixin::Tracked::ByRef<ThisType>;
 
-	using VecDi = Felt::VecDi<ThisTraits::Dims>;
+	using VecDi = Felt::VecDi<ThisTraits::t_dims>;
 	using LeafType = typename ThisTraits::LeafType;
 	using LookupType = typename ThisTraits::LookupType;
 
 public:
-	using LookupInterfaceImpl::PosArray;
-	static constexpr ListIdx NumLists = ThisTraits::NumLists;
+	static constexpr TupleIdx t_num_lists = ThisTraits::t_num_lists;
 
-public:
 	MultiByRef(const VecDi& size_, const VecDi& offset_, const LeafType background_) :
-		ActivatorImpl{background_}, LookupInterfaceImpl{LookupType{size_, offset_}},
-		SizeImpl{size_, offset_}
+		ActivatorImpl{background_}, SizeImpl{size_, offset_},
+		LookupInterfaceImpl{LookupType{size_, offset_}}
 	{
 		this->activate();
 	}
@@ -117,15 +115,15 @@ public:
  * @tparam D number of dimensions of the grid.
  * @tparam N number of tracking lists.
  */
-template <typename T, UINT D, UINT N>
+template <typename T, Dim D, TupleIdx N>
 struct DefaultTrackedTraits
 {
 	/// Single index stored in each grid node.
 	using LeafType = T;
 	/// Dimension of grid.
-	static constexpr UINT Dims = D;
+	static constexpr Dim t_dims = D;
 	/// Number of lists tracking grid nodes.
-	static constexpr UINT NumLists = N;
+	static constexpr TupleIdx t_num_lists = N;
 };
 
 
@@ -136,7 +134,7 @@ struct DefaultTrackedTraits
  * @tparam D number of dimensions of the grid.
  * @tparam N number of tracking lists.
  */
-template <typename T, UINT D, UINT N>
+template <typename T, Dim D, TupleIdx N>
 struct Traits< Tracked::LazySingleByValue<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
 	using LookupType = Lookup::LazySingle<D, N>;
@@ -149,7 +147,7 @@ struct Traits< Tracked::LazySingleByValue<T, D, N> > : public DefaultTrackedTrai
  * @tparam D number of dimensions of the grid.
  * @tparam N number of tracking lists.
  */
-template <typename T, UINT D, UINT N>
+template <typename T, Dim D, TupleIdx N>
 struct Traits< Tracked::MultiByRef<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
 	using LookupType = Lookup::Multi<D, N>;

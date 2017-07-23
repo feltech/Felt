@@ -16,14 +16,14 @@ namespace Felt
 	std::string stringify_grid_slice(
 		const GridType& grid, UINT axis_plane = 2, INT axis_plane_offset = 0
 	) {
-		static constexpr UINT Dims = Impl::Traits<GridType>::Dims;
-		using VecDi = typename Felt::VecDi<Dims>;
+		static constexpr UINT t_dims = Impl::Traits<GridType>::t_dims;
+		using VecDi = typename Felt::VecDi<t_dims>;
 
 		const VecDi& size = grid.size();
 		const VecDi& offset = grid.offset();
 		std::stringstream strGrid;
-		UINT axis_1 = (axis_plane+1) % Dims;
-		UINT axis_2 = (axis_plane+2) % Dims;
+		UINT axis_1 = (axis_plane+1) % t_dims;
+		UINT axis_2 = (axis_plane+2) % t_dims;
 		INT z = axis_plane_offset;
 		for (INT x = offset(axis_1); x < (INT)size(axis_1) + offset(axis_1); x++)
 		{

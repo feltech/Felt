@@ -14,7 +14,7 @@ namespace Impl
 namespace Partitioned
 {
 
-template <UINT D, UINT N>
+template <Dim D, TupleIdx N>
 class Lookup :
 	FELT_MIXINS(
 		(Lookup<D, N>),
@@ -35,8 +35,8 @@ public:
 	using ChildrenGrid = typename ChildrenImpl::ChildrenGrid;
 public:
 	Lookup(const VecDi& size_, const VecDi& offset_, const VecDi& child_size_) :
-		ChildrenImpl{size_, offset_, child_size_, ChildType()},
-		SizeImpl{size_, offset_}
+		SizeImpl{size_, offset_},
+		ChildrenImpl{size_, offset_, child_size_, ChildType()}
 	{}
 
 	using LookupImpl::track;
@@ -48,7 +48,7 @@ public:
 namespace Tracked
 {
 
-template <typename T, UINT D, UINT N>
+template <typename T, Dim D, TupleIdx N>
 class Simple :
 	FELT_MIXINS(
 		(Simple<T, D, N>),
@@ -67,14 +67,13 @@ private:
 	using TrackedImpl = Impl::Mixin::Partitioned::Tracked<ThisType>;
 public:
 	using ChildrenGrid = typename ChildrenImpl::ChildrenGrid;
-	using PosArray = typename ChildrenImpl::ChildrenGrid::PosArray;
 public:
 	Simple(
 		const VecDi& size_, const VecDi& offset_, const VecDi& child_size_,
 		const LeafType background_
 	) :
-		ChildrenImpl{size_, offset_, child_size_, ChildType(background_)},
-		SizeImpl{size_, offset_}
+		SizeImpl{size_, offset_},
+		ChildrenImpl{size_, offset_, child_size_, ChildType(background_)}
 	{}
 
 	using ChildrenImpl::children;
@@ -84,7 +83,7 @@ public:
 };
 
 
-template <typename T, UINT D, UINT N>
+template <typename T, Dim D, TupleIdx N>
 class Numeric :
 	FELT_MIXINS(
 		(Numeric<T, D, N>),
@@ -108,15 +107,14 @@ private:
 public:
 	using ChildType = typename TraitsType::ChildType;
 	using ChildrenGrid = typename ChildrenImpl::ChildrenGrid;
-	using PosArray = typename ChildrenImpl::ChildrenGrid::PosArray;
 	using SnapshotPtr = typename SnapshotImpl::SnapshotGridPtr;
 public:
 	Numeric(
 		const VecDi& size_, const VecDi& offset_, const VecDi& child_size_,
 		const LeafType background_
 	) :
-		ChildrenImpl{size_, offset_, child_size_, ChildType(background_)},
-		SizeImpl{size_, offset_}
+		SizeImpl{size_, offset_},
+		ChildrenImpl{size_, offset_, child_size_, ChildType(background_)}
 	{}
 
 	using AccessorImpl::get;
@@ -154,7 +152,7 @@ public:
  * @tparam D number of dimensions of the grid.
  * @tparam N number of tracking lists.
  */
-template <UINT D, UINT N>
+template <Dim D, TupleIdx N>
 struct Traits< Partitioned::Lookup<D, N> > : public DefaultLookupTraits<D, N>
 {
 	using ChildType = Impl::Lookup::LazySingle<D, N>;
@@ -168,7 +166,7 @@ struct Traits< Partitioned::Lookup<D, N> > : public DefaultLookupTraits<D, N>
  * @tparam D number of dimensions of the grid.
  * @tparam N number of tracking lists.
  */
-template <typename T, UINT D, UINT N>
+template <typename T, Dim D, TupleIdx N>
 struct Traits< Partitioned::Tracked::Simple<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
 	using ChildType = Impl::Tracked::LazySingleByValue<T, D, N>;
@@ -181,7 +179,7 @@ struct Traits< Partitioned::Tracked::Simple<T, D, N> > : public DefaultTrackedTr
  * @tparam D number of dimensions of the grid.
  * @tparam N number of tracking lists.
  */
-template <typename T, UINT D, UINT N>
+template <typename T, Dim D, TupleIdx N>
 struct Traits< Partitioned::Tracked::Numeric<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
 	using ChildType = Impl::Tracked::LazySingleByValue<T, D, N>;

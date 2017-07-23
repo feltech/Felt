@@ -13,7 +13,7 @@ namespace Impl
 {
 namespace Grid
 {
-template <typename T, UINT D>
+template <typename T, Dim D>
 class Simple :
 	FELT_MIXINS(
 		(Simple<T, D>),
@@ -29,12 +29,12 @@ private:
 	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
 
-	using VecDi = Felt::VecDi<ThisTraits::Dims>;
+	using VecDi = Felt::VecDi<ThisTraits::t_dims>;
 	using LeafType = typename ThisTraits::LeafType;
 
 public:
 	Simple(const VecDi& size_, const VecDi& offset_, const LeafType background_) :
-		SizeImpl{size_, offset_}, ActivatorImpl{background_}
+		ActivatorImpl{background_}, SizeImpl{size_, offset_}
 	{
 		this->activate();
 	}
@@ -49,7 +49,7 @@ public:
 };
 
 
-template <typename T, UINT D>
+template <typename T, Dim D>
 class Snapshot :
 	FELT_MIXINS(
 		(Snapshot<T, D>),
@@ -66,14 +66,14 @@ private:
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
 	using SnapthotImpl = Impl::Mixin::Numeric::Snapshot<ThisType>;
 
-	using VecDi = Felt::VecDi<ThisTraits::Dims>;
+	using VecDi = Felt::VecDi<ThisTraits::t_dims>;
 	using LeafType = typename ThisTraits::LeafType;
 
 public:
 	using SnapthotImpl::VArrayData;
 
 	Snapshot(const VecDi& size_, const VecDi& offset_, const LeafType background_) :
-		SizeImpl{size_, offset_}, ActivatorImpl{background_}
+		 ActivatorImpl{background_}, SizeImpl{size_, offset_}
 	{
 		this->activate();
 	}
@@ -95,11 +95,11 @@ public:
  * @tparam T type of data to store in the grid.
  * @tparam D number of dimensions of the grid.
  */
-template <typename T, UINT D>
+template <typename T, Dim D>
 struct Traits< Grid::Simple<T, D> >
 {
 	using LeafType = T;
-	static constexpr UINT Dims = D;
+	static constexpr UINT t_dims = D;
 };
 
 /**
@@ -108,11 +108,11 @@ struct Traits< Grid::Simple<T, D> >
  * @tparam T type of data to store in the grid.
  * @tparam D number of dimensions of the grid.
  */
-template <typename T, UINT D>
+template <typename T, Dim D>
 struct Traits< Grid::Snapshot<T, D> >
 {
 	using LeafType = T;
-	static constexpr UINT Dims = D;
+	static constexpr UINT t_dims = D;
 };
 
 } // Impl

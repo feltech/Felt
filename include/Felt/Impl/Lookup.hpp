@@ -14,7 +14,7 @@ namespace Impl
 namespace Lookup
 {
 
-template <UINT D>
+template <Dim D>
 class Simple :
 	FELT_MIXINS(
 		(Simple<D>),
@@ -32,12 +32,12 @@ private:
 	using LookupImpl = Impl::Mixin::Lookup::Simple<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
 
-	using VecDi = Felt::VecDi<ThisTraits::Dims>;
+	using VecDi = Felt::VecDi<ThisTraits::t_dims>;
 	using LeafType = typename ThisTraits::LeafType;
 
 public:
 	Simple(const VecDi& size_, const VecDi& offset_) :
-		SizeImpl{size_, offset_}, ActivatorImpl{NULL_IDX}
+		ActivatorImpl{NULL_IDX}, SizeImpl{size_, offset_}
 	{
 		this->activate();
 	}
@@ -52,7 +52,7 @@ public:
 };
 
 
-template <UINT D, UINT N>
+template <Dim D, TupleIdx N>
 class Single :
 	FELT_MIXINS(
 		(Single<D,N>),
@@ -70,12 +70,12 @@ private:
 	using LookupImpl = Impl::Mixin::Lookup::Single<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
 
-	using VecDi = Felt::VecDi<ThisTraits::Dims>;
+	using VecDi = Felt::VecDi<ThisTraits::t_dims>;
 	using LeafType = typename ThisTraits::LeafType;
 
 public:
 	Single(const VecDi& size, const VecDi& offset) :
-		SizeImpl{size, offset}, ActivatorImpl{NULL_IDX}
+		ActivatorImpl{NULL_IDX}, SizeImpl{size, offset}
 	{
 		this->activate();
 	}
@@ -90,7 +90,7 @@ public:
 };
 
 
-template <UINT D, UINT N>
+template <Dim D, TupleIdx N>
 class LazySingle :
 	FELT_MIXINS(
 		(LazySingle<D,N>),
@@ -109,11 +109,8 @@ private:
 	using LookupImpl = Impl::Mixin::Lookup::Single<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Resize<ThisType>;
 
-	using VecDi = Felt::VecDi<ThisTraits::Dims>;
+	using VecDi = Felt::VecDi<ThisTraits::t_dims>;
 	using LeafType = typename ThisTraits::LeafType;
-
-public:
-	using LookupImpl::PosArray;
 
 public:
 	LazySingle() :
@@ -138,7 +135,7 @@ public:
 };
 
 
-template <UINT D, UINT N>
+template <Dim D, TupleIdx N>
 class Multi :
 	FELT_MIXINS(
 		(Multi<D, N>),
@@ -155,11 +152,8 @@ private:
 	using LookupImpl = Impl::Mixin::Lookup::Multi<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
 
-	using VecDi = Felt::VecDi<ThisTraits::Dims>;
+	using VecDi = Felt::VecDi<ThisTraits::t_dims>;
 	using LeafType = typename ThisTraits::LeafType;
-
-public:
-	using LookupImpl::PosArray;
 
 public:
 	Multi(const VecDi& size, const VecDi& offset) :
@@ -188,25 +182,25 @@ public:
  *
  * @tparam D number of dimensions of the grid.
  */
-template <UINT D>
+template <Dim D>
 struct Traits< Lookup::Simple<D> >
 {
-	using LeafType = UINT;
-	static constexpr UINT Dims = D;
+	using LeafType = ListIdx;
+	static constexpr UINT t_dims = D;
 };
 
 /**
  * Common base traits for lookup grids with multiple tracking lists but single index per grid node.
  */
-template <UINT D, UINT N>
+template <Dim D, TupleIdx N>
 struct DefaultLookupTraits
 {
 	/// Single index stored in each grid node.
-	using LeafType = UINT;
+	using LeafType = ListIdx;
 	/// Dimension of grid.
-	static constexpr UINT Dims = D;
+	static constexpr Dim t_dims = D;
 	/// Number of lists tracking grid nodes.
-	static constexpr UINT NumLists = N;
+	static constexpr TupleIdx t_num_lists = N;
 };
 
 /**
@@ -215,7 +209,7 @@ struct DefaultLookupTraits
  * @tparam D number of dimensions of the grid.
  * @tparam N number of tracking lists.
  */
-template <UINT D, UINT N>
+template <Dim D, TupleIdx N>
 struct Traits< Lookup::Single<D, N> > : public DefaultLookupTraits<D, N>
 {};
 
@@ -225,7 +219,7 @@ struct Traits< Lookup::Single<D, N> > : public DefaultLookupTraits<D, N>
  * @tparam D number of dimensions of the grid.
  * @tparam N number of tracking lists.
  */
-template <UINT D, UINT N>
+template <Dim D, TupleIdx N>
 struct Traits< Lookup::LazySingle<D, N> > : public DefaultLookupTraits<D, N>
 {};
 
@@ -235,11 +229,11 @@ struct Traits< Lookup::LazySingle<D, N> > : public DefaultLookupTraits<D, N>
  * @tparam D number of dimensions of the grid.
  * @tparam N number of tracking lists.
  */
-template <UINT D, UINT N>
+template <Dim D, TupleIdx N>
 struct Traits< Lookup::Multi<D, N> > : public DefaultLookupTraits<D, N>
 {
 	/// Multiple indices stored at each grid node, one per tracking list.
-	using LeafType = VecDu<N>;
+	using LeafType = Tuple<ListIdx, N>;
 };
 
 

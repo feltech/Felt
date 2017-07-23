@@ -8,7 +8,7 @@ cmake_policy(SET CMP0015 NEW)
 
 set(PROJECT_ROOT ${PROJECT_SOURCE_DIR})
 set(SRC_ROOT ${PROJECT_SOURCE_DIR}/src)
-set(TESTS_ROOT ${SRC_ROOT}/tests)
+set(TESTS_ROOT ${SRC_ROOT}/tests/Impl)
 set(EIGEN3_INCLUDE_DIR /usr/include/eigen3 CACHE PATH "Eigen include directory")
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_ROOT}/lib)
@@ -21,13 +21,13 @@ include_directories(
 
 add_definitions(
 	-std=c++14 -fopenmp -Wfatal-errors -fdiagnostics-color=auto -DCATCH_CONFIG_CONSOLE_WIDTH=200
-	-DFELT_EXCEPTIONS
+	-DFELT_EXCEPTIONS -Wall -Wextra -Wconversion -Wsign-conversion
 )
 
 # C++ unit tests
 enable_testing()
 file(GLOB_RECURSE CTEST_CPPS "${TESTS_ROOT}/test*.cpp")
-add_executable(ctests "${TESTS_ROOT}/test_main.cpp" ${CTEST_CPPS} ${TESTS_ROOT}/Utils.cpp)
+add_executable(ctests "${TESTS_ROOT}/main.cpp" ${CTEST_CPPS})
 include_directories(${PROJECT_ROOT}/include ${EIGEN3_INCLUDE_DIR})
 target_link_libraries(ctests gomp pthread)
 add_test(

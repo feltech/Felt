@@ -1,6 +1,6 @@
 #ifndef INCLUDE_FELT_IMPL_COMMON_HPP_
 #define INCLUDE_FELT_IMPL_COMMON_HPP_
-
+#include <vector>
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/seq/for_each_i.hpp>
 #include <boost/preprocessor/punctuation/comma_if.hpp>
@@ -13,46 +13,49 @@ namespace Felt
  * Use 32 bit float by default.
  */
 using FLOAT = float;
-
 /**
  * Use 32 bit int by default.
  */
 using INT = int;
-
 /**
  * Use 32 bit unsigned int by default.
  */
 using UINT = unsigned;
-
 /**
- * Integer (large) array index type.
+ * Grid dimension type.
  */
-using PosIdx = UINT;
-
+using Dim = Eigen::Index;
 /**
- * Integer (small) array index type.
+ * Index of an item in a tracking list.
  */
-using ListIdx = UINT;
-
+using ListIdx = std::size_t;
+/**
+ * Index of a position in a grid's data array.
+ */
+using PosIdx = std::size_t;
+/**
+ * Index of an item in a tuple.
+ */
+using TupleIdx = Eigen::Index;
 /**
  * Shorthand for D-dimensional vector with elements of T type.
  */
-template <typename T, UINT D>
+template <typename T, Dim D>
 using VecDT = Eigen::Matrix<T, D, 1>;
 /**
  * Shorthand for D-dimensional float vector.
  */
-template <UINT D>
+template <Dim D>
 using VecDf = VecDT<FLOAT, D>;
 /**
  * Shorthand for D-dimensional integer vector.
  */
-template <UINT D>
+template <Dim D>
 using VecDi = VecDT<INT, D>;
 /**
  * Shorthand for D-dimensional unsigned integer vector.
  */
-template <UINT D>
+template <Dim D>
 using VecDu = VecDT<UINT, D>;
 
 /**
@@ -79,6 +82,21 @@ using Vec3u = VecDu<3u>;
  * Shorthand for 3D integer vector.
  */
 using Vec3i = VecDi<3u>;
+/**
+ * Array of position indices.
+ */
+using PosArray = std::vector<PosIdx>;
+/**
+ * Array of grid data.
+ */
+template <typename T>
+using DataArray = std::vector<T>;
+/**
+ * Tuple of items
+ */
+template <typename T, TupleIdx N>
+using Tuple = VecDT<T, N>;
+
 
 namespace Impl
 {

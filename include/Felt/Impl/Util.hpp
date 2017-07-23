@@ -20,20 +20,20 @@ namespace Felt
  * @param offset_ spatial offset of grid.
  * @return index in data array of pos in grid of given size and offset.
  */
-template <UINT D>
+template <Dim D>
 PosIdx index (const VecDi<D>& pos_, const VecDi<D>& size_, const VecDi<D>& offset_)
 {
-	PosIdx idx = 0;
-	for (INT i = 0; i < D; i++)
+	PosIdx pos_idx = 0;
+	for (Dim i = 0; i < D; i++)
 	{
-		INT u_pos = pos_(i) - offset_(i);
+		PosIdx pos_idx_axis = PosIdx(pos_(i) - offset_(i));
 
-		for (INT j = i+1; j < D; j++)
-			u_pos *= size_(j);
+		for (Dim j = i+1; j < D; j++)
+			pos_idx_axis *= PosIdx(size_(j));
 
-		idx += u_pos;
+		pos_idx += pos_idx_axis;
 	}
-	return idx;
+	return pos_idx;
 }
 
 /**
@@ -50,9 +50,10 @@ PosIdx index (const VecDi<D>& pos_, const VecDi<D>& size_, const VecDi<D>& offse
  * @param offset_ spatial offset of grid.
  * @return position that the given index would represent in a grid of given size and offset.
  */
-template <UINT D>
-VecDi<D> index (PosIdx idx_, const VecDi<D>& size_, const VecDi<D>& offset_ = VecDi<D>::Zero())
-{
+template <Dim D>
+VecDi<D> index (
+	PosIdx idx_, const VecDi<D>& size_, const VecDi<D>& offset_ = VecDi<D>::Zero()
+) {
 /*
 Eg. 2D: row major order (3x4=12): (x,y)[idx] =>
 (0,0)[0], (0,1)[1], (0,2)[2],  (0,3)[3]
@@ -64,13 +65,16 @@ z = idx % Dz
 y = (idx/Dz) % Dy
 x = (idx/Dz)/Dy % Dx
 */
+	using AxisCoord = typename VecDi<D>::Scalar;
 	VecDi<D> pos;
 
-	for (INT axis = D-1; axis >= 0; axis--)
+	// Note: since `Dim` is unsigned, we cannot allow `axis` to decrement below zero.
+	for (Dim axis = D-1; axis != 0; axis--)
 	{
-		pos(axis) = idx_ % size_(axis) + offset_(axis);
-		idx_ /= size_(axis);
+		pos(axis) = AxisCoord(idx_ % PosIdx(size_(axis))) + offset_(axis);
+		idx_ /= PosIdx(size_(axis));
 	}
+	pos(0) = AxisCoord(idx_ % PosIdx(size_(0))) + offset_(0);
 
 	return pos;
 }
@@ -134,7 +138,7 @@ VecDi<D> floor(const VecDf<D>& pos_)
 {
 	VecDi<D> pos_rounded;
 	for (UINT dim = 0; dim < pos_.size(); dim++)
-		pos_rounded(dim) = std::floor(pos_(dim));
+		pos_rounded(dim) = INT(std::floor(pos_(dim)));
 	return pos_rounded;
 }
 
@@ -150,7 +154,7 @@ VecDi<D> ceil(const VecDf<D>& pos_)
 {
 	VecDi<D> pos_rounded;
 	for (UINT dim = 0; dim < pos_.size(); dim++)
-		pos_rounded(dim) = std::ceil(pos_(dim));
+		pos_rounded(dim) = INT(std::ceil(pos_(dim)));
 	return pos_rounded;
 }
 

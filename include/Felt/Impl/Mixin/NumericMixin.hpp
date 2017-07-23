@@ -28,7 +28,7 @@ protected:
 	 */
 	VArrayData vdata()
 	{
-		return VArrayData(pself->data().data(), pself->data().size());
+		return VArrayData(pself->data().data(), Eigen::Index(pself->data().size()));
 	}
 };
 
@@ -39,10 +39,10 @@ class Spatial
 private:
 	using TraitsType = Impl::Traits<Derived>;
 	using LeafType = typename TraitsType::LeafType;
-	static constexpr UINT Dims = TraitsType::Dims;
-	using VecDf = Felt::VecDf<Dims>;
-	using VecDi = Felt::VecDi<Dims>;
-	using VecDT = Felt::VecDT<LeafType, Dims>;
+	static constexpr Dim t_dims = TraitsType::t_dims;
+	using VecDf = Felt::VecDf<t_dims>;
+	using VecDi = Felt::VecDi<t_dims>;
+	using VecDT = Felt::VecDT<LeafType, t_dims>;
 
 	FLOAT m_dx;
 	const VecDi m_pos_min;
@@ -64,9 +64,9 @@ protected:
 	 * @return curvature value
 	 */
 	template <typename PosType>
-	LeafType curv (const Felt::VecDT<PosType, Dims>& pos_) const
+	LeafType curv (const Felt::VecDT<PosType, t_dims>& pos_) const
 	{
-		using VecDp = Felt::VecDT<PosType, Dims>;
+		using VecDp = Felt::VecDT<PosType, t_dims>;
 
 		const LeafType val_centre = pself->get(pos_);
 		const VecDi& size = pself->size();
@@ -101,7 +101,7 @@ protected:
 			}
 
 			n_forward(axis) =		val_axis /
-						sqrt(val_axis*val_axis + val_neighs_sq);
+						sqrtf(val_axis*val_axis + val_neighs_sq);
 
 			dir(axis) -= 1;
 		}
@@ -137,7 +137,7 @@ protected:
 			}
 
 			n_backward(axis) =		val_axis /
-						sqrt(val_axis*val_axis + val_neighs_sq);
+						sqrtf(val_axis*val_axis + val_neighs_sq);
 
 			dir(axis) += 1;
 		}
@@ -156,7 +156,7 @@ protected:
 	 * @return divergence value
 	 */
 	template <typename PosType>
-	LeafType divergence (const Felt::VecDT<PosType, Dims>& pos_) const
+	LeafType divergence (const Felt::VecDT<PosType, t_dims>& pos_) const
 	{
 		const VecDT vec_grad_f = gradF(pos_);
 		const VecDT vec_grad_b = gradB(pos_);
@@ -180,9 +180,9 @@ protected:
 	 * @return vector with 2nd order if possible, 1st order if not, gradient.
 	 */
 	template <typename PosType>
-	VecDT grad (const Felt::VecDT<PosType, Dims>& pos_) const
+	VecDT grad (const Felt::VecDT<PosType, t_dims>& pos_) const
 	{
-		using VecDR = Felt::VecDT<PosType, Dims>;
+		using VecDR = Felt::VecDT<PosType, t_dims>;
 		// Reference to GridBase dimensions.
 		const VecDi& size = pself->size();
 		// Vector to store gradient calculation.
@@ -190,14 +190,14 @@ protected:
 		// Position for look-around.
 		VecDR pos_test(pos_);
 
-		// Central value (not reference, since could be interpolated).
+		// Central value.
 		LeafType centre = pself->get(pos_);
 
 		for (INT axis = 0; axis < size.size(); axis++)
 		{
 			LeafType back = centre;
 			LeafType forward = centre;
-			UINT order = 0;
+			Dim order = 0;
 			// Check if backward value is within GridBase.
 			pos_test(axis) -= 1;
 			if (pself->inside(pos_test))
@@ -216,7 +216,7 @@ protected:
 			// Calculate central/forward/backward difference along pself
 			// axis.
 			if (order != 0)
-				vec_grad(axis) = (forward - back) / order;
+				vec_grad(axis) = (forward - back) / LeafType(order);
 			else
 				vec_grad(axis) = 0;
 		}
@@ -234,9 +234,9 @@ protected:
 	 * @return vector of entropy satisfying gradient.
 	 */
 	template <typename PosType>
-	VecDT gradE (const Felt::VecDT<PosType, Dims>& pos_) const
+	VecDT gradE (const Felt::VecDT<PosType, t_dims>& pos_) const
 	{
-		using VecDp = Felt::VecDT<PosType, Dims>;
+		using VecDp = Felt::VecDT<PosType, t_dims>;
 		// Value at pself point.
 		const LeafType centre = pself->get(pos_);
 		// Reference to grid dimensions.
@@ -270,7 +270,7 @@ protected:
 	 * @return vector with forward difference gradient.
 	 */
 	template <typename PosType>
-	VecDT gradF (const Felt::VecDT<PosType, Dims>& pos_) const
+	VecDT gradF (const Felt::VecDT<PosType, t_dims>& pos_) const
 	{
 		// Value at this point.
 		const LeafType centre = pself->get(pos_);
@@ -279,7 +279,7 @@ protected:
 		// Vector to store gradient calculation.
 		VecDT vec_grad;
 		// Position for look-ahead.
-		Felt::VecDT<PosType, Dims> pos_neigh(pos_);
+		Felt::VecDT<PosType, t_dims> pos_neigh(pos_);
 
 		for (INT axis = 0; axis < size.size(); axis++)
 		{
@@ -299,7 +299,7 @@ protected:
 	 * @return
 	 */
 	template <typename PosType>
-	VecDT gradB (const Felt::VecDT<PosType, Dims>& pos_) const
+	VecDT gradB (const Felt::VecDT<PosType, t_dims>& pos_) const
 	{
 		// pself->getue at pself point.
 		const LeafType centre = pself->get(pos_);
@@ -308,7 +308,7 @@ protected:
 		// Vector to store gradient calculation.
 		VecDT vec_grad;
 		// Position for look-behind.
-		Felt::VecDT<PosType, Dims> vec_dir(pos_);
+		Felt::VecDT<PosType, t_dims> vec_dir(pos_);
 
 		for (INT axis = 0; axis < size.size(); axis++) {
 			vec_dir(axis) -= 1;
@@ -326,14 +326,14 @@ protected:
 	 * @return vector with central difference gradient.
 	 */
 	template <typename PosType>
-	VecDT gradC (const Felt::VecDT<PosType, Dims>& pos_) const
+	VecDT gradC (const Felt::VecDT<PosType, t_dims>& pos_) const
 	{
 		// Reference to GridBase dimensions.
 		const VecDi& size = pself->size();
 		// Vector to store gradient calculation.
 		VecDT vec_grad;
 		// Position for look-around.
-		Felt::VecDT<PosType, Dims> vec_dir(pos_);
+		Felt::VecDT<PosType, t_dims> vec_dir(pos_);
 
 		for (INT axis = 0; axis < size.size(); axis++) {
 			vec_dir(axis) -= 1;
@@ -355,7 +355,7 @@ protected:
 	 *
 	 * @return representative spatial size of a leaf node.
 	 */
-	const FLOAT dx () const
+	FLOAT dx () const
 	{
 		return m_dx;
 	}
@@ -400,7 +400,7 @@ protected:
 		const VecDi& pos_floor = Felt::floor(pos_);
 
 		// Store all 2^d corners.
-		std::vector< LeafType > val_corners(1 << size.size());
+		DataArray< LeafType > val_corners(PosIdx(1 << size.size()));
 
 		// Get all corners of containing cell.
 		for (UINT i = 0; i < val_corners.size(); i++)
@@ -442,25 +442,29 @@ protected:
 	 * @param pos_ real-valued position to interpolate to.
 	 * @return list of interpolated values
 	 */
-	static void interp (std::vector<LeafType>& val_corners_, const VecDf& pos_)
+	static void interp (DataArray<LeafType>& val_corners_, const VecDf& pos_)
 	{
-		const UINT num_corners = val_corners_.size();
+		const ListIdx num_corners = val_corners_.size();
 
 		// Number of values returned.
 		// This is a power of 2 less than input dimensions
 		// (cube becomes square, square becomes line, line becomes point).
-		const UINT num_out = num_corners >> 1;
+		const ListIdx num_out = num_corners >> 1;
 
+		static_assert(
+			std::is_same<ListIdx, unsigned long>::value,
+			"num_corners must be unsigned to use __builtin_ctzl" //__builtin_ffsl
+		);
 		// The axis along which to interpolate.
 		// This is computed from the dimensions of the original input and
 		// the dimensions of the intended output.
-		const UINT axis_idx = pos_.size() - log2(num_corners);
+		const Dim axis_idx = pos_.size() - Dim(__builtin_ctzl(num_corners));
 
 		// The weighting to be used in interpolating each pair of points.
 		// This is the position along the axis of interpolation.
 		const FLOAT axis_pos = pos_(axis_idx);
 
-		for (UINT i = 0; i < num_out; i++)
+		for (ListIdx i = 0; i < num_out; i++)
 		{
 			const LeafType low = val_corners_[(i << 1)];
 			const LeafType high = val_corners_[(i << 1) + 1];
@@ -477,9 +481,9 @@ protected:
 	 * @param fn_ lambda function
 	 */
 	template <typename Fn>
-	static void neighs(Vec3i pos_, Fn fn_)
+	static void neighs (Vec3i pos_, Fn fn_)
 	{
-		for (INT axis = 0; axis < Dims; axis++)
+		for (Dim axis = 0; axis < t_dims; axis++)
 		{
 			pos_(axis) -= 1;
 			fn_(pos_);

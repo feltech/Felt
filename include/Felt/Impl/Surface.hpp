@@ -43,7 +43,7 @@ namespace Felt
  * @tparam L the number of narrow band layers surrounding the zero-level
  * surface.
  */
-template <UINT D, UINT L>
+template <Dim D, UINT L>
 class Surface
 {
 public:
@@ -54,7 +54,7 @@ public:
 	/// Furthest layer from the zero-layer on the outside of the volume.
 	static constexpr LayerId LAYER_MAX	= LayerId(L);
 	/// Total number of layers.
-	static constexpr ListIdx NUM_LAYERS = 2*L+1;
+	static constexpr TupleIdx NUM_LAYERS = 2*L+1;
 	/// A tiny number used for error margin when raycasting.
 	static constexpr FLOAT TINY = 0.00001f;
 
@@ -68,10 +68,6 @@ public:
 	 * band) tracked.
 	 */
 	using IsoGrid = Impl::Partitioned::Tracked::Numeric<FLOAT, D, NUM_LAYERS>;
-	/**
-	 * A resizable array of D-dimensional grid positions.
-	 */
-	using PosArray = typename IsoGrid::PosArray;
 	/**
 	 * D-dimensional unsigned int vector.
 	 */
@@ -114,25 +110,16 @@ private:
 		VecDf pos_intersect;
 		VecDi pos_child;
 	};
-
-	/**
-	 * Grid for preventing duplicates when doing neighbourhood queries.
-	 */
-	AffectedLookupGrid 	m_grid_affected;
-	AffectedLookupGrid 	m_grid_affected_buffer;
-
 	/**
 	 * The main level set embedding isogrid.
 	 */
 	IsoGrid				m_grid_isogrid;
-
 	/**
 	 * The delta isogrid update grid.
 	 *
 	 * Used to allow for asynchronous updating.
 	 */
 	DeltaIsoGrid 		m_grid_delta;
-
 	/**
 	 * The (spatially partitioned) status change list.
 	 *
@@ -140,7 +127,11 @@ private:
 	 * one layer to another.
 	 */
 	StatusChangeGrid	m_grid_status_change;
-
+	/**
+	 * Grid for preventing duplicates when doing neighbourhood queries.
+	 */
+	AffectedLookupGrid 	m_grid_affected;
+	AffectedLookupGrid 	m_grid_affected_buffer;
 
 public:
 
@@ -160,10 +151,10 @@ public:
 	Surface (const VecDi& size_, const VecDi& size_partition_ = VecDi::Constant(8)) :
 		// Configure isogrid embedding, initialising to all outside values.
 		m_grid_isogrid(size_, offset(size_), size_partition_, LAYER_MAX+1),
-		// Configure status change partitioned lists.
-		m_grid_status_change(size_, offset(size_), size_partition_, LAYER_MAX+1),
 		// Configure delta isogrid embedding, initialising to zero delta.
 		m_grid_delta(size_, offset(size_), size_partition_, 0),
+		// Configure status change partitioned lists.
+		m_grid_status_change(size_, offset(size_), size_partition_, LAYER_MAX+1),
 		// Configure de-dupe grid for neighbourhood queries.
 		m_grid_affected(size_, offset(size_), size_partition_),
 		m_grid_affected_buffer(size_, offset(size_), size_partition_)
@@ -236,7 +227,7 @@ public:
 	 */
 	const PosArray& parts () const
 	{
-		return m_grid_isogrid.children().list(layer_idx(0));
+		return m_grid_isogrid.children().lookup().list(layer_idx(0));
 	}
 
 	/**
@@ -247,7 +238,7 @@ public:
 	 */
 	const PosArray& layer (const PosIdx pos_child_idx_) const
 	{
-		return m_grid_isogrid.children().get(pos_child_idx_).list(layer_idx(0));
+		return m_grid_isogrid.children().get(pos_child_idx_).lookup().list(layer_idx(0));
 	}
 
 	/**
@@ -260,7 +251,7 @@ public:
 	 */
 	const PosArray& layer (const PosIdx pos_child_idx_, const LayerId layer_id_) const
 	{
-		return m_grid_isogrid.children().get(pos_child_idx_).list(layer_idx(layer_id_));
+		return m_grid_isogrid.children().get(pos_child_idx_).lookup().list(layer_idx(layer_id_));
 	}
 
 	/**
@@ -312,7 +303,7 @@ public:
 		const VecDi& pos_window_size = pos_max - pos_min + VecDi::Constant(1); //+1 for zero coord.
 
 		// Calculate number of grid points to be cycled through within window.
-		const PosIdx pos_idx_max = pos_window_size.prod();
+		const PosIdx pos_idx_max = PosIdx(pos_window_size.prod());
 
 		// Cycle through each point in window.
 		for (PosIdx pos_idx = 0; pos_idx <= pos_idx_max; pos_idx++)
@@ -1280,8 +1271,8 @@ private:
 			#if defined(Felt_EXCEPTIONS) || !defined(NDEBUG)
 
 			const VecDi& pos_child = m_grid_isogrid.pos_child(pos_);
-			const UINT list_idx_from = layer_idx(layer_id_from_);
-			const UINT list_idx_to = layer_idx(layer_id_to_);
+			const TupleIdx list_idx_from = layer_idx(layer_id_from_);
+			const TupleIdx list_idx_to = layer_idx(layer_id_to_);
 			const typename IsoGrid::ChildType& child = m_grid_isogrid.children().get(pos_child);
 
 			if (child.list(list_idx_from).size() == 0)
@@ -1583,7 +1574,7 @@ private:
 		const Felt::VecDu<NUM_LAYERS>& list_idxs_child =
 			m_grid_isogrid.children().lookup().get(pos_child);
 		const UINT list_id_pos = layer_idx(layer_id_pos);
-		const UINT list_idx_pos = m_grid_isogrid.children().get(pos_child).lookup().get(pos_);
+		const TupleIdx list_idx_pos = m_grid_isogrid.children().get(pos_child).lookup().get(pos_);
 
 		std::stringstream sstr;
 		sstr << Felt::format(pos_) << " ∈ P(" << Felt::format(pos_child) << ") = [" <<
@@ -1624,9 +1615,9 @@ private:
 	 * @return integer layer ID that given location should belong to.
 	 */
 	template <class PosType>
-	INT layer_id(const PosType& pos_) const
+	LayerId layer_id(const PosType& pos_) const
 	{
-		const INT layer_id_pos = layer_id(m_grid_isogrid(pos_));
+		const LayerId layer_id_pos = layer_id(m_grid_isogrid(pos_));
 
 		return layer_id_pos;
 	}
@@ -1640,10 +1631,10 @@ private:
 	 * @param val value to round to give narrow band layer ID.
 	 * @return layer ID that given value should belong to
 	 */
-	INT layer_id(const FLOAT val_) const
+	LayerId layer_id(const FLOAT val_) const
 	{
 		// Round to value+epsilon, to catch cases of precisely +/-0.5.
-		return boost::math::round(
+		return boost::math::iround(
 			val_ + std::numeric_limits<FLOAT>::epsilon()
 		);
 	}
@@ -1657,9 +1648,9 @@ private:
 	 * @param id narrow band layer ID.
 	 * @return index to use to get given layer in narrow band array.
 	 */
-	static constexpr ListIdx layer_idx(const INT id_)
+	static constexpr TupleIdx layer_idx(const LayerId id_)
 	{
-		return id_ + NUM_LAYERS / 2;
+		return TupleIdx(id_ + LayerId(NUM_LAYERS) / 2);
 	}
 
 	/**

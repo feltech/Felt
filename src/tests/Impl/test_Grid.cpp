@@ -40,8 +40,8 @@ SCENARIO("Grid::Simple")
 			CHECK(grid.inside(Vec3i(0,0,0)) == true);
 			CHECK(grid.inside(Vec3i(1,2,3)) == true);
 			CHECK(grid.inside(Vec3i(3,7,11)) == false);
-			CHECK(grid.inside(Vec3f(0,-0.00001,0)) == false);
-			CHECK(grid.inside(Vec3f(0,0,9.99999)) == true);
+			CHECK(grid.inside(Vec3f(0,-0.00001f,0)) == false);
+			CHECK(grid.inside(Vec3f(0,0,9.99999f)) == true);
 		}
 
 		WHEN("some positions values are set")
@@ -161,13 +161,13 @@ SCENARIO("Lookup::Simple")
 		const Vec3i pos5(5, -2, 1);
 		const Vec3i pos6(6, -2, 2);
 		const Vec3i pos7(7, 0, 0);
-		const UINT pos1_idx = grid.index(pos1);
-		const UINT pos2_idx = grid.index(pos2);
-		const UINT pos3_idx = grid.index(pos3);
-		const UINT pos4_idx = grid.index(pos4);
-		const UINT pos5_idx = grid.index(pos5);
-		const UINT pos6_idx = grid.index(pos6);
-		const UINT pos7_idx = grid.index(pos7);
+		const PosIdx pos1_idx = grid.index(pos1);
+		const PosIdx pos2_idx = grid.index(pos2);
+		const PosIdx pos3_idx = grid.index(pos3);
+		const PosIdx pos4_idx = grid.index(pos4);
+		const PosIdx pos5_idx = grid.index(pos5);
+		const PosIdx pos6_idx = grid.index(pos6);
+		const PosIdx pos7_idx = grid.index(pos7);
 
 		WHEN("we track 4 locations")
 		{
@@ -341,13 +341,13 @@ SCENARIO("Lookup::Single")
 		const Vec3i pos5(5, -2, 1);
 		const Vec3i pos6(6, -2, 2);
 		const Vec3i pos7(7, 0, 0);
-		const UINT pos1_idx = grid.index(pos1);
-		const UINT pos2_idx = grid.index(pos2);
-		const UINT pos3_idx = grid.index(pos3);
-		const UINT pos4_idx = grid.index(pos4);
-		const UINT pos5_idx = grid.index(pos5);
-		const UINT pos6_idx = grid.index(pos6);
-		const UINT pos7_idx = grid.index(pos7);
+		const PosIdx pos1_idx = grid.index(pos1);
+		const PosIdx pos2_idx = grid.index(pos2);
+		const PosIdx pos3_idx = grid.index(pos3);
+		const PosIdx pos4_idx = grid.index(pos4);
+		const PosIdx pos5_idx = grid.index(pos5);
+		const PosIdx pos6_idx = grid.index(pos6);
+		const PosIdx pos7_idx = grid.index(pos7);
 
 
 		WHEN("we track 4 locations to be tracked")
@@ -531,12 +531,12 @@ SCENARIO("Lookup::Multi")
 		const Vec3i pos4(4, -1, 2);
 		const Vec3i pos5(5, -2, 1);
 		const Vec3i pos6(6, -2, 2);
-		const UINT pos1_idx = grid.index(pos1);
-		const UINT pos2_idx = grid.index(pos2);
-		const UINT pos3_idx = grid.index(pos3);
-		const UINT pos4_idx = grid.index(pos4);
-		const UINT pos5_idx = grid.index(pos5);
-		const UINT pos6_idx = grid.index(pos6);
+		const PosIdx pos1_idx = grid.index(pos1);
+		const PosIdx pos2_idx = grid.index(pos2);
+		const PosIdx pos3_idx = grid.index(pos3);
+		const PosIdx pos4_idx = grid.index(pos4);
+		const PosIdx pos5_idx = grid.index(pos5);
+		const PosIdx pos6_idx = grid.index(pos6);
 
 		THEN("the grid is initialised with NULL indices and the tracking lists are empty")
 		{
@@ -836,7 +836,7 @@ SCENARIO("Tracked::LazySingle")
 			"Tracked grids with a single lookup index per grid node should have a reset method."
 		);
 
-		GridType grid = GridType(3.14159);
+		GridType grid = GridType(3.14159f);
 
 		const PosIdx NULL_IDX = Felt::NULL_IDX;
 
@@ -969,6 +969,7 @@ SCENARIO("Tracked::MultiByRef")
 	GIVEN("a 9x9x9 grid of floats with (-4,-4,-4) offset and background value of 0")
 	{
 		using GridType = Impl::Tracked::MultiByRef<FLOAT, 3, 3>;
+		using IndexTuple = Tuple<ListIdx, 3>;
 
 		static_assert(
 			!std::experimental::is_detected<has_reset_t, GridType>::value,
@@ -988,8 +989,8 @@ SCENARIO("Tracked::MultiByRef")
 		THEN("the associated lookup grid's size is as expected and initialised to NULL indices")
 		{
 			CHECK(grid.lookup().data().size() == 9*9*9);
-			for (const Vec3u& val : grid.lookup().data())
-				CHECK(val == Vec3u::Constant(Felt::NULL_IDX));
+			for (const IndexTuple& val : grid.lookup().data())
+				CHECK(val == IndexTuple::Constant(Felt::NULL_IDX));
 		}
 
 		WHEN("a simple value is added to the grid to be tracked by list 1 and 2")
@@ -1004,13 +1005,14 @@ SCENARIO("Tracked::MultiByRef")
 
 			THEN("the lookup grid is tracking the location just added")
 			{
-				CHECK(grid.lookup().get(Vec3i(2,2,2)) == Vec3u(Felt::NULL_IDX, 0, 0));
+				CHECK(grid.lookup().get(Vec3i(2,2,2)) == IndexTuple(Felt::NULL_IDX, 0, 0));
 				CHECK(grid.lookup().list(0).size() == 0);
 				CHECK(grid.lookup().list(1).size() == 1);
 				CHECK(grid.lookup().list(2).size() == 1);
 				CHECK(grid.lookup().list(1)[0] == grid.index(Vec3i(2,2,2)));
 				CHECK(grid.lookup().list(2)[0] == grid.index(Vec3i(2,2,2)));
 			}
+
 
 			AND_WHEN("the value is modified by reference")
 			{
@@ -1237,7 +1239,7 @@ SCENARIO("Paritioned::Tracked::Simple")
 
 		AND_WHEN("a mask grid is tracking some partitions")
 		{
-			GridType grid_master(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3), 3.14159);
+			GridType grid_master(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3), 0);
 			grid_master.track(1234, pos1, 0);
 			grid_master.track(1234, pos3, 0);
 
