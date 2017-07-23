@@ -262,7 +262,7 @@ public:
 	 *
 	 * @return representative spatial size of a leaf node.
 	 */
-	inline const FLOAT dx () const
+	inline FLOAT dx () const
 	{
 		return m_dx;
 	}
@@ -516,7 +516,7 @@ x = (idx/Dz)/Dy % Dx
 	 *
 	 * @return boolean of the current active state of this grid.
 	 */
-	const bool is_active() const
+	bool is_active() const
 	{
 		return this->m_data.size() > 0;
 	}

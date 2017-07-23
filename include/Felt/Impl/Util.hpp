@@ -23,17 +23,20 @@ namespace Felt
 template <Dim D>
 PosIdx index (const VecDi<D>& pos_, const VecDi<D>& size_, const VecDi<D>& offset_)
 {
-	PosIdx pos_idx = 0;
+	using AxisCoord = typename VecDi<D>::Scalar;
+
+	AxisCoord pos_idx = 0;
+
 	for (Dim i = 0; i < D; i++)
 	{
-		PosIdx pos_idx_axis = PosIdx(pos_(i) - offset_(i));
+		AxisCoord pos_idx_axis = pos_(i) - offset_(i);
 
 		for (Dim j = i+1; j < D; j++)
-			pos_idx_axis *= PosIdx(size_(j));
+			pos_idx_axis *= size_(j);
 
 		pos_idx += pos_idx_axis;
 	}
-	return pos_idx;
+	return PosIdx(pos_idx);
 }
 
 /**
@@ -71,10 +74,10 @@ x = (idx/Dz)/Dy % Dx
 	// Note: since `Dim` is unsigned, we cannot allow `axis` to decrement below zero.
 	for (Dim axis = D-1; axis != 0; axis--)
 	{
-		pos(axis) = AxisCoord(idx_ % PosIdx(size_(axis))) + offset_(axis);
+		pos(axis) = AxisCoord(idx_) % size_(axis) + offset_(axis);
 		idx_ /= PosIdx(size_(axis));
 	}
-	pos(0) = AxisCoord(idx_ % PosIdx(size_(0))) + offset_(0);
+	pos(0) = AxisCoord(idx_) % size_(0) + offset_(0);
 
 	return pos;
 }
