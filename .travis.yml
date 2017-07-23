@@ -5,7 +5,7 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
-      - nschloe/eigen-backports
+      - sourceline: 'ppa:nschloe/eigen-backports'
     packages:
       - g++-6
       - gcc-6
