@@ -116,6 +116,8 @@ protected:
 	void track_child(const PosIdx pos_idx_child_, const TupleIdx list_idx_)
 	{
 		FELT_DEBUG(m_children.assert_pos_idx_bounds(pos_idx_child_, "track:"));
+		if (m_children.lookup().is_tracked(pos_idx_child_, list_idx_))
+			return;
 		std::lock_guard<std::mutex> lock(m_mutex);
 		if (m_children.lookup().is_tracked(pos_idx_child_, list_idx_))
 			return;
@@ -267,6 +269,7 @@ protected:
 	 */
 	void track(const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_, const TupleIdx list_idx_)
 	{
+		pself->track_child(pos_idx_child_, list_idx_);
 		FELT_DEBUG(
 			pself->children().get(pos_idx_child_).assert_pos_idx_bounds(pos_idx_leaf_, "track:")
 		);
@@ -332,6 +335,7 @@ protected:
 		const LeafType val_, const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_,
 		const TupleIdx list_idx_
 	) {
+		pself->track_child(pos_idx_child_, list_idx_);
 		FELT_DEBUG(
 			pself->children().get(pos_idx_child_).assert_pos_idx_bounds(pos_idx_leaf_, "track:")
 		);
@@ -377,18 +381,23 @@ protected:
 		// Untrack position in child sub-grid.
 		child.lookup().untrack(pos_idx_leaf_, list_idx_);
 		child.set(pos_idx_leaf_, background_);
+		const PosArray& pos_idxs = child.lookup().list(list_idx_);
 
-		// If tracking list is empty in child, untrack parent.
-		if (child.lookup().list(list_idx_).size() == 0)
+		// If tracking list is empty in child, untrack parent.  No race condition here, as long as
+		// we stick to one thread per child rule.
+		if (pos_idxs.size() == 0)
 		{
-			// Mutex lock for children grid.
-			std::lock_guard<std::mutex> lock(pself->mutex_children());
-			// Untrack this list in children grid.
-			pself->children().lookup().untrack(pos_idx_child_, list_idx_);
+			// Scope for lock.
+			{
+				// Mutex lock for children grid.
+				std::lock_guard<std::mutex> lock(pself->mutex_children());
+				// Untrack this list in children grid.
+				pself->children().lookup().untrack(pos_idx_child_, list_idx_);
+			}
 
-			// If no position is being tracked at all in any tracking list, then deactivate child.
-			// Otherwise just reset to background value.
-			if (pself->children().lookup().is_tracked(pos_idx_child_) == false)
+			// If no position is being tracked at all in any tracking list, then deactivate
+			// child. Otherwise just reset to background value.
+			if (not pself->children().lookup().is_tracked(pos_idx_child_))
 				child.deactivate(background_);
 		}
 	}
@@ -399,8 +408,8 @@ protected:
 	) {
 		ChildType& child = pself->children().get(pos_idx_child_);
 
-		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		if (!pself->children().lookup().is_tracked(pos_idx_child_))
+		#ifdef FELT_DEBUG_ENABLED
+		if (not pself->children().lookup().is_tracked(pos_idx_child_))
 		{
 			std::stringstream strs;
 			strs << "Attempting to move lists within an inactive child: " <<
@@ -416,13 +425,22 @@ protected:
 		child.lookup().untrack(pos_idx_leaf_, list_idx_from_);
 		child.lookup().track(pos_idx_leaf_, list_idx_to_);
 
-		// Mutex lock for children grid modifications.
-		std::lock_guard<std::mutex> lock(pself->mutex_children());
-		// Ensure list being moved to is tracked by parent grid.
-		pself->children().lookup().track(pos_idx_child_, list_idx_to_);
-		// If list is now empty, stop tracking in parent grid.
-		if (child.lookup().list(list_idx_from_).size() == 0)
-			pself->children().lookup().untrack(pos_idx_child_, list_idx_from_);
+		// If child is not tracked by target list or child should be untracked by source list,
+		// then apply mutex and track/untrack as necessary. No race condition, provided we stick to
+		// one child per thread rule.
+		if (
+			not pself->children().lookup().is_tracked(pos_idx_child_, list_idx_to_) ||
+			child.lookup().list(list_idx_from_).size() == 0
+		) {
+			// Mutex lock for children grid modifications.
+			std::lock_guard<std::mutex> lock(pself->mutex_children());
+			FELT_DEBUG(child.assert_pos_idx_bounds(pos_idx_leaf_, "retrack"));
+			// Ensure parent grid tracks this child in target list.
+			pself->children().lookup().track(pos_idx_child_, list_idx_to_);
+			// If child's source list is now empty, stop tracking in parent grid.
+			if (child.lookup().list(list_idx_from_).size() == 0)
+				pself->children().lookup().untrack(pos_idx_child_, list_idx_from_);
+		}
 	}
 };
 

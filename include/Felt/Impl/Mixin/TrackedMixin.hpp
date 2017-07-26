@@ -200,6 +200,17 @@ protected:
 	{
 		return m_grid_lookup;
 	}
+
+	/**
+	 * Alias to access lookup grid's tracking lists.
+	 *
+	 * @param list_idx index of tracking list.
+	 * @return reference to list.
+	 */
+	const PosArray& list(const TupleIdx list_idx) const
+	{
+		return m_grid_lookup.list(list_idx);
+	}
 };
 
 

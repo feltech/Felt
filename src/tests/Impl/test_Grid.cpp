@@ -825,7 +825,7 @@ SCENARIO("Lookup::LazySingle")
 template <typename T> using has_reset_t = decltype(&T::reset);
 
 
-SCENARIO("Tracked::LazySingle")
+SCENARIO("Tracked::LazySingleByValue")
 {
 	GIVEN("a 3x3x3 grid with (-1,-1,-1) offset and background value of 3.14159")
 	{
@@ -844,6 +844,13 @@ SCENARIO("Tracked::LazySingle")
 		{
 			CHECK(grid.data().size() == 0);
 			CHECK(grid.lookup().data().size() == 0);
+		}
+
+		THEN("there is an alias method to the lookup grid's lists")
+		{
+			CHECK(&grid.lookup().list(0) == &grid.list(0));
+			CHECK(&grid.lookup().list(1) == &grid.list(1));
+			CHECK(&grid.lookup().list(2) == &grid.list(2));
 		}
 
 		WHEN("the grid is resized")
@@ -1286,9 +1293,10 @@ SCENARIO("Paritioned::Tracked::Simple")
 						CHECK(grid.children().get(pos12_child_idx).get(pos1_idx) == 345);
 					}
 
-					THEN("list 1 is *not* tracked by the children grid")
+					THEN("list 1 is tracked by the children grid")
 					{
-						CHECK(grid.children().lookup().list(1).size() == 0);
+						CHECK(grid.children().lookup().list(1).size() == 1);
+						CHECK(grid.children().lookup().get(pos12_child_idx)[1] == 0);
 					}
 
 					THEN("list 1 tracks the leaf position in the child's lookup grid")
@@ -1464,7 +1472,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 				CHECK(child.lookup().get(pos3_idx) == 0);
 			}
 
-			AND_WHEN("a position is untrackd")
+			AND_WHEN("a position is untracked")
 			{
 				grid.untrack(-100, pos123_child_idx, pos1_idx, 0);
 
@@ -2193,7 +2201,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 			}
 		}
 
-		WHEN("neighbours of an arbitrary point are cycled")
+		WHEN("neighbours of an arbitrary position vector are cycled")
 		{
 			std::vector<Vec3i> apos;
 			GridType::neighs(Vec3i(-67, 54, 3), [&apos](const Vec3i& pos) {

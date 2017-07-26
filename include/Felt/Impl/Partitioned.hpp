@@ -59,7 +59,6 @@ private:
 
 	using ThisType = Simple<T, D, N>;
 	using TraitsType = Traits<ThisType>;
-	using ChildType = typename TraitsType::ChildType;
 	using LeafType = typename TraitsType::LeafType;
 
 	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
@@ -67,7 +66,8 @@ private:
 	using TrackedImpl = Impl::Mixin::Partitioned::Tracked<ThisType>;
 public:
 	using ChildrenGrid = typename ChildrenImpl::ChildrenGrid;
-public:
+	using ChildType = typename TraitsType::ChildType;
+
 	Simple(
 		const VecDi& size_, const VecDi& offset_, const VecDi& child_size_,
 		const LeafType background_
@@ -120,6 +120,7 @@ public:
 	using AccessorImpl::get;
 	using AccessorImpl::set;
 	using ChildrenImpl::children;
+	using ChildrenImpl::pos_idx_child;
 	using ChildrenImpl::reset;
 	using ChildrenImpl::track_children;
 	using SizeImpl::offset;

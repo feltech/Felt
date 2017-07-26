@@ -481,7 +481,7 @@ protected:
 	 * @param fn_ lambda function
 	 */
 	template <typename Fn>
-	static void neighs (Vec3i pos_, Fn fn_)
+	static void neighs (VecDi pos_, Fn fn_)
 	{
 		for (Dim axis = 0; axis < t_dims; axis++)
 		{

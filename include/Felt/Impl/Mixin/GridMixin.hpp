@@ -260,7 +260,7 @@ protected:
 			);
 			std::stringstream err;
 			err << title_ << format(pos_.transpose())
-				<< " data index " << pos_idx << " is less than data size " <<
+				<< " data index " << pos_idx << " is greater than data size " <<
 				pself->data().size() << " for grid " <<
 				format(pos_min) << "-" << format(pos_max) << std::endl;
 			std::string err_str = err.str();

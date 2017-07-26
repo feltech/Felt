@@ -50,6 +50,7 @@ public:
 	using ActivatorImpl::deactivate;
 	using ActivatorImpl::is_active;
 	using DataImpl::data;
+	using LookupInterfaceImpl::list;
 	using LookupInterfaceImpl::lookup;
 	using ResetterImpl::reset;
 	using SizeImpl::assert_pos_idx_bounds;

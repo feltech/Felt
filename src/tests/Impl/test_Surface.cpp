@@ -78,6 +78,37 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid with a single 9x9 spatial partition
 			CHECK(surface.layer(0, 1).size() == 4);
 			CHECK(surface.layer(0, 2).size() == 8);
 		}
+
+		AND_WHEN("we expand the surface one unit outwards")
+		{
+			surface.update([](auto pos_idx_child, auto pos_idx_leaf, auto& isogrid) {
+				(void)pos_idx_child; (void)pos_idx_leaf; (void)isogrid;
+				return -1.0f;
+			});
+
+			INFO(stringify_grid_slice(surface.isogrid()));
+
+			THEN("the grid data matches a surface of radius 1")
+			{
+				isogrid_check.data() = {
+					  3,    3,    3,    3,    3,    3,    3,    3,    3,
+					  3,    3,    3,    3,    2,    3,    3,    3,    3,
+					  3,    3,    3,    2,    1,    2,    3,    3,    3,
+					  3,    3,    2,    1,    0,    1,    2,    3,    3,
+					  3,    2,    1,    0,   -1,    0,    1,    2,    3,
+					  3,    3,    2,    1,    0,    1,    2,    3,    3,
+					  3,    3,    3,    2,    1,    2,    3,    3,    3,
+					  3,    3,    3,    3,    2,    3,    3,    3,    3,
+					  3,    3,    3,    3,    3,    3,    3,    3,    3
+				};
+
+				isogrid_check.vdata() = isogrid_check.vdata() -
+					surface.isogrid().snapshot()->vdata();
+				const FLOAT diff = isogrid_check.vdata().sum();
+
+				CHECK(diff == Approx(0));
+			}
+		}
 	}
 }
 }
