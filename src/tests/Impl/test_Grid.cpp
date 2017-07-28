@@ -1472,6 +1472,25 @@ SCENARIO("Paritioned::Tracked::Numeric")
 				CHECK(child.lookup().get(pos3_idx) == 0);
 			}
 
+			AND_WHEN("all grid points in list 0 are iterated over and their values stored")
+			{
+				std::vector<FLOAT> aval;
+
+				grid.leafs(
+					0,
+					[&aval, &grid](auto pos_idx_child_, auto pos_idx_leaf_) {
+						aval.push_back(grid.children().get(pos_idx_child_).get(pos_idx_leaf_));
+					}
+				);
+
+				THEN("array of recorder values is correct and in expected order")
+				{
+					std::vector<FLOAT>aval_check {345, 789};
+					CHECK(aval_check == aval);
+				}
+			}
+
+
 			AND_WHEN("a position is untracked")
 			{
 				grid.untrack(-100, pos123_child_idx, pos1_idx, 0);

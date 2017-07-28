@@ -123,6 +123,7 @@ public:
 	using ChildrenImpl::pos_idx_child;
 	using ChildrenImpl::reset;
 	using ChildrenImpl::track_children;
+	using ChildrenImpl::leafs;
 	using SizeImpl::offset;
 	using SizeImpl::size;
 	using SpatialImpl::curv;

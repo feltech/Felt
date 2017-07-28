@@ -14,23 +14,6 @@
 #include <Felt/Impl/Partitioned.hpp>
 #include <Felt/Impl/Util.hpp>
 
-#ifndef Felt_SURFACE_OMP_CHUNK_SIZE
-/**
- * Minimum number of (active) spatial partitions required before enabling OpenMP loop parallelism.
- *
- * OpenMP loop parallelisation has signficant overhead (a few milliseconds), so the amount of work
- * done by each thread must be enough to warrant this overhead.
- */
-#define Felt_SURFACE_OMP_MIN_CHUNK_SIZE 32
-#endif
-
-/// Transform args to a char* string.
-#define FELT_STR(args) #args
-/// The OpenMP parallel loop command.
-#define FELT_PARALLEL_FOR_CMD(num, args)\
-	FELT_STR(omp parallel for if(num >= 32) args)
-/// The #pragma containing the OpenMP parallel loop command
-#define FELT_PARALLEL_FOR(num, args) _Pragma(FELT_PARALLEL_FOR_CMD(num, args))
 
 
 namespace Felt
@@ -652,6 +635,17 @@ public:
 	}
 
 	/**
+	 * Cycle all points in zero layer calling given lambda with child index and leaf index.
+	 *
+	 * @param fn_ (pos_idx_child, pos_idx_leaf) -> void function.
+	 */
+	template <typename Fn>
+	void leafs(Fn fn_) const
+	{
+		m_grid_isogrid.leafs(layer_idx(0), fn_);
+	}
+
+	/**
 	 * Get null position vector for given template typename.
 	 *
 	 * TODO: c++14 should support variable templates, which is a better solution,
@@ -944,11 +938,11 @@ private:
 		bool is_status_changed = false;
 
 		// Update distance transform for inner layers of the narrow band.
-		for (INT layer_id = -1; layer_id >= s_layer_min; layer_id--)
+		for (LayerId layer_id = -1; layer_id >= s_layer_min; layer_id--)
 			is_status_changed |= update_distance(layer_id, -1, plookup_, plookup_buffer_);
 
 		// Update distance transform for outer layers of the narrow band.
-		for (INT layer_id = 1; layer_id <= s_layer_max; layer_id++)
+		for (LayerId layer_id = 1; layer_id <= s_layer_max; layer_id++)
 			is_status_changed |= update_distance(layer_id, 1, plookup_, plookup_buffer_);
 
 		return is_status_changed;
@@ -1103,9 +1097,11 @@ private:
 		);
 		#endif
 
-		StatusChangeChild child = m_grid_status_change.children().get(pos_idx_child_);
+		StatusChangeChild& child = m_grid_status_change.children().get(pos_idx_child_);
 		LayerId layer_id_to = child.get(pos_idx_leaf_);
 
+		// If the position is already marked for status change, this must be a subsequent loop
+		// around `converge_distance`, and this leaf position is "jumping" more than one layer.
 		if (layer_id_to != s_outside)
 		{
 			child.set(pos_idx_leaf_, layer_id_to_);
@@ -1363,11 +1359,12 @@ private:
 		// This point's distance is then the distance of the closest neighbour +/-1, depending
 		// which side of the band we are looking at. So first transform back into signed distance
 		// then add +/-1.
-		dist_ = dist_*dir_ + dir_;
+		const Distance dist_neigh = dist_*dir_;
+		dist_ = dist_neigh + dir_;
 
 		#ifdef FELT_DEBUG_ENABLED
 		const LayerId layer_id_pos = layer_id(pos_original);
-		const LayerId layer_id_neigh = layer_id(dist_);
+		const LayerId layer_id_neigh = layer_id(dist_neigh);
 
 		if (
 			std::abs(layer_id_pos) < std::abs(layer_id_neigh) &&

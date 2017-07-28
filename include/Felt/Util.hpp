@@ -12,6 +12,23 @@ namespace felt
 /// Shorthand cast to const CRTP derived type.
 #define cself static_cast<const DerivedType*>(this)
 
+#ifndef FELT_SURFACE_OMP_MIN_CHUNK_SIZE
+/**
+ * Minimum number of (active) spatial partitions required before enabling OpenMP loop parallelism.
+ *
+ * OpenMP loop parallelisation has signficant overhead (a few milliseconds), so the amount of work
+ * done by each thread must be enough to warrant this overhead.
+ */
+#define FELT_SURFACE_OMP_MIN_CHUNK_SIZE 32
+#endif
+
+/// Transform args to a char* string.
+#define FELT_STR(args) #args
+/// The OpenMP parallel loop command.
+#define FELT_PARALLEL_FOR_CMD(num, ...)\
+	FELT_STR(omp parallel for if(num >= FELT_SURFACE_OMP_MIN_CHUNK_SIZE) __VA_ARGS__)
+/// The #pragma containing the OpenMP parallel loop command
+#define FELT_PARALLEL_FOR(num, ...) _Pragma(FELT_PARALLEL_FOR_CMD(num, __VA_ARGS__))
 
 /**
  * Use 32 bit float by default.

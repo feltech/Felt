@@ -403,7 +403,7 @@ private:
 	/// CRTP derived class.
 	using DerivedType = Derived;
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<Derived>::t_dims;
+	static const Dim t_dims = Traits<Derived>::t_dims;
 	/// Type of data to store in grid nodes.
 	using LeafType = typename Traits<Derived>::LeafType;
 	/// D-dimensional signed integer vector.

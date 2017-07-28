@@ -1,7 +1,10 @@
+#include <unordered_set>
+
 #include "../catch.hpp"
 #include <Felt/Impl/Common.hpp>
 #include "Utils.hpp"
 #include <Felt/Impl/Surface.hpp>
+
 
 SCENARIO("Impl::Surface")
 {
@@ -108,6 +111,130 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid with a single 9x9 spatial partition
 
 				CHECK(diff == Approx(0));
 			}
+
+			AND_WHEN("iterating over layer 0 and recording each point hit")
+			{
+				using PosSet = std::unordered_set< Vec2i, matrix_hash<Vec2i> >;
+				PosSet pos_leafs;
+
+				surface.leafs(
+					[&surface, &pos_leafs](auto pos_idx_child, auto pos_idx_leaf) {
+						#pragma omp critical
+						pos_leafs.insert(
+							surface.isogrid().children().get(pos_idx_child).index(pos_idx_leaf)
+						);
+					}
+				);
+
+				THEN("the four zero layer points are recorded")
+				{
+					PosSet pos_leafs_expected{
+						Vec2i(-1, 0), Vec2i(1, 0), Vec2i(0, 1), Vec2i(0, -1)
+					};
+					CHECK(pos_leafs == pos_leafs_expected);
+				}
+			}
+
+			AND_WHEN("we contract the surface by 1 unit inwards")
+			{
+				surface.update([](auto pos_idx_child, auto pos_idx_leaf, auto& isogrid) {
+					(void)pos_idx_child; (void)pos_idx_leaf; (void)isogrid;
+					return 1.0f;
+				});
+
+				INFO(stringify_grid_slice(surface.isogrid()));
+
+				THEN("the surface has collapsed back to a singularity")
+				{
+					// A 2D 2-layer singularity (seed) point should look like the following.
+
+					isogrid_check.data() = {
+						  3,    3,    3,    3,    3,    3,    3,    3,    3,
+						  3,    3,    3,    3,    3,    3,    3,    3,    3,
+						  3,    3,    3,    3,    2,    3,    3,    3,    3,
+						  3,    3,    3,    2,    1,    2,    3,    3,    3,
+						  3,    3,    2,    1,    0,    1,    2,    3,    3,
+						  3,    3,    3,    2,    1,    2,    3,    3,    3,
+						  3,    3,    3,    3,    2,    3,    3,    3,    3,
+						  3,    3,    3,    3,    3,    3,    3,    3,    3,
+						  3,    3,    3,    3,    3,    3,    3,    3,    3
+					};
+
+					isogrid_check.vdata() = isogrid_check.vdata() -
+						surface.isogrid().snapshot()->vdata();
+					INFO(stringify_grid_slice(*surface.isogrid().snapshot()));
+					INFO(stringify_grid_slice(isogrid_check));
+
+					const FLOAT diff = isogrid_check.vdata().sum();
+
+					CHECK(diff == 0);
+
+					CHECK(surface.layer(0,-2).size() == 0);
+					CHECK(surface.layer(0,-1).size() == 0);
+					CHECK(surface.layer(0,0).size() == 1);
+					CHECK(surface.layer(0,1).size() == 4);
+					CHECK(surface.layer(0,2).size() == 8);
+				}
+
+				AND_WHEN("we contract the surface by 1 unit inwards again")
+				{
+					surface.update([](auto pos_idx_child, auto pos_idx_leaf, auto& isogrid) {
+						(void)pos_idx_child; (void)pos_idx_leaf; (void)isogrid;
+						return 1.0f;
+					});
+
+					INFO(stringify_grid_slice(surface.isogrid()));
+
+					AND_WHEN("iterating over layer 0 and recording each point hit")
+					{
+						using PosSet = std::unordered_set< Vec2i, matrix_hash<Vec2i> >;
+						PosSet pos_leafs;
+
+						surface.leafs(
+							[&surface, &pos_leafs](auto pos_idx_child, auto pos_idx_leaf) {
+								#pragma omp critical
+								pos_leafs.insert(
+									surface.isogrid().children()
+										.get(pos_idx_child).index(pos_idx_leaf)
+								);
+							}
+						);
+
+						THEN("there are no points recorded")
+						{
+							CHECK(pos_leafs.size() == 0);
+						}
+					}
+
+					THEN("the surface data matches an area completely outside the surface")
+					{
+						isogrid_check.data() = {
+							  3,    3,    3,    3,    3,    3,    3,    3,    3,
+							  3,    3,    3,    3,    3,    3,    3,    3,    3,
+							  3,    3,    3,    3,    3,    3,    3,    3,    3,
+							  3,    3,    3,    3,    3,    3,    3,    3,    3,
+							  3,    3,    3,    3,    3,    3,    3,    3,    3,
+							  3,    3,    3,    3,    3,    3,    3,    3,    3,
+							  3,    3,    3,    3,    3,    3,    3,    3,    3,
+							  3,    3,    3,    3,    3,    3,    3,    3,    3,
+							  3,    3,    3,    3,    3,    3,    3,    3,    3
+						};
+
+						isogrid_check.vdata() = isogrid_check.vdata() -
+							surface.isogrid().snapshot()->vdata();
+
+						const FLOAT diff = isogrid_check.vdata().sum();
+
+						CHECK(diff == 0);
+
+						CHECK(surface.layer(0,-2).size() == 0);
+						CHECK(surface.layer(0,-1).size() == 0);
+						CHECK(surface.layer(0,0).size() == 0);
+						CHECK(surface.layer(0,1).size() == 0);
+						CHECK(surface.layer(0,2).size() == 0);
+					}
+				}
+			} // End when contract by 1.
 		}
 	}
 }

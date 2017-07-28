@@ -3,6 +3,7 @@
 #include <memory>
 #include <mutex>
 
+#include <Felt/Util.hpp>
 #include <Felt/Impl/Grid.hpp>
 #include <Felt/Impl/Tracked.hpp>
 
@@ -180,7 +181,7 @@ protected:
 				// values, so just reset list.
 				else
 				{
-					pself->clear_list(child, list_idx);
+					child.list(list_idx).clear();
 				}
 			}
 		}
@@ -203,6 +204,26 @@ protected:
 		// Encode child position as an index.
 		return m_children.index(pos_child);
 	}
+
+
+	template<typename Fn>
+	void leafs(const TupleIdx layer_idx_, Fn fn_) const
+	{
+		const PosArray& pos_idxs_child = m_children.lookup().list(layer_idx_);
+		const ListIdx num_childs = pos_idxs_child.size();
+
+		FELT_PARALLEL_FOR(num_childs)
+		for (ListIdx list_idx = 0; list_idx < num_childs; list_idx++)
+		{
+			const PosIdx pos_idx_child = pos_idxs_child[list_idx];
+			const ChildType& child = m_children.get(pos_idx_child);
+			for (const PosIdx pos_idx_leaf : child.lookup().list(layer_idx_))
+			{
+				fn_(pos_idx_child, pos_idx_leaf);
+			}
+		}
+	}
+
 
 	std::mutex& mutex_children()
 	{
@@ -275,17 +296,6 @@ protected:
 		);
 		pself->children().get(pos_idx_child_).track(pos_idx_leaf_, list_idx_);
 	}
-
-	/**
-	 * Clear tracking list in child grid for given list id.
-	 *
-	 * @param child child grid to clear list within.
-	 * @param list_idx_ list id to clear.
-	 */
-	void clear_list(ChildType& child, TupleIdx list_idx_)
-	{
-		child.list(list_idx_).clear();
-	}
 };
 
 
@@ -341,17 +351,6 @@ protected:
 		);
 		ChildType& child = pself->children().get(pos_idx_child_);
 		child.track(val_, pos_idx_leaf_, list_idx_);
-	}
-
-	/**
-	 * Clear tracking list in child grid for given list id.
-	 *
-	 * @param child child grid to clear list within.
-	 * @param list_idx_ list id to clear.
-	 */
-	void clear_list(ChildType& child, TupleIdx list_idx_)
-	{
-		child.lookup().list(list_idx_).clear();
 	}
 };
 

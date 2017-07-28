@@ -58,7 +58,6 @@ public:
 	using SizeImpl::resize;
 	using SizeImpl::size;
 	using TrackedImpl::track;
-
 };
 
 
