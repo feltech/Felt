@@ -545,6 +545,16 @@ public:
 	}
 
 	/**
+	 * Get points affected by most recent update, in the form of a lookup grid.
+	 *
+	 * @return the affected lookup grid.
+	 */
+	const AffectedLookupGrid& affected() const
+	{
+		return m_grid_affected;
+	}
+
+	/**
 	 * Get null position vector for given template typename.
 	 *
 	 * TODO: c++14 should support variable templates, which is a better solution,

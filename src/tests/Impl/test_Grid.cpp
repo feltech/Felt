@@ -1476,12 +1476,9 @@ SCENARIO("Paritioned::Tracked::Numeric")
 			{
 				std::vector<FLOAT> aval;
 
-				grid.leafs(
-					0,
-					[&aval, &grid](auto pos_idx_child_, auto pos_idx_leaf_) {
-						aval.push_back(grid.children().get(pos_idx_child_).get(pos_idx_leaf_));
-					}
-				);
+				grid.leafs(0, [&aval, &grid](const auto& pos_) {
+					aval.push_back(grid.get(pos_));
+				});
 
 				THEN("array of recorder values is correct and in expected order")
 				{

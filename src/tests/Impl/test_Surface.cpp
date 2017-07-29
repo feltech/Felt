@@ -15,13 +15,19 @@ template <Dim D, LayerId L>
 ListIdx layer_size(
 	const Surface<D, L>& surface, const VecDi<D>& pos_child_, const LayerId layer_id
 );
+/// Alias std::to_string for compactness.
+template <typename... Args>
+auto s(Args&&... args) -> decltype(std::to_string(std::forward<Args>(args)...)) {
+	return std::to_string(std::forward<Args>(args)...);
 }
 
-
-SCENARIO("Impl::Surface")
-{
+}
 
 using namespace Felt;
+
+SCENARIO("Surface - global updates")
+{
+
 
 GIVEN("a 2-layer 2D surface in a 7x7 isogrid with 3x3 spatial partitions")
 {
@@ -39,7 +45,7 @@ GIVEN("a 2-layer 2D surface in a 7x7 isogrid with 3x3 spatial partitions")
 	}
 }
 
-GIVEN("a 2-layer 2D surface in a 9x9 isogrid partitioned 3x3")
+GIVEN("a 2-layer 2D surface in a 9x9 isogrid with 3x3 partitions")
 {
 	// 2D surface with 2x narrow band layers, respectively.
 	using SurfaceType = Surface<2, 2>;
@@ -132,10 +138,8 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid partitioned 3x3")
 
 				surface.isogrid().leafs(
 					surface.layer_idx(0),
-					[&surface, &pos_leafs](auto pos_idx_child, auto pos_idx_leaf) {
-						pos_leafs.insert(
-							surface.isogrid().children().get(pos_idx_child).index(pos_idx_leaf)
-						);
+					[&pos_leafs](auto pos_) {
+						pos_leafs.insert(pos_);
 					}
 				);
 
@@ -279,11 +283,8 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid partitioned 3x3")
 
 						surface.isogrid().leafs(
 							surface.layer_idx(0),
-							[&surface, &pos_leafs](auto pos_idx_child, auto pos_idx_leaf) {
-								pos_leafs.insert(
-									surface.isogrid().children()
-										.get(pos_idx_child).index(pos_idx_leaf)
-								);
+							[&pos_leafs](auto pos_) {
+								pos_leafs.insert(pos_);
 							}
 						);
 
@@ -437,82 +438,264 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid partitioned 3x3")
 	}
 }
 
-GIVEN("a 16x9 2-layer surface with two small regions side-by-side")
+
+GIVEN("a 2-layer 2D surface in a 21x21 isogrid with 2x2 partitions")
 {
-	Surface<2, 2> surface(Vec2i(16, 9), Vec2i::Constant(3));
-	Impl::Grid::Snapshot<FLOAT, 2> isogrid_check(Vec2i(16, 9), Vec2i::Zero(), 0);
+	using SurfaceType = Surface<2, 2>;
+	SurfaceType surface(Vec2i{21, 21}, Vec2i{2, 2});
+	// Grid to set values of manually, for checking against.
+	Impl::Grid::Snapshot<Distance, 2> isogrid_check(Vec2i{21, 21}, Vec2i::Zero(), 0);
 
-	// Create two seed points and expand the narrow band.
-	surface.seed(Vec2i(-4, 0));
-	surface.seed(Vec2i(4, 0));
-	surface.update([](auto pos_idx_child, auto pos_idx_leaf, auto& isogrid) {
-		(void)pos_idx_child; (void)pos_idx_leaf; (void)isogrid;
-		return -1.0f;
-	});
-
-	INFO(stringify_grid_slice(surface.isogrid()));
-
-	THEN("outermost layers in central partitions are as expected")
+	WHEN("an initial seed is expanded such that the central partition is all inside")
 	{
-		auto size_left = layer_size<2,2>(surface, Vec2i(0,0), 2);
-		auto size_right = layer_size<2,2>(surface, Vec2i(1,0), 2);
-		CHECK(size_left == 3);
-		CHECK(size_right == 3);
-	}
+		// Create seed point and expand the narrow band.
+		surface.seed(Vec2i(0, 0));
 
-	THEN("the surface is in the expected state")
-	{
-		isogrid_check.data() = {
-			  3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
-			  3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,
-			  3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,
-			  3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    2,    1,    0,    1,    2,    3,
-			  3,    2,    1,    0,   -1,    0,    1,    2,    3,    2,    1,    0,   -1,    0,    1,    2,
-			  3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    2,    1,    0,    1,    2,    3,
-			  3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,
-			  3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,
-			  3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
-		};
-
-		isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot()->vdata();
-		const Distance diff = isogrid_check.vdata().sum();
-		CHECK(diff == Approx(0));
-
-		CHECK(layer_size(surface, -2) == 0);
-		CHECK(layer_size(surface, -1) == 2);
-		CHECK(layer_size(surface, 0) == 8);
-		CHECK(layer_size(surface, 1) == 16);
-		CHECK(layer_size(surface, 2) == 24);
-	}
-
-	WHEN("we expand the subsurfaces towards one-another")
-	{
-		surface.update_start();
-		surface.delta(Vec2i(-3, 0), -1.0f);
-		surface.delta(Vec2i(3, 0), -1.0f);
-		surface.update_end();
+		for (UINT i = 0; i < 5; i++)
+			surface.update([](auto pos_idx_child, auto pos_idx_leaf, auto& isogrid) {
+				(void)pos_idx_child; (void)pos_idx_leaf; (void)isogrid;
+				return -1.0f;
+			});
 
 		INFO(stringify_grid_slice(surface.isogrid()));
 
-		THEN("the centremost partitions contain the expected number of outer layer points")
+		THEN("the isogrid values are as expected")
+		{
+			isogrid_check.data() = {
+				3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    3,    3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    3,    3,    2,    1,    0,   -1,    0,    1,    2,    3,    3,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    2,    1,    0,   -1,   -2,   -3,   -2,   -1,    0,    1,    2,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    2,    1,    0,   -1,   -2,   -3,   -3,   -3,   -2,   -1,    0,    1,    2,    3,    3,    3,    3,
+				3,    3,    3,    2,    1,    0,   -1,   -2,   -3,   -3,   -3,   -3,   -3,   -2,   -1,    0,    1,    2,    3,    3,    3,
+				3,    3,    3,    3,    2,    1,    0,   -1,   -2,   -3,   -3,   -3,   -2,   -1,    0,    1,    2,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    2,    1,    0,   -1,   -2,   -3,   -2,   -1,    0,    1,    2,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    3,    3,    2,    1,    0,   -1,    0,    1,    2,    3,    3,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    3,    3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+				3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
+			};
+
+			isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot()->vdata();
+			const Distance diff = isogrid_check.vdata().sum();
+			CHECK(diff == Approx(0));
+		}
+
+		THEN("the central partition is deactivated")
+		{
+			// Surrounding partitions are still active.
+			CHECK(surface.isogrid().children().get(Vec2i{0,1}).is_active() == true);
+			CHECK(surface.isogrid().children().get(Vec2i{0,-1}).is_active() == true);
+			CHECK(surface.isogrid().children().get(Vec2i{1,0}).is_active() == true);
+			CHECK(surface.isogrid().children().get(Vec2i{-1,0}).is_active() == true);
+			// But central partition has now been deactivated.
+			CHECK(surface.isogrid().children().get(Vec2i{0,0}).is_active() == false);
+		}
+	}
+}
+
+} // End SCENARIO Surface - global up
+
+
+SCENARIO("Surface - local updates")
+{
+	GIVEN("a 9x9 2-layer surface with 2x2 partitions initialised with a seed point in the centre")
+	{
+		using SurfaceType = Surface<2, 2>;
+		SurfaceType surface(Vec2i{9, 9}, Vec2i{2, 2});
+
+		// Grid to set values of manually, for checking against.
+		Impl::Grid::Snapshot<Distance, 2> isogrid_check(Vec2i{9, 9}, Vec2i::Zero(), 0);
+
+		// Create seed point and expand the narrow band.
+		surface.seed(Vec2i(0, 0));
+
+		WHEN("we contract the surface by 1 unit inwards")
+		{
+			surface.update_start();
+			surface.delta(Vec2i(0, 0), 1.0f);
+			surface.update_end();
+
+			INFO(stringify_grid_slice(surface.isogrid()));
+
+			THEN("the surface data matches an area completely outside the surface")
+			{
+				isogrid_check.data() = {
+					  3,    3,    3,    3,    3,    3,    3,    3,    3,
+					  3,    3,    3,    3,    3,    3,    3,    3,    3,
+					  3,    3,    3,    3,    3,    3,    3,    3,    3,
+					  3,    3,    3,    3,    3,    3,    3,    3,    3,
+					  3,    3,    3,    3,    3,    3,    3,    3,    3,
+					  3,    3,    3,    3,    3,    3,    3,    3,    3,
+					  3,    3,    3,    3,    3,    3,    3,    3,    3,
+					  3,    3,    3,    3,    3,    3,    3,    3,    3,
+					  3,    3,    3,    3,    3,    3,    3,    3,    3
+				};
+
+				isogrid_check.vdata() = isogrid_check.vdata() -
+					surface.isogrid().snapshot()->vdata();
+
+				const Distance diff = isogrid_check.vdata().sum();
+
+				CHECK(diff == 0);
+
+				CHECK(layer_size(surface, -2) == 0);
+				CHECK(layer_size(surface, -1) == 0);
+				CHECK(layer_size(surface, 0) == 0);
+				CHECK(layer_size(surface, 1) == 0);
+				CHECK(layer_size(surface, 2) == 0);
+			}
+		}
+
+		WHEN("we expand by 1 unit")
+		{
+			surface.update_start();
+			surface.delta(Vec2i(0, 0), -1.0f);
+			surface.update_end();
+
+			AND_WHEN("we modify a couple of points and calculate the affected narrow band points")
+			{
+				// Clean up from previous update.
+				surface.update_start();
+				// Add a couple of points that could affect the narrow band.
+				surface.delta(Vec2i(0, 1), 0.3f);
+				surface.delta(Vec2i(1, 0), 0.3f);
+				surface.update_end();
+
+				THEN("the affected narrow band points are as expected")
+				{
+					using PosArray = std::vector<Vec2i>;
+					PosArray check_layers_pos[5];
+					check_layers_pos[2 + -2] = PosArray();
+					check_layers_pos[2 + -1] = PosArray({
+						Vec2i(0, 0)
+					});
+					check_layers_pos[2 + 0] = PosArray({
+					// We don't care for now about zero-layer points.
+				//		Vec2i(0,1),
+				//		Vec2i(1,0)
+					});
+					check_layers_pos[2 + 1] = PosArray({
+						// For (0,1):
+						Vec2i(-1, 1), Vec2i(1, 1), Vec2i(0, 2),
+						// For (1,0):
+						Vec2i(2, 0), Vec2i(1, -1)
+					});
+
+					check_layers_pos[2 + 2] = PosArray({
+						// For (0,1):
+						Vec2i(-2, 1), Vec2i(2, 1),
+						Vec2i(-1, 2), Vec2i(1, 2),
+						Vec2i(0, 3),
+						// For (1,0):
+						Vec2i(3, 0), Vec2i(1, -2), Vec2i(2, -1)
+					});
+
+					for (LayerId layer_id = -2; layer_id <= 2; layer_id++)
+					{
+						if (layer_id == 0)
+							continue;
+
+						const TupleIdx layer_idx = 2 + layer_id;
+						ListIdx num_leafs = 0;
+						surface.affected().leafs(layer_idx, [&num_leafs](auto) {
+							num_leafs++;
+						});
+
+
+						INFO(
+							"Layer " + s(layer_id) + " at index " + s(layer_idx) +
+							" number of leafs " +
+							s(num_leafs) + " == " +
+							s(check_layers_pos[layer_idx].size())
+						);
+						CHECK(num_leafs == check_layers_pos[layer_idx].size());
+
+						for (auto pos : check_layers_pos[layer_idx])
+						{
+							bool found = false;
+							surface.affected().leafs(layer_idx, [&found, &pos](auto pos_) {
+								found |= pos == pos_;
+							});
+
+							INFO(
+								"Affected grid layer " + s(layer_id) + " at index " +
+								s(layer_idx) + " should contain (" + s(pos(0)) + "," +
+								s(pos(1)) + ")"
+							);
+							CHECK(found == true);
+						}
+
+						surface.affected().leafs(
+							layer_idx,
+							[&check_layers_pos, layer_id, layer_idx](const auto& pos_) {
+								auto iter = std::find(
+									check_layers_pos[layer_idx].begin(),
+									check_layers_pos[layer_idx].end(), pos_
+								);
+
+								INFO(
+									"Checking list layer " + s(layer_id) + " at index " +
+									s(layer_idx) + " should contain (" + s(pos_(0)) + "," +
+									s(pos_(1)) + ")"
+								);
+								CHECK(iter != check_layers_pos[layer_idx].end());
+							}
+						);
+					}
+				}
+			}
+		}
+	}
+}// End SCENARIO Surface - local updates.
+
+
+SCENARIO("Surface - layer interactions")
+{
+
+	GIVEN("a 16x9 2-layer surface with two small regions side-by-side")
+	{
+		Surface<2, 2> surface(Vec2i(16, 9), Vec2i::Constant(3));
+		Impl::Grid::Snapshot<FLOAT, 2> isogrid_check(Vec2i(16, 9), Vec2i::Zero(), 0);
+
+		// Create two seed points and expand the narrow band.
+		surface.seed(Vec2i(-4, 0));
+		surface.seed(Vec2i(4, 0));
+		surface.update([](auto pos_idx_child, auto pos_idx_leaf, auto& isogrid) {
+			(void)pos_idx_child; (void)pos_idx_leaf; (void)isogrid;
+			return -1.0f;
+		});
+
+		INFO(stringify_grid_slice(surface.isogrid()));
+
+		THEN("outermost layers in central partitions are as expected")
 		{
 			auto size_left = layer_size<2,2>(surface, Vec2i(0,0), 2);
 			auto size_right = layer_size<2,2>(surface, Vec2i(1,0), 2);
 			CHECK(size_left == 3);
-			CHECK(size_right == 2);
+			CHECK(size_right == 3);
 		}
 
 		THEN("the surface is in the expected state")
 		{
 			isogrid_check.data() = {
 				  3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
-				  3,    3,    3,    3,    2,    2,    3,    3,    3,    3,    3,    2,    2,    3,    3,    3,
-				  3,    3,    3,    2,    1,    1,    2,    3,    3,    3,    2,    1,    1,    2,    3,    3,
-				  3,    3,    2,    1,    0,    0,    1,    2,    3,    2,    1,    0,    0,    1,    2,    3,
-				  3,    2,    1,    0,   -1,   -1,    0,    1,    2,    1,    0,   -1,   -1,    0,    1,    2,
-				  3,    3,    2,    1,    0,    0,    1,    2,    3,    2,    1,    0,    0,    1,    2,    3,
-				  3,    3,    3,    2,    1,    1,    2,    3,    3,    3,    2,    1,    1,    2,    3,    3,
-				  3,    3,    3,    3,    2,    2,    3,    3,    3,    3,    3,    2,    2,    3,    3,    3,
+				  3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,
+				  3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,
+				  3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    2,    1,    0,    1,    2,    3,
+				  3,    2,    1,    0,   -1,    0,    1,    2,    3,    2,    1,    0,   -1,    0,    1,    2,
+				  3,    3,    2,    1,    0,    1,    2,    3,    3,    3,    2,    1,    0,    1,    2,    3,
+				  3,    3,    3,    2,    1,    2,    3,    3,    3,    3,    3,    2,    1,    2,    3,    3,
+				  3,    3,    3,    3,    2,    3,    3,    3,    3,    3,    3,    3,    2,    3,    3,    3,
 				  3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
 			};
 
@@ -521,15 +704,57 @@ GIVEN("a 16x9 2-layer surface with two small regions side-by-side")
 			CHECK(diff == Approx(0));
 
 			CHECK(layer_size(surface, -2) == 0);
-			CHECK(layer_size(surface, -1) == 4);
-			CHECK(layer_size(surface, 0) == 12);
-			CHECK(layer_size(surface, 1) == 20);
-			CHECK(layer_size(surface, 2) == 27);
+			CHECK(layer_size(surface, -1) == 2);
+			CHECK(layer_size(surface, 0) == 8);
+			CHECK(layer_size(surface, 1) == 16);
+			CHECK(layer_size(surface, 2) == 24);
+		}
+
+		WHEN("we expand the subsurfaces towards one-another")
+		{
+			surface.update_start();
+			surface.delta(Vec2i(-3, 0), -1.0f);
+			surface.delta(Vec2i(3, 0), -1.0f);
+			surface.update_end();
+
+			INFO(stringify_grid_slice(surface.isogrid()));
+
+			THEN("the centremost partitions contain the expected number of outer layer points")
+			{
+				auto size_left = layer_size<2,2>(surface, Vec2i(0,0), 2);
+				auto size_right = layer_size<2,2>(surface, Vec2i(1,0), 2);
+				CHECK(size_left == 3);
+				CHECK(size_right == 2);
+			}
+
+			THEN("the surface is in the expected state")
+			{
+				isogrid_check.data() = {
+					  3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+					  3,    3,    3,    3,    2,    2,    3,    3,    3,    3,    3,    2,    2,    3,    3,    3,
+					  3,    3,    3,    2,    1,    1,    2,    3,    3,    3,    2,    1,    1,    2,    3,    3,
+					  3,    3,    2,    1,    0,    0,    1,    2,    3,    2,    1,    0,    0,    1,    2,    3,
+					  3,    2,    1,    0,   -1,   -1,    0,    1,    2,    1,    0,   -1,   -1,    0,    1,    2,
+					  3,    3,    2,    1,    0,    0,    1,    2,    3,    2,    1,    0,    0,    1,    2,    3,
+					  3,    3,    3,    2,    1,    1,    2,    3,    3,    3,    2,    1,    1,    2,    3,    3,
+					  3,    3,    3,    3,    2,    2,    3,    3,    3,    3,    3,    2,    2,    3,    3,    3,
+					  3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3
+				};
+
+				isogrid_check.vdata() = isogrid_check.vdata() - surface.isogrid().snapshot()->vdata();
+				const Distance diff = isogrid_check.vdata().sum();
+				CHECK(diff == Approx(0));
+
+				CHECK(layer_size(surface, -2) == 0);
+				CHECK(layer_size(surface, -1) == 4);
+				CHECK(layer_size(surface, 0) == 12);
+				CHECK(layer_size(surface, 1) == 20);
+				CHECK(layer_size(surface, 2) == 27);
+			}
 		}
 	}
-}
+}// End SCENARIO Surface - layer interactions
 
-} // End SCENARIO.
 
 namespace Felt
 {

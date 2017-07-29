@@ -41,6 +41,7 @@ public:
 
 	using LookupImpl::track;
 	using ChildrenImpl::children;
+	using ChildrenImpl::leafs;
 	using ChildrenImpl::reset;
 };
 

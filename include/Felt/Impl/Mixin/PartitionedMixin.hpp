@@ -207,7 +207,7 @@ protected:
 
 
 	template<typename Fn>
-	void leafs(const TupleIdx layer_idx_, Fn fn_) const
+	void leafs(const TupleIdx layer_idx_, Fn&& fn_) const
 	{
 		const PosArray& pos_idxs_child = m_children.lookup().list(layer_idx_);
 		const ListIdx num_childs = pos_idxs_child.size();
@@ -216,9 +216,9 @@ protected:
 		{
 			const PosIdx pos_idx_child = pos_idxs_child[list_idx];
 			const ChildType& child = m_children.get(pos_idx_child);
-			for (const PosIdx pos_idx_leaf : child.lookup().list(layer_idx_))
+			for (const PosIdx pos_idx_leaf : child.list(layer_idx_))
 			{
-				fn_(pos_idx_child, pos_idx_leaf);
+				fn_(child.index(pos_idx_leaf));
 			}
 		}
 	}
