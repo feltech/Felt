@@ -82,7 +82,6 @@ x = (idx/Dz)/Dy % Dx
 	return pos;
 }
 
-
 /**
  * String format a vector (useful for logging).
  *
@@ -113,69 +112,6 @@ template <typename T> INT sgn(T val_)
 	return (T(0) < val_) - (val_ < T(0));
 }
 
-/**
- * Round float accuracy position to integer accuracy.
- *
- * @tparam D the dimension of the vector.
- * @param pos_ float vector to round
- * @return rounded integer vector (away from zero).
- */
-template <INT D>
-VecDi<D> round(const VecDf<D>& pos_)
-{
-	VecDi<D> pos_rounded;
-	for (UINT dim = 0; dim < pos_.size(); dim++)
-		pos_rounded(dim) = (INT)(pos_(dim) + sgn(pos_(dim)) * 0.5f);
-	return pos_rounded;
-}
-
-/**
- * Call std::floor on each element of float vector to give integer vector.
- *
- * @tparam D the dimension of the vector.
- * @param pos_ float vector
- * @return floored integer vector (away from zero).
- */
-template <INT D>
-VecDi<D> floor(const VecDf<D>& pos_)
-{
-	VecDi<D> pos_rounded;
-	for (UINT dim = 0; dim < pos_.size(); dim++)
-		pos_rounded(dim) = INT(std::floor(pos_(dim)));
-	return pos_rounded;
-}
-
-/**
- * Call std::ceil on each element of float vector to give integer vector.
- *
- * @tparam D the dimension of the vector.
- * @param pos_ float vector
- * @return ceiling of integer vector (away from zero).
- */
-template <INT D>
-VecDi<D> ceil(const VecDf<D>& pos_)
-{
-	VecDi<D> pos_rounded;
-	for (UINT dim = 0; dim < pos_.size(); dim++)
-		pos_rounded(dim) = INT(std::ceil(pos_(dim)));
-	return pos_rounded;
-}
-
-/**
- * Call std::floor on each element of float vector to give float vector.
- *
- * @tparam D the dimension of the vector.
- * @param pos_ float vector
- * @return floored float vector (away from zero).
- */
-template <INT D>
-VecDf<D> floorf(const VecDf<D>& pos_)
-{
-	VecDf<D> pos_rounded;
-	for (UINT dim = 0; dim < pos_.size(); dim++)
-		pos_rounded(dim) = std::floor(pos_(dim));
-	return pos_rounded;
-}
 } // Felt.
 
 #endif /* INCLUDE_FELT_PUBLIC_UTIL_HPP_ */

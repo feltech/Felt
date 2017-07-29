@@ -18,6 +18,10 @@
 
 namespace Felt
 {
+/// Layer ID (in -L, ..., +L)
+using LayerId = INT;
+/// Isogrid distance value
+using Distance = FLOAT;
 
 /**
  * A n-dimensional sparse-field spatially partitioned level set.
@@ -26,20 +30,16 @@ namespace Felt
  * @tparam L the number of narrow band layers surrounding the zero-level
  * surface.
  */
-template <Dim D, UINT L>
+template <Dim D, LayerId L>
 class Surface
 {
-public:
+private:
 	using ThisType = Surface<D, L>;
 
-	/// Layer ID (in -L, ..., +L)
-	using LayerId = INT;
-	/// Isogrid distance value
-	using Distance = FLOAT;
 	/// Furthest layer from the zero-layer on the inside of the volume.
-	static constexpr LayerId s_layer_min	= -LayerId(L);
+	static constexpr LayerId s_layer_min	= -L;
 	/// Furthest layer from the zero-layer on the outside of the volume.
-	static constexpr LayerId s_layer_max	= LayerId(L);
+	static constexpr LayerId s_layer_max	= L;
 	/// Value to indicate a "layer" outside of the volume.
 	static constexpr LayerId s_outside		= s_layer_max + 1;
 	/// Total number of layers.
@@ -84,8 +84,6 @@ public:
 	 */
 	using StatusChangeGrid = Impl::Partitioned::Tracked::Simple<LayerId, D, s_num_layers>;
 
-
-private:
 	/**
 	 * Structure to store raycast intermediate results.
 	 */
@@ -206,23 +204,24 @@ public:
 	template <typename Fn>
 	void update(Fn fn_)
 	{
-		const PosArray& pos_idxs_children = parts();
 		update_start();
 
 		// We are iterating over the entire zero-layer, so assume the delta grid should track
 		// all active partitions in the main isogrid.
 		m_grid_delta.track_children(m_grid_isogrid);
 
+		const PosArray& pos_idxs_children = m_grid_isogrid.children().lookup().list(layer_idx(0));
+
 		FELT_PARALLEL_FOR(pos_idxs_children.size(),)
 		for (ListIdx list_idx = 0; list_idx < pos_idxs_children.size(); list_idx++)
 		{
 			const PosIdx pos_idx_child = pos_idxs_children[list_idx];
-			for (const PosIdx pos_idx_leaf : layer(pos_idx_child))
+			for (const PosIdx pos_idx_leaf : layer(pos_idx_child, 0))
 				m_grid_delta.children().get(pos_idx_child).track(
 					fn_(pos_idx_child, pos_idx_leaf, m_grid_isogrid), pos_idx_leaf, layer_idx(0)
 				);
 		}
-		update_end();
+		update_end_global();
 	}
 
 	/**
@@ -309,7 +308,7 @@ public:
 			}
 		}
 		// Apply delta to isogrid.
-		update_end_local();
+		update_end();
 	}
 
 	/**
@@ -326,33 +325,18 @@ public:
 	}
 
 	/**
-	 * Update zero layer then update distance transform for all
-	 * points in all layers.
-	 */
-	void update_end ()
-	{
-		update_zero_layer(&m_grid_affected_buffer);
-
-		if (update_distance(&m_grid_isogrid, &m_grid_affected_buffer))
-			converge_distance(&m_grid_affected_buffer, &m_grid_affected);
-
-		flush_status_change();
-
-		expand_narrow_band();
-	}
-
-	/**
 	 * Update zero layer then update distance transform for affected points in each layer.
 	 */
-	void update_end_local ()
+	void update_end ()
 	{
 		// Get points in outer layers that are affected by changes in zero-layer.
 		calc_affected();
 
+		m_grid_isogrid.track_children(m_grid_affected);
+		m_grid_delta.track_children(m_grid_affected);
+
 		// Update the zero layer, applying delta to isogrid.
 		update_zero_layer(&m_grid_affected_buffer);
-
-		track_children_delta(m_grid_affected);
 
 		converge_distance(&m_grid_affected, &m_grid_affected_buffer);
 
@@ -370,24 +354,24 @@ public:
 	 * @param pos position to update.
 	 * @param val value to set at given position.
 	 */
-	void delta (const VecDi& pos_, FLOAT val_)
+	void delta (const VecDi& pos_, Distance val_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
-		const INT newlayer_id = this->layer_id(val_);
-		if (newlayer_id != 0 && newlayer_id != 1 && newlayer_id != -1)
+		const LayerId layer_id_new = layer_id(val_);
+		if (layer_id_new != 0 && layer_id_new != 1 && layer_id_new != -1)
 		{
 			std::stringstream strs;
 			strs << "Delta update value out of bounds. Attempted to update position " <<
 				Felt::format(pos_) << " by " << val_ << " would give a layer of "
-				<< newlayer_id << ", which is too much of a jump";
+				<< layer_id_new << ", which is too much of a jump";
 			std::string str = strs.str();
 			throw std::domain_error(str);
 		}
 
 		#endif
 
-		m_grid_delta.track(pos_, val_, layer_idx(0));
+		m_grid_delta.track(val_, pos_, layer_idx(0));
 	}
 
 	/**
@@ -561,91 +545,6 @@ public:
 	}
 
 	/**
-	 * Get grid of affected narrow band points used during localised update mode.
-	 *
-	 * @return ephemeral "affected" grid.
-	 */
-	const AffectedLookupGrid& affected ()
-	{
-		return m_grid_affected;
-	}
-
-	/**
-	 * Get the status change grid that flags when a point is moving between narrow band layers
-	 *
-	 * @return status change grid.
-	 */
-	const StatusChangeGrid& status_change () const
-	{
-		return m_grid_status_change;
-	}
-
-	/**
-	 * Get reference to delta grid of isogrid updates.
-	 *
-	 * @return grid of delta values to be applied to isogrid.
-	 */
-	DeltaIsoGrid& delta ()
-	{
-		return m_grid_delta;
-	}
-
-	/**
-	 * @copydoc Surface::delta()
-	 *
-	 * const version.
-	 */
-	const DeltaIsoGrid& delta () const
-	{
-		return m_grid_delta;
-	}
-
-	/**
-	 * Get reference to the active partitions of a given layer of the narrow.
-	 *
-	 * @return list of positions of active child partitions in the main isogrid.
-	 */
-	const PosArray& parts () const
-	{
-		return m_grid_isogrid.children().lookup().list(layer_idx(0));
-	}
-
-	/**
-	 * Get reference to the zero layer of the narrow band at a given spatial partition.
-	 *
-	 * @param pos_child_idx_ location of child spatial partition.
-	 * @return list of positions in given narrow band layer within given child partition.
-	 */
-	const PosArray& layer (const PosIdx pos_child_idx_) const
-	{
-		return m_grid_isogrid.children().get(pos_child_idx_).lookup().list(layer_idx(0));
-	}
-
-	/**
-	 * Get reference to a single layer of the narrow band at a given
-	 * spatial partition.
-	 *
-	 * @param pos_child_idx_ location of child spatial partition.
-	 * @param layer_id_ narrow band layer id.
-	 * @return list of positions in given narrow band layer within given child partition.
-	 */
-	const PosArray& layer (const PosIdx pos_child_idx_, const LayerId layer_id_) const
-	{
-		return m_grid_isogrid.children().get(pos_child_idx_).lookup().list(layer_idx(layer_id_));
-	}
-
-	/**
-	 * Cycle all points in zero layer calling given lambda with child index and leaf index.
-	 *
-	 * @param fn_ (pos_idx_child, pos_idx_leaf) -> void function.
-	 */
-	template <typename Fn>
-	void leafs(Fn fn_) const
-	{
-		m_grid_isogrid.leafs(layer_idx(0), fn_);
-	}
-
-	/**
 	 * Get null position vector for given template typename.
 	 *
 	 * TODO: c++14 should support variable templates, which is a better solution,
@@ -659,10 +558,36 @@ public:
 		return Felt::VecDT<T, D>::Constant(std::numeric_limits<T>::max());
 	}
 
+	/**
+	 * Get narrow band layer index of ID for indexing into arrays.
+	 *
+	 * Internally we can of course not have negative array indices, so must convert to an
+	 * index first.
+	 *
+	 * @param id narrow band layer ID.
+	 * @return index to use to get given layer in narrow band array.
+	 */
+	static constexpr TupleIdx layer_idx(const LayerId id_)
+	{
+		return TupleIdx(id_ + LayerId(s_num_layers) / 2);
+	}
 
-//#ifndef _TESTING
 private:
-//#endif
+
+	/**
+	 * Update zero layer then update distance transform for all points in all layers.
+	 */
+	void update_end_global ()
+	{
+		update_zero_layer(&m_grid_affected_buffer);
+
+		if (update_distance(&m_grid_isogrid, &m_grid_affected_buffer))
+			converge_distance(&m_grid_affected_buffer, &m_grid_affected);
+
+		flush_status_change();
+
+		expand_narrow_band();
+	}
 
 	/**
 	 * Find all outer layer points who's distance transform is affected by modified zero-layer
@@ -688,55 +613,54 @@ private:
 
 		// Loop spatial partitions of delta for zero-layer.
 		for (
-			const VecDi& pos_child
-			: m_grid_delta.children().list(layer_idx_zero))
+			const PosIdx pos_idx_child
+			: m_grid_delta.children().lookup().list(layer_idx_zero))
 		{
 			// Loop leaf grid nodes with spatial partition
 			for (
-				const VecDi& pos_leaf
-				: m_grid_delta.children().get(pos_child).list(layer_idx_zero)
+				const PosIdx pos_idx_leaf
+				: m_grid_delta.children().get(pos_idx_child).list(layer_idx_zero)
 			)
 				// track zero-layer point to tracking grid.
-				m_grid_affected.track(pos_leaf, layer_idx_zero);
+				m_grid_affected.track(pos_idx_child, pos_idx_leaf, layer_idx_zero);
 		}
 
 		// Arrays to store first and last element in tracking list within each spatial partition of
 		// tracking grid.
-		std::array<std::vector<UINT>, s_num_layers> aidx_first_neigh;
-		std::array<std::vector<UINT>, s_num_layers> aidx_last_neigh;
+		std::array<std::vector<ListIdx>, s_num_layers> aidx_first_neigh;
+		std::array<std::vector<ListIdx>, s_num_layers> aidx_last_neigh;
 
 		// Loop round L times, searching outward for affected outer layer grid nodes.
-		for (UINT udist = 1; udist <= s_layer_max; udist++)
+		for (LayerId udist = 1; udist <= s_layer_max; udist++)
 		{
 			// Reset the first and last element indices for each spatial partition in each layer.
 
-			for (INT layer_id = s_layer_min; layer_id <= s_layer_max; layer_id++)
+			for (LayerId layer_id = s_layer_min; layer_id <= s_layer_max; layer_id++)
 			{
-				const UINT layer_idx = this->layer_idx(layer_id);
+				const TupleIdx layer_idx = this->layer_idx(layer_id);
 				// Get number of spatial partitions for this layer.
-				const UINT num_childs = (
-					m_grid_affected.children().list(layer_idx).size()
-				);
+				const ListIdx num_childs =
+					m_grid_affected.children().lookup().list(layer_idx).size();
 				// Resize spatial partition index lists for this layer to
 				// to include any newly tracked partitions.
-				aidx_last_neigh[layer_idx].resize(num_childs);
+				aidx_last_neigh[ListIdx(layer_idx)].resize(num_childs);
 				// Will initialise to zero, so no further work needed for
 				// these new indices giving the start of the range.
-				aidx_first_neigh[layer_idx].resize(num_childs);
+				aidx_first_neigh[ListIdx(layer_idx)].resize(num_childs);
 				// The final index needs to be copied from the current size
 				// of each spatial partition, so loop over partitions,
 				// copying their size into the respective last index list.
 				for (
-					UINT idx_child = 0; idx_child < num_childs; idx_child++
+					ListIdx list_idx_child = 0; list_idx_child < num_childs; list_idx_child++
 				) {
 					// Get position of this spatial partition in parent
 					// lookup grid.
-					const PosIdx pos_child_idx = m_grid_affected.children().list(layer_idx)[idx_child];
+					const PosIdx pos_idx_child =
+						m_grid_affected.children().lookup().list(layer_idx)[list_idx_child];
 					// Copy number of active grid nodes for this partition
 					// into relevant index in the list.
-					aidx_last_neigh[layer_idx][idx_child] = (
-						m_grid_affected.children().get(pos_child_idx).list(layer_idx).size()
-					);
+					aidx_last_neigh[ListIdx(layer_idx)][list_idx_child] =
+						m_grid_affected.children().get(pos_idx_child).list(layer_idx).size();
 				}
 			}
 
@@ -744,52 +668,44 @@ private:
 			// for each partition using the start and end points cached
 			// above.
 
-			for (INT layer_id = s_layer_min; layer_id <= s_layer_max; layer_id++)
+			for (LayerId layer_id = s_layer_min; layer_id <= s_layer_max; layer_id++)
 			{
-				const UINT layer_idx = this->layer_idx(layer_id);
+				const TupleIdx layer_idx = this->layer_idx(layer_id);
 
 				// Loop over spatial partitions, ignoring newly tracked ones
 				// since we're using the cached spatial partition list as
 				// the end of the range.
 				for (
-					UINT idx_child = 0;
-					idx_child < aidx_first_neigh[layer_idx].size();
+					ListIdx idx_child = 0;
+					idx_child < aidx_first_neigh[ListIdx(layer_idx)].size();
 					idx_child++
 				) {
-					// Get position of this spatial partition in this layer (not by-reference since
-					// list will be modified).
-					const VecDi pos_child = (
-						m_grid_affected.children().list(layer_idx)[idx_child]
+					// Get position of this spatial partition in this layer.
+					const PosIdx pos_idx_child = (
+						m_grid_affected.children().lookup().list(layer_idx)[idx_child]
 					);
 
-					// Loop over leaf grid nodes within this spatial
-					// partition, using the cached start and end indices,
-					// so that newly tracked points are skipped.
+					// Loop over leaf grid nodes within this spatial partition, using the cached
+					// start and end indices, so that newly tracked points are skipped.
 					for (
-						UINT idx_neigh = aidx_first_neigh[layer_idx][idx_child];
-						idx_neigh < aidx_last_neigh[layer_idx][idx_child];
+						ListIdx idx_neigh = aidx_first_neigh[ListIdx(layer_idx)][idx_child];
+						idx_neigh < aidx_last_neigh[ListIdx(layer_idx)][idx_child];
 						idx_neigh++
 					) {
-						// Get list of active leaf grid nodes in this
-						// spatial partition.
-						const PosArray& apos_neigh = (
-							m_grid_affected.children().get(pos_child).list(layer_idx)
-						);
+						using AffectedChild = typename AffectedLookupGrid::ChildType;
+						const AffectedChild& child =  m_grid_affected.children().get(pos_idx_child);
 						// This leaf grid node is the centre to search about.
-						const VecDi& pos_centre = apos_neigh[idx_neigh];
+						const PosIdx pos_idx_centre = child.list(layer_idx)[idx_neigh];
+						const VecDi pos_centre = child.index(pos_idx_centre);
 
-						// Use utility method from Grid to get neighbouring
-						// grid nodes and call a lambda to track the point
-						// to the appropriate tracking list.
-
+						// Cycle neighbours and record them if they are within the narrow band.
 						m_grid_isogrid.neighs(
 							pos_centre,
 							[this](const VecDi& pos_neigh) {
-								// Calculate layer of this neighbouring
-								// point from the isogrid grid.
-								const INT layer_id_neigh = this->layer_id(pos_neigh);
-								// If the calculated layer lies within the
-								// narrow band, then we want to track it.
+								// Calculate layer of this neighbouring point from the isogrid grid.
+								const LayerId layer_id_neigh = this->layer_id(pos_neigh);
+								// If the calculated layer lies within the narrow band, then we
+								// want to track it.
 								if (inside_band(layer_id_neigh))
 								{
 									// track the neighbour point to the
@@ -810,11 +726,11 @@ private:
 			// next loop, so set the start index for each partition of
 			// each layer to the previous end index.
 
-			for (INT layer_id = s_layer_min; layer_id <= s_layer_max; layer_id++)
+			for (LayerId layer_id = s_layer_min; layer_id <= s_layer_max; layer_id++)
 			{
-				const UINT layer_idx = this->layer_idx(layer_id);
+				const ListIdx layer_idx = ListIdx(this->layer_idx(layer_id));
 				// Loop over spatial partitions.
-				for (UINT idx = 0; idx < aidx_first_neigh[layer_idx].size(); idx++)
+				for (ListIdx idx = 0; idx < aidx_first_neigh[layer_idx].size(); idx++)
 					// Set first index in spatial partition's tracking list
 					// to be the previous last index, so we start there on
 					// next loop around.
@@ -887,25 +803,6 @@ private:
 				// Potentially track to status change, if narrow band layer has changed.
 				status_change(pos_idx_child, pos_idx_leaf, 0, layer_id_new, plookup_buffer_);
 			}
-		}
-	}
-
-	/**
-	 * Performance optimisation to bulk track spatial partitions to be tracked in delta grid.
-	 *
-	 * This will activate the child if it is deactivated (i.e. allocate memory for lazy grid).
-	 */
-	template <class GridType>
-	void track_children_delta(const GridType& grid)
-	{
-		for (INT layer_id_child = s_layer_min; layer_id_child <= s_layer_max; layer_id_child++)
-		{
-			// Assume all of zero layer already tracked.
-			if (layer_id_child == 0)
-				continue;
-
-			const TupleIdx layer_idx_child = layer_idx(layer_id_child);
-			m_grid_delta.track_children(grid.children().list(layer_idx_child), layer_idx_child);
 		}
 	}
 
@@ -1227,9 +1124,11 @@ private:
 					// Cycle over neighbours of this outer layer point.
 					m_grid_isogrid.neighs(
 						pos,
-						[this, layer_idx, side, layer_id, &pos](const VecDi& pos_neigh) {
+						[this, layer_idx, side, layer_id, &pos](const VecDi& pos_neigh_) {
+							if (not m_grid_isogrid.inside(pos_neigh_))
+								return;
 
-							Distance distance_neigh = m_grid_isogrid.get(pos_neigh);
+							Distance distance_neigh = m_grid_isogrid.get(pos_neigh_);
 							const LayerId layer_id_from = this->layer_id(distance_neigh);
 
 							// Only track if neighbouring point is not already within the narrow
@@ -1239,14 +1138,14 @@ private:
 								#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
 								const ListIdx lookup_idx = m_grid_isogrid.children().get(
-										m_grid_isogrid.pos_idx_child(pos_neigh)
-									).lookup().get(pos_neigh);
+										m_grid_isogrid.pos_idx_child(pos_neigh_)
+									).lookup().get(pos_neigh_);
 
 								if (lookup_idx == NULL_IDX)
 								{
 									std::stringstream sstr;
 									sstr << "pos not tracked but should be: " <<
-										str_pos(pos_neigh);
+										str_pos(pos_neigh_);
 									std::string str = sstr.str();
 									throw std::domain_error(str);
 								}
@@ -1257,7 +1156,7 @@ private:
 							}
 
 							// Calculate updated distance of this neighbour to the zero curve.
-							distance_neigh = distance(pos_neigh, distance_neigh, Distance(side));
+							distance_neigh = distance(pos_neigh_, distance_neigh, Distance(side));
 
 							#ifdef FELT_DEBUG_ENABLED
 
@@ -1270,7 +1169,7 @@ private:
 									"pos:" << std::endl <<
 									"  " << str_pos(pos) << std::endl
 									<< "Neigh:" << std::endl <<
-									"  " << str_pos(pos_neigh) << std::endl <<
+									"  " << str_pos(pos_neigh_) << std::endl <<
 									"Calculated distance " << distance_neigh <<
 									" would give a layer of " << layer_id_to <<
 									" when we expect a layer of " << layer_id;
@@ -1281,7 +1180,7 @@ private:
 							if (layer_id_to != s_layer_min && layer_id_to != s_layer_max)
 							{
 								std::stringstream strs;
-								strs << "Attempting to track " << Felt::format(pos_neigh) <<
+								strs << "Attempting to track " << Felt::format(pos_neigh_) <<
 									" to the narrow band but the distance is " << distance_neigh <<
 									" which would give a layer of " << layer_id_to;
 								std::string str = strs.str();
@@ -1292,7 +1191,7 @@ private:
 
 							// Use thread-safe update and track function, since neighbouring point
 							// could be in another spatial partition.
-							this->m_grid_isogrid.track(distance_neigh, pos_neigh, layer_idx);
+							this->m_grid_isogrid.track(distance_neigh, pos_neigh_, layer_idx);
 						}
 					);
 				} // End for pos_idx.
@@ -1342,6 +1241,8 @@ private:
 		m_grid_isogrid.neighs(
 			pos_,
 			[this, &pos_, &dist_, dir_](const VecDi& pos_neigh_) {
+				if (not m_grid_isogrid.inside(pos_neigh_))
+					return;
 				const Distance dist_neigh = m_grid_isogrid.get(pos_neigh_);
 				// Check absolute value of this neighbour is less than nearest point.
 				// Multiplying by `dir` has two effects:
@@ -1597,6 +1498,19 @@ private:
 #endif
 
 	/**
+	 * Get reference to a single layer of the narrow band at a given
+	 * spatial partition.
+	 *
+	 * @param pos_child_idx_ location of child spatial partition.
+	 * @param layer_id_ narrow band layer id.
+	 * @return list of positions in given narrow band layer within given child partition.
+	 */
+	const PosArray& layer (const PosIdx pos_child_idx_, const LayerId layer_id_) const
+	{
+		return m_grid_isogrid.children().get(pos_child_idx_).lookup().list(layer_idx(layer_id_));
+	}
+
+	/**
 	 * Get narrow band layer id of location in isogrid grid.
 	 *
 	 * Calculates layer ID based on value in grid (i.e. is the layer the location *should*
@@ -1631,20 +1545,6 @@ private:
 		return boost::math::iround(
 			val_ + std::numeric_limits<FLOAT>::epsilon()
 		);
-	}
-
-	/**
-	 * Get narrow band layer index of ID for indexing into arrays.
-	 *
-	 * Internally we can of course not have negative array indices, so must convert to an
-	 * index first.
-	 *
-	 * @param id narrow band layer ID.
-	 * @return index to use to get given layer in narrow band array.
-	 */
-	static constexpr TupleIdx layer_idx(const LayerId id_)
-	{
-		return TupleIdx(id_ + LayerId(s_num_layers) / 2);
 	}
 
 	/**

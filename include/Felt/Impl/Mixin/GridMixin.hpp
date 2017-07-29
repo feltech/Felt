@@ -181,8 +181,8 @@ protected:
 
 protected:
 
-	Size(const VecDi& size, const VecDi& offset) :
-		m_size{size}, m_offset{offset}
+	Size(const VecDi& size_, const VecDi& offset_) :
+		m_size{size_}, m_offset{offset_}
 	{}
 
 	const VecDi& size () const
@@ -221,7 +221,7 @@ protected:
 	static bool inside (
 		const Felt::VecDT<ElemType, t_dims>& pos_, const VecDi& pos_min_, const VecDi& pos_max_
 	) {
-		for (INT i = 0; i < pos_.size(); i++)
+		for (Dim i = 0; i < pos_.size(); i++)
 		{
 			if (pos_(i) >= static_cast<ElemType>(pos_max_(i)))
 				return false;

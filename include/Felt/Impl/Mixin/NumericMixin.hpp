@@ -193,7 +193,7 @@ protected:
 		// Central value.
 		LeafType centre = pself->get(pos_);
 
-		for (INT axis = 0; axis < size.size(); axis++)
+		for (Dim axis = 0; axis < size.size(); axis++)
 		{
 			LeafType back = centre;
 			LeafType forward = centre;
@@ -397,13 +397,13 @@ protected:
 	LeafType interp (const VecDf& pos_) const
 	{
 		const VecDi& size = pself->size();
-		const VecDi& pos_floor = Felt::floor(pos_);
+		const VecDi& pos_floor = pos_.array().floor().matrix().template cast<INT>();
 
 		// Store all 2^d corners.
 		DataArray< LeafType > val_corners(PosIdx(1 << size.size()));
 
 		// Get all corners of containing cell.
-		for (UINT i = 0; i < val_corners.size(); i++)
+		for (ListIdx i = 0; i < val_corners.size(); i++)
 		{
 			// 0 = 00 => (x,y)
 			// 1 = 01 => (x+1,y)
@@ -411,7 +411,7 @@ protected:
 			// 3 = 11 => (x+1,y+1)
 
 			VecDi pos_corner(pos_floor);
-			for (INT axis = 0; axis < pos_corner.size(); axis++)
+			for (Dim axis = 0; axis < pos_corner.size(); axis++)
 			{
 				const INT dir = (i >> axis) & 1;
 				pos_corner(axis) += dir;
@@ -422,7 +422,7 @@ protected:
 
 		// Translate position vector into 'hypercube space',
 		// so 0 <= v(x) <= 1.
-		VecDf pos_centred = pos_ - Felt::floorf(pos_);
+		VecDf pos_centred = pos_ - pos_.array().floor().matrix();
 
 		// Repeatedly reduce along axes,
 		// i.e. hypercube -> cube -> square -> line -> point

@@ -212,7 +212,6 @@ protected:
 		const PosArray& pos_idxs_child = m_children.lookup().list(layer_idx_);
 		const ListIdx num_childs = pos_idxs_child.size();
 
-		FELT_PARALLEL_FOR(num_childs)
 		for (ListIdx list_idx = 0; list_idx < num_childs; list_idx++)
 		{
 			const PosIdx pos_idx_child = pos_idxs_child[list_idx];

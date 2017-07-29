@@ -62,27 +62,27 @@ using VecDu = VecDT<UINT, D>;
 /**
  * Shorthand for 2D float vector.
  */
-using Vec2f = VecDf<2u>;
+using Vec2f = VecDf<2>;
 /**
  * Shorthand for 2D unsigned integer vector.
  */
-using Vec2u = VecDu<2u>;
+using Vec2u = VecDu<2>;
 /**
  * Shorthand for 2D integer vector.
  */
-using Vec2i = VecDi<2u>;
+using Vec2i = VecDi<2>;
 /**
  * Shorthand for 3D float vector.
  */
-using Vec3f = VecDf<3u>;
+using Vec3f = VecDf<3>;
 /**
  * Shorthand for 3D unsigned integer vector.
  */
-using Vec3u = VecDu<3u>;
+using Vec3u = VecDu<3>;
 /**
  * Shorthand for 3D integer vector.
  */
-using Vec3i = VecDi<3u>;
+using Vec3i = VecDi<3>;
 /**
  * Array of position indices.
  */

@@ -25,7 +25,6 @@ private:
 
 	using ThisType = Lookup<D, N>;
 	using TraitsType = Traits<ThisType>;
-	using ChildType = typename TraitsType::ChildType;
 
 	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
 	using LookupImpl = Impl::Mixin::Partitioned::Lookup<ThisType>;
@@ -33,7 +32,8 @@ private:
 
 public:
 	using ChildrenGrid = typename ChildrenImpl::ChildrenGrid;
-public:
+	using ChildType = typename TraitsType::ChildType;
+
 	Lookup(const VecDi& size_, const VecDi& offset_, const VecDi& child_size_) :
 		SizeImpl{size_, offset_},
 		ChildrenImpl{size_, offset_, child_size_, ChildType()}
@@ -124,6 +124,7 @@ public:
 	using ChildrenImpl::reset;
 	using ChildrenImpl::track_children;
 	using ChildrenImpl::leafs;
+	using SizeImpl::inside;
 	using SizeImpl::offset;
 	using SizeImpl::size;
 	using SpatialImpl::curv;

@@ -64,13 +64,13 @@ private:
 	using ActivatorImpl = Impl::Mixin::Grid::Activator<ThisType>;
 	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
-	using SnapthotImpl = Impl::Mixin::Numeric::Snapshot<ThisType>;
+	using SnapshotImpl = Impl::Mixin::Numeric::Snapshot<ThisType>;
 
 	using VecDi = Felt::VecDi<ThisTraits::t_dims>;
 	using LeafType = typename ThisTraits::LeafType;
 
 public:
-	using SnapthotImpl::VArrayData;
+	using SnapshotImpl::VArrayData;
 
 	Snapshot(const VecDi& size_, const VecDi& offset_, const LeafType background_) :
 		 ActivatorImpl{background_}, SizeImpl{size_, offset_}
@@ -84,7 +84,7 @@ public:
 	using DataImpl::data;
 	using SizeImpl::offset;
 	using SizeImpl::size;
-	using SnapthotImpl::vdata;
+	using SnapshotImpl::vdata;
 };
 } // Grid
 
