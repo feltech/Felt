@@ -120,8 +120,10 @@ public:
 
 	using AccessorImpl::get;
 	using AccessorImpl::set;
+	using ChildrenImpl::child_size;
 	using ChildrenImpl::children;
 	using ChildrenImpl::pos_child;
+	using ChildrenImpl::pos_idx_child;
 	using ChildrenImpl::reset;
 	using ChildrenImpl::track_children;
 	using ChildrenImpl::leafs;

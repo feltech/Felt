@@ -1483,18 +1483,14 @@ WHEN("ray")
 	pos_hit = surface.ray(Vec3f(-35.0f, 0, 0), Vec3f(1, 0, 0));
 
 	// ==== Confirm ====
-	CHECK(
-		(pos_hit - Vec3f(-3.0f, 0, 0)).squaredNorm() <= 0.00001f
-	);
+	CHECK((pos_hit - Vec3f(-3.0f, 0, 0)).squaredNorm() <= 0.00001f);
 
 	// ==== Action ====
 	// Simplest "dead on" case - from inside grid.
 	pos_hit = surface.ray(Vec3f(-6.0f, 0, 0), Vec3f(1, 0, 0));
 
 	// ==== Confirm ====
-	CHECK(
-		(pos_hit - Vec3f(-3.0f, 0, 0)).squaredNorm() <= 0.00001f
-	);
+	CHECK((pos_hit - Vec3f(-3.0f, 0, 0)).squaredNorm() <= 0.00001f);
 
 	// ==== Action ====
 	// Simplest "dead on" case - from inside surface.
@@ -1508,9 +1504,7 @@ WHEN("ray")
 	pos_hit = surface.ray(Vec3f(-3.0f, 0, 0), Vec3f(1, 0, 0));
 
 	// ==== Confirm ====
-	CHECK(
-		(pos_hit - Vec3f(-3.0f, 0, 0)).squaredNorm() <= 0.00001f
-	);
+	CHECK((pos_hit - Vec3f(-3.0f, 0, 0)).squaredNorm() <= 0.00001f);
 
 	// ==== Setup ====
 	surface.update([](auto& pos, auto& isogrid) {
@@ -1534,15 +1528,10 @@ WHEN("ray")
 
 	// ==== Action ====
 	// Ray at an angle.
-	pos_hit = surface.ray(
-		Vec3f(-10.0f, -10.0f, 0.0f), Vec3f(1, 1, 0).normalized()
-	);
+	pos_hit = surface.ray(Vec3f(-10.0f, -10.0f, 0.0f), Vec3f(1, 1, 0).normalized());
 
 	// ==== Confirm ====
-	CHECK(
-		(pos_hit - Vec3f(-1.5, -1.5, 0)).squaredNorm() <=
-		0.00001f
-	);
+	CHECK((pos_hit - Vec3f(-1.5, -1.5, 0)).squaredNorm() <= 0.00001f);
 
 	pos_hit = surface.ray(Vec3f(10, 10, 10), Vec3f(-1, -1, -1).normalized());
 
@@ -1766,7 +1755,6 @@ GIVEN("a 2-layer surface of radius 3 in a 16x16 grid with 3x3 partitions")
 	FLOAT leftover;
 
 	INFO(stringify_grid_slice(surface.isogrid()));
-
 
 	WHEN("we cast a ray upward from just below the grid")
 	{

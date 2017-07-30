@@ -1175,6 +1175,398 @@ SCENARIO("Surface - layer interactions")
 }// End SCENARIO Surface - layer interactions
 
 
+SCENARIO("Surface - raycasting")
+{
+
+GIVEN(
+	"a 32x32x32 3-layer surface with 5x5x5 partitions initialised with a 3 unit radius surface"
+) {
+	Surface<3, 3> surface(Vec3i(32, 32, 32), Vec3i(5, 5, 5));
+	// Create seed point and expand the narrow band.
+	surface.seed(Vec3i(0, 0, 0));
+	surface.update([](const auto& pos_, const auto& isogrid_) {
+		(void)pos_; (void)isogrid_;
+		return -1.0f;
+	});
+	surface.update([](const auto& pos_, const auto& isogrid_) {
+		(void)pos_; (void)isogrid_;
+		return -1.0f;
+	});
+	surface.update([](const auto& pos_, const auto& isogrid_) {
+		(void)pos_; (void)isogrid_;
+		return -1.0f;
+	});
+
+	Vec3f pos_hit;
+
+	WHEN("a ray is cast for the simplest 'dead on' case - from outside grid")
+	{
+		pos_hit = surface.ray(Vec3f(-35.0f, 0, 0), Vec3f(1, 0, 0));
+
+		THEN("the ray hits where expected")
+		{
+			CHECK(pos_hit == ApproxVec(Vec3f(-3.0f, 0, 0)));
+		}
+	}
+
+	WHEN("a ray is cast for the simplest 'dead on' case - from inside grid")
+	{
+		pos_hit = surface.ray(Vec3f(-6.0f, 0, 0), Vec3f(1, 0, 0));
+
+		THEN("the ray hits where expected")
+		{
+			CHECK(pos_hit == ApproxVec(Vec3f(-3.0f, 0, 0)));
+		}
+	}
+
+	WHEN("a ray is cast for the simplest 'dead on' case - from inside surface")
+	{
+		pos_hit = surface.ray(Vec3f(0, 0, 0), Vec3f(1, 0, 0));
+
+		THEN("the ray does not hit")
+		{
+			CHECK(pos_hit == surface.s_ray_miss);
+		}
+	}
+
+	WHEN("a ray is cast for the simplest 'dead on' case - from zero layer")
+	{
+		pos_hit = surface.ray(Vec3f(-3.0f, 0, 0), Vec3f(1, 0, 0));
+
+		THEN("the ray hits where expected")
+		{
+			CHECK(pos_hit == ApproxVec(Vec3f(-3.0f, 0, 0)));
+		}
+	}
+
+	AND_WHEN("the surface is expanded slightly")
+	{
+		surface.update([](const auto& pos_, const auto& isogrid_) {
+			(void)pos_; (void)isogrid_;
+			return -0.3f;
+		});
+
+		AND_WHEN("a ray is cast from the left to the right")
+		{
+			pos_hit = surface.ray(Vec3f(-10.0f, 0, 0), Vec3f(1, 0, 0));
+
+			THEN("the ray hits where expected, interpolated to the zero-curve")
+			{
+				CHECK(pos_hit == ApproxVec(Vec3f(-3.3f, 0, 0)));
+			}
+		}
+	}
+
+	AND_WHEN("a ray is cast from the bottom left toward the top right")
+	{
+		pos_hit = surface.ray(Vec3f(-10.0f, -10.0f, 0.0f), Vec3f(1, 1, 0).normalized());
+
+		THEN("the ray hits where expected")
+		{
+			CHECK(pos_hit == ApproxVec(Vec3f(-1.5, -1.5, 0)));
+		}
+	}
+
+	AND_WHEN("a ray is cast from the top-right-back toward the bottom-left-front")
+	{
+		pos_hit = surface.ray(Vec3f(10, 10, 10), Vec3f(-1, -1, -1).normalized());
+
+		THEN("the ray hits the surface somewhere")
+		{
+			CHECK(pos_hit != surface.s_ray_miss);
+		}
+	}
+
+	AND_WHEN("we rotate around the surface casting rays from different directions")
+	{
+		using MatrixType = Eigen::Matrix3f;
+		MatrixType mat_rot(MatrixType::Identity());
+
+		auto check = [&](const Vec3f& axis_) {
+			for (FLOAT rot_mult = 0; rot_mult < 2.0f; rot_mult += 0.1f)
+			{
+				mat_rot = Eigen::AngleAxisf(rot_mult * FLOAT(M_PI), axis_).matrix();
+				const Vec3f origin = mat_rot*Vec3f(0, 0, -10.0f);
+				const Vec3f dir = (mat_rot*Vec3f(0, 0, 1)).normalized();
+
+				// ==== Action ====
+				pos_hit = surface.ray(origin, dir);
+
+				// ==== Confirm ====
+				INFO(
+					"Ray hit from " + felt::format(origin) + " in direction " + felt::format(dir) +
+					" should not be NULL_POS"
+				);
+				CHECK(pos_hit != surface.s_ray_miss);
+			}
+		};
+
+		THEN("rotation about the Y axis all hits")
+		{
+			check(Vec3f::UnitY());
+		}
+
+		THEN("rotation about the (1, 1, 1) axis all hits")
+		{
+			check(Vec3f(1, 1, 1).normalized());
+		}
+
+		THEN("rotation about the (0, 1, 1) axis all hits")
+		{
+			check(Vec3f(0, 1, 1).normalized());
+		}
+	}
+}
+
+
+GIVEN("a 2-layer surface of radius 3 in a 16x16 grid with 3x3 partitions")
+{
+	Surface<2, 2> surface(Vec2i(16, 16), Vec2i(3, 3));
+
+	// Create seed point and expand the narrow band.
+	surface.seed(Vec2i(0, 0));
+	surface.update([](const auto& pos_, const auto& isogrid_) {
+		(void)pos_; (void)isogrid_;
+		return -1.0f;
+	});
+	surface.update([](const auto& pos_, const auto& isogrid_) {
+		(void)pos_; (void)isogrid_;
+		return -1.0f;
+	});
+	surface.update([](const auto& pos_, const auto& isogrid_) {
+		(void)pos_; (void)isogrid_;
+		return -1.0f;
+	});
+	FLOAT leftover;
+
+	INFO(stringify_grid_slice(surface.isogrid()));
+
+	WHEN("we cast a ray upward from just below the grid")
+	{
+		const Vec2f& pos_hit = surface.ray(Vec2f(-2.4f, -10.0f), Vec2f(0, 1));
+
+		THEN("the surface is hit where expected")
+		{
+			CHECK(pos_hit == ApproxVec(Vec2f(-2.21609, -0.78391)).epsilon(0.1));
+		}
+	}
+}
+
+GIVEN("a 2-layer surface of radius 3 in a 16x16 grid with 3x3 partitions")
+{
+	Surface<2, 2> surface(Vec2i(16, 16), Vec2i(3, 3));
+
+	// Create seed point and expand the narrow band.
+	surface.seed(Vec2i(0, 0));
+	surface.update([](const auto& pos_, const auto& isogrid_) {
+		(void)pos_; (void)isogrid_;
+		return -1.0f;
+	});
+	surface.update([](const auto& pos_, const auto& isogrid_) {
+		(void)pos_; (void)isogrid_;
+		return -1.0f;
+	});
+	surface.update([](const auto& pos_, const auto& isogrid_) {
+		(void)pos_; (void)isogrid_;
+		return -1.0f;
+	});
+	FLOAT leftover;
+
+	INFO(stringify_grid_slice(surface.isogrid()));
+
+	WHEN("we cast a ray upward from just below the grid")
+	{
+		const Vec2f& pos_hit = surface.ray(Vec2f(-2.4f, -10.0f), Vec2f(0, 1));
+
+		THEN("the surface is hit where expected")
+		{
+			CHECK(pos_hit == ApproxVec(Vec2f(-2.21609, -0.78391)).epsilon(0.1));
+		}
+	}
+}
+
+GIVEN(
+	"a 32x32x32 3-layer surface with 5x5x5 partitions initialised with a 3 unit radius surface"
+) {
+	Surface<3, 3> surface(Vec3i(32, 32, 32), Vec3i(5, 5, 5));
+	// Create seed point and expand the narrow band.
+	surface.seed(Vec3i(0, 0, 0));
+	surface.update([](const auto& pos_, const auto& isogrid_) {
+		(void)pos_; (void)isogrid_;
+		return -1.0f;
+	});
+	surface.update([](const auto& pos_, const auto& isogrid_) {
+		(void)pos_; (void)isogrid_;
+		return -1.0f;
+	});
+	surface.update([](const auto& pos_, const auto& isogrid_) {
+		(void)pos_; (void)isogrid_;
+		return -1.0f;
+	});
+
+
+	AND_WHEN("we rotate around the surface casting rays from different directions")
+	{
+		using MatrixType = Eigen::Matrix3f;
+		MatrixType mat_rot(MatrixType::Identity());
+
+		auto check = [&](const Vec3f& axis_) {
+			Vec3f pos_hit;
+
+			for (FLOAT rot_mult = 0; rot_mult < 2.0f; rot_mult += 0.1f)
+			{
+				mat_rot = Eigen::AngleAxisf(rot_mult * FLOAT(M_PI), axis_).matrix();
+				const Vec3f origin = mat_rot*Vec3f(0, 0, -10.0f);
+				const Vec3f dir = (mat_rot*Vec3f(0, 0, 1)).normalized();
+
+				// ==== Action ====
+				pos_hit = surface.ray(origin, dir);
+
+				// ==== Confirm ====
+				INFO(
+					"Ray hit from " + felt::format(origin) + " in direction " + felt::format(dir) +
+					" should not be NULL_POS"
+				);
+				CHECK(pos_hit != surface.s_ray_miss);
+			}
+		};
+
+		THEN("rotation about the Y axis all hits")
+		{
+			check(Vec3f::UnitY());
+		}
+
+		THEN("rotation about the (1, 1, 1) axis all hits")
+		{
+			check(Vec3f(1, 1, 1).normalized());
+		}
+
+		THEN("rotation about the (0, 1, 1) axis all hits")
+		{
+			check(Vec3f(0, 1, 1).normalized());
+		}
+	}
+}
+} // End SCENARIO Surface - raycasting
+
+
+SCENARIO("Surface - raycasting (slow)", "[!hide][slow]")
+{
+
+GIVEN("a 3-layer flat surface in an 20x20x20 grid with 16x16x16 partitions")
+{
+	Surface<3, 3> surface(Vec3i(20, 20, 20), Vec3i(16, 16, 16));
+	surface.seed(Vec3i(0,0,0));
+	surface.update([](const auto& pos_, const auto& isogrid_) {
+		(void)pos_; (void)isogrid_;
+		return -1.0f;
+	});
+	surface.update([](const auto& pos_, const auto& isogrid_) {
+		(void)pos_; (void)isogrid_;
+		return -1.0f;
+	});
+	for (UINT i = 0; i < 10; i++)
+		surface.update([](const auto& pos_, const auto& isogrid_) {
+			(void)pos_; (void)isogrid_;
+			if (std::abs(pos_(1)) > 1)
+				return 0.0f;
+			else
+				return -1.0f;
+		});
+//	INFO(stringify_grid_slice(surface.isogrid()));
+/*
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+	  4,    4,    4,    4,    4,    3,    2,    1,    0,   -1,   -2,   -1,    0,    1,    2,    3,    4,    4,    4,    4,
+*/
+	WHEN("we cast a ray diagonally downward from outside the isogrid")
+	{
+		const Vec3f& pos_hit = surface.ray(
+			Vec3f(-5.45783f, 44.8901f, -57.4607f),
+			Vec3f(0.134944f, -0.616392f, 0.77579f).normalized()
+		);
+
+		//pos + 69.5*dir = (3.9205,2.051,-3.5433)
+
+		THEN("the surface is hit")
+		{
+			CHECK(pos_hit != surface.s_ray_miss);
+		}
+	}
+}
+
+GIVEN("a 3-layer flat periodic surface in an 50x50x50 grid with 16x16x16 partitions")
+{
+	Surface<3, 3> surface(Vec3i(50, 50, 50), Vec3i(16, 16, 16));
+	surface.seed(Vec3i(0,0,0));
+	surface.update([](const auto& pos_, const auto& isogrid_) {
+		(void)pos_; (void)isogrid_;
+		return -1.0f;
+	});
+	surface.update([](const auto& pos_, const auto& isogrid_) {
+		(void)pos_; (void)isogrid_;
+		return -1.0f;
+	});
+	for (UINT i = 0; i < 20; i++)
+		surface.update([](const auto& pos_, const auto& isogrid_) {
+			(void)pos_; (void)isogrid_;
+			if (std::abs(pos_(1)) > 1)
+				return 0.0f;
+			else
+				return -1.0f;
+		});
+//	INFO(stringify_grid_slice(surface.isogrid()));
+
+
+	WHEN("we cast rays diagonally downward from outside the isogrid")
+	{
+		// | -25 -- -9 -- 7 -- 23 -- 50
+		//pos + 69.5*dir = (3.9205,2.051,-3.5433)
+		const Vec3f& pos_hit1 = surface.ray(
+			Vec3f(-1.29043f, 49.6148f, -66.8919f),
+			Vec3f(0.0725882f, -0.660291f, 0.747493f).normalized()
+		);
+		//pos + 32.5*dir = (-3.73342,1.94405,-18.64452)
+		const Vec3f& pos_hit2 = surface.ray(
+			Vec3f(-0.0219189f, 18.1713f, -46.5578f),
+			Vec3f(-0.114205f,-0.499295f, 0.858872f).normalized()
+		);
+		//pos + 34.7*dir = (-1.33501,2.01918,-15.87545)
+		const Vec3f& pos_hit3 = surface.ray(
+			Vec3f(-0.0139845f, 18.1755f, -46.5565f),
+			Vec3f(-0.0380706f, -0.465599f, 0.884177f).normalized()
+		);
+
+		THEN("the surface is hit")
+		{
+			CHECK(pos_hit1 != surface.s_ray_miss);
+			CHECK(pos_hit2 != surface.s_ray_miss);
+			CHECK(pos_hit3 != surface.s_ray_miss);
+		}
+	}
+}
+} // End SCENARIO Surface - Raycasting
+
+
+// Utility functions.
+
 namespace Felt
 {
 template <Dim D, LayerId L>

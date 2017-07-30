@@ -4,7 +4,6 @@
 #include <vector>
 #include <functional>
 #include <limits>
-#include <set>
 #include <iostream>
 #include <boost/math/special_functions/round.hpp>
 #include <boost/math/constants/constants.hpp>
@@ -20,8 +19,6 @@ namespace Felt
 {
 /// Layer ID (in -L, ..., +L)
 using LayerId = INT;
-/// Isogrid distance value
-using Distance = FLOAT;
 
 /**
  * A n-dimensional sparse-field spatially partitioned level set.
@@ -89,11 +86,11 @@ private:
 	 */
 	struct ChildHit
 	{
-		ChildHit(const VecDf& pos_intersect_, const VecDi& pos_child_)
-		: pos_intersect(pos_intersect_), pos_child(pos_child_)
+		ChildHit(const VecDf& pos_intersect_, PosIdx pos_idx_child_)
+		: pos_intersect(pos_intersect_), pos_idx_child(pos_idx_child_)
 		{}
 		VecDf pos_intersect;
-		VecDi pos_child;
+		PosIdx pos_idx_child;
 	};
 	/**
 	 * The main level set embedding isogrid.
@@ -220,7 +217,9 @@ public:
 
 			for (const PosIdx pos_idx_leaf : isochild.lookup().list(layer_idx(0)))
 			{
-				const Distance dist_delta = fn_(isochild.index(pos_idx_leaf), m_grid_isogrid);
+				const Distance dist_delta = fn_(
+					isochild.index(pos_idx_leaf), const_cast<const IsoGrid&>(m_grid_isogrid)
+				);
 				m_grid_delta.children().get(pos_idx_child).track(
 					dist_delta, pos_idx_leaf, layer_idx(0)
 				);
@@ -402,7 +401,7 @@ public:
 					m_grid_isogrid.pos_child(pos_origin_.template cast<INT>())
 				)
 			);
-			if (pos_hit != NULL_POS<FLOAT>())
+			if (pos_hit != s_ray_miss)
 				return pos_hit;
 		}
 
@@ -413,15 +412,15 @@ public:
 		ChildHits child_hits;
 
 		// Cycle each axis, casting ray to child grid planes marching away from origin.
-		for (UINT dim = 0; dim < dir_.size(); dim++)
+		for (Dim dim = 0; dim < dir_.size(); dim++)
 		{
 			// Direction +/-1 along this axis.
-			FLOAT dir_dim = sgn(dir_(dim));
+			Distance dir_dim = Distance(sgn(dir_(dim)));
 			if (dir_dim == 0)
 				continue;
 
 			// Get next child plane along this axis.
-			FLOAT pos_plane_dim = round_to_next(
+			Distance pos_plane_dim = round_to_next(
 				dim, dir_dim, pos_origin_(dim), m_grid_isogrid.child_size()
 			);
 
@@ -433,18 +432,20 @@ public:
 			// on isogrid grid.
 			if (!m_grid_isogrid.inside(pos_plane))
 			{
-				FLOAT pos_grid_dim;
+				Distance pos_grid_dim;
 				// If casting in -'ve direction, get maximum extent.
 				if (dir_dim == -1)
 				{
-					pos_grid_dim = m_grid_isogrid.offset()(dim) + m_grid_isogrid.size()(dim);
+					pos_grid_dim = Distance(
+						m_grid_isogrid.offset()(dim) + m_grid_isogrid.size()(dim)
+					);
 					if (pos_plane_dim < pos_grid_dim)
 						continue;
 				}
 				// Else if casting in +'ve direction, get minimum extent.
 				else
 				{
-					pos_grid_dim = m_grid_isogrid.offset()(dim);
+					pos_grid_dim = Distance(m_grid_isogrid.offset()(dim));
 					if (pos_plane_dim > pos_grid_dim)
 						continue;
 				}
@@ -477,12 +478,17 @@ public:
 
 			// Keep marching along planes, casting ray to each and tracking any candidate child
 			// grids to the tracking list.
-			const FLOAT child_size_dim = m_grid_isogrid.child_size()(dim);
+			const Distance child_size_dim = Distance(m_grid_isogrid.child_size()(dim));
 			while (true)
 			{
 				pos_plane(dim) += dir_dim * child_size_dim;
-				if (!ray_check_track_child(child_hits, line, Plane(normal, pos_plane(dim) * dir_dim)))
+				if (
+					!ray_check_track_child(
+						child_hits, line, Plane(normal, pos_plane(dim) * dir_dim)
+					)
+				) {
 					break;
+				}
 			}
 		}
 
@@ -512,23 +518,23 @@ public:
 		child_hits.erase(std::unique(
 			child_hits.begin(), child_hits.end(),
 			[](const ChildHit& a, const ChildHit& b) -> bool {
-				return a.pos_child == b.pos_child;
+				return a.pos_idx_child == b.pos_idx_child;
 			}
 		), child_hits.end());
 
 		// For each candidate child, cast ray through until the zero-curve is hit.
 		for (const ChildHit& child_hit : child_hits)
 		{
-			const VecDf& pos_hit = this->ray(
+			const VecDf& pos_hit = ray(
 				child_hit.pos_intersect, dir_,
-				m_grid_isogrid.children().get(child_hit.pos_child)
+				m_grid_isogrid.children().get(child_hit.pos_idx_child)
 			);
 
-			if (pos_hit != NULL_POS<FLOAT>())
+			if (pos_hit != s_ray_miss)
 				return pos_hit;
 		}
 
-		return NULL_POS<FLOAT>();
+		return s_ray_miss;
 	}
 
 	/**
@@ -562,18 +568,9 @@ public:
 	}
 
 	/**
-	 * Get null position vector for given template typename.
-	 *
-	 * TODO: c++14 should support variable templates, which is a better solution,
-	 * but gcc doesn't yet.
-	 *
-	 * @return D-dimensional vector with each element set to numeric_limits<T>::max.
+	 * Get vector representing a raycast miss.
 	 */
-	template <typename T>
-	static constexpr Felt::VecDT<T, D> NULL_POS()
-	{
-		return Felt::VecDT<T, D>::Constant(std::numeric_limits<T>::max());
-	}
+	static const VecDf s_ray_miss;
 
 	/**
 	 * Get narrow band layer index of ID for indexing into arrays.
@@ -1358,7 +1355,7 @@ private:
 						pos_sample -= normal*dist;
 
 						if (!m_grid_isogrid.inside(pos_sample))
-							return NULL_POS<FLOAT>();
+							return s_ray_miss;
 
 						if (std::abs(dist) <= TINY || normal.dot(dir) >= 0)
 							break;
@@ -1388,7 +1385,7 @@ private:
 			pos_sample = line_leaf.pointAt(t_leaf);
 		} // End while inside child grid.
 
-		return NULL_POS<FLOAT>();
+		return s_ray_miss;
 	}
 
 	/**
@@ -1406,15 +1403,15 @@ private:
 			line.intersectionPoint(plane) + line.direction() * FLOAT(TINY)
 		);
 
-		const VecDu& size = m_grid_isogrid.size();
+		const VecDi& size = m_grid_isogrid.size();
 		const VecDi& offset = m_grid_isogrid.offset();
 		const VecDf& dir = line.direction();
 
 		for (UINT i = 0; i < dir.size(); i++)
 		{
 			if (
-				(dir(i) > 0 && pos_intersect(i) > size(i)) ||
-				(dir(i) < 0 && pos_intersect(i) < offset(i))
+				(dir(i) > 0 && pos_intersect(i) > Distance(size(i))) ||
+				(dir(i) < 0 && pos_intersect(i) < Distance(offset(i)))
 			)
 				return false;
 		}
@@ -1422,14 +1419,14 @@ private:
 		if (!m_grid_isogrid.inside(pos_intersect))
 			return true;
 
-		const VecDi& pos_floor = floor(pos_intersect);
-		const VecDi& pos_child = this->m_grid_isogrid.pos_child(pos_floor);
+		const VecDi& pos_floor = pos_intersect.array().floor().matrix().template cast<INT>();
+		const PosIdx pos_idx_child = m_grid_isogrid.pos_idx_child(pos_floor);
 
 		if (
-			this->layer(pos_child, 0).size() ||
-			this->layer(pos_child, 1).size() || this->layer(pos_child, -1).size()
+			layer(pos_idx_child, 0).size() ||
+			layer(pos_idx_child, 1).size() || layer(pos_idx_child, -1).size()
 		) {
-			child_hits.push_back(ChildHit(pos_intersect, pos_child));
+			child_hits.push_back(ChildHit(pos_intersect, pos_idx_child));
 		}
 		return true;
 	}
@@ -1443,20 +1440,20 @@ private:
 	 * @param part_size size of partition in space to round to.
 	 * @return position of plane
 	 */
-	FLOAT round_to_next(
-		const UINT dim, const FLOAT dir, const FLOAT pos, const VecDu part_size
+	Distance round_to_next(
+		const Dim dim, const Distance dir, const Distance pos, const VecDi part_size
 	) const {
 		// Real-valued child pos translated to [0, 2*childsize) space.
-		FLOAT pos_plane_dim = (
-			FLOAT(pos - m_grid_isogrid.offset()(dim)) / part_size(dim)
-		);
+		Distance pos_plane_dim =
+			(pos - Distance(m_grid_isogrid.offset()(dim))) / Distance(part_size(dim));
+
 		// Round to next child en route in [0, 2*childsize) space.
-		pos_plane_dim = (dir == -1) ?
+		pos_plane_dim = (dir == -1.0f) ?
 			std::floor(pos_plane_dim) : std::ceil(pos_plane_dim);
 		// Scale back to isogrid grid in [0, 2*fullsize) space.
-		pos_plane_dim *= m_grid_isogrid.child_size()(dim);
+		pos_plane_dim *= Distance(m_grid_isogrid.child_size()(dim));
 		// Translate back to isogrid grid in [-fullsize, fullsize) space.
-		pos_plane_dim += m_grid_isogrid.offset()(dim);
+		pos_plane_dim += Distance(m_grid_isogrid.offset()(dim));
 
 		return pos_plane_dim;
 	}
@@ -1585,5 +1582,10 @@ private:
 		return -1 * size_ / 2;
 	}
 };
+
+template <Dim D, LayerId L>
+const typename Surface<D, L>::VecDf Surface<D, L>::s_ray_miss =
+	VecDf::Constant(std::numeric_limits<Distance>::max());
+
 }
 #endif

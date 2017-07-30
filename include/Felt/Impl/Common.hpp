@@ -39,6 +39,10 @@ using PosIdx = std::size_t;
  */
 using TupleIdx = Eigen::Index;
 /**
+ *  Isogrid or other distance value.
+ */
+using Distance = FLOAT;
+/**
  * Shorthand for D-dimensional vector with elements of T type.
  */
 template <typename T, Dim D>
@@ -47,7 +51,7 @@ using VecDT = Eigen::Matrix<T, D, 1>;
  * Shorthand for D-dimensional float vector.
  */
 template <Dim D>
-using VecDf = VecDT<FLOAT, D>;
+using VecDf = VecDT<Distance, D>;
 /**
  * Shorthand for D-dimensional integer vector.
  */

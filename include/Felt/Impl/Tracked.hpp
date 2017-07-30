@@ -54,6 +54,7 @@ public:
 	using LookupInterfaceImpl::lookup;
 	using ResetterImpl::reset;
 	using SizeImpl::assert_pos_idx_bounds;
+	using SizeImpl::inside;
 	using SizeImpl::offset;
 	using SizeImpl::resize;
 	using SizeImpl::size;
