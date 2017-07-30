@@ -202,7 +202,7 @@ public:
 	 * @param fn_ (pos, isogrid) -> float
 	 */
 	template <typename Fn>
-	void update(Fn fn_)
+	void update(Fn&& fn_)
 	{
 		update_start();
 
@@ -216,10 +216,15 @@ public:
 		for (ListIdx list_idx = 0; list_idx < pos_idxs_children.size(); list_idx++)
 		{
 			const PosIdx pos_idx_child = pos_idxs_children[list_idx];
-			for (const PosIdx pos_idx_leaf : layer(pos_idx_child, 0))
+			typename IsoGrid::ChildType& isochild = m_grid_isogrid.children().get(pos_idx_child);
+
+			for (const PosIdx pos_idx_leaf : isochild.lookup().list(layer_idx(0)))
+			{
+				const Distance dist_delta = fn_(isochild.index(pos_idx_leaf), m_grid_isogrid);
 				m_grid_delta.children().get(pos_idx_child).track(
-					fn_(pos_idx_child, pos_idx_leaf, m_grid_isogrid), pos_idx_leaf, layer_idx(0)
+					dist_delta, pos_idx_leaf, layer_idx(0)
 				);
+			}
 		}
 		update_end_global();
 	}
@@ -236,16 +241,15 @@ public:
 	 * @param pos_leaf_upper_ region selection to.
 	 * @param fn_ (pos, isogrid) -> float.
 	 */
-	void update(
-		const VecDi& pos_leaf_lower_, const VecDi& pos_leaf_upper_,
-		std::function<FLOAT(const VecDi&, const IsoGrid&)> fn_
-	) {
+	template <typename Fn>
+	void update(const VecDi& pos_leaf_lower_, const VecDi& pos_leaf_upper_, Fn&& fn_)
+	{
 		static const VecDi& one = VecDi::Constant(1);
 		static const VecDi& two = VecDi::Constant(2);
 		// Upper and lower bounds of the grid, inclusive.
 		const VecDi& pos_grid_lower = m_grid_isogrid.offset();
 		const VecDi& pos_grid_upper =
-			m_grid_isogrid.offset() + m_grid_isogrid.size().template cast<INT>();
+			m_grid_isogrid.offset() + m_grid_isogrid.size();
 		// Child partitions containing upper and lower bounds of grid.
 		const VecDi& pos_grid_child_lower = m_grid_isogrid.pos_child(pos_grid_lower);
 		const VecDi& pos_grid_child_upper = m_grid_isogrid.pos_child(pos_grid_upper - one);
@@ -256,46 +260,49 @@ public:
 		const VecDi& pos_child_upper =
 			pos_grid_child_upper.cwiseMin(m_grid_isogrid.pos_child(pos_leaf_upper_));
 		// Size of bounding box at partition level.
-		const VecDu& child_bounding_box_size =
-			(pos_child_upper - pos_child_lower + one).template cast<UINT>();
+		const VecDi& child_bounding_box_size = pos_child_upper - pos_child_lower + one;
 		// Upper bound of leaf (1 more than upper point), bounded by grid..
 		const VecDi& pos_leaf_upper_bound = pos_grid_upper.cwiseMin(pos_leaf_upper_ + one);
 		// Upper index of bounding box.
-		const UINT child_idx_bound = child_bounding_box_size.prod();
+		const PosIdx child_idx_bound = PosIdx(child_bounding_box_size.prod());
 		// Clear previous update.
 		update_start();
 		// Parallel loop through spatial partitions.
-		FELT_PARALLEL_FOR(child_idx_bound,)
-		for (UINT child_idx = 0; child_idx < child_idx_bound; child_idx++)
+		FELT_PARALLEL_FOR(child_idx_bound)
+		for (PosIdx child_idx = 0; child_idx < child_idx_bound; child_idx++)
 		{
 			// Get spatial partition position.
-			const VecDi& pos_child_without_offset = Felt::index(
+			const VecDi& pos_child_without_offset = Felt::index<D>(
 				child_idx, child_bounding_box_size
 			);
 			const VecDi& pos_child = pos_child_without_offset + pos_child_lower;
+			const PosIdx pos_idx_child = m_grid_isogrid.children().index(pos_child);
+			typename IsoGrid::ChildType& child = m_grid_isogrid.children().get(pos_idx_child);
+
 			// Loop all zero-layer points within this partition.
-			for (const VecDi& pos : layer(pos_child))
+			for (const PosIdx pos_idx_leaf : child.lookup().list(layer_idx(0)))
 			{
+				const VecDi& pos_leaf = child.index(pos_idx_leaf);
 				// Skip zero-layer points not within finer-grained bounding box.
-				if (IsoGrid::inside(pos, pos_leaf_lower_, pos_leaf_upper_bound))
+				if (IsoGrid::inside(pos_leaf, pos_leaf_lower_, pos_leaf_upper_bound))
 				{
-					const FLOAT amt = fn_(pos, m_grid_isogrid);
+					const Distance dist_delta = fn_(pos_leaf, m_grid_isogrid);
 
 					#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
-					if (m_grid_delta.get(pos) != 0)
+					if (m_grid_delta.children().get(pos_idx_child).get(pos_idx_leaf) != 0)
 					{
 						std::stringstream strs;
-						strs << "Delta is not zero: " << Felt::format(pos) << " with delta " <<
-							m_grid_delta.get(pos);
+						strs << "Delta is not zero: " << Felt::format(pos_leaf) << " with delta " <<
+							m_grid_delta.children().get(pos_idx_child).get(pos_idx_leaf);
 						std::string str = strs.str();
 						throw std::domain_error(str);
 					}
-					if (std::abs(amt) > 1.0f)
+					if (std::abs(dist_delta) > 1.0f)
 					{
 						std::stringstream strs;
-						strs << "Zero layer update value out of bounds: " << Felt::format(pos)
-						<< " with value " << amt;
+						strs << "Zero layer update value out of bounds: " << Felt::format(pos_leaf)
+						<< " with value " << dist_delta;
 						std::string str = strs.str();
 						throw std::domain_error(str);
 					}
@@ -303,7 +310,7 @@ public:
 					#endif
 
 					// Update delta isogrid.
-					delta(pos, amt);
+					m_grid_delta.track(dist_delta, pos_idx_child, pos_idx_leaf, layer_idx(0));
 				}
 			}
 		}
@@ -1148,7 +1155,7 @@ private:
 								#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 
 								const ListIdx lookup_idx = m_grid_isogrid.children().get(
-										m_grid_isogrid.pos_idx_child(pos_neigh_)
+										m_grid_isogrid.pos_child(pos_neigh_)
 									).lookup().get(pos_neigh_);
 
 								if (lookup_idx == NULL_IDX)
@@ -1470,19 +1477,18 @@ private:
 	{
 		const Distance dist_pos = m_grid_isogrid.get(pos_);
 		const LayerId layer_id_pos = layer_id(pos_);
-		const PosIdx pos_idx_child = m_grid_isogrid.pos_idx_child(pos_);
-		const typename IsoGrid::ChildType child = m_grid_isogrid.children().get(pos_idx_child);
+		const VecDi& pos_child = m_grid_isogrid.pos_child(pos_);
+		const typename IsoGrid::ChildType child = m_grid_isogrid.children().get(pos_child);
 		const VecDi& pos_child_lower = child.offset();
 		const VecDi& pos_child_upper = child.offset() + child.size();
 		const Felt::Tuple<ListIdx, s_num_layers>& list_idxs_child =
-			m_grid_isogrid.children().lookup().get(pos_idx_child);
+			m_grid_isogrid.children().lookup().get(pos_child);
 		const TupleIdx list_id_pos = layer_idx(layer_id_pos);
-		const ListIdx list_idx_pos =
-			m_grid_isogrid.children().get(pos_idx_child).lookup().get(pos_);
+		const ListIdx list_idx_pos = child.lookup().get(pos_);
 
 		std::stringstream sstr;
 		sstr << Felt::format(pos_) << " ∈ P(" <<
-			Felt::format(m_grid_isogrid.children().index(pos_idx_child)) << ") = [" <<
+			Felt::format(pos_child) << ") = [" <<
 			Felt::format(pos_child_lower) << "," << Felt::format(pos_child_upper) << "] @ " <<
 			dist_pos << " ∈ L(" << layer_id_pos << ") @ " << Felt::format(list_idxs_child) <<
 			"[" << list_id_pos << "][" << list_idx_pos << "]";

@@ -84,7 +84,7 @@ public:
 	using DataImpl::data;
 	using SizeImpl::offset;
 	using SizeImpl::size;
-	using SnapshotImpl::vdata;
+	using SnapshotImpl::array;
 };
 } // Grid
 

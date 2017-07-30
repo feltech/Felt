@@ -26,7 +26,7 @@ protected:
 	 *
 	 * @return Eigen compatible vector of data array.
 	 */
-	VArrayData vdata()
+	VArrayData array()
 	{
 		return VArrayData(pself->data().data(), Eigen::Index(pself->data().size()));
 	}

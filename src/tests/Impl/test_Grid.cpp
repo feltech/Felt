@@ -126,16 +126,16 @@ SCENARIO("Grid::Snapshot")
 
 		WHEN("the underlying data is wrapped in an Eigen vector")
 		{
-			GridType::VArrayData vdata = grid.vdata();
+			GridType::VArrayData array = grid.array();
 
 			THEN("the data contains the expected (background) values")
 			{
-				CHECK(vdata(123) == 2);
+				CHECK(array(123) == 2);
 			}
 
 			AND_WHEN("values in the wrapped data are modified")
 			{
-				vdata(123) = 7;
+				array(123) = 7;
 
 				THEN("the underlying data in the grid is also modified")
 				{

@@ -195,6 +195,18 @@ protected:
 	 */
 	PosIdx pos_idx_child (const VecDi& pos_leaf_) const
 	{
+		// Encode child position as an index.
+		return m_children.index(pos_child(pos_leaf_));
+	}
+
+	/**
+	 * Calculate the position of a child grid (i.e. partition) given the position of leaf grid node.
+	 *
+	 * @param pos_leaf_
+	 * @return position of spatial partition in which leaf position lies.
+	 */
+	VecDi pos_child (const VecDi& pos_leaf_) const
+	{
 		// Position of leaf, without offset.
 		const VecDi& pos_leaf_offset =  pos_leaf_ - pself->offset();
 		// Position of child grid containing leaf, without offset.
@@ -202,9 +214,8 @@ protected:
 		// Position of child grid containing leaf, including offset.
 		const VecDi& pos_child = pos_child_offset + m_children.offset();
 		// Encode child position as an index.
-		return m_children.index(pos_child);
+		return pos_child;
 	}
-
 
 	template<typename Fn>
 	void leafs(const TupleIdx layer_idx_, Fn&& fn_) const
