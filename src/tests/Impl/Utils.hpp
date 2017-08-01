@@ -6,7 +6,7 @@
 
 #include "../catch.hpp"
 
-#include "Felt/Grid.hpp"
+#include <Felt/Impl/Common.hpp>
 
 
 namespace Felt

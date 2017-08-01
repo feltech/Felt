@@ -1,8 +1,9 @@
 #include <unordered_set>
 
 #include "../catch.hpp"
-#include <Felt/Impl/Common.hpp>
+
 #include "Utils.hpp"
+#include <Felt/Impl/Common.hpp>
 #include <Felt/Impl/Surface.hpp>
 
 
@@ -1294,7 +1295,7 @@ GIVEN(
 
 				// ==== Confirm ====
 				INFO(
-					"Ray hit from " + felt::format(origin) + " in direction " + felt::format(dir) +
+					"Ray hit from " + Felt::format(origin) + " in direction " + Felt::format(dir) +
 					" should not be NULL_POS"
 				);
 				CHECK(pos_hit != surface.s_ray_miss);
@@ -1424,7 +1425,7 @@ GIVEN(
 
 				// ==== Confirm ====
 				INFO(
-					"Ray hit from " + felt::format(origin) + " in direction " + felt::format(dir) +
+					"Ray hit from " + Felt::format(origin) + " in direction " + Felt::format(dir) +
 					" should not be NULL_POS"
 				);
 				CHECK(pos_hit != surface.s_ray_miss);
@@ -1512,7 +1513,7 @@ GIVEN("a 3-layer flat surface in an 20x20x20 grid with 16x16x16 partitions")
 	}
 }
 
-GIVEN("a 3-layer flat periodic surface in an 50x50x50 grid with 16x16x16 partitions")
+GIVEN("a 3-layer flat surface in an 50x50x50 grid with 16x16x16 partitions")
 {
 	Surface<3, 3> surface(Vec3i(50, 50, 50), Vec3i(16, 16, 16));
 	surface.seed(Vec3i(0,0,0));

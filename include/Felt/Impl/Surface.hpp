@@ -32,7 +32,7 @@ class Surface
 {
 private:
 	using ThisType = Surface<D, L>;
-
+	static constexpr Dim s_dims	= D;
 	/// Furthest layer from the zero-layer on the inside of the volume.
 	static constexpr LayerId s_layer_min	= -L;
 	/// Furthest layer from the zero-layer on the outside of the volume.
@@ -1155,7 +1155,7 @@ private:
 										m_grid_isogrid.pos_child(pos_neigh_)
 									).lookup().get(pos_neigh_);
 
-								if (lookup_idx == NULL_IDX)
+								if (lookup_idx == null_idx)
 								{
 									std::stringstream sstr;
 									sstr << "pos not tracked but should be: " <<

@@ -102,6 +102,9 @@ using DataArray = std::vector<T>;
 template <typename T, TupleIdx N>
 using Tuple = VecDT<T, N>;
 
+/// Value to store in lookup grid when a node doesn't reference any list.
+static constexpr ListIdx	null_idx = std::numeric_limits<ListIdx>::max();
+
 
 namespace Impl
 {

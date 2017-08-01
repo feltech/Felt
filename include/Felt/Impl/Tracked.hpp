@@ -13,12 +13,59 @@ namespace Impl
 namespace Tracked
 {
 
+template <typename T, Dim D>
+class LazySimpleByRef :
+	FELT_MIXINS(
+		(LazySimpleByRef<T, D>),
+		(Grid::Accessor::ByRef)(Grid::Data)(Tracked::Activator)(Tracked::Single::ByRef)
+		(Tracked::LookupInterface)(Tracked::Single::Resetter)(Tracked::Resize),
+		(Grid::Activator)(Grid::Index)(Grid::Resize)(Grid::Size)
+	)
+private:
+	using ThisType = LazySimpleByRef<T, D>;
+	using ThisTraits = Impl::Traits<ThisType>;
+
+	using AccessorImpl = Impl::Mixin::Grid::Accessor::ByRef<ThisType>;
+	using ActivatorImpl = Impl::Mixin::Tracked::Activator<ThisType>;
+	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
+	using LookupInterfaceImpl = Impl::Mixin::Tracked::LookupInterface<ThisType>;
+	using ResetterImpl = Impl::Mixin::Tracked::Single::Resetter<ThisType>;
+	using SizeImpl = Impl::Mixin::Tracked::Resize<ThisType>;
+	using TrackedImpl = Impl::Mixin::Tracked::Single::ByRef<ThisType>;
+
+	using VecDi = Felt::VecDi<ThisTraits::t_dims>;
+	using LeafType = typename ThisTraits::LeafType;
+	using LookupType = typename ThisTraits::LookupType;
+
+public:
+	LazySimpleByRef(const LeafType background_) :
+		ActivatorImpl{background_}, LookupInterfaceImpl{LookupType{}}
+	{}
+
+	using AccessorImpl::get;
+	using AccessorImpl::index;
+	using ActivatorImpl::activate;
+	using ActivatorImpl::background;
+	using ActivatorImpl::deactivate;
+	using ActivatorImpl::is_active;
+	using DataImpl::data;
+	using LookupInterfaceImpl::lookup;
+	using ResetterImpl::reset;
+	using SizeImpl::assert_pos_idx_bounds;
+	using SizeImpl::inside;
+	using SizeImpl::offset;
+	using SizeImpl::resize;
+	using SizeImpl::size;
+	using TrackedImpl::track;
+};
+
+
 template <typename T, Dim D, TupleIdx N>
 class LazySingleByValue :
 	FELT_MIXINS(
 		(LazySingleByValue<T, D, N>),
-		(Grid::Accessor::LazyByValue)(Grid::Data)(Tracked::Activator)(Tracked::ByValue)
-		(Tracked::LookupInterface)(Tracked::Resetter)(Tracked::Resize),
+		(Grid::Accessor::LazyByValue)(Grid::Data)(Tracked::Activator)(Tracked::Multi::ByValue)
+		(Tracked::Multi::LookupInterface)(Tracked::Multi::Resetter)(Tracked::Resize),
 		(Grid::Accessor::ByValue)(Grid::Activator)(Grid::Index)(Grid::Resize)(Grid::Size)
 	)
 private:
@@ -28,10 +75,10 @@ private:
 	using AccessorImpl = Impl::Mixin::Grid::Accessor::LazyByValue<ThisType>;
 	using ActivatorImpl = Impl::Mixin::Tracked::Activator<ThisType>;
 	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
-	using LookupInterfaceImpl = Impl::Mixin::Tracked::LookupInterface<ThisType>;
-	using ResetterImpl = Impl::Mixin::Tracked::Resetter<ThisType>;
+	using LookupInterfaceImpl = Impl::Mixin::Tracked::Multi::LookupInterface<ThisType>;
+	using ResetterImpl = Impl::Mixin::Tracked::Multi::Resetter<ThisType>;
 	using SizeImpl = Impl::Mixin::Tracked::Resize<ThisType>;
-	using TrackedImpl = Impl::Mixin::Tracked::ByValue<ThisType>;
+	using TrackedImpl = Impl::Mixin::Tracked::Multi::ByValue<ThisType>;
 
 	using VecDi = Felt::VecDi<ThisTraits::t_dims>;
 	using LeafType = typename ThisTraits::LeafType;
@@ -66,8 +113,8 @@ template <typename T, Dim D, TupleIdx N>
 class MultiByRef :
 	FELT_MIXINS(
 		(MultiByRef<T, D, N>),
-		(Grid::Accessor::ByRef)(Grid::Activator)(Grid::Data)(Grid::Size)(Tracked::ByRef)
-		(Tracked::LookupInterface),
+		(Grid::Accessor::ByRef)(Grid::Activator)(Grid::Data)(Grid::Size)(Tracked::Multi::ByRef)
+		(Tracked::Multi::LookupInterface),
 		(Grid::Index)
 	)
 private:
@@ -77,9 +124,9 @@ private:
 	using AccessorImpl = Impl::Mixin::Grid::Accessor::ByRef<ThisType>;
 	using ActivatorImpl = Impl::Mixin::Grid::Activator<ThisType>;
 	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
-	using LookupInterfaceImpl = Impl::Mixin::Tracked::LookupInterface<ThisType>;
+	using LookupInterfaceImpl = Impl::Mixin::Tracked::Multi::LookupInterface<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
-	using TrackedImpl = Impl::Mixin::Tracked::ByRef<ThisType>;
+	using TrackedImpl = Impl::Mixin::Tracked::Multi::ByRef<ThisType>;
 
 	using VecDi = Felt::VecDi<ThisTraits::t_dims>;
 	using LeafType = typename ThisTraits::LeafType;
@@ -106,6 +153,7 @@ public:
 	using TrackedImpl::track;
 };
 
+
 } // Tracked.
 
 
@@ -127,6 +175,23 @@ struct DefaultTrackedTraits
 	static constexpr TupleIdx t_num_lists = N;
 };
 
+/**
+ * Traits for Tracked::LazySingle.
+ *
+ * @tparam T type of data to store in the grid.
+ * @tparam D number of dimensions of the grid.
+ * @tparam N number of tracking lists.
+ */
+template <typename T, Dim D>
+struct Traits< Tracked::LazySimpleByRef<T, D> >
+{
+	/// Single index stored in each grid node.
+	using LeafType = T;
+	/// Dimension of grid.
+	static constexpr Dim t_dims = D;
+	/// Type of lookup grid for tracking active positions.
+	using LookupType = Lookup::LazySimple<D>;
+};
 
 /**
  * Traits for Tracked::LazySingle.
@@ -138,6 +203,7 @@ struct DefaultTrackedTraits
 template <typename T, Dim D, TupleIdx N>
 struct Traits< Tracked::LazySingleByValue<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
+	/// Type of lookup grid for tracking active positions.
 	using LookupType = Lookup::LazySingle<D, N>;
 };
 
@@ -151,6 +217,7 @@ struct Traits< Tracked::LazySingleByValue<T, D, N> > : public DefaultTrackedTrai
 template <typename T, Dim D, TupleIdx N>
 struct Traits< Tracked::MultiByRef<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
+	/// Type of lookup grid for tracking active positions.
 	using LookupType = Lookup::Multi<D, N>;
 };
 

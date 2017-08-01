@@ -254,7 +254,7 @@ SCENARIO("Lookup::Simple")
 				THEN("the grid location corresponding to the untracked point gives NULL index")
 				{
 					CHECK(grid.get(pos1) == 0);
-					CHECK(grid.get(pos2) == NULL_IDX);
+					CHECK(grid.get(pos2) == null_idx);
 					CHECK(grid.get(pos3) == 2);
 					CHECK(grid.get(pos4) == 1);
 				}
@@ -284,7 +284,7 @@ SCENARIO("Lookup::Simple")
 						" list"
 					) {
 						CHECK(grid.get(pos1) == 0);
-						CHECK(grid.get(pos2) == NULL_IDX);
+						CHECK(grid.get(pos2) == null_idx);
 						CHECK(grid.get(pos3) == 2);
 						CHECK(grid.get(pos4) == 1);
 						CHECK(grid.get(pos5) == 3);
@@ -304,10 +304,10 @@ SCENARIO("Lookup::Simple")
 
 				THEN("the locations in the grid are now NULL index")
 				{
-					CHECK(grid.get(pos1) == NULL_IDX);
-					CHECK(grid.get(pos2) == NULL_IDX);
-					CHECK(grid.get(pos3) == NULL_IDX);
-					CHECK(grid.get(pos4) == NULL_IDX);
+					CHECK(grid.get(pos1) == null_idx);
+					CHECK(grid.get(pos2) == null_idx);
+					CHECK(grid.get(pos3) == null_idx);
+					CHECK(grid.get(pos4) == null_idx);
 				}
 
 				THEN("the grid reports the active state of positions correctly")
@@ -432,7 +432,7 @@ SCENARIO("Lookup::Single")
 				THEN("the grid location corresponding to the untrackd point gives NULL index")
 				{
 					CHECK(grid.get(pos1) == 0);
-					CHECK(grid.get(pos2) == Felt::NULL_IDX);
+					CHECK(grid.get(pos2) == Felt::null_idx);
 					CHECK(grid.get(pos3) == 0);
 					CHECK(grid.get(pos4) == 0);
 				}
@@ -463,7 +463,7 @@ SCENARIO("Lookup::Single")
 						"the grid contains the indices of the position vectors in the tracking list"
 					) {
 						CHECK(grid.get(pos1) == 0);
-						CHECK(grid.get(pos2) == Felt::NULL_IDX);
+						CHECK(grid.get(pos2) == Felt::null_idx);
 						CHECK(grid.get(pos3) == 0);
 						CHECK(grid.get(pos4) == 0);
 						CHECK(grid.get(pos5) == 1);
@@ -485,10 +485,10 @@ SCENARIO("Lookup::Single")
 
 				THEN("the locations in the grid are now NULL index")
 				{
-					CHECK(grid.get(pos1) == Felt::NULL_IDX);
-					CHECK(grid.get(pos2) == Felt::NULL_IDX);
-					CHECK(grid.get(pos3) == Felt::NULL_IDX);
-					CHECK(grid.get(pos4) == Felt::NULL_IDX);
+					CHECK(grid.get(pos1) == Felt::null_idx);
+					CHECK(grid.get(pos2) == Felt::null_idx);
+					CHECK(grid.get(pos3) == Felt::null_idx);
+					CHECK(grid.get(pos4) == Felt::null_idx);
 				}
 			}
 		}
@@ -543,12 +543,12 @@ SCENARIO("Lookup::Multi")
 			REQUIRE(grid.list(0).size() == 0);
 			REQUIRE(grid.list(1).size() == 0);
 			REQUIRE(grid.list(2).size() == 0);
-			CHECK(grid.get(pos1)(0) == Felt::NULL_IDX);
-			CHECK(grid.get(pos2)(0) == Felt::NULL_IDX);
-			CHECK(grid.get(pos3)(0) == Felt::NULL_IDX);
-			CHECK(grid.get(pos4)(0) == Felt::NULL_IDX);
-			CHECK(grid.get(pos5)(0) == Felt::NULL_IDX);
-			CHECK(grid.get(pos6)(0) == Felt::NULL_IDX);
+			CHECK(grid.get(pos1)(0) == Felt::null_idx);
+			CHECK(grid.get(pos2)(0) == Felt::null_idx);
+			CHECK(grid.get(pos3)(0) == Felt::null_idx);
+			CHECK(grid.get(pos4)(0) == Felt::null_idx);
+			CHECK(grid.get(pos5)(0) == Felt::null_idx);
+			CHECK(grid.get(pos6)(0) == Felt::null_idx);
 		}
 
 		WHEN("we append 4 locations to be tracked in list 0")
@@ -600,10 +600,10 @@ SCENARIO("Lookup::Multi")
 					" points"
 				) {
 					CHECK(grid.list(0).size() == 0);
-					CHECK(grid.get(pos1)(0) == Felt::NULL_IDX);
-					CHECK(grid.get(pos2)(0) == Felt::NULL_IDX);
-					CHECK(grid.get(pos3)(0) == Felt::NULL_IDX);
-					CHECK(grid.get(pos4)(0) == Felt::NULL_IDX);
+					CHECK(grid.get(pos1)(0) == Felt::null_idx);
+					CHECK(grid.get(pos2)(0) == Felt::null_idx);
+					CHECK(grid.get(pos3)(0) == Felt::null_idx);
+					CHECK(grid.get(pos4)(0) == Felt::null_idx);
 				}
 			}
 		}
@@ -647,7 +647,7 @@ SCENARIO("Lookup::Multi")
 					CHECK(grid.list(2)[0] == pos4_idx);
 					CHECK(grid.list(2)[1] == pos3_idx);
 					CHECK(grid.get(pos1)(0) == 0);
-					CHECK(grid.get(pos2)(1) == Felt::NULL_IDX);
+					CHECK(grid.get(pos2)(1) == Felt::null_idx);
 					CHECK(grid.get(pos3)(1) == 0);
 					CHECK(grid.get(pos4)(2) == 0);
 					CHECK(grid.get(pos3)(2) == 1);
@@ -670,7 +670,7 @@ SCENARIO("Lookup::Multi")
 						CHECK(grid.list(2)[2] == pos5_idx);
 						CHECK(grid.list(2)[3] == pos6_idx);
 						CHECK(grid.get(pos1)(0) == 0);
-						CHECK(grid.get(pos2)(1) == Felt::NULL_IDX);
+						CHECK(grid.get(pos2)(1) == Felt::null_idx);
 						CHECK(grid.get(pos3)(1) == 0);
 						CHECK(grid.get(pos4)(2) == 0);
 						CHECK(grid.get(pos3)(2) == 1);
@@ -693,11 +693,11 @@ SCENARIO("Lookup::Multi")
 							CHECK(grid.list(2)[0] == pos6_idx);
 							CHECK(grid.list(2)[1] == pos3_idx);
 							CHECK(grid.list(2)[2] == pos5_idx);
-							CHECK(grid.get(pos1)(0) == Felt::NULL_IDX);
-							CHECK(grid.get(pos2)(1) == Felt::NULL_IDX);
+							CHECK(grid.get(pos1)(0) == Felt::null_idx);
+							CHECK(grid.get(pos2)(1) == Felt::null_idx);
 							CHECK(grid.get(pos3)(1) == 0);
 							CHECK(grid.get(pos3)(2) == 1);
-							CHECK(grid.get(pos4)(2) == Felt::NULL_IDX);
+							CHECK(grid.get(pos4)(2) == Felt::null_idx);
 							CHECK(grid.get(pos5)(2) == 2);
 							CHECK(grid.get(pos6)(2) == 0);
 						}
@@ -711,18 +711,92 @@ SCENARIO("Lookup::Multi")
 								CHECK(grid.list(0).size() == 0);
 								CHECK(grid.list(1).size() == 0);
 								CHECK(grid.list(2).size() == 0);
-								CHECK(grid.get(pos1)(0) == Felt::NULL_IDX);
-								CHECK(grid.get(pos2)(1) == Felt::NULL_IDX);
-								CHECK(grid.get(pos3)(1) == Felt::NULL_IDX);
-								CHECK(grid.get(pos3)(2) == Felt::NULL_IDX);
-								CHECK(grid.get(pos4)(2) == Felt::NULL_IDX);
-								CHECK(grid.get(pos5)(2) == Felt::NULL_IDX);
-								CHECK(grid.get(pos6)(2) == Felt::NULL_IDX);
+								CHECK(grid.get(pos1)(0) == Felt::null_idx);
+								CHECK(grid.get(pos2)(1) == Felt::null_idx);
+								CHECK(grid.get(pos3)(1) == Felt::null_idx);
+								CHECK(grid.get(pos3)(2) == Felt::null_idx);
+								CHECK(grid.get(pos4)(2) == Felt::null_idx);
+								CHECK(grid.get(pos5)(2) == Felt::null_idx);
+								CHECK(grid.get(pos6)(2) == Felt::null_idx);
 							}
 						}
 					}
 
 				}
+			}
+		}
+	}
+}
+
+
+SCENARIO("Lookup::LazySimple")
+{
+	using GridType = Impl::Lookup::LazySimple<3>;
+
+	GIVEN("a 3x3x3 lazy single-index lookup grid with 3 tracking lists")
+	{
+		/// [LazySingleLookupGrid initialisation]
+
+		GridType grid = GridType();
+
+		THEN("the grid is initially inactive")
+		{
+			CHECK(grid.data().size() == 0);
+			CHECK(grid.list().size() == 0);
+		}
+		/// [LazySingleLookupGrid initialisation]
+
+		WHEN("the grid size is set")
+		{
+			grid.resize(Vec3i(3, 3, 3), Vec3i(-1,-1,-1));
+
+			THEN("the grid is still inactive but now reports new size")
+			{
+				CHECK(grid.data().size() == 0);
+				CHECK(grid.list().size() == 0);
+				CHECK(grid.size() == Vec3i(3, 3, 3));
+				CHECK(grid.offset() == Vec3i(-1,-1,-1));
+			}
+
+			/// [LazySingleLookupGrid activation]
+			WHEN("the grid is activated")
+			{
+				grid.activate();
+
+				THEN("memory is allocated and the grid filled with background value")
+				{
+					CHECK(grid.data().size() == 3 * 3 * 3);
+				}
+
+				THEN("queries return the NULL background value")
+				{
+					CHECK(grid.get(Vec3i(1, 1, 1)) == Felt::null_idx);
+					CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::null_idx);
+				}
+
+				AND_WHEN("we track a position to be tracked to list 1")
+				{
+					grid.track(grid.index(Vec3i(1, 1, 1)));
+
+					THEN("that position's value is updated and is added to the tracking list")
+					{
+						CHECK(grid.get(Vec3i(1, 1, 1)) == 0);
+						CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::null_idx);
+						CHECK(grid.list()[0] == grid.index(Vec3i(1, 1, 1)));
+					}
+
+					AND_WHEN("the grid is deactivated")
+					{
+						grid.deactivate();
+
+						THEN("the grid is once again inactive")
+						{
+							CHECK(grid.data().size() == 0);
+							CHECK(grid.list().size() == 0);
+						}
+					}
+				}
+				/// [LazySingleLookupGrid activation]
 			}
 		}
 	}
@@ -764,8 +838,8 @@ SCENARIO("Lookup::LazySingle")
 
 			THEN("queries return the NULL background value")
 			{
-				CHECK(grid.get(Vec3i(1, 1, 1)) == Felt::NULL_IDX);
-				CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::NULL_IDX);
+				CHECK(grid.get(Vec3i(1, 1, 1)) == Felt::null_idx);
+				CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::null_idx);
 			}
 
 			/// [LazySingleLookupGrid activation]
@@ -780,8 +854,8 @@ SCENARIO("Lookup::LazySingle")
 
 				THEN("queries still return the NULL background value")
 				{
-					CHECK(grid.get(Vec3i(1, 1, 1)) == Felt::NULL_IDX);
-					CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::NULL_IDX);
+					CHECK(grid.get(Vec3i(1, 1, 1)) == Felt::null_idx);
+					CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::null_idx);
 				}
 
 				AND_WHEN("we track a position to be tracked to list 1")
@@ -791,7 +865,7 @@ SCENARIO("Lookup::LazySingle")
 					THEN("that position's value is updated and is added to the tracking list")
 					{
 						CHECK(grid.get(Vec3i(1, 1, 1)) == 0);
-						CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::NULL_IDX);
+						CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::null_idx);
 						CHECK(grid.list(1)[0] == grid.index(Vec3i(1, 1, 1)));
 					}
 
@@ -809,8 +883,8 @@ SCENARIO("Lookup::LazySingle")
 
 						THEN("queries once again return the NULL background value")
 						{
-							CHECK(grid.get(Vec3i(1,1,1)) == Felt::NULL_IDX);
-							CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::NULL_IDX);
+							CHECK(grid.get(Vec3i(1,1,1)) == Felt::null_idx);
+							CHECK(grid.get(Vec3i(0, 1, 1)) == Felt::null_idx);
 						}
 					}
 				}
@@ -820,9 +894,166 @@ SCENARIO("Lookup::LazySingle")
 	}
 }
 
-
 /// Utility for static_assert of presence of reset method.
 template <typename T> using has_reset_t = decltype(&T::reset);
+
+
+SCENARIO("Tracked::LazySimpleByRef")
+{
+	GIVEN("a 3x3x3 grid with (-1,-1,-1) offset and background value of 3.14159")
+	{
+		using GridType = Impl::Tracked::LazySimpleByRef<FLOAT, 3>;
+
+		static_assert(
+			std::experimental::is_detected<has_reset_t, GridType>::value,
+			"Tracked grids with a single lookup index per grid node should have a reset method."
+		);
+
+		GridType grid = GridType(3.14159f);
+
+		const PosIdx NULL_IDX = Felt::null_idx;
+
+		THEN("the data grid and associated lookup grid state is zero size and inactive")
+		{
+			CHECK(grid.data().size() == 0);
+			CHECK(grid.lookup().data().size() == 0);
+		}
+
+		WHEN("the grid is resized")
+		{
+			grid.resize(Vec3i(3, 3, 3), Vec3i(-1,-1,-1));
+
+			THEN("the data grid and associated lookup grid report new size and remains inactive")
+			{
+				CHECK(grid.data().size() == 0);
+				CHECK(grid.lookup().data().size() == 0);
+
+				CHECK(grid.size() == Vec3i(3,3,3));
+				CHECK(grid.offset() == Vec3i(-1,-1,-1));
+				CHECK(grid.lookup().size() == Vec3i(3,3,3));
+				CHECK(grid.lookup().offset() == Vec3i(-1,-1,-1));
+			}
+
+			/// [LazySingleTrackedGrid activate]
+			WHEN("the grid is activated")
+			{
+				grid.activate();
+
+				THEN("the data grid and associated lookup grid state is active")
+				{
+					CHECK(grid.data().size() == 3*3*3);
+					CHECK(grid.get(Vec3i(1,1,1)) == 3.14159f);
+					CHECK(grid.lookup().data().size() == 3*3*3);
+					CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
+					/// [LazySingleTrackedGrid activate]
+				}
+
+				AND_WHEN("the grid is deactivated")
+				{
+					grid.deactivate();
+
+					THEN("the data grid and associated lookup grid state is inactive")
+					{
+						CHECK(grid.data().size() == 0);
+						CHECK(grid.lookup().data().size() == 0);
+					}
+				}
+
+				AND_WHEN("a location is updated and tracked in the list")
+				{
+					grid.track(42.0f, grid.index(Vec3i(1,1,1)));
+
+					THEN("the data grid is updated and the lookup grid tracks the point")
+					{
+						CHECK(grid.get(Vec3i(1,1,1)) == 42);
+						CHECK(grid.lookup().get(Vec3i(1,1,1)) == 0);
+						CHECK(grid.lookup().list().size() == 1);
+						CHECK(grid.lookup().list()[0] == grid.index(Vec3i(1,1,1)));
+					}
+
+					AND_WHEN("the grid is reset")
+					{
+						grid.reset();
+
+						THEN(
+							"the value in the data grid is reset to background value and locations"
+							" are no longer tracked"
+						) {
+							CHECK(grid.get(Vec3i(1,1,1)) == 3.14159f);
+							CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
+							CHECK(grid.lookup().list().size() == 0);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	GIVEN("a 9x9x9 grid of std::vectors with (-4,-4,-4) offset")
+	{
+		using LeafType = std::vector<int>;
+		using GridType = Impl::Tracked::LazySimpleByRef<LeafType, 3>;
+
+		GridType grid(LeafType{1,2,3});
+
+		grid.resize(Vec3i(9,9,9), Vec3i(-4,-4,-4));
+		grid.activate();
+
+		WHEN("a value is set with an lvalue reference")
+		{
+			LeafType move_me{5,6,7};
+			int* pdata = &move_me[0];
+			grid.get(Vec3i(2,2,2)) = move_me;
+
+			THEN("the data from the input has been copied into the grid")
+			{
+				CHECK(grid.get(Vec3i(2,2,2)) == move_me);
+				CHECK(&grid.get(Vec3i(2,2,2))[0] != pdata);
+			}
+		}
+
+		WHEN("a value is set with an rvalue reference")
+		{
+			LeafType move_me{5,6,7};
+			LeafType copied = move_me;
+			int* pdata = &move_me[0];
+			grid.get(Vec3i(2,2,2)) = std::move(move_me);
+
+			THEN("the data from the input has been moved into the grid")
+			{
+				CHECK(grid.get(Vec3i(2,2,2)) == copied);
+				CHECK(&grid.get(Vec3i(2,2,2))[0] == pdata);
+			}
+		}
+
+		WHEN("a value is tracked with an lvalue reference")
+		{
+			LeafType move_me{5,6,7};
+			int* pdata = &move_me[0];
+			grid.track(move_me, grid.index(Vec3i(2,2,2)));
+
+			THEN("the data from the input has been copied into the grid")
+			{
+				CHECK(grid.get(Vec3i(2,2,2)) == move_me);
+				CHECK(&grid.get(Vec3i(2,2,2))[0] != pdata);
+			}
+		}
+
+		WHEN("a value is tracked with an rvalue reference")
+		{
+			LeafType move_me{5,6,7};
+			LeafType copied = move_me;
+			int* pdata = &move_me[0];
+			grid.track(std::move(move_me), grid.index(Vec3i(2,2,2)));
+
+			THEN("the data from the input has been moved into the grid")
+			{
+				CHECK(grid.get(Vec3i(2,2,2)) == copied);
+				CHECK(&grid.get(Vec3i(2,2,2))[0] == pdata);
+			}
+		}
+	}
+}
 
 
 SCENARIO("Tracked::LazySingleByValue")
@@ -838,7 +1069,7 @@ SCENARIO("Tracked::LazySingleByValue")
 
 		GridType grid = GridType(3.14159f);
 
-		const PosIdx NULL_IDX = Felt::NULL_IDX;
+		const PosIdx NULL_IDX = Felt::null_idx;
 
 		THEN("the data grid and associated lookup grid state is zero size and inactive")
 		{
@@ -997,7 +1228,7 @@ SCENARIO("Tracked::MultiByRef")
 		{
 			CHECK(grid.lookup().data().size() == 9*9*9);
 			for (const IndexTuple& val : grid.lookup().data())
-				CHECK(val == IndexTuple::Constant(Felt::NULL_IDX));
+				CHECK(val == IndexTuple::Constant(Felt::null_idx));
 		}
 
 		WHEN("a simple value is added to the grid to be tracked by list 1 and 2")
@@ -1012,7 +1243,7 @@ SCENARIO("Tracked::MultiByRef")
 
 			THEN("the lookup grid is tracking the location just added")
 			{
-				CHECK(grid.lookup().get(Vec3i(2,2,2)) == IndexTuple(Felt::NULL_IDX, 0, 0));
+				CHECK(grid.lookup().get(Vec3i(2,2,2)) == IndexTuple(Felt::null_idx, 0, 0));
 				CHECK(grid.lookup().list(0).size() == 0);
 				CHECK(grid.lookup().list(1).size() == 1);
 				CHECK(grid.lookup().list(2).size() == 1);
@@ -1058,6 +1289,33 @@ SCENARIO("Tracked::MultiByRef")
 			LeafType copied = move_me;
 			int* pdata = &move_me[0];
 			grid.get(Vec3i(2,2,2)) = std::move(move_me);
+
+			THEN("the data from the input has been moved into the grid")
+			{
+				CHECK(grid.get(Vec3i(2,2,2)) == copied);
+				CHECK(&grid.get(Vec3i(2,2,2))[0] == pdata);
+			}
+		}
+
+		WHEN("a value is tracked with an lvalue reference")
+		{
+			LeafType move_me{5,6,7};
+			int* pdata = &move_me[0];
+			grid.track(move_me, grid.index(Vec3i(2,2,2)), 1);
+
+			THEN("the data from the input has been copied into the grid")
+			{
+				CHECK(grid.get(Vec3i(2,2,2)) == move_me);
+				CHECK(&grid.get(Vec3i(2,2,2))[0] != pdata);
+			}
+		}
+
+		WHEN("a value is tracked with an rvalue reference")
+		{
+			LeafType move_me{5,6,7};
+			LeafType copied = move_me;
+			int* pdata = &move_me[0];
+			grid.track(std::move(move_me), grid.index(Vec3i(2,2,2)), 1);
 
 			THEN("the data from the input has been moved into the grid")
 			{
@@ -1163,10 +1421,10 @@ SCENARIO("Paritioned::Lookup")
 					CHECK(
 						grid.children().get(
 							pos_child_active_because_master
-						).get(pos_active_because_master) == NULL_IDX
+						).get(pos_active_because_master) == null_idx
 					);
-					CHECK(grid.children().get(pos_child_list_0).get(pos_list_0) == NULL_IDX);
-					CHECK(grid.children().get(pos_child_list_1).get(pos_list_1) == NULL_IDX);
+					CHECK(grid.children().get(pos_child_list_0).get(pos_list_0) == null_idx);
+					CHECK(grid.children().get(pos_child_list_1).get(pos_list_1) == null_idx);
 					CHECK(
 						grid.children().get(pos_child_active_because_master).list(0).size() == 0
 					);
@@ -1227,21 +1485,21 @@ SCENARIO("Paritioned::Tracked::Simple")
 			CHECK(grid.children().get(pos12_child_idx).data().size() == 0);
 			CHECK(grid.children().get(pos12_child_idx).get(pos1_idx) == -42);
 			CHECK(grid.children().get(pos12_child_idx).lookup().data().size() == 0);
-			CHECK(grid.children().get(pos12_child_idx).lookup().get(pos1_idx) == NULL_IDX);
+			CHECK(grid.children().get(pos12_child_idx).lookup().get(pos1_idx) == null_idx);
 			CHECK(grid.children().get(pos12_child_idx).get(pos2_idx) == -42);
-			CHECK(grid.children().get(pos12_child_idx).lookup().get(pos2_idx) == NULL_IDX);
+			CHECK(grid.children().get(pos12_child_idx).lookup().get(pos2_idx) == null_idx);
 
 			CHECK(grid.children().get(pos3_child_idx).is_active() == false);
 			CHECK(grid.children().get(pos3_child_idx).data().size() == 0);
 			CHECK(grid.children().get(pos3_child_idx).get(pos3_idx) == -42);
 			CHECK(grid.children().get(pos3_child_idx).lookup().data().size() == 0);
-			CHECK(grid.children().get(pos3_child_idx).lookup().get(pos3_idx) == NULL_IDX);
+			CHECK(grid.children().get(pos3_child_idx).lookup().get(pos3_idx) == null_idx);
 
 			CHECK(grid.children().get(pos4_child_idx).is_active() == false);
 			CHECK(grid.children().get(pos4_child_idx).data().size() == 0);
 			CHECK(grid.children().get(pos4_child_idx).get(pos4_idx) == -42);
 			CHECK(grid.children().get(pos4_child_idx).lookup().data().size() == 0);
-			CHECK(grid.children().get(pos4_child_idx).lookup().get(pos4_idx) == NULL_IDX);
+			CHECK(grid.children().get(pos4_child_idx).lookup().get(pos4_idx) == null_idx);
 		}
 
 		AND_WHEN("a mask grid is tracking some partitions")
@@ -1260,15 +1518,15 @@ SCENARIO("Paritioned::Tracked::Simple")
 					CHECK(grid.children().get(pos12_child_idx).data().size() == 3*3*3);
 					CHECK(grid.children().get(pos12_child_idx).get(pos1_idx) == -42);
 					CHECK(grid.children().get(pos12_child_idx).lookup().data().size() == 3*3*3);
-					CHECK(grid.children().get(pos12_child_idx).lookup().get(pos1_idx) == NULL_IDX);
+					CHECK(grid.children().get(pos12_child_idx).lookup().get(pos1_idx) == null_idx);
 					CHECK(grid.children().get(pos12_child_idx).get(pos2_idx) == -42);
-					CHECK(grid.children().get(pos12_child_idx).lookup().get(pos2_idx) == NULL_IDX);
+					CHECK(grid.children().get(pos12_child_idx).lookup().get(pos2_idx) == null_idx);
 
 					CHECK(grid.children().get(pos3_child_idx).is_active() == true);
 					CHECK(grid.children().get(pos3_child_idx).data().size() == 3*3*3);
 					CHECK(grid.children().get(pos3_child_idx).get(pos3_idx) == -42);
 					CHECK(grid.children().get(pos3_child_idx).lookup().data().size() == 3*3*3);
-					CHECK(grid.children().get(pos3_child_idx).lookup().get(pos3_idx) == NULL_IDX);
+					CHECK(grid.children().get(pos3_child_idx).lookup().get(pos3_idx) == null_idx);
 
 					CHECK(grid.children().lookup().list(0).size() == 2);
 					CHECK(grid.children().lookup().list(1).size() == 0);
@@ -1281,7 +1539,7 @@ SCENARIO("Paritioned::Tracked::Simple")
 					CHECK(grid.children().get(pos4_child_idx).data().size() == 0);
 					CHECK(grid.children().get(pos4_child_idx).get(pos4_idx) == -42);
 					CHECK(grid.children().get(pos4_child_idx).lookup().data().size() == 0);
-					CHECK(grid.children().get(pos4_child_idx).lookup().get(pos4_idx) == NULL_IDX);
+					CHECK(grid.children().get(pos4_child_idx).lookup().get(pos4_idx) == null_idx);
 				}
 
 				AND_WHEN("a position in an active partition is tracked by index for list 1")
@@ -1383,13 +1641,13 @@ SCENARIO("Paritioned::Tracked::Simple")
 
 						THEN("children grid lookup is reset")
 						{
-							auto NULL_IDX_TUPLE = grid.children().lookup().NULL_IDX_TUPLE;
+							auto s_null_idxs = grid.children().lookup().s_null_idxs;
 							CHECK(grid.children().lookup().list(0).size() == 0);
 							CHECK(grid.children().lookup().list(1).size() == 0);
 							CHECK(grid.children().lookup().list(2).size() == 0);
-							CHECK(grid.children().lookup().get(pos12_child_idx) == NULL_IDX_TUPLE);
-							CHECK(grid.children().lookup().get(pos3_child_idx) == NULL_IDX_TUPLE);
-							CHECK(grid.children().lookup().get(pos4_child_idx) == NULL_IDX_TUPLE);
+							CHECK(grid.children().lookup().get(pos12_child_idx) == s_null_idxs);
+							CHECK(grid.children().lookup().get(pos3_child_idx) == s_null_idxs);
+							CHECK(grid.children().lookup().get(pos4_child_idx) == s_null_idxs);
 						}
 
 						THEN("child grids' lookups are reset")
@@ -1457,7 +1715,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 				CHECK(grid.children().lookup().list(2).size() == 0);
 				CHECK(grid.children().lookup().get(pos123_child_idx)[0] == 0);
 				CHECK(grid.children().lookup().get(pos123_child_idx)[1] == 0);
-				CHECK(grid.children().lookup().get(pos123_child_idx)[2] == NULL_IDX);
+				CHECK(grid.children().lookup().get(pos123_child_idx)[2] == null_idx);
 			}
 
 			THEN("child tracks the leaf positions")
@@ -1499,7 +1757,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 					CHECK(grid.children().lookup().list(2).size() == 0);
 					CHECK(grid.children().lookup().get(pos123_child_idx)[0] == 0);
 					CHECK(grid.children().lookup().get(pos123_child_idx)[1] == 0);
-					CHECK(grid.children().lookup().get(pos123_child_idx)[2] == NULL_IDX);
+					CHECK(grid.children().lookup().get(pos123_child_idx)[2] == null_idx);
 				}
 
 				THEN("the child now tracks just the other positions")
@@ -1509,7 +1767,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 					CHECK(child.lookup().list(2).size() == 0);
 					CHECK(child.lookup().list(0)[0] == pos2_idx);
 					CHECK(child.lookup().list(1)[0] == pos3_idx);
-					CHECK(child.lookup().get(pos1_idx) == NULL_IDX);
+					CHECK(child.lookup().get(pos1_idx) == null_idx);
 					CHECK(child.lookup().get(pos2_idx) == 0);
 					CHECK(child.lookup().get(pos3_idx) == 0);
 				}
@@ -1530,9 +1788,9 @@ SCENARIO("Paritioned::Tracked::Numeric")
 						CHECK(grid.children().lookup().list(0).size() == 0);
 						CHECK(grid.children().lookup().list(1).size() == 1);
 						CHECK(grid.children().lookup().list(2).size() == 0);
-						CHECK(grid.children().lookup().get(pos123_child_idx)[0] == NULL_IDX);
+						CHECK(grid.children().lookup().get(pos123_child_idx)[0] == null_idx);
 						CHECK(grid.children().lookup().get(pos123_child_idx)[1] == 0);
-						CHECK(grid.children().lookup().get(pos123_child_idx)[2] == NULL_IDX);
+						CHECK(grid.children().lookup().get(pos123_child_idx)[2] == null_idx);
 					}
 
 					THEN("the child now tracks just the final position")
@@ -1541,8 +1799,8 @@ SCENARIO("Paritioned::Tracked::Numeric")
 						CHECK(child.lookup().list(1).size() == 1);
 						CHECK(child.lookup().list(2).size() == 0);
 						CHECK(child.lookup().list(1)[0] == pos3_idx);
-						CHECK(child.lookup().get(pos1_idx) == NULL_IDX);
-						CHECK(child.lookup().get(pos2_idx) == NULL_IDX);
+						CHECK(child.lookup().get(pos1_idx) == null_idx);
+						CHECK(child.lookup().get(pos2_idx) == null_idx);
 						CHECK(child.lookup().get(pos3_idx) == 0);
 					}
 
@@ -1555,9 +1813,9 @@ SCENARIO("Paritioned::Tracked::Numeric")
 							CHECK(grid.children().lookup().list(0).size() == 0);
 							CHECK(grid.children().lookup().list(1).size() == 0);
 							CHECK(grid.children().lookup().list(2).size() == 0);
-							CHECK(grid.children().lookup().get(pos123_child_idx)[0] == NULL_IDX);
-							CHECK(grid.children().lookup().get(pos123_child_idx)[1] == NULL_IDX);
-							CHECK(grid.children().lookup().get(pos123_child_idx)[2] == NULL_IDX);
+							CHECK(grid.children().lookup().get(pos123_child_idx)[0] == null_idx);
+							CHECK(grid.children().lookup().get(pos123_child_idx)[1] == null_idx);
+							CHECK(grid.children().lookup().get(pos123_child_idx)[2] == null_idx);
 						}
 
 						THEN("the child no longer tracks any positions")
@@ -1565,9 +1823,9 @@ SCENARIO("Paritioned::Tracked::Numeric")
 							CHECK(child.lookup().list(0).size() == 0);
 							CHECK(child.lookup().list(1).size() == 0);
 							CHECK(child.lookup().list(2).size() == 0);
-							CHECK(child.lookup().get(pos1_idx) == NULL_IDX);
-							CHECK(child.lookup().get(pos2_idx) == NULL_IDX);
-							CHECK(child.lookup().get(pos3_idx) == NULL_IDX);
+							CHECK(child.lookup().get(pos1_idx) == null_idx);
+							CHECK(child.lookup().get(pos2_idx) == null_idx);
+							CHECK(child.lookup().get(pos3_idx) == null_idx);
 						}
 
 						THEN("the child has been deactivated")
@@ -1602,7 +1860,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 					CHECK(grid.children().lookup().list(2).size() == 0);
 					CHECK(grid.children().lookup().get(pos123_child_idx)[0] == 0);
 					CHECK(grid.children().lookup().get(pos123_child_idx)[1] == 0);
-					CHECK(grid.children().lookup().get(pos123_child_idx)[2] == NULL_IDX);
+					CHECK(grid.children().lookup().get(pos123_child_idx)[2] == null_idx);
 				}
 
 				THEN("the position has been appended to the other list")
@@ -1627,9 +1885,9 @@ SCENARIO("Paritioned::Tracked::Numeric")
 						CHECK(grid.children().lookup().list(0).size() == 0);
 						CHECK(grid.children().lookup().list(1).size() == 1);
 						CHECK(grid.children().lookup().list(2).size() == 0);
-						CHECK(grid.children().lookup().get(pos123_child_idx)[0] == NULL_IDX);
+						CHECK(grid.children().lookup().get(pos123_child_idx)[0] == null_idx);
 						CHECK(grid.children().lookup().get(pos123_child_idx)[1] == 0);
-						CHECK(grid.children().lookup().get(pos123_child_idx)[2] == NULL_IDX);
+						CHECK(grid.children().lookup().get(pos123_child_idx)[2] == null_idx);
 					}
 				}
 			}

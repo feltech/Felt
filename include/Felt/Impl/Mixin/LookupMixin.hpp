@@ -7,10 +7,6 @@
 
 namespace Felt
 {
-
-/// Value to store in lookup grid when a node doesn't reference any list.
-static constexpr ListIdx	NULL_IDX = std::numeric_limits<ListIdx>::max();
-
 namespace Impl
 {
 namespace Mixin
@@ -28,6 +24,174 @@ protected:
 	using VecDi = Felt::VecDi<t_dims>;
 };
 
+
+namespace Single
+{
+
+template <class Derived>
+class Activator : protected Grid::Activator<Derived>
+{
+protected:
+	/// CRTP derived class.
+	using Base =  Grid::Activator<Derived>;
+	/// Traits of derived class.
+	using TraitsType = Traits<Derived>;
+	/// Number of tracking lists.
+	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
+
+	// Base class methods.
+	using Base::Activator;
+	using Base::activate;
+	using Base::is_active;
+
+	/**
+	 * Destroy the internal data array.
+	 */
+	void deactivate()
+	{
+		pself->m_data.clear();
+		pself->m_data.shrink_to_fit();
+		pself->m_list_pos_idxs.clear();
+		pself->m_list_pos_idxs.shrink_to_fit();
+	}
+};
+
+
+template <class Derived>
+class Single : protected Base<Derived>
+{
+private:
+	/// CRTP derived class.
+	using DerivedType = Derived;
+	/// Base class
+	using BaseType = Base<Derived>;
+	/// Integer vector
+	using typename BaseType::VecDi;
+protected:
+	/// List of position vectors, each of which have a corresponding grid node storing it's index.
+	PosArray	m_list_pos_idxs;
+
+	/**
+	 * Get tracking list.
+	 *
+	 * @return tracking list.
+	 */
+	const PosArray& list() const
+	{
+		return m_list_pos_idxs;;
+	}
+	/**
+	 * Get tracking list.
+	 *
+	 * @return tracking list.
+	 */
+	PosArray& list()
+	{
+		return m_list_pos_idxs;;
+	}
+
+	/**
+	 * Return true if position currently tracked for given list id, false otherwise.
+	 *
+	 * @param pos_ position in grid to query.
+	 * @return true if grid position tracked, false otherwise.
+	 */
+	bool is_tracked (const PosIdx pos_idx_) const
+	{
+		return pself->get(pos_idx_) != Felt::null_idx;
+	}
+
+	/**
+	* Add pos to tracking list and set pos in grid to index in tracking list.
+	*
+	* If a grid node has a non-NULL index then does nothing.
+	*
+	* @param pos_ position in lookup grid.
+	* @return true if grid node was set and position added to list,
+	* false if grid node was already set so position already in a list.
+	*/
+	bool track(const PosIdx pos_idx_)
+	{
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		pself->assert_pos_bounds(pos_idx_, "track: ");
+		#endif
+
+		ListIdx idx = pself->get(pos_idx_);
+		// Do not allow duplicates.
+		if (idx != Felt::null_idx)
+		{
+			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+			if (m_list_pos_idxs.size()-1 < idx)
+			{
+				std::stringstream sstr;
+				sstr << "Position " << Felt::format(pself->index(pos_idx_)) <<
+					" detected as a duplicate, since " << idx << " is not " << Felt::null_idx <<
+					", but the list is not that big";
+				std::string str = sstr.str();
+				throw std::domain_error(str);
+			}
+			#endif
+			return false;
+		}
+
+		pself->set(pos_idx_, ListIdx(m_list_pos_idxs.size()));
+		m_list_pos_idxs.push_back(pos_idx_);
+
+		return true;
+	}
+
+
+	/**
+	 * Remove pos from the array and set lookup at pos to NULL index.
+	 *
+	 * @param pos_ position in grid matching index in tracking list to untrack.
+	 */
+	void untrack(const PosIdx pos_idx_)
+	{
+		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		pself->assert_pos_idx_bounds(pos_idx_, "untrack: ");
+		#endif
+		// By reference, so we don't have to query again.
+		ListIdx& idx_at_pos = pself->ref(pos_idx_);
+
+		if (idx_at_pos == Felt::null_idx)
+			return;
+
+		// If this is not the last remaining position in the array, then
+		// we must move the last position to this position and update the
+		// lookup grid.
+		const ListIdx last_idx = ListIdx(m_list_pos_idxs.size()) - 1;
+		if (idx_at_pos < last_idx)
+		{
+			// Duplicate last element into this index.
+			const PosIdx pos_idx_last = m_list_pos_idxs[last_idx];
+			m_list_pos_idxs[idx_at_pos] = m_list_pos_idxs[last_idx];
+			// Set the lookup grid to reference the new index in the array.
+			pself->set(pos_idx_last, idx_at_pos);
+		}
+		// NULL out the value in the grid now that we're done with it.
+		idx_at_pos = Felt::null_idx;
+		// Remove the last element in the array (which is at this point
+		// either the last remaining element or a duplicate).
+		m_list_pos_idxs.pop_back();
+	}
+
+	/**
+	 * Set all lookup grid nodes to NULL index and clear the list.
+	 */
+	void reset()
+	{
+		for (const PosIdx pos_idx : m_list_pos_idxs)
+			pself->set(pos_idx, Felt::null_idx);
+		m_list_pos_idxs.clear();
+	}
+};
+
+} // Single.
+
+
+namespace Multi
+{
 
 template <class Derived>
 class Activator : protected Grid::Activator<Derived>
@@ -59,143 +223,6 @@ protected:
 		}
 	}
 };
-
-
-template <class Derived>
-class Simple : protected Base<Derived>
-{
-private:
-	/// CRTP derived class.
-	using DerivedType = Derived;
-	/// Base class
-	using BaseType = Base<Derived>;
-	/// Integer vector
-	using typename BaseType::VecDi;
-private:
-	/// List of position vectors, each of which have a corresponding grid node storing it's index.
-	PosArray	m_list_pos_idxs;
-
-protected:
-
-
-protected:
-
-	/**
-	 * Get tracking list.
-	 *
-	 * @return tracking list.
-	 */
-	const PosArray& list() const
-	{
-		return m_list_pos_idxs;;
-	}
-	/**
-	 * Get tracking list.
-	 *
-	 * @return tracking list.
-	 */
-	PosArray& list()
-	{
-		return m_list_pos_idxs;;
-	}
-
-	/**
-	 * Return true if position currently tracked for given list id, false otherwise.
-	 *
-	 * @param pos_ position in grid to query.
-	 * @return true if grid position tracked, false otherwise.
-	 */
-	bool is_tracked (const PosIdx pos_idx_) const
-	{
-		return pself->get(pos_idx_) != NULL_IDX;
-	}
-
-	/**
-	* Add pos to tracking list and set pos in grid to index in tracking list.
-	*
-	* If a grid node has a non-NULL index then does nothing.
-	*
-	* @param pos_ position in lookup grid.
-	* @return true if grid node was set and position added to list,
-	* false if grid node was already set so position already in a list.
-	*/
-	bool track(const PosIdx pos_idx_)
-	{
-		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		pself->assert_pos_bounds(pos_idx_, "track: ");
-		#endif
-
-		ListIdx idx = pself->get(pos_idx_);
-		// Do not allow duplicates.
-		if (idx != NULL_IDX)
-		{
-			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-			if (m_list_pos_idxs.size()-1 < idx)
-			{
-				std::stringstream sstr;
-				sstr << "Position " << Felt::format(pself->index(pos_idx_)) <<
-					" detected as a duplicate, since " << idx << " is not " << NULL_IDX <<
-					", but the list is not that big";
-				std::string str = sstr.str();
-				throw std::domain_error(str);
-			}
-			#endif
-			return false;
-		}
-
-		pself->set(pos_idx_, ListIdx(m_list_pos_idxs.size()));
-		m_list_pos_idxs.push_back(pos_idx_);
-
-		return true;
-	}
-
-
-	/**
-	 * Remove pos from the array and set lookup at pos to NULL index.
-	 *
-	 * @param pos_ position in grid matching index in tracking list to untrack.
-	 */
-	void untrack(const PosIdx pos_idx_)
-	{
-		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
-		pself->assert_pos_idx_bounds(pos_idx_, "untrack: ");
-		#endif
-		// By reference, so we don't have to query again.
-		ListIdx& idx_at_pos = pself->ref(pos_idx_);
-
-		if (idx_at_pos == NULL_IDX)
-			return;
-
-		// If this is not the last remaining position in the array, then
-		// we must move the last position to this position and update the
-		// lookup grid.
-		const ListIdx last_idx = ListIdx(m_list_pos_idxs.size()) - 1;
-		if (idx_at_pos < last_idx)
-		{
-			// Duplicate last element into this index.
-			const PosIdx pos_idx_last = m_list_pos_idxs[last_idx];
-			m_list_pos_idxs[idx_at_pos] = m_list_pos_idxs[last_idx];
-			// Set the lookup grid to reference the new index in the array.
-			pself->set(pos_idx_last, idx_at_pos);
-		}
-		// NULL out the value in the grid now that we're done with it.
-		idx_at_pos = NULL_IDX;
-		// Remove the last element in the array (which is at this point
-		// either the last remaining element or a duplicate).
-		m_list_pos_idxs.pop_back();
-	}
-
-	/**
-	 * Set all lookup grid nodes to NULL index and clear the list.
-	 */
-	void reset()
-	{
-		for (const PosIdx pos_idx : m_list_pos_idxs)
-			pself->set(pos_idx, NULL_IDX);
-		m_list_pos_idxs.clear();
-	}
-};
-
 
 template <class Derived>
 class Single : protected Base<Derived>
@@ -245,7 +272,7 @@ protected:
 	 */
 	bool is_tracked (const VecDi& pos_) const
 	{
-		return pself->get(pos_) != NULL_IDX;
+		return pself->get(pos_) != Felt::null_idx;
 	}
 
 	/**
@@ -266,7 +293,7 @@ protected:
 
 		const ListIdx idx = pself->get(pos_idx_);
 		// Do not allow duplicates.
-		if (idx != NULL_IDX)
+		if (idx != Felt::null_idx)
 		{
 			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 			bool found = false;
@@ -279,7 +306,7 @@ protected:
 			{
 				std::stringstream sstr;
 				sstr << "Position " << Felt::format(pself->index(pos_idx_)) <<
-					" detected as a duplicate, since " << idx << " is not " << NULL_IDX <<
+					" detected as a duplicate, since " << idx << " is not " << Felt::null_idx <<
 					", but no list is that big";
 				std::string str = sstr.str();
 				throw std::domain_error(str);
@@ -308,7 +335,7 @@ protected:
 		// Get reference to list index stored at given position in grid.
 		ListIdx& list_idx_at_pos = pself->ref(pos_idx_);
 
-		if (list_idx_at_pos == NULL_IDX)
+		if (list_idx_at_pos == Felt::null_idx)
 			return;
 
 		// Get a reference to the tracking list that we now need to update.
@@ -327,7 +354,7 @@ protected:
 			pself->set(pos_idx_last, list_idx_at_pos);
 		}
 		// NULL out the old value in the grid now that we're done with it.
-		list_idx_at_pos = NULL_IDX;
+		list_idx_at_pos = Felt::null_idx;
 		// Remove the last element in the array (which is at this point
 		// either the last remaining element or a duplicate).
 		list_to_update.pop_back();
@@ -343,7 +370,7 @@ protected:
 		{
 			PosArray& list_pos_idxs = m_a_list_pos_idxs[list_idx];
 			for (const PosIdx pos_idx : list_pos_idxs)
-				pself->set(pos_idx, NULL_IDX);
+				pself->set(pos_idx, Felt::null_idx);
 			list_pos_idxs.clear();
 		}
 	}
@@ -370,7 +397,7 @@ private:
 	using IndexTuple = typename TraitsType::LeafType;
 
 protected:
-	static const IndexTuple NULL_IDX_TUPLE;
+	static const IndexTuple s_null_idxs;
 private:
 	/// List of position vectors, each of which have a corresponding grid node storing it's index.
 	/// N-tuple of lists of grid positions - the tracking lists.
@@ -408,7 +435,7 @@ protected:
 	 */
 	bool is_tracked (const PosIdx pos_idx_, const TupleIdx list_idx_) const
 	{
-		return pself->get(pos_idx_)[list_idx_] != NULL_IDX;
+		return pself->get(pos_idx_)[list_idx_] != Felt::null_idx;
 	}
 
 	/**
@@ -419,7 +446,7 @@ protected:
 	 */
 	bool is_tracked (const PosIdx pos_idx_) const
 	{
-		return pself->get(pos_idx_) != NULL_IDX_TUPLE;
+		return pself->get(pos_idx_) != s_null_idxs;
 	}
 
 	/**
@@ -439,7 +466,7 @@ protected:
 		#endif
 		ListIdx& idx = pself->get(pos_idx_)[list_idx_];
 		// Do not allow duplicates.
-		if (idx != NULL_IDX)
+		if (idx != Felt::null_idx)
 		{
 			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 			bool found = false;
@@ -452,7 +479,7 @@ protected:
 			{
 				std::stringstream sstr;
 				sstr << "Position " << Felt::format(pself->index(pos_idx_)) <<
-					" detected as a duplicate, since " << idx << " is not " << NULL_IDX <<
+					" detected as a duplicate, since " << idx << " is not " << Felt::null_idx <<
 					", but no list is that big";
 				std::string str = sstr.str();
 				throw std::domain_error(str);
@@ -482,7 +509,7 @@ protected:
 		// Set index lookup to null value.
 		ListIdx& idx_at_pos = pself->get(pos_idx_)[list_idx_];
 
-		if (idx_at_pos == NULL_IDX)
+		if (idx_at_pos == Felt::null_idx)
 			return;
 
 		// Get a reference to the tracking list that we now need to update.
@@ -501,7 +528,7 @@ protected:
 			pself->get(pos_idx_last)[list_idx_] = idx_at_pos;
 		}
 		// NULL out the old value in the grid now that we're done with it.
-		idx_at_pos = NULL_IDX;
+		idx_at_pos = Felt::null_idx;
 		// Remove the last element in the array (which is at this point
 		// either the last remaining element or a duplicate).
 		list_to_update.pop_back();
@@ -516,7 +543,7 @@ protected:
 		{
 			PosArray& list_pos_idxs = m_a_list_pos_idxs[list_idx];
 			for (const PosIdx pos_idx : list_pos_idxs)
-				pself->get(pos_idx)[list_idx] = NULL_IDX;
+				pself->get(pos_idx)[list_idx] = Felt::null_idx;
 			list_pos_idxs.clear();
 		}
 	}
@@ -525,7 +552,8 @@ protected:
 
 template <class Derived>
 const typename Traits<Derived>::LeafType
-Multi<Derived>::NULL_IDX_TUPLE = IndexTuple::Constant(NULL_IDX);
+Multi<Derived>::s_null_idxs = IndexTuple::Constant(Felt::null_idx);
+} // Multi
 
 } // Lookup
 } // Mixin
