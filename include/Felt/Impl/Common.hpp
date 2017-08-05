@@ -1,5 +1,8 @@
 #ifndef INCLUDE_FELT_IMPL_COMMON_HPP_
 #define INCLUDE_FELT_IMPL_COMMON_HPP_
+
+#define EIGEN_DEFAULT_IO_FORMAT Eigen::IOFormat(3, DontAlignCols, " ", ",", "", "", "(", ")")
+
 #include <vector>
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/seq/for_each_i.hpp>
@@ -61,7 +64,7 @@ using VecDi = VecDT<INT, D>;
  * Shorthand for D-dimensional unsigned integer vector.
  */
 template <Dim D>
-using VecDu = VecDT<UINT, D>;
+using VecDu = VecDT<ListIdx, D>;
 
 /**
  * Shorthand for 2D float vector.

@@ -32,6 +32,7 @@ class Surface
 {
 private:
 	using ThisType = Surface<D, L>;
+	/// Dimensions of the underlying isogrid.
 	static constexpr Dim s_dims	= D;
 	/// Furthest layer from the zero-layer on the inside of the volume.
 	static constexpr LayerId s_layer_min	= -L;
@@ -542,16 +543,6 @@ public:
 	 *
 	 * @return signed distance isogrid embedding the level set surface.
 	 */
-	IsoGrid& isogrid ()
-	{
-		return m_grid_isogrid;
-	}
-
-	/**
-	 * Get reference to isogrid grid.
-	 *
-	 * @return signed distance isogrid embedding the level set surface.
-	 */
 	const IsoGrid& isogrid () const
 	{
 		return m_grid_isogrid;
@@ -607,11 +598,9 @@ private:
 	 * Find all outer layer points who's distance transform is affected by modified zero-layer
 	 * points.
 	 *
-	 * @snippet test_Surface.cpp Calculate affected outer layers for localised narrow band updates
-	 *
 	 * TODO: several options for optimisation of removing duplicates:
 	 * - Use a boolean flag grid to construct a de-duped vector (used here).
-	 * - Check std::vector in Grid::neighs() using std::find to prevent tracking a duplicate in the
+	 * - Check std::vector in neighs() using std::find to prevent tracking a duplicate in the
 	 *   first place.
 	 * - Use std::vector sort, unique, erase.
 	 * - Use a std::unordered_set with a suitable hashing function.
@@ -782,7 +771,7 @@ private:
 				const Distance iso_new = iso_prev + iso_delta;
 				const LayerId layer_id_new = layer_id(iso_new);
 
-				#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+				#ifdef FELT_DEBUG_ENABLED
 
 				const LayerId layer_id_old = layer_id(iso_prev);
 
@@ -840,7 +829,7 @@ private:
 	 *
 	 * @param plookup_ either isogrid for full update, or affected grid for local updates.
 	 * @param plookup_buffer_ buffer to store grid points that need a layer update and may need
-	 * trackitional iterations to converge.
+	 * additional iterations to converge.
 	 */
 	template <typename GridType>
 	bool update_distance(

@@ -17,11 +17,11 @@ namespace Tracked
 
 
 template <class Derived>
-class Activator : protected Grid::Activator<Derived>
+class Activate : protected Grid::Activate<Derived>
 {
 private:
 	/// Base class.
-	using Base = Felt::Impl::Mixin::Grid::Activator<Derived>;
+	using Base = Felt::Impl::Mixin::Grid::Activate<Derived>;
 	/// Traits of derived class.
 	using TraitsType = Traits<Derived>;
 	/// Type of data to store in grid nodes.
@@ -30,7 +30,7 @@ private:
 	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
 
 protected:
-	using Base::Activator;
+	using Base::Activate;
 	using Base::is_active;
 
 	/**
@@ -42,6 +42,11 @@ protected:
 		pself->m_grid_lookup.activate();
 	}
 
+	/**
+	 * Destroy the internal data array and lookup grid and change the background value
+	 *
+	 * @param background_ new background value to report when (now-inactive) grid is queried.
+	 */
 	void deactivate(LeafType background_)
 	{
 		this->m_background = background_;
@@ -66,7 +71,7 @@ class Resize : protected Grid::Resize<Derived>
 private:
 	using Base = Grid::Resize<Derived>;
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<Derived>::t_dims;
+	static const Dim t_dims = Traits<Derived>::t_dims;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -134,53 +139,7 @@ namespace Single
 {
 
 template <class Derived>
-class ByRef
-{
-private:
-	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
-	static constexpr UINT t_dims = TraitsType::t_dims;
-	/// Integer vector.
-	using VecDi = Felt::VecDi<t_dims>;
-	using LeafType = typename TraitsType::LeafType;
-protected:
-	/**
-	 * Set value in grid at given position and track position to lookup grid.
-	 *
-	 * Will set value regardless whether lookup grid already set for given
-	 * position + tracking list.
-	 *
-	 * @param pos_ position in grid.
-	 * @param val_ value to set.
-	 * @return true if grid node set in lookup grid and position added to tracking list, false if
-	 * grid node was already set so position already in the list.
-	 */
-	bool track(LeafType&& val_, const PosIdx pos_idx_)
-	{
-		pself->get(pos_idx_) = std::forward<LeafType>(val_);
-		return pself->lookup().track(pos_idx_);
-	}
-
-	/**
-	 * Set value in grid at given position and track position to lookup grid.
-	 *
-	 * Will set value regardless whether lookup grid already set for given
-	 * position + tracking list.
-	 *
-	 * @param pos_ position in grid.
-	 * @param val_ value to set.
-	 * @return true if grid node set in lookup grid and position added to tracking list, false if
-	 * grid node was already set so position already in the list.
-	 */
-	bool track(const LeafType& val_, const PosIdx pos_idx_)
-	{
-		pself->get(pos_idx_) = val_;
-		return pself->lookup().track(pos_idx_);
-	}
-};
-
-template <class Derived>
-class Resetter
+class Reset
 {
 private:
 	/// Traits of derived class.
@@ -346,7 +305,7 @@ protected:
 
 
 template <class Derived>
-class Resetter
+class Reset
 {
 private:
 	/// Traits of derived class.

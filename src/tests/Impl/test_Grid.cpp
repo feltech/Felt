@@ -540,9 +540,9 @@ SCENARIO("Lookup::Multi")
 
 		THEN("the grid is initialised with NULL indices and the tracking lists are empty")
 		{
-			REQUIRE(grid.list(0).size() == 0);
-			REQUIRE(grid.list(1).size() == 0);
-			REQUIRE(grid.list(2).size() == 0);
+			REQUIRE(grid.list(0).capacity() == 0);
+			REQUIRE(grid.list(1).capacity() == 0);
+			REQUIRE(grid.list(2).capacity() == 0);
 			CHECK(grid.get(pos1)(0) == Felt::null_idx);
 			CHECK(grid.get(pos2)(0) == Felt::null_idx);
 			CHECK(grid.get(pos3)(0) == Felt::null_idx);
@@ -741,8 +741,8 @@ SCENARIO("Lookup::LazySimple")
 
 		THEN("the grid is initially inactive")
 		{
-			CHECK(grid.data().size() == 0);
-			CHECK(grid.list().size() == 0);
+			CHECK(grid.data().capacity() == 0);
+			CHECK(grid.list().capacity() == 0);
 		}
 		/// [LazySingleLookupGrid initialisation]
 
@@ -752,8 +752,8 @@ SCENARIO("Lookup::LazySimple")
 
 			THEN("the grid is still inactive but now reports new size")
 			{
-				CHECK(grid.data().size() == 0);
-				CHECK(grid.list().size() == 0);
+				CHECK(grid.data().capacity() == 0);
+				CHECK(grid.list().capacity() == 0);
 				CHECK(grid.size() == Vec3i(3, 3, 3));
 				CHECK(grid.offset() == Vec3i(-1,-1,-1));
 			}
@@ -791,8 +791,10 @@ SCENARIO("Lookup::LazySimple")
 
 						THEN("the grid is once again inactive")
 						{
-							CHECK(grid.data().size() == 0);
-							CHECK(grid.list().size() == 0);
+							CHECK(grid.data().capacity() == 0);
+							CHECK(grid.list().capacity() == 0);
+							CHECK(grid.data().capacity() == 0);
+							CHECK(grid.list().capacity() == 0);
 						}
 					}
 				}
@@ -815,10 +817,10 @@ SCENARIO("Lookup::LazySingle")
 
 		THEN("the grid is initially inactive")
 		{
-			CHECK(grid.data().size() == 0);
-			CHECK(grid.list(0).size() == 0);
-			CHECK(grid.list(1).size() == 0);
-			CHECK(grid.list(2).size() == 0);
+			CHECK(grid.data().capacity() == 0);
+			CHECK(grid.list(0).capacity() == 0);
+			CHECK(grid.list(1).capacity() == 0);
+			CHECK(grid.list(2).capacity() == 0);
 		}
 		/// [LazySingleLookupGrid initialisation]
 
@@ -828,10 +830,10 @@ SCENARIO("Lookup::LazySingle")
 
 			THEN("the grid is still inactive but now reports new size")
 			{
-				CHECK(grid.data().size() == 0);
-				CHECK(grid.list(0).size() == 0);
-				CHECK(grid.list(1).size() == 0);
-				CHECK(grid.list(2).size() == 0);
+				CHECK(grid.data().capacity() == 0);
+				CHECK(grid.list(0).capacity() == 0);
+				CHECK(grid.list(1).capacity() == 0);
+				CHECK(grid.list(2).capacity() == 0);
 				CHECK(grid.size() == Vec3i(3, 3, 3));
 				CHECK(grid.offset() == Vec3i(-1,-1,-1));
 			}
@@ -875,10 +877,10 @@ SCENARIO("Lookup::LazySingle")
 
 						THEN("the grid is once again inactive")
 						{
-							CHECK(grid.data().size() == 0);
-							CHECK(grid.list(0).size() == 0);
-							CHECK(grid.list(1).size() == 0);
-							CHECK(grid.list(2).size() == 0);
+							CHECK(grid.data().capacity() == 0);
+							CHECK(grid.list(0).capacity() == 0);
+							CHECK(grid.list(1).capacity() == 0);
+							CHECK(grid.list(2).capacity() == 0);
 						}
 
 						THEN("queries once again return the NULL background value")
@@ -896,164 +898,6 @@ SCENARIO("Lookup::LazySingle")
 
 /// Utility for static_assert of presence of reset method.
 template <typename T> using has_reset_t = decltype(&T::reset);
-
-
-SCENARIO("Tracked::LazySimpleByRef")
-{
-	GIVEN("a 3x3x3 grid with (-1,-1,-1) offset and background value of 3.14159")
-	{
-		using GridType = Impl::Tracked::LazySimpleByRef<FLOAT, 3>;
-
-		static_assert(
-			std::experimental::is_detected<has_reset_t, GridType>::value,
-			"Tracked grids with a single lookup index per grid node should have a reset method."
-		);
-
-		GridType grid = GridType(3.14159f);
-
-		const PosIdx NULL_IDX = Felt::null_idx;
-
-		THEN("the data grid and associated lookup grid state is zero size and inactive")
-		{
-			CHECK(grid.data().size() == 0);
-			CHECK(grid.lookup().data().size() == 0);
-		}
-
-		WHEN("the grid is resized")
-		{
-			grid.resize(Vec3i(3, 3, 3), Vec3i(-1,-1,-1));
-
-			THEN("the data grid and associated lookup grid report new size and remains inactive")
-			{
-				CHECK(grid.data().size() == 0);
-				CHECK(grid.lookup().data().size() == 0);
-
-				CHECK(grid.size() == Vec3i(3,3,3));
-				CHECK(grid.offset() == Vec3i(-1,-1,-1));
-				CHECK(grid.lookup().size() == Vec3i(3,3,3));
-				CHECK(grid.lookup().offset() == Vec3i(-1,-1,-1));
-			}
-
-			/// [LazySingleTrackedGrid activate]
-			WHEN("the grid is activated")
-			{
-				grid.activate();
-
-				THEN("the data grid and associated lookup grid state is active")
-				{
-					CHECK(grid.data().size() == 3*3*3);
-					CHECK(grid.get(Vec3i(1,1,1)) == 3.14159f);
-					CHECK(grid.lookup().data().size() == 3*3*3);
-					CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
-					/// [LazySingleTrackedGrid activate]
-				}
-
-				AND_WHEN("the grid is deactivated")
-				{
-					grid.deactivate();
-
-					THEN("the data grid and associated lookup grid state is inactive")
-					{
-						CHECK(grid.data().size() == 0);
-						CHECK(grid.lookup().data().size() == 0);
-					}
-				}
-
-				AND_WHEN("a location is updated and tracked in the list")
-				{
-					grid.track(42.0f, grid.index(Vec3i(1,1,1)));
-
-					THEN("the data grid is updated and the lookup grid tracks the point")
-					{
-						CHECK(grid.get(Vec3i(1,1,1)) == 42);
-						CHECK(grid.lookup().get(Vec3i(1,1,1)) == 0);
-						CHECK(grid.lookup().list().size() == 1);
-						CHECK(grid.lookup().list()[0] == grid.index(Vec3i(1,1,1)));
-					}
-
-					AND_WHEN("the grid is reset")
-					{
-						grid.reset();
-
-						THEN(
-							"the value in the data grid is reset to background value and locations"
-							" are no longer tracked"
-						) {
-							CHECK(grid.get(Vec3i(1,1,1)) == 3.14159f);
-							CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
-							CHECK(grid.lookup().list().size() == 0);
-						}
-					}
-				}
-			}
-		}
-	}
-
-	GIVEN("a 9x9x9 grid of std::vectors with (-4,-4,-4) offset")
-	{
-		using LeafType = std::vector<int>;
-		using GridType = Impl::Tracked::LazySimpleByRef<LeafType, 3>;
-
-		GridType grid(LeafType{1,2,3});
-
-		grid.resize(Vec3i(9,9,9), Vec3i(-4,-4,-4));
-		grid.activate();
-
-		WHEN("a value is set with an lvalue reference")
-		{
-			LeafType move_me{5,6,7};
-			int* pdata = &move_me[0];
-			grid.get(Vec3i(2,2,2)) = move_me;
-
-			THEN("the data from the input has been copied into the grid")
-			{
-				CHECK(grid.get(Vec3i(2,2,2)) == move_me);
-				CHECK(&grid.get(Vec3i(2,2,2))[0] != pdata);
-			}
-		}
-
-		WHEN("a value is set with an rvalue reference")
-		{
-			LeafType move_me{5,6,7};
-			LeafType copied = move_me;
-			int* pdata = &move_me[0];
-			grid.get(Vec3i(2,2,2)) = std::move(move_me);
-
-			THEN("the data from the input has been moved into the grid")
-			{
-				CHECK(grid.get(Vec3i(2,2,2)) == copied);
-				CHECK(&grid.get(Vec3i(2,2,2))[0] == pdata);
-			}
-		}
-
-		WHEN("a value is tracked with an lvalue reference")
-		{
-			LeafType move_me{5,6,7};
-			int* pdata = &move_me[0];
-			grid.track(move_me, grid.index(Vec3i(2,2,2)));
-
-			THEN("the data from the input has been copied into the grid")
-			{
-				CHECK(grid.get(Vec3i(2,2,2)) == move_me);
-				CHECK(&grid.get(Vec3i(2,2,2))[0] != pdata);
-			}
-		}
-
-		WHEN("a value is tracked with an rvalue reference")
-		{
-			LeafType move_me{5,6,7};
-			LeafType copied = move_me;
-			int* pdata = &move_me[0];
-			grid.track(std::move(move_me), grid.index(Vec3i(2,2,2)));
-
-			THEN("the data from the input has been moved into the grid")
-			{
-				CHECK(grid.get(Vec3i(2,2,2)) == copied);
-				CHECK(&grid.get(Vec3i(2,2,2))[0] == pdata);
-			}
-		}
-	}
-}
 
 
 SCENARIO("Tracked::LazySingleByValue")
@@ -1090,8 +934,8 @@ SCENARIO("Tracked::LazySingleByValue")
 
 			THEN("the data grid and associated lookup grid report new size and remains inactive")
 			{
-				CHECK(grid.data().size() == 0);
-				CHECK(grid.lookup().data().size() == 0);
+				CHECK(grid.data().capacity() == 0);
+				CHECK(grid.lookup().data().capacity() == 0);
 
 				CHECK(grid.size() == Vec3i(3,3,3));
 				CHECK(grid.offset() == Vec3i(-1,-1,-1));
@@ -1122,9 +966,9 @@ SCENARIO("Tracked::LazySingleByValue")
 
 					THEN("the data grid and associated lookup grid state is inactive")
 					{
-						CHECK(grid.data().size() == 0);
+						CHECK(grid.data().capacity() == 0);
 						CHECK(grid.get(Vec3i(1,1,1)) == 3.14159f);
-						CHECK(grid.lookup().data().size() == 0);
+						CHECK(grid.lookup().data().capacity() == 0);
 						CHECK(grid.lookup().get(Vec3i(1,1,1)) == NULL_IDX);
 					}
 				}
@@ -1137,10 +981,10 @@ SCENARIO("Tracked::LazySingleByValue")
 					{
 						CHECK(grid.get(Vec3i(1,1,1)) == 42);
 						CHECK(grid.lookup().get(Vec3i(1,1,1)) == 0);
-						CHECK(grid.lookup().list(0).size() == 0);
+						CHECK(grid.lookup().list(0).capacity() == 0);
 						CHECK(grid.lookup().list(1).size() == 1);
 						CHECK(grid.lookup().list(1)[0] == grid.index(Vec3i(1,1,1)));
-						CHECK(grid.lookup().list(2).size() == 0);
+						CHECK(grid.lookup().list(2).capacity() == 0);
 					}
 
 					AND_WHEN("the grid is reset")
@@ -1244,7 +1088,7 @@ SCENARIO("Tracked::MultiByRef")
 			THEN("the lookup grid is tracking the location just added")
 			{
 				CHECK(grid.lookup().get(Vec3i(2,2,2)) == IndexTuple(Felt::null_idx, 0, 0));
-				CHECK(grid.lookup().list(0).size() == 0);
+				CHECK(grid.lookup().list(0).capacity() == 0);
 				CHECK(grid.lookup().list(1).size() == 1);
 				CHECK(grid.lookup().list(2).size() == 1);
 				CHECK(grid.lookup().list(1)[0] == grid.index(Vec3i(2,2,2)));
@@ -1349,7 +1193,7 @@ SCENARIO("Paritioned::Lookup")
 			CHECK(grid.children().data().size() == 3*3*3);
 			CHECK(grid.children().lookup().data().size() == 3*3*3);
 
-			CHECK(grid.children().get(Vec3i(-1,-1,-1)).data().size() == 0);
+			CHECK(grid.children().get(Vec3i(-1,-1,-1)).data().capacity() == 0);
 			CHECK(grid.children().get(Vec3i(-1,-1,-1)).size() == Vec3i(3,3,3));
 			CHECK(grid.children().get(Vec3i(-1,-1,-1)).offset() == Vec3i(-4,-4,-4));
 			CHECK(grid.children().get(Vec3i( 1, 1, 1)).size() == Vec3i(3,3,3));
@@ -1482,23 +1326,23 @@ SCENARIO("Paritioned::Tracked::Simple")
 		THEN("grid is initialised as inactive with no tracking and queries give background value")
 		{
 			CHECK(grid.children().get(pos12_child_idx).is_active() == false);
-			CHECK(grid.children().get(pos12_child_idx).data().size() == 0);
+			CHECK(grid.children().get(pos12_child_idx).data().capacity() == 0);
 			CHECK(grid.children().get(pos12_child_idx).get(pos1_idx) == -42);
-			CHECK(grid.children().get(pos12_child_idx).lookup().data().size() == 0);
+			CHECK(grid.children().get(pos12_child_idx).lookup().data().capacity() == 0);
 			CHECK(grid.children().get(pos12_child_idx).lookup().get(pos1_idx) == null_idx);
 			CHECK(grid.children().get(pos12_child_idx).get(pos2_idx) == -42);
 			CHECK(grid.children().get(pos12_child_idx).lookup().get(pos2_idx) == null_idx);
 
 			CHECK(grid.children().get(pos3_child_idx).is_active() == false);
-			CHECK(grid.children().get(pos3_child_idx).data().size() == 0);
+			CHECK(grid.children().get(pos3_child_idx).data().capacity() == 0);
 			CHECK(grid.children().get(pos3_child_idx).get(pos3_idx) == -42);
-			CHECK(grid.children().get(pos3_child_idx).lookup().data().size() == 0);
+			CHECK(grid.children().get(pos3_child_idx).lookup().data().capacity() == 0);
 			CHECK(grid.children().get(pos3_child_idx).lookup().get(pos3_idx) == null_idx);
 
 			CHECK(grid.children().get(pos4_child_idx).is_active() == false);
-			CHECK(grid.children().get(pos4_child_idx).data().size() == 0);
+			CHECK(grid.children().get(pos4_child_idx).data().capacity() == 0);
 			CHECK(grid.children().get(pos4_child_idx).get(pos4_idx) == -42);
-			CHECK(grid.children().get(pos4_child_idx).lookup().data().size() == 0);
+			CHECK(grid.children().get(pos4_child_idx).lookup().data().capacity() == 0);
 			CHECK(grid.children().get(pos4_child_idx).lookup().get(pos4_idx) == null_idx);
 		}
 
@@ -1529,16 +1373,16 @@ SCENARIO("Paritioned::Tracked::Simple")
 					CHECK(grid.children().get(pos3_child_idx).lookup().get(pos3_idx) == null_idx);
 
 					CHECK(grid.children().lookup().list(0).size() == 2);
-					CHECK(grid.children().lookup().list(1).size() == 0);
-					CHECK(grid.children().lookup().list(2).size() == 0);
+					CHECK(grid.children().lookup().list(1).capacity() == 0);
+					CHECK(grid.children().lookup().list(2).capacity() == 0);
 				}
 
 				THEN("other children are remain inactive")
 				{
 					CHECK(grid.children().get(pos4_child_idx).is_active() == false);
-					CHECK(grid.children().get(pos4_child_idx).data().size() == 0);
+					CHECK(grid.children().get(pos4_child_idx).data().capacity() == 0);
 					CHECK(grid.children().get(pos4_child_idx).get(pos4_idx) == -42);
-					CHECK(grid.children().get(pos4_child_idx).lookup().data().size() == 0);
+					CHECK(grid.children().get(pos4_child_idx).lookup().data().capacity() == 0);
 					CHECK(grid.children().get(pos4_child_idx).lookup().get(pos4_idx) == null_idx);
 				}
 
@@ -1563,8 +1407,8 @@ SCENARIO("Paritioned::Tracked::Simple")
 						CHECK(grid.children().get(pos12_child_idx).lookup().list(1).size() == 1);
 						CHECK(grid.children().get(pos12_child_idx).lookup().list(1)[0] == pos1_idx);
 
-						CHECK(grid.children().get(pos12_child_idx).lookup().list(0).size() == 0);
-						CHECK(grid.children().get(pos12_child_idx).lookup().list(2).size() == 0);
+						CHECK(grid.children().get(pos12_child_idx).lookup().list(0).capacity() == 0);
+						CHECK(grid.children().get(pos12_child_idx).lookup().list(2).capacity() == 0);
 
 					}
 				}
@@ -1636,7 +1480,7 @@ SCENARIO("Paritioned::Tracked::Simple")
 						THEN("partitions not tracked in master are deactivated")
 						{
 							CHECK(grid.children().get(pos4_child_idx).is_active() == false);
-							CHECK(grid.children().get(pos4_child_idx).data().size() == 0);
+							CHECK(grid.children().get(pos4_child_idx).data().capacity() == 0);
 						}
 
 						THEN("children grid lookup is reset")
@@ -1658,9 +1502,9 @@ SCENARIO("Paritioned::Tracked::Simple")
 							CHECK(grid.children().get(pos3_child_idx).lookup().list(0).size() == 0);
 							CHECK(grid.children().get(pos3_child_idx).lookup().list(1).size() == 0);
 							CHECK(grid.children().get(pos3_child_idx).lookup().list(2).size() == 0);
-							CHECK(grid.children().get(pos4_child_idx).lookup().list(0).size() == 0);
-							CHECK(grid.children().get(pos4_child_idx).lookup().list(1).size() == 0);
-							CHECK(grid.children().get(pos4_child_idx).lookup().list(2).size() == 0);
+							CHECK(grid.children().get(pos4_child_idx).lookup().list(0).capacity() == 0);
+							CHECK(grid.children().get(pos4_child_idx).lookup().list(1).capacity() == 0);
+							CHECK(grid.children().get(pos4_child_idx).lookup().list(2).capacity() == 0);
 						}
 					}
 				}
@@ -1712,7 +1556,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 			{
 				CHECK(grid.children().lookup().list(0).size() == 1);
 				CHECK(grid.children().lookup().list(1).size() == 1);
-				CHECK(grid.children().lookup().list(2).size() == 0);
+				CHECK(grid.children().lookup().list(2).capacity() == 0);
 				CHECK(grid.children().lookup().get(pos123_child_idx)[0] == 0);
 				CHECK(grid.children().lookup().get(pos123_child_idx)[1] == 0);
 				CHECK(grid.children().lookup().get(pos123_child_idx)[2] == null_idx);
@@ -1754,7 +1598,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 				{
 					CHECK(grid.children().lookup().list(0).size() == 1);
 					CHECK(grid.children().lookup().list(1).size() == 1);
-					CHECK(grid.children().lookup().list(2).size() == 0);
+					CHECK(grid.children().lookup().list(2).capacity() == 0);
 					CHECK(grid.children().lookup().get(pos123_child_idx)[0] == 0);
 					CHECK(grid.children().lookup().get(pos123_child_idx)[1] == 0);
 					CHECK(grid.children().lookup().get(pos123_child_idx)[2] == null_idx);
@@ -1764,7 +1608,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 				{
 					CHECK(child.lookup().list(0).size() == 1);
 					CHECK(child.lookup().list(1).size() == 1);
-					CHECK(child.lookup().list(2).size() == 0);
+					CHECK(child.lookup().list(2).capacity() == 0);
 					CHECK(child.lookup().list(0)[0] == pos2_idx);
 					CHECK(child.lookup().list(1)[0] == pos3_idx);
 					CHECK(child.lookup().get(pos1_idx) == null_idx);
@@ -1787,7 +1631,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 					{
 						CHECK(grid.children().lookup().list(0).size() == 0);
 						CHECK(grid.children().lookup().list(1).size() == 1);
-						CHECK(grid.children().lookup().list(2).size() == 0);
+						CHECK(grid.children().lookup().list(2).capacity() == 0);
 						CHECK(grid.children().lookup().get(pos123_child_idx)[0] == null_idx);
 						CHECK(grid.children().lookup().get(pos123_child_idx)[1] == 0);
 						CHECK(grid.children().lookup().get(pos123_child_idx)[2] == null_idx);
@@ -1797,7 +1641,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 					{
 						CHECK(child.lookup().list(0).size() == 0);
 						CHECK(child.lookup().list(1).size() == 1);
-						CHECK(child.lookup().list(2).size() == 0);
+						CHECK(child.lookup().list(2).capacity() == 0);
 						CHECK(child.lookup().list(1)[0] == pos3_idx);
 						CHECK(child.lookup().get(pos1_idx) == null_idx);
 						CHECK(child.lookup().get(pos2_idx) == null_idx);
@@ -1812,7 +1656,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 						{
 							CHECK(grid.children().lookup().list(0).size() == 0);
 							CHECK(grid.children().lookup().list(1).size() == 0);
-							CHECK(grid.children().lookup().list(2).size() == 0);
+							CHECK(grid.children().lookup().list(2).capacity() == 0);
 							CHECK(grid.children().lookup().get(pos123_child_idx)[0] == null_idx);
 							CHECK(grid.children().lookup().get(pos123_child_idx)[1] == null_idx);
 							CHECK(grid.children().lookup().get(pos123_child_idx)[2] == null_idx);
@@ -1820,9 +1664,9 @@ SCENARIO("Paritioned::Tracked::Numeric")
 
 						THEN("the child no longer tracks any positions")
 						{
-							CHECK(child.lookup().list(0).size() == 0);
-							CHECK(child.lookup().list(1).size() == 0);
-							CHECK(child.lookup().list(2).size() == 0);
+							CHECK(child.lookup().list(0).capacity() == 0);
+							CHECK(child.lookup().list(1).capacity() == 0);
+							CHECK(child.lookup().list(2).capacity() == 0);
 							CHECK(child.lookup().get(pos1_idx) == null_idx);
 							CHECK(child.lookup().get(pos2_idx) == null_idx);
 							CHECK(child.lookup().get(pos3_idx) == null_idx);
@@ -1831,7 +1675,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 						THEN("the child has been deactivated")
 						{
 							CHECK(child.is_active() == false);
-							CHECK(child.data().size() == 0);
+							CHECK(child.data().capacity() == 0);
 						}
 
 						THEN("all positions report the final background value")
@@ -1857,7 +1701,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 				{
 					CHECK(grid.children().lookup().list(0).size() == 1);
 					CHECK(grid.children().lookup().list(1).size() == 1);
-					CHECK(grid.children().lookup().list(2).size() == 0);
+					CHECK(grid.children().lookup().list(2).capacity() == 0);
 					CHECK(grid.children().lookup().get(pos123_child_idx)[0] == 0);
 					CHECK(grid.children().lookup().get(pos123_child_idx)[1] == 0);
 					CHECK(grid.children().lookup().get(pos123_child_idx)[2] == null_idx);
@@ -1867,7 +1711,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 				{
 					CHECK(child.lookup().list(0).size() == 1);
 					CHECK(child.lookup().list(1).size() == 2);
-					CHECK(child.lookup().list(2).size() == 0);
+					CHECK(child.lookup().list(2).capacity() == 0);
 					CHECK(child.lookup().list(0)[0] == pos2_idx);
 					CHECK(child.lookup().list(1)[0] == pos3_idx);
 					CHECK(child.lookup().list(1)[1] == pos1_idx);
@@ -1884,7 +1728,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 					{
 						CHECK(grid.children().lookup().list(0).size() == 0);
 						CHECK(grid.children().lookup().list(1).size() == 1);
-						CHECK(grid.children().lookup().list(2).size() == 0);
+						CHECK(grid.children().lookup().list(2).capacity() == 0);
 						CHECK(grid.children().lookup().get(pos123_child_idx)[0] == null_idx);
 						CHECK(grid.children().lookup().get(pos123_child_idx)[1] == 0);
 						CHECK(grid.children().lookup().get(pos123_child_idx)[2] == null_idx);

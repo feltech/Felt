@@ -159,29 +159,20 @@ protected:
 		{
 			for (const PosIdx pos_idx_child : m_children.lookup().list(list_idx))
 			{
-				ChildType& child = m_children.get(pos_idx_child);
 				m_children.lookup().untrack(pos_idx_child, list_idx);
 
-				// If the master grid is not tracking this child, then untrack it from tracking
-				// under this list id, potentially destroying it.
-				if (
-					!grid_mask_.children().lookup().is_tracked(pos_idx_child) &&
-					!m_children.lookup().is_tracked(pos_idx_child)
-				) {
+				ChildType& child = m_children.get(pos_idx_child);
+
+				// If the master grid is not tracking this child, then destroy it.
+				if (not grid_mask_.children().lookup().is_tracked(pos_idx_child))
+				{
 					child.deactivate();
 				}
-
-				// If the child has not been destroyed by the above, then reset as normal (loop
-				// over tracking list resetting values in grid, before resizing list to 0).
-				if (child.is_active())
-				{
-					child.reset();
-				}
-				// If the child was destroyed above, then no need to loop over grid resetting
-				// values, so just reset list.
+				// If the child has not been destroyed by the above, then reset without
+				// deallocating.
 				else
 				{
-					child.list(list_idx).clear();
+					child.reset();
 				}
 			}
 		}
@@ -454,7 +445,7 @@ protected:
 };
 
 template <class Derived>
-class Accessor
+class Access
 {
 private:
 	/// Traits of derived class.

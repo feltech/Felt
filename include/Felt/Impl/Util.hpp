@@ -1,8 +1,8 @@
 #ifndef INCLUDE_FELT_PUBLIC_UTIL_HPP_
 #define INCLUDE_FELT_PUBLIC_UTIL_HPP_
 
-#include <eigen3/Eigen/Dense>
 #include <Felt/Impl/Common.hpp>
+#include <eigen3/Eigen/Dense>
 
 namespace Felt
 {

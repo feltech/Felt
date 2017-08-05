@@ -88,7 +88,7 @@ template <typename T, Dim D, TupleIdx N>
 class Numeric :
 	FELT_MIXINS(
 		(Numeric<T, D, N>),
-		(Grid::Size)(Numeric::Spatial)(Partitioned::Accessor)(Partitioned::Children)
+		(Grid::Size)(Numeric::Spatial)(Partitioned::Access)(Partitioned::Children)
 		(Partitioned::Snapshot)(Partitioned::Tracked)(Partitioned::Untrack)
 	)
 private:
@@ -98,7 +98,7 @@ private:
 	using TraitsType = Traits<ThisType>;
 	using LeafType = typename TraitsType::LeafType;
 
-	using AccessorImpl = Impl::Mixin::Partitioned::Accessor<ThisType>;
+	using AccessImpl = Impl::Mixin::Partitioned::Access<ThisType>;
 	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
 	using SpatialImpl = Impl::Mixin::Numeric::Spatial<ThisType>;
@@ -118,8 +118,8 @@ public:
 		ChildrenImpl{size_, offset_, child_size_, ChildType(background_)}
 	{}
 
-	using AccessorImpl::get;
-	using AccessorImpl::set;
+	using AccessImpl::get;
+	using AccessImpl::set;
 	using ChildrenImpl::child_size;
 	using ChildrenImpl::children;
 	using ChildrenImpl::pos_child;

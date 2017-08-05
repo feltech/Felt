@@ -16,7 +16,7 @@ namespace Grid
 {
 
 template <class Derived>
-class Activator
+class Activate
 {
 private:
 	/// Dimension of the grid.
@@ -32,7 +32,7 @@ protected:
 	LeafType	m_background;
 
 protected:
-	Activator(const LeafType background_) :
+	Activate(const LeafType background_) :
 		m_background{background_}
 	{}
 
@@ -53,7 +53,7 @@ protected:
 	 */
 	LeafType background() const
 	{
-		return this->m_background;
+		return m_background;
 	}
 
 	/**
@@ -97,6 +97,8 @@ private:
 	using TraitsType = Traits<Derived>;
 	/// Type of data to store in grid nodes.
 	using LeafType = typename TraitsType::LeafType;
+	static constexpr Dim t_dims = TraitsType::t_dims;
+	using VecDi = Felt::VecDi<t_dims>;
 	using DataArray = Felt::DataArray<LeafType>;
 protected:
 	DataArray	m_data;
@@ -111,6 +113,46 @@ protected:
 	const DataArray& data () const
 	{
 		return m_data;
+	}
+
+
+	/**
+	 * Check if given position's index is within the data array and raise a domain_error if not.
+	 *
+	 * @param pos_idx_ position in grid to query.
+	 * @param title_ message to include in generated exception.
+	 */
+	void assert_pos_idx_bounds (const PosIdx pos_idx_, std::string title_) const
+	{
+		assert_pos_idx_bounds(pself->index(pos_idx_), title_);
+	}
+
+	/**
+	 * Check if given position's index is within the data array and raise a domain_error if not.
+	 *
+	 * @param pos_ position in grid to query.
+	 * @param title_ message to include in generated exception.
+	 */
+	void assert_pos_idx_bounds (const VecDi& pos_, std::string title_) const
+	{
+		const PosIdx pos_idx = pself->index(pos_);
+
+		if (pos_idx > pself->data().size())
+		{
+			const VecDi& pos_min = pself->offset();
+			const VecDi& pos_max = (
+				pself->size() + pos_min - VecDi::Constant(1)
+			);
+			std::stringstream err;
+			err << title_ << format(pos_.transpose())
+				<< " data index " << pos_idx << " is greater than data size " <<
+				pself->data().size() << " for grid " <<
+				format(pos_min) << "-" << format(pos_max) << std::endl;
+			std::string err_str = err.str();
+			throw std::domain_error(err_str);
+		}
+
+		pself->assert_pos_bounds(pos_, title_);
 	}
 };
 
@@ -205,7 +247,7 @@ protected:
 	template <typename PosType>
 	bool inside (const Felt::VecDT<PosType, t_dims>& pos_) const
 	{
-		return inside(pos_, pself->offset(), pself->offset() + pself->size());
+		return inside(pos_, m_offset, m_offset + m_size);
 	}
 
 	/**
@@ -229,45 +271,6 @@ protected:
 				return false;
 		}
 		return true;
-	}
-
-	/**
-	 * Check if given position's index is within the data array and raise a domain_error if not.
-	 *
-	 * @param pos_idx_ position in grid to query.
-	 * @param title_ message to include in generated exception.
-	 */
-	void assert_pos_idx_bounds (const PosIdx pos_idx_, std::string title_) const
-	{
-		assert_pos_idx_bounds(pself->index(pos_idx_), title_);
-	}
-
-	/**
-	 * Check if given position's index is within the data array and raise a domain_error if not.
-	 *
-	 * @param pos_ position in grid to query.
-	 * @param title_ message to include in generated exception.
-	 */
-	void assert_pos_idx_bounds (const VecDi& pos_, std::string title_) const
-	{
-		const PosIdx pos_idx = pself->index(pos_);
-
-		if (pos_idx > pself->data().size())
-		{
-			const VecDi& pos_min = pself->offset();
-			const VecDi& pos_max = (
-				pself->size() + pos_min - VecDi::Constant(1)
-			);
-			std::stringstream err;
-			err << title_ << format(pos_.transpose())
-				<< " data index " << pos_idx << " is greater than data size " <<
-				pself->data().size() << " for grid " <<
-				format(pos_min) << "-" << format(pos_max) << std::endl;
-			std::string err_str = err.str();
-			throw std::domain_error(err_str);
-		}
-
-		assert_pos_bounds(pos_, title_);
 	}
 
 	/**
@@ -327,7 +330,7 @@ protected:
 };
 
 
-namespace Accessor
+namespace Access
 {
 
 template <class Derived>
@@ -613,7 +616,7 @@ protected:
 	}
 };
 
-} // Accessor
+} // Access
 
 
 } // Grid

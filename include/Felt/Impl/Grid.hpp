@@ -17,31 +17,31 @@ template <typename T, Dim D>
 class Simple :
 	FELT_MIXINS(
 		(Simple<T, D>),
-		(Grid::Accessor::ByValue)(Grid::Activator)(Grid::Data)(Grid::Size),
+		(Grid::Access::ByValue)(Grid::Activate)(Grid::Data)(Grid::Size),
 		(Grid::Index)
 	)
 private:
 	using ThisType = Simple<T, D>;
-	using ThisTraits = Impl::Traits<ThisType>;
+	using TraitsType = Impl::Traits<ThisType>;
 
-	using AccessorImpl = Impl::Mixin::Grid::Accessor::ByValue<ThisType>;
-	using ActivatorImpl = Impl::Mixin::Grid::Activator<ThisType>;
+	using AccessImpl = Impl::Mixin::Grid::Access::ByValue<ThisType>;
+	using ActivateImpl = Impl::Mixin::Grid::Activate<ThisType>;
 	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
 
-	using VecDi = Felt::VecDi<ThisTraits::t_dims>;
-	using LeafType = typename ThisTraits::LeafType;
+	using VecDi = Felt::VecDi<TraitsType::t_dims>;
+	using LeafType = typename TraitsType::LeafType;
 
 public:
 	Simple(const VecDi& size_, const VecDi& offset_, const LeafType background_) :
-		ActivatorImpl{background_}, SizeImpl{size_, offset_}
+		ActivateImpl{background_}, SizeImpl{size_, offset_}
 	{
 		this->activate();
 	}
 
-	using AccessorImpl::get;
-	using AccessorImpl::index;
-	using AccessorImpl::set;
+	using AccessImpl::get;
+	using AccessImpl::index;
+	using AccessImpl::set;
 	using DataImpl::data;
 	using SizeImpl::inside;
 	using SizeImpl::offset;
@@ -53,34 +53,34 @@ template <typename T, Dim D>
 class Snapshot :
 	FELT_MIXINS(
 		(Snapshot<T, D>),
-		(Grid::Accessor::ByValue)(Grid::Activator)(Grid::Data)(Grid::Size)(Numeric::Snapshot),
+		(Grid::Access::ByValue)(Grid::Activate)(Grid::Data)(Grid::Size)(Numeric::Snapshot),
 		(Grid::Index)
 	)
 private:
 	using ThisType = Snapshot<T, D>;
-	using ThisTraits = Impl::Traits<ThisType>;
+	using TraitsType = Impl::Traits<ThisType>;
 
-	using AccessorImpl = Impl::Mixin::Grid::Accessor::ByValue<ThisType>;
-	using ActivatorImpl = Impl::Mixin::Grid::Activator<ThisType>;
+	using AccessImpl = Impl::Mixin::Grid::Access::ByValue<ThisType>;
+	using ActivateImpl = Impl::Mixin::Grid::Activate<ThisType>;
 	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
 	using SnapshotImpl = Impl::Mixin::Numeric::Snapshot<ThisType>;
 
-	using VecDi = Felt::VecDi<ThisTraits::t_dims>;
-	using LeafType = typename ThisTraits::LeafType;
+	using VecDi = Felt::VecDi<TraitsType::t_dims>;
+	using LeafType = typename TraitsType::LeafType;
 
 public:
 	using SnapshotImpl::VArrayData;
 
 	Snapshot(const VecDi& size_, const VecDi& offset_, const LeafType background_) :
-		 ActivatorImpl{background_}, SizeImpl{size_, offset_}
+		 ActivateImpl{background_}, SizeImpl{size_, offset_}
 	{
 		this->activate();
 	}
 
-	using AccessorImpl::get;
-	using AccessorImpl::index;
-	using AccessorImpl::set;
+	using AccessImpl::get;
+	using AccessImpl::index;
+	using AccessImpl::set;
 	using DataImpl::data;
 	using SizeImpl::offset;
 	using SizeImpl::size;

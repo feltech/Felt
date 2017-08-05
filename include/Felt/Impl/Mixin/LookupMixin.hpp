@@ -29,18 +29,18 @@ namespace Single
 {
 
 template <class Derived>
-class Activator : protected Grid::Activator<Derived>
+class Activate : protected Grid::Activate<Derived>
 {
 protected:
 	/// CRTP derived class.
-	using Base =  Grid::Activator<Derived>;
+	using Base =  Grid::Activate<Derived>;
 	/// Traits of derived class.
 	using TraitsType = Traits<Derived>;
 	/// Number of tracking lists.
 	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
 
 	// Base class methods.
-	using Base::Activator;
+	using Base::Activate;
 	using Base::activate;
 	using Base::is_active;
 
@@ -194,18 +194,18 @@ namespace Multi
 {
 
 template <class Derived>
-class Activator : protected Grid::Activator<Derived>
+class Activate : protected Grid::Activate<Derived>
 {
 protected:
 	/// CRTP derived class.
-	using Base =  Grid::Activator<Derived>;
+	using Base =  Grid::Activate<Derived>;
 	/// Traits of derived class.
 	using TraitsType = Traits<Derived>;
 	/// Number of tracking lists.
 	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
 
 	// Base class methods.
-	using Base::Activator;
+	using Base::Activate;
 	using Base::activate;
 	using Base::is_active;
 
