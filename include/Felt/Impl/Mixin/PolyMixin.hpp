@@ -112,11 +112,11 @@ protected:
 	{
 		m_pisochild = &isochild;
 
-		static const Vec3i one = Vec3i::Constant(1);
-		static const Vec3i two = Vec3i::Constant(2);
+		static const VecDi one = VecDi::Constant(1);
+		static const VecDi two = VecDi::Constant(2);
 
-		const Vec3i& size = m_pisochild->size() + two;
-		const Vec3i& offset = m_pisochild->offset() - one;
+		const VecDi& size = m_pisochild->size() + two;
+		const VecDi& offset = m_pisochild->offset() - one;
 
 		Base::resize(size, offset);
 	}
@@ -421,6 +421,7 @@ struct Traits<2, Dummy> {
 		template <typename PosType, class GridType>
 		Vertex(const GridType& grid, const PosType& pos)
 		{
+			(void)grid;
 			this->pos = pos.template cast<FLOAT>();
 		}
 

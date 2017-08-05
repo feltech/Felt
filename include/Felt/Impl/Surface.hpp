@@ -49,8 +49,7 @@ private:
 	 */
 	using DeltaIsoGrid = Impl::Partitioned::Tracked::Simple<Distance, D, s_num_layers>;
 	/**
-	 * A level set embedding isogrid grid, with active grid points (the narrow
-	 * band) tracked.
+	 * A level set embedding isogrid grid, with active grid points (the narrow band) tracked.
 	 */
 	using IsoGrid = Impl::Partitioned::Tracked::Numeric<Distance, D, s_num_layers>;
 	/**
