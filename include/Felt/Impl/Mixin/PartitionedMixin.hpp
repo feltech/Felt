@@ -235,7 +235,7 @@ namespace Reset
 {
 
 template <class Derived>
-class Single
+class SingleList
 {
 private:
 	/// Traits of derived class.
@@ -274,7 +274,7 @@ protected:
 
 
 template <class Derived>
-class Multi
+class MultiList
 {
 private:
 	/// Traits of derived class.

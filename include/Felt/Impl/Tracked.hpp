@@ -14,24 +14,24 @@ namespace Tracked
 {
 
 template <typename T, Dim D, TupleIdx N>
-class LazySingleByValue :
+class LazyMultiListSingleIdxByValue :
 	FELT_MIXINS(
-		(LazySingleByValue<T, D, N>),
-		(Grid::Access::LazyByValue)(Grid::Data)(Tracked::Activate)(Tracked::Multi::ByValue)
-		(Tracked::Multi::LookupInterface)(Tracked::Multi::Reset)(Tracked::Resize),
+		(LazyMultiListSingleIdxByValue<T, D, N>),
+		(Grid::Access::LazyByValue)(Grid::Data)(Tracked::Activate)(Tracked::MultiList::ByValue)
+		(Tracked::MultiList::LookupInterface)(Tracked::MultiList::Reset)(Tracked::Resize),
 		(Grid::Access::ByValue)(Grid::Activate)(Grid::Index)(Grid::Resize)(Grid::Size)
 	)
 private:
-	using ThisType = LazySingleByValue<T, D, N>;
+	using ThisType = LazyMultiListSingleIdxByValue<T, D, N>;
 	using TraitsType = Impl::Traits<ThisType>;
 
 	using AccessImpl = Impl::Mixin::Grid::Access::LazyByValue<ThisType>;
 	using ActivateImpl = Impl::Mixin::Tracked::Activate<ThisType>;
 	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
-	using LookupInterfaceImpl = Impl::Mixin::Tracked::Multi::LookupInterface<ThisType>;
-	using ResetterImpl = Impl::Mixin::Tracked::Multi::Reset<ThisType>;
+	using LookupInterfaceImpl = Impl::Mixin::Tracked::MultiList::LookupInterface<ThisType>;
+	using ResetterImpl = Impl::Mixin::Tracked::MultiList::Reset<ThisType>;
 	using SizeImpl = Impl::Mixin::Tracked::Resize<ThisType>;
-	using TrackedImpl = Impl::Mixin::Tracked::Multi::ByValue<ThisType>;
+	using TrackedImpl = Impl::Mixin::Tracked::MultiList::ByValue<ThisType>;
 
 	using VecDi = Felt::VecDi<TraitsType::t_dims>;
 	using LeafType = typename TraitsType::LeafType;
@@ -39,7 +39,7 @@ private:
 public:
 	using LookupType = typename TraitsType::LookupType;
 
-	LazySingleByValue(const LeafType background_) :
+	LazyMultiListSingleIdxByValue(const LeafType background_) :
 		ActivateImpl{background_}, LookupInterfaceImpl{LookupType{}}
 	{}
 
@@ -64,15 +64,15 @@ public:
 
 
 template <typename T, Dim D>
-class SingleByRef :
+class SingleListSingleIdxByRef :
 	FELT_MIXINS(
-		(SingleByRef<T, D>),
-		(Grid::Access::ByRef)(Grid::Activate)(Grid::Data)(Grid::Size)(Tracked::Single::ByRef)
+		(SingleListSingleIdxByRef<T, D>),
+		(Grid::Access::ByRef)(Grid::Activate)(Grid::Data)(Grid::Size)(Tracked::SingleList::ByRef)
 		(Tracked::LookupInterface),
 		(Grid::Index)
 	)
 private:
-	using ThisType = SingleByRef<T, D>;
+	using ThisType = SingleListSingleIdxByRef<T, D>;
 	using TraitsType = Impl::Traits<ThisType>;
 
 	using AccessImpl = Impl::Mixin::Grid::Access::ByRef<ThisType>;
@@ -80,7 +80,7 @@ private:
 	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
 	using LookupInterfaceImpl = Impl::Mixin::Tracked::LookupInterface<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
-	using TrackedImpl = Impl::Mixin::Tracked::Single::ByRef<ThisType>;
+	using TrackedImpl = Impl::Mixin::Tracked::SingleList::ByRef<ThisType>;
 
 	using VecDi = Felt::VecDi<TraitsType::t_dims>;
 	using LeafType = typename TraitsType::LeafType;
@@ -89,7 +89,7 @@ private:
 public:
 	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
 
-	SingleByRef(const VecDi& size_, const VecDi& offset_, const LeafType background_) :
+	SingleListSingleIdxByRef(const VecDi& size_, const VecDi& offset_, const LeafType background_) :
 		ActivateImpl{background_}, SizeImpl{size_, offset_},
 		LookupInterfaceImpl{LookupType{size_, offset_}}
 	{
@@ -109,23 +109,23 @@ public:
 
 
 template <typename T, Dim D, TupleIdx N>
-class MultiByRef :
+class MultiListMultiIdxByRef :
 	FELT_MIXINS(
-		(MultiByRef<T, D, N>),
-		(Grid::Access::ByRef)(Grid::Activate)(Grid::Data)(Grid::Size)(Tracked::Multi::ByRef)
-		(Tracked::Multi::LookupInterface),
+		(MultiListMultiIdxByRef<T, D, N>),
+		(Grid::Access::ByRef)(Grid::Activate)(Grid::Data)(Grid::Size)(Tracked::MultiList::ByRef)
+		(Tracked::MultiList::LookupInterface),
 		(Grid::Index)
 	)
 private:
-	using ThisType = MultiByRef<T, D, N>;
+	using ThisType = MultiListMultiIdxByRef<T, D, N>;
 	using TraitsType = Impl::Traits<ThisType>;
 
 	using AccessImpl = Impl::Mixin::Grid::Access::ByRef<ThisType>;
 	using ActivateImpl = Impl::Mixin::Grid::Activate<ThisType>;
 	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
-	using LookupInterfaceImpl = Impl::Mixin::Tracked::Multi::LookupInterface<ThisType>;
+	using LookupInterfaceImpl = Impl::Mixin::Tracked::MultiList::LookupInterface<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
-	using TrackedImpl = Impl::Mixin::Tracked::Multi::ByRef<ThisType>;
+	using TrackedImpl = Impl::Mixin::Tracked::MultiList::ByRef<ThisType>;
 
 	using VecDi = Felt::VecDi<TraitsType::t_dims>;
 	using LeafType = typename TraitsType::LeafType;
@@ -134,7 +134,7 @@ private:
 public:
 	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
 
-	MultiByRef(const VecDi& size_, const VecDi& offset_, const LeafType background_) :
+	MultiListMultiIdxByRef(const VecDi& size_, const VecDi& offset_, const LeafType background_) :
 		ActivateImpl{background_}, SizeImpl{size_, offset_},
 		LookupInterfaceImpl{LookupType{size_, offset_}}
 	{
@@ -162,14 +162,14 @@ public:
  * @tparam D number of dimensions of the grid.
  */
 template <typename T, Dim D>
-struct Traits< Tracked::SingleByRef<T, D> >
+struct Traits< Tracked::SingleListSingleIdxByRef<T, D> >
 {
 	/// Single index stored in each grid node.
 	using LeafType = T;
 	/// Dimension of grid.
 	static constexpr Dim t_dims = D;
 	/// Type of lookup grid for tracking active positions.
-	using LookupType = Lookup::Simple<D>;
+	using LookupType = Lookup::SingleListSingleIdx<D>;
 };
 
 /**
@@ -198,10 +198,10 @@ struct DefaultTrackedTraits
  * @tparam N number of tracking lists.
  */
 template <typename T, Dim D, TupleIdx N>
-struct Traits< Tracked::LazySingleByValue<T, D, N> > : public DefaultTrackedTraits<T, D, N>
+struct Traits< Tracked::LazyMultiListSingleIdxByValue<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
 	/// Type of lookup grid for tracking active positions.
-	using LookupType = Lookup::LazySingle<D, N>;
+	using LookupType = Lookup::LazyMultiListSingleIdx<D, N>;
 };
 
 /**
@@ -212,10 +212,10 @@ struct Traits< Tracked::LazySingleByValue<T, D, N> > : public DefaultTrackedTrai
  * @tparam N number of tracking lists.
  */
 template <typename T, Dim D, TupleIdx N>
-struct Traits< Tracked::MultiByRef<T, D, N> > : public DefaultTrackedTraits<T, D, N>
+struct Traits< Tracked::MultiListMultiIdxByRef<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
 	/// Type of lookup grid for tracking active positions.
-	using LookupType = Lookup::Multi<D, N>;
+	using LookupType = Lookup::MultiListMultiIdx<D, N>;
 };
 
 } // Impl

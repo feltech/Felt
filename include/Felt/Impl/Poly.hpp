@@ -21,7 +21,7 @@ class Single :
 		(Grid::Access::ByRef)(Grid::Data)(Poly::Activate)(Poly::Reset)(Poly::Resize)(Poly::March)
 		(Tracked::LookupInterface),
 		(Grid::Activate)(Grid::Index)(Grid::Resize)(Grid::Size)(Tracked::Resize)
-		(Tracked::Activate)(Tracked::Single::Reset)
+		(Tracked::Activate)(Tracked::SingleList::Reset)
 	)
 private:
 	using ThisType = Single<IsoGrid>;
@@ -92,7 +92,7 @@ struct Traits< Poly::Single<IsoGrid> > : Mixin::Poly::Traits<Traits<IsoGrid>::t_
 	/// A vertex index for each positively directed edge stored at each grid node.
 	using LeafType = Felt::VecDu<t_dims>;
 	/// Type of lookup grid for tracking active positions.
-	using LookupType = Lookup::LazySimple<t_dims>;
+	using LookupType = Lookup::LazySingleListSingleIdx<t_dims>;
 	/// Isogrid type that will be polygonised.
 	using IsoGridType = IsoGrid;
 };
@@ -111,7 +111,7 @@ struct Traits< Poly::Grid<SurfaceType> >
 	static constexpr Dim t_dims = Traits<IsoGridType>::t_dims;
 	/// Child poly type to polygonise a single spatial partition.
 	using ChildType = Impl::Poly::Single<IsoGridType>;
-	using ChildrenType = Impl::Tracked::SingleByRef<ChildType, t_dims>;
+	using ChildrenType = Impl::Tracked::SingleListSingleIdxByRef<ChildType, t_dims>;
 };
 
 } // Impl.

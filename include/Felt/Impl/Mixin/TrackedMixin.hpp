@@ -135,7 +135,7 @@ protected:
 };
 
 
-namespace Single
+namespace SingleList
 {
 
 template <class Derived>
@@ -196,7 +196,6 @@ private:
 	/// Traits of derived class.
 	using TraitsType = Traits<Derived>;
 	static constexpr Dim t_dims = TraitsType::t_dims;
-	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
 protected:
 
 	/**
@@ -214,13 +213,13 @@ protected:
 		pself->m_grid_lookup.reset();
 	}
 };
-}
+} // SingleList.
 
 
 /**
  * Multiple tracking lists.
  */
-namespace Multi
+namespace MultiList
 {
 
 template <class Derived>
@@ -384,7 +383,7 @@ protected:
 	}
 };
 
-} // Multi.
+} // MultiList.
 
 } // Tracked
 } // Mixin

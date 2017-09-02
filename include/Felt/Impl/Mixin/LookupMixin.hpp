@@ -25,7 +25,7 @@ protected:
 };
 
 
-namespace Single
+namespace SingleList
 {
 
 template <class Derived>
@@ -58,7 +58,7 @@ protected:
 
 
 template <class Derived>
-class Single : protected Base<Derived>
+class SingleIdx : protected Base<Derived>
 {
 private:
 	/// CRTP derived class.
@@ -190,7 +190,7 @@ protected:
 } // Single.
 
 
-namespace Multi
+namespace MultiList
 {
 
 template <class Derived>
@@ -225,7 +225,7 @@ protected:
 };
 
 template <class Derived>
-class Single : protected Base<Derived>
+class SingleIdx : protected Base<Derived>
 {
 private:
 	/// CRTP derived class.
@@ -378,7 +378,7 @@ protected:
 
 
 template <class Derived>
-class Multi : private Base<Derived>
+class MultiIdx : private Base<Derived>
 {
 private:
 	/// CRTP derived class.
@@ -552,7 +552,7 @@ protected:
 
 template <class Derived>
 const typename Traits<Derived>::LeafType
-Multi<Derived>::s_null_idxs = IndexTuple::Constant(Felt::null_idx);
+MultiIdx<Derived>::s_null_idxs = IndexTuple::Constant(Felt::null_idx);
 } // Multi
 
 } // Lookup

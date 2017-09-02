@@ -149,7 +149,7 @@ SCENARIO("Grid::Snapshot")
 
 SCENARIO("Lookup::Simple")
 {
-	using GridType = Impl::Lookup::Simple<3>;
+	using GridType = Impl::Lookup::SingleListSingleIdx<3>;
 	GIVEN("a 10x10x10 grid with (0,-5,-5) offset")
 	{
 		GridType grid(Vec3i(10,10,10), Vec3i(0, -5, -5));
@@ -328,7 +328,7 @@ SCENARIO("Lookup::Simple")
 
 SCENARIO("Lookup::Single")
 {
-	using GridType = Impl::Lookup::Single<3, 3>;
+	using GridType = Impl::Lookup::MultiListSingleIdx<3, 3>;
 
 	GIVEN("a grid and some locations")
 	{
@@ -503,7 +503,7 @@ SCENARIO("Lookup::Multi")
 
 	GIVEN("a 2D grid with 5 tracking lists")
 	{
-		using GridType = Impl::Lookup::Multi<2, 5>;
+		using GridType = Impl::Lookup::MultiListMultiIdx<2, 5>;
 		GridType grid(Vec2i(3,3), Vec2i(-1,-1));
 
 		THEN("the grid has the correct dimension")
@@ -519,7 +519,7 @@ SCENARIO("Lookup::Multi")
 		}
 	}
 
-	using GridType = Impl::Lookup::Multi<3, 3>;
+	using GridType = Impl::Lookup::MultiListMultiIdx<3, 3>;
 
 	GIVEN("a 10x10x10 grid with 3 tracking lists, and some locations")
 	{
@@ -731,7 +731,7 @@ SCENARIO("Lookup::Multi")
 
 SCENARIO("Lookup::LazySimple")
 {
-	using GridType = Impl::Lookup::LazySimple<3>;
+	using GridType = Impl::Lookup::LazySingleListSingleIdx<3>;
 
 	GIVEN("a 3x3x3 lazy single-index lookup grid with 3 tracking lists")
 	{
@@ -807,7 +807,7 @@ SCENARIO("Lookup::LazySimple")
 
 SCENARIO("Lookup::LazySingle")
 {
-	using GridType = Impl::Lookup::LazySingle<3, 3>;
+	using GridType = Impl::Lookup::LazyMultiListSingleIdx<3, 3>;
 
 	GIVEN("a 3x3x3 lazy single-index lookup grid with 3 tracking lists")
 	{
@@ -904,7 +904,7 @@ SCENARIO("Tracked::LazySingleByValue")
 {
 	GIVEN("a 3x3x3 grid with (-1,-1,-1) offset and background value of 3.14159")
 	{
-		using GridType = Impl::Tracked::LazySingleByValue<FLOAT, 3, 3>;
+		using GridType = Impl::Tracked::LazyMultiListSingleIdxByValue<FLOAT, 3, 3>;
 
 		static_assert(
 			std::experimental::is_detected<has_reset_t, GridType>::value,
@@ -1010,7 +1010,7 @@ SCENARIO("Tracked::LazySingleByValue")
 	GIVEN("a 9x9x9 grid of std::vectors with (-4,-4,-4) offset")
 	{
 		using LeafType = std::vector<int>;
-		using GridType = Impl::Tracked::LazySingleByValue<LeafType, 3, 3>;
+		using GridType = Impl::Tracked::LazyMultiListSingleIdxByValue<LeafType, 3, 3>;
 
 		GridType grid(LeafType{1,2,3});
 		grid.resize(Vec3i(9,9,9), Vec3i(-4,-4,-4));
@@ -1050,7 +1050,7 @@ SCENARIO("Tracked::MultiByRef")
 {
 	GIVEN("a 9x9x9 grid of floats with (-4,-4,-4) offset and background value of 0")
 	{
-		using GridType = Impl::Tracked::MultiByRef<FLOAT, 3, 3>;
+		using GridType = Impl::Tracked::MultiListMultiIdxByRef<FLOAT, 3, 3>;
 		using IndexTuple = Tuple<ListIdx, 3>;
 
 		static_assert(
@@ -1111,7 +1111,7 @@ SCENARIO("Tracked::MultiByRef")
 	GIVEN("a 9x9x9 grid of std::vectors with (-4,-4,-4) offset")
 	{
 		using LeafType = std::vector<int>;
-		using GridType = Impl::Tracked::MultiByRef<LeafType, 3, 3>;
+		using GridType = Impl::Tracked::MultiListMultiIdxByRef<LeafType, 3, 3>;
 		GridType grid(Vec3i(9,9,9), Vec3i(-4,-4,-4), LeafType{1,2,3});
 
 		WHEN("a value is set with an lvalue reference")
@@ -1178,7 +1178,7 @@ SCENARIO("Paritioned::Lookup")
 
 	static_assert(
 		std::is_same<
-			ChildrenGrid, Impl::Tracked::MultiByRef<Impl::Lookup::LazySingle<3, 3>, 3, 3>
+			ChildrenGrid, Impl::Tracked::MultiListMultiIdxByRef<Impl::Lookup::LazyMultiListSingleIdx<3, 3>, 3, 3>
 		>::value,
 		"Children grid of partitioned lookup must be a multi-list multi-index tracked grid with"
 		" lazily activated lookup sub-grids as the leaf type."

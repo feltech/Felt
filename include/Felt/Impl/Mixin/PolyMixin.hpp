@@ -56,10 +56,10 @@ protected:
 
 
 template <class Derived>
-class Reset : protected Tracked::Single::Reset<Derived>
+class Reset : protected Tracked::SingleList::Reset<Derived>
 {
 private:
-	using Base = Tracked::Single::Reset<Derived>;
+	using Base = Tracked::SingleList::Reset<Derived>;
 	/// Dimension of the grid.
 	static const Dim t_dims = Traits<Derived>::t_dims;
 	/// D-dimensional signed integer vector.
