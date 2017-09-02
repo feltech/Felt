@@ -18,7 +18,7 @@ template <Dim D, TupleIdx N>
 class Lookup :
 	FELT_MIXINS(
 		(Lookup<D, N>),
-		(Grid::Size)(Partitioned::Children)(Partitioned::Lookup)
+		(Grid::Size)(Partitioned::Children)(Partitioned::Lookup)(Partitioned::Reset::Multi)
 	)
 private:
 	using VecDi = Felt::VecDi<D>;
@@ -28,6 +28,7 @@ private:
 
 	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
 	using LookupImpl = Impl::Mixin::Partitioned::Lookup<ThisType>;
+	using ResetImpl = Impl::Mixin::Partitioned::Reset::Multi<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
 
 public:
@@ -42,7 +43,7 @@ public:
 	using LookupImpl::track;
 	using ChildrenImpl::children;
 	using ChildrenImpl::leafs;
-	using ChildrenImpl::reset;
+	using ResetImpl::reset;
 };
 
 
@@ -53,7 +54,7 @@ template <typename T, Dim D, TupleIdx N>
 class Simple :
 	FELT_MIXINS(
 		(Simple<T, D, N>),
-		(Grid::Size)(Partitioned::Children)(Partitioned::Tracked)
+		(Grid::Size)(Partitioned::Children)(Partitioned::Reset::Multi)(Partitioned::Tracked)
 	)
 private:
 	using VecDi = Felt::VecDi<D>;
@@ -63,6 +64,7 @@ private:
 	using LeafType = typename TraitsType::LeafType;
 
 	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
+	using ResetImpl = Impl::Mixin::Partitioned::Reset::Multi<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
 	using TrackedImpl = Impl::Mixin::Partitioned::Tracked<ThisType>;
 public:
@@ -78,8 +80,8 @@ public:
 	{}
 
 	using ChildrenImpl::children;
-	using ChildrenImpl::reset;
 	using ChildrenImpl::track_children;
+	using ResetImpl::reset;
 	using TrackedImpl::track;
 };
 
@@ -89,7 +91,8 @@ class Numeric :
 	FELT_MIXINS(
 		(Numeric<T, D, N>),
 		(Grid::Size)(Numeric::Spatial)(Partitioned::Access)(Partitioned::Children)
-		(Partitioned::Snapshot)(Partitioned::Tracked)(Partitioned::Untrack)
+		(Partitioned::Reset::Multi)(Partitioned::Snapshot)(Partitioned::Tracked)
+		(Partitioned::Untrack)
 	)
 private:
 	using VecDi = Felt::VecDi<D>;
@@ -100,6 +103,7 @@ private:
 
 	using AccessImpl = Impl::Mixin::Partitioned::Access<ThisType>;
 	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
+	using ResetImpl = Impl::Mixin::Partitioned::Reset::Multi<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
 	using SpatialImpl = Impl::Mixin::Numeric::Spatial<ThisType>;
 	using SnapshotImpl = Impl::Mixin::Partitioned::Snapshot<ThisType>;
@@ -124,9 +128,9 @@ public:
 	using ChildrenImpl::children;
 	using ChildrenImpl::pos_child;
 	using ChildrenImpl::pos_idx_child;
-	using ChildrenImpl::reset;
 	using ChildrenImpl::track_children;
 	using ChildrenImpl::leafs;
+	using ResetImpl::reset;
 	using SizeImpl::inside;
 	using SizeImpl::offset;
 	using SizeImpl::size;
@@ -162,6 +166,7 @@ template <Dim D, TupleIdx N>
 struct Traits< Partitioned::Lookup<D, N> > : public DefaultLookupTraits<D, N>
 {
 	using ChildType = Impl::Lookup::LazySingle<D, N>;
+	using ChildrenType = Impl::Tracked::MultiByRef<ChildType, D, N>;
 };
 
 
@@ -176,6 +181,7 @@ template <typename T, Dim D, TupleIdx N>
 struct Traits< Partitioned::Tracked::Simple<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
 	using ChildType = Impl::Tracked::LazySingleByValue<T, D, N>;
+	using ChildrenType = Impl::Tracked::MultiByRef<ChildType, D, N>;
 };
 
 /**
@@ -189,6 +195,7 @@ template <typename T, Dim D, TupleIdx N>
 struct Traits< Partitioned::Tracked::Numeric<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
 	using ChildType = Impl::Tracked::LazySingleByValue<T, D, N>;
+	using ChildrenType = Impl::Tracked::MultiByRef<ChildType, D, N>;
 };
 
 } // Impl.

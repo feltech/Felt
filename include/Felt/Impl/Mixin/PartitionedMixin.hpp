@@ -24,16 +24,14 @@ private:
 	using TraitsType = Traits<Derived>;
 	/// Child grid type.
 	using ChildType = typename TraitsType::ChildType;
-	/// Number of tracking lists.
-	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
 	/// Dimension of grid.
-	static constexpr UINT t_dims = TraitsType::t_dims;
+	static constexpr Dim t_dims = TraitsType::t_dims;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
 protected:
 	/// Grid of partitions with tracking list(s) of active partitions.
-	using ChildrenGrid = Impl::Tracked::MultiByRef<ChildType, t_dims, t_num_lists>;
+	using ChildrenGrid = typename TraitsType::ChildrenType;
 private:
 	/// Size of a child sub-grid.
 	VecDi m_child_size;
@@ -61,7 +59,7 @@ protected:
 		)
 	{
 		// Set each child sub-grid's size and offset.
-		for (UINT idx = 0; idx < m_children.data().size(); idx++)
+		for (PosIdx idx = 0; idx < m_children.data().size(); idx++)
 		{
 			// Position of child in children grid.
 			const VecDi& pos_child = m_children.index(idx);
@@ -152,37 +150,11 @@ protected:
 		}
 	}
 
-	template <class MaskGrid>
-	void reset(const MaskGrid& grid_mask_)
-	{
-		for (TupleIdx list_idx = 0; list_idx < t_num_lists; list_idx++)
-		{
-			for (const PosIdx pos_idx_child : m_children.lookup().list(list_idx))
-			{
-				m_children.lookup().untrack(pos_idx_child, list_idx);
-
-				ChildType& child = m_children.get(pos_idx_child);
-
-				// If the master grid is not tracking this child, then destroy it.
-				if (not grid_mask_.children().lookup().is_tracked(pos_idx_child))
-				{
-					child.deactivate();
-				}
-				// If the child has not been destroyed by the above, then reset without
-				// deallocating.
-				else
-				{
-					child.reset();
-				}
-			}
-		}
-	}
-
 	/**
 	 * Calculate the position of a child grid (i.e. partition) given the position of leaf grid node.
 	 *
-	 * @param pos_leaf_
-	 * @return position of spatial partition in which leaf position lies.
+	 * @param pos_leaf_ leaf grid node position vector.
+	 * @return position index of spatial partition in which leaf position lies.
 	 */
 	PosIdx pos_idx_child (const VecDi& pos_leaf_) const
 	{
@@ -193,8 +165,8 @@ protected:
 	/**
 	 * Calculate the position of a child grid (i.e. partition) given the position of leaf grid node.
 	 *
-	 * @param pos_leaf_
-	 * @return position of spatial partition in which leaf position lies.
+	 * @param pos_leaf_ leaf grid node position vector.
+	 * @return position vector of spatial partition in which leaf position lies.
 	 */
 	VecDi pos_child (const VecDi& pos_leaf_) const
 	{
@@ -208,6 +180,12 @@ protected:
 		return pos_child;
 	}
 
+	/**
+	 * Call lambda for each grid node in given tracking list.
+	 *
+	 * @param layer_idx_ tracking list to cycle.
+	 * @param fn_ lambda to call with leaf position given as a parameter.
+	 */
 	template<typename Fn>
 	void leafs(const TupleIdx layer_idx_, Fn&& fn_) const
 	{
@@ -225,7 +203,11 @@ protected:
 		}
 	}
 
-
+	/**
+	 * Get the mutex associated with modifications to the children grid (e.g. tracking lists).
+	 *
+	 * @return mutex for changes to children grid.
+	 */
 	std::mutex& mutex_children()
 	{
 		return m_mutex;
@@ -247,6 +229,89 @@ private:
 		return children_size;
 	}
 };
+
+
+namespace Reset
+{
+
+template <class Derived>
+class Single
+{
+private:
+	/// Traits of derived class.
+	using TraitsType = Traits<Derived>;
+	/// Child grid type.
+	using ChildType = typename TraitsType::ChildType;
+protected:
+	/**
+	 * Reset all children, also deactivating them if they are not active in master/mask grid.
+	 *
+	 * @param grid_mask_ master grid to act as a mask preventing child deactivation.
+	 */
+	template <class MaskGrid>
+	void reset(const MaskGrid& grid_mask_)
+	{
+		for (const PosIdx pos_idx_child : pself->children().lookup().list())
+		{
+			pself->children().lookup().untrack(pos_idx_child);
+
+			ChildType& child = pself->children().get(pos_idx_child);
+
+			// If the master grid is not tracking this child, then destroy it.
+			if (not grid_mask_.children().lookup().is_tracked(pos_idx_child))
+			{
+				child.deactivate();
+			}
+			// If the child has not been destroyed by the above, then reset without
+			// deallocating.
+			else
+			{
+				child.reset();
+			}
+		}
+	}
+};
+
+
+template <class Derived>
+class Multi
+{
+private:
+	/// Traits of derived class.
+	using TraitsType = Traits<Derived>;
+	/// Child grid type.
+	using ChildType = typename TraitsType::ChildType;
+	/// Number of tracking lists.
+	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
+protected:
+	template <class MaskGrid>
+	void reset(const MaskGrid& grid_mask_)
+	{
+		for (TupleIdx layer_idx = 0; layer_idx < t_num_lists; layer_idx++)
+		{
+			for (const PosIdx pos_idx_child : pself->children().lookup().list(layer_idx))
+			{
+				pself->children().lookup().untrack(pos_idx_child, layer_idx);
+
+				ChildType& child = pself->children().get(pos_idx_child);
+
+				// If the master grid is not tracking this child, then destroy it.
+				if (not grid_mask_.children().lookup().is_tracked(pos_idx_child))
+				{
+					child.deactivate();
+				}
+				// If the child has not been destroyed by the above, then reset without
+				// deallocating.
+				else
+				{
+					child.reset();
+				}
+			}
+		}
+	}
+};
+
+} // Reset.
 
 
 template <class Derived>
@@ -454,10 +519,8 @@ private:
 	using ChildType = typename TraitsType::ChildType;
 	/// Leaf type.
 	using LeafType = typename TraitsType::LeafType;
-	/// Dimension of grid.
-	static constexpr UINT t_dims = TraitsType::t_dims;
 	/// D-dimensional integer vector.
-	using VecDi = Felt::VecDi<t_dims>;
+	using VecDi = Felt::VecDi<TraitsType::t_dims>;
 
 protected:
 	/**
@@ -526,7 +589,7 @@ public:
 
 		for (PosIdx pos_idx = 0; pos_idx <= pos_idx_max; pos_idx++)
 		{
-			const VecDi pos = psnapshot->index(pos_idx);
+			const VecDi& pos = psnapshot->index(pos_idx);
 			psnapshot->set(pos_idx, pself->get(pos));
 		}
 
@@ -554,11 +617,13 @@ public:
 		}
 	}
 
-	void operator=(std::initializer_list<LeafType> vals_)
+	void operator=(std::initializer_list<LeafType>&& vals_)
 	{
-		SnapshotGridPtr snap = snapshot();
-		snap->data() = vals_;
-		snapshot(snap);
+		SnapshotGridPtr  psnapshot = std::make_unique<SnapshotGrid>(
+			pself->size(), pself->offset(), LeafType()
+		);
+		psnapshot->data() = vals_;
+		snapshot(psnapshot);
 	}
 };
 

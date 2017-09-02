@@ -99,7 +99,7 @@ template <typename T, Dim D>
 struct Traits< Grid::Simple<T, D> >
 {
 	using LeafType = T;
-	static constexpr UINT t_dims = D;
+	static constexpr Dim t_dims = D;
 };
 
 /**
@@ -112,7 +112,7 @@ template <typename T, Dim D>
 struct Traits< Grid::Snapshot<T, D> >
 {
 	using LeafType = T;
-	static constexpr UINT t_dims = D;
+	static constexpr Dim t_dims = D;
 };
 
 } // Impl

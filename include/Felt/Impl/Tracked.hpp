@@ -63,6 +63,51 @@ public:
 };
 
 
+template <typename T, Dim D>
+class SingleByRef :
+	FELT_MIXINS(
+		(SingleByRef<T, D>),
+		(Grid::Access::ByRef)(Grid::Activate)(Grid::Data)(Grid::Size)(Tracked::Single::ByRef)
+		(Tracked::LookupInterface),
+		(Grid::Index)
+	)
+private:
+	using ThisType = SingleByRef<T, D>;
+	using TraitsType = Impl::Traits<ThisType>;
+
+	using AccessImpl = Impl::Mixin::Grid::Access::ByRef<ThisType>;
+	using ActivateImpl = Impl::Mixin::Grid::Activate<ThisType>;
+	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
+	using LookupInterfaceImpl = Impl::Mixin::Tracked::LookupInterface<ThisType>;
+	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
+	using TrackedImpl = Impl::Mixin::Tracked::Single::ByRef<ThisType>;
+
+	using VecDi = Felt::VecDi<TraitsType::t_dims>;
+	using LeafType = typename TraitsType::LeafType;
+	using LookupType = typename TraitsType::LookupType;
+
+public:
+	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
+
+	SingleByRef(const VecDi& size_, const VecDi& offset_, const LeafType background_) :
+		ActivateImpl{background_}, SizeImpl{size_, offset_},
+		LookupInterfaceImpl{LookupType{size_, offset_}}
+	{
+		this->activate();
+	}
+
+	using AccessImpl::get;
+	using AccessImpl::index;
+	using ActivateImpl::activate;
+	using DataImpl::assert_pos_idx_bounds;
+	using DataImpl::data;
+	using SizeImpl::offset;
+	using SizeImpl::size;
+	using LookupInterfaceImpl::lookup;
+	using TrackedImpl::track;
+};
+
+
 template <typename T, Dim D, TupleIdx N>
 class MultiByRef :
 	FELT_MIXINS(
@@ -110,6 +155,22 @@ public:
 
 } // Tracked.
 
+/**
+ * Traits for Tracked::SingleByRef.
+ *
+ * @tparam T type of data to store in the grid.
+ * @tparam D number of dimensions of the grid.
+ */
+template <typename T, Dim D>
+struct Traits< Tracked::SingleByRef<T, D> >
+{
+	/// Single index stored in each grid node.
+	using LeafType = T;
+	/// Dimension of grid.
+	static constexpr Dim t_dims = D;
+	/// Type of lookup grid for tracking active positions.
+	using LookupType = Lookup::Simple<D>;
+};
 
 /**
  * Common base traits for tracked grids with multiple tracking lists but single index per grid node.

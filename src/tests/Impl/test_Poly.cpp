@@ -8,7 +8,7 @@
 
 using namespace Felt;
 
-SCENARIO("Impl::Poly")
+SCENARIO("Impl::Poly::Single")
 {
 
 GIVEN("an empty 3D polygonisaton and a 9x9x9 3-layer surface with 3x3x3 partitions")
@@ -31,7 +31,8 @@ GIVEN("an empty 3D polygonisaton and a 9x9x9 3-layer surface with 3x3x3 partitio
 	{
 		const IsoChildType& isochild = surface.isogrid().children().get(Vec3i{0,0,0});
 
-		poly.resize(isochild);
+		poly.resize(isochild.size(), isochild.offset());
+		poly.bind(isochild.lookup());
 		poly.activate();
 
 		AND_WHEN("attempting to polygonise when no surface has been constructed")
@@ -150,7 +151,8 @@ GIVEN("an empty 2D polygonisaton and a 9x9 3-layer surface with 3x3 partitions")
 	{
 		const IsoChildType& isochild = surface.isogrid().children().get(Vec2i{0,0});
 
-		poly.resize(isochild);
+		poly.resize(isochild.size(), isochild.offset());
+		poly.bind(isochild.lookup());
 		poly.activate();
 
 		AND_WHEN("attempting to polygonise when no surface has been constructed")
@@ -233,6 +235,25 @@ GIVEN("an empty 2D polygonisaton and a 9x9 3-layer surface with 3x3 partitions")
 				}
 			}
 		}
+	}
+}
+}
+
+
+SCENARIO("Impl::Poly::Grid")
+{
+GIVEN("an empty 3D polygonisaton and a 9x9x9 3-layer surface with 3x3x3 partitions")
+{
+	using SurfaceType = Surface<3, 3>;
+	using PolyGridType = Impl::Poly::Grid<SurfaceType>;
+
+	SurfaceType surface{Vec3i{9,9,9}, Vec3i{3,3,3}};
+
+	PolyGridType poly{surface};
+
+	THEN("the grid has a matching number of children polys to the isogrid.")
+	{
+		CHECK(poly.children().data().size() == 27);
 	}
 }
 }

@@ -44,19 +44,45 @@ public:
 	using ActivateImpl::activate;
 	using ActivateImpl::deactivate;
 	using SizeImpl::resize;
+	using MarchImpl::bind;
 	using MarchImpl::march;
 	using MarchImpl::spxs;
 	using MarchImpl::vtxs;
 	using ResetterImpl::reset;
 };
 
+
+template <class SurfaceType>
+class Grid :
+	FELT_MIXINS(
+		(Grid<SurfaceType>),
+		(Partitioned::Children)
+	)
+private:
+	using ThisType = Grid<SurfaceType>;
+	using TraitsType = Traits<ThisType>;
+	using ChildType = typename TraitsType::ChildType;
+
+	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
+public:
+	Grid(const SurfaceType& surface_) :
+		ChildrenImpl{
+			surface_.isogrid().size(), surface_.isogrid().offset(),
+			surface_.isogrid().child_size(), ChildType(surface_.isogrid())
+		}
+	{}
+
+	using ChildrenImpl::children;
+};
+
+
 } // Poly.
 
 
 /**
- * Traits for Poly.
+ * Traits for Poly::Single.
  *
- * @tparam D number of dimensions of the isogrid.
+ * @tparam IsoGrid isogrid type to polygonise.
  */
 template <class IsoGrid>
 struct Traits< Poly::Single<IsoGrid> > : Mixin::Poly::Traits<Traits<IsoGrid>::t_dims, void>
@@ -71,6 +97,22 @@ struct Traits< Poly::Single<IsoGrid> > : Mixin::Poly::Traits<Traits<IsoGrid>::t_
 	using IsoGridType = IsoGrid;
 };
 
+
+/**
+  * Traits for Poly::Grid.
+ *
+ * @tparam SurfaceType surface type to polygonise.
+ */
+template <class SurfaceType>
+struct Traits< Poly::Grid<SurfaceType> >
+{
+	using IsoGridType = typename SurfaceType::IsoGrid;
+	/// Dimension of grid.
+	static constexpr Dim t_dims = Traits<IsoGridType>::t_dims;
+	/// Child poly type to polygonise a single spatial partition.
+	using ChildType = Impl::Poly::Single<IsoGridType>;
+	using ChildrenType = Impl::Tracked::SingleByRef<ChildType, t_dims>;
+};
 
 } // Impl.
 } // Felt.

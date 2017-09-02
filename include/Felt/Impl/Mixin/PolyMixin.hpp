@@ -94,9 +94,6 @@ private:
 	static const Dim t_dims = TraitsType::t_dims;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
-
-	/// Isogrid child spatial partition that this is responsible for polygonising.
-	const IsoChild* m_pisochild;
 protected:
 
 	using Base::Resize;
@@ -106,24 +103,18 @@ protected:
 	 *
 	 * Will resize to one more than isochild size, since neighbouring Polys must overlap.
 	 *
-	 * @param isochild Isogrid child spatial partition that this is handling.
+	 * @param size_ size of isogrid child partition.
+	 * @param offset_ offset of isogrid child partition.
 	 */
-	void resize(const IsoChild& isochild)
+	void resize(const VecDi& size_, const VecDi& offset_)
 	{
-		m_pisochild = &isochild;
-
 		static const VecDi one = VecDi::Constant(1);
 		static const VecDi two = VecDi::Constant(2);
 
-		const VecDi& size = m_pisochild->size() + two;
-		const VecDi& offset = m_pisochild->offset() - one;
+		const VecDi& size = size_ + two;
+		const VecDi& offset = offset_ - one;
 
 		Base::resize(size, offset);
-	}
-
-	inline const IsoChild* isochild() const
-	{
-		return m_pisochild;
 	}
 };
 
@@ -137,7 +128,7 @@ private:
 	using IsoGridType = typename TraitsType::IsoGridType;
 	/// Spatial partition type this poly will be responsible for.
 	using IsoChildType = typename IsoGridType::ChildType;
-	/// Lookup grid tracking active locations in isogrid to polygonise.
+	/// Spatial partition type this poly will be responsible for.
 	using IsoLookupType = typename IsoChildType::LookupType;
 	/// Vertex index tuple type (for spatial lookup grid).
 	using IdxTuple = typename TraitsType::LeafType;
@@ -162,7 +153,8 @@ private:
 	static constexpr Distance epsilon = std::numeric_limits<Distance>::epsilon();
 
 	/// Isogrid to (partially) polygonise.
-	const IsoGridType&	m_isogrid;
+	const IsoGridType*		m_pisogrid;
+	IsoLookupType const*	m_pisolookup;
 
 protected:
 	/// List of interpolated vertices.
@@ -170,7 +162,7 @@ protected:
 	/// List of simplexes (i.e. lines for 2D or triangles for 3D).
 	SpxArray	m_a_spx;
 
-	March(const IsoGridType& isogrid_) : m_isogrid{isogrid_}
+	March(const IsoGridType& isogrid_) : m_pisogrid{&isogrid_}
 	{}
 
 	/**
@@ -178,14 +170,25 @@ protected:
 	 */
 	void march()
 	{
-		const IsoLookupType& isolookup = pself->isochild()->lookup();
-		for (TupleIdx list_idx = 0; list_idx < isolookup.num_lists; list_idx++)
+		for (TupleIdx list_idx = 0; list_idx < m_pisolookup->num_lists; list_idx++)
 		{
-			for (PosIdx pos_idx_leaf : isolookup.list(list_idx))
+			for (PosIdx pos_idx_leaf : m_pisolookup->list(list_idx))
 			{
-				spx(isolookup.index(pos_idx_leaf));
+				spx(m_pisolookup->index(pos_idx_leaf));
 			}
 		}
+	}
+
+	/**
+	 * Bind this Poly to the given Lookup grid giving positions to march over.
+	 *
+	 * I.e. a child spatial partition of the isogrid.
+	 *
+	 * @param pisolookup
+	 */
+	void bind(const IsoLookupType& isolookup)
+	{
+		m_pisolookup = &isolookup;
 	}
 
 	/**
@@ -326,8 +329,8 @@ private:
 		pos_b(axis) += 1;
 
 		// Value of isogrid at each endpoint of this edge.
-		const Distance val_a = m_isogrid.get(pos_a);
-		const Distance val_b = m_isogrid.get(pos_b);
+		const Distance val_a = m_pisogrid->get(pos_a);
+		const Distance val_b = m_pisogrid->get(pos_b);
 
 		// The newly created vertex.
 		Vertex vtx;
@@ -335,9 +338,9 @@ private:
 		// Check if lies very close to an endpoint or midpoint, if so then no need (and possibly
 		// dangerous) to interpolate.
 		if (std::abs(val_a) <= epsilon) {
-			vtx = Vertex(m_isogrid, pos_a);
+			vtx = Vertex(m_pisogrid, pos_a);
 		} else if (std::abs(val_b) <= epsilon) {
-			vtx = Vertex(m_isogrid, pos_b);
+			vtx = Vertex(m_pisogrid, pos_b);
 		} else {
 			Distance mu;
 
@@ -354,7 +357,7 @@ private:
 			const VecDf vec_b = pos_b.template cast<FLOAT>();
 			const VecDf vec_c = vec_a + (vec_b - vec_a) * mu;
 
-			vtx = Vertex(m_isogrid, vec_c);
+			vtx = Vertex(m_pisogrid, vec_c);
 		}
 
 		// Append newly created vertex to the cache and return a reference  to it.
@@ -381,7 +384,7 @@ private:
 		for (ListIdx idx = 0; idx < num_corners; idx++)
 		{
 			const VecDi corner = pos_ + TraitsType::corners[idx];
-			const Distance val = m_isogrid.get(corner);
+			const Distance val = m_pisogrid->get(corner);
 			mask |= (unsigned short)((val > 0) << idx);
 		}
 		return mask;
@@ -419,7 +422,7 @@ struct Traits<2, Dummy> {
 		 * @param pos
 		 */
 		template <typename PosType, class GridType>
-		Vertex(const GridType& grid, const PosType& pos)
+		Vertex(const GridType* grid, const PosType& pos)
 		{
 			(void)grid;
 			this->pos = pos.template cast<FLOAT>();
@@ -513,10 +516,10 @@ struct Traits<3, Dummy> {
 		 * @param pos
 		 */
 		template <typename PosType, class GridType>
-		Vertex(const GridType& grid, const PosType& pos)
+		Vertex(const GridType* grid, const PosType& pos)
 		{
 			this->pos = pos.template cast<FLOAT>();
-			this->norm = grid.grad(pos);
+			this->norm = grid->grad(pos);
 			this->norm.normalize();
 		}
 
