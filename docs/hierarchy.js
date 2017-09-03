@@ -19,17 +19,17 @@ var hierarchy =
       [ "Felt::Polys< TSurface >", "class_felt_1_1_polys.html", null ]
     ] ],
     [ "Felt::Impl::Mixin::Grid::Data< Derived >", "class_felt_1_1_impl_1_1_mixin_1_1_grid_1_1_data.html", null ],
-    [ "DefaultLookupTraits< D, N >", "struct_default_lookup_traits.html", [
-      [ "Traits< Lookup::LazyMultiListSingleIdx< D, N > >", "struct_traits_3_01_lookup_1_1_lazy_multi_list_single_idx_3_01_d_00_01_n_01_4_01_4.html", null ],
-      [ "Traits< Lookup::MultiListMultiIdx< D, N > >", "struct_traits_3_01_lookup_1_1_multi_list_multi_idx_3_01_d_00_01_n_01_4_01_4.html", null ],
-      [ "Traits< Lookup::MultiListSingleIdx< D, N > >", "struct_traits_3_01_lookup_1_1_multi_list_single_idx_3_01_d_00_01_n_01_4_01_4.html", null ],
-      [ "Traits< Partitioned::Lookup< D, N > >", "struct_traits_3_01_partitioned_1_1_lookup_3_01_d_00_01_n_01_4_01_4.html", null ]
+    [ "Felt::Impl::DefaultLookupTraits< D, N >", "struct_felt_1_1_impl_1_1_default_lookup_traits.html", [
+      [ "Felt::Impl::Traits< Lookup::LazyMultiListSingleIdx< D, N > >", "struct_felt_1_1_impl_1_1_traits_3_01_lookup_1_1_lazy_multi_list_single_idx_3_01_d_00_01_n_01_4_01_4.html", null ],
+      [ "Felt::Impl::Traits< Lookup::MultiListMultiIdx< D, N > >", "struct_felt_1_1_impl_1_1_traits_3_01_lookup_1_1_multi_list_multi_idx_3_01_d_00_01_n_01_4_01_4.html", null ],
+      [ "Felt::Impl::Traits< Lookup::MultiListSingleIdx< D, N > >", "struct_felt_1_1_impl_1_1_traits_3_01_lookup_1_1_multi_list_single_idx_3_01_d_00_01_n_01_4_01_4.html", null ],
+      [ "Felt::Impl::Traits< Partitioned::Lookup< D, N > >", "struct_felt_1_1_impl_1_1_traits_3_01_partitioned_1_1_lookup_3_01_d_00_01_n_01_4_01_4.html", null ]
     ] ],
-    [ "DefaultTrackedTraits< T, D, N >", "struct_default_tracked_traits.html", [
-      [ "Traits< Partitioned::Tracked::Numeric< T, D, N > >", "struct_traits_3_01_partitioned_1_1_tracked_1_1_numeric_3_01_t_00_01_d_00_01_n_01_4_01_4.html", null ],
-      [ "Traits< Partitioned::Tracked::Simple< T, D, N > >", "struct_traits_3_01_partitioned_1_1_tracked_1_1_simple_3_01_t_00_01_d_00_01_n_01_4_01_4.html", null ],
-      [ "Traits< Tracked::LazyMultiListSingleIdxByValue< T, D, N > >", "struct_traits_3_01_tracked_1_1_lazy_multi_list_single_idx_by_value_3_01_t_00_01_d_00_01_n_01_4_01_4.html", null ],
-      [ "Traits< Tracked::MultiListMultiIdxByRef< T, D, N > >", "struct_traits_3_01_tracked_1_1_multi_list_multi_idx_by_ref_3_01_t_00_01_d_00_01_n_01_4_01_4.html", null ]
+    [ "Felt::Impl::DefaultTrackedTraits< T, D, N >", "struct_felt_1_1_impl_1_1_default_tracked_traits.html", [
+      [ "Felt::Impl::Traits< Partitioned::Tracked::Numeric< T, D, N > >", "struct_felt_1_1_impl_1_1_traits_3_01_partitioned_1_1_tracked_1_1_numeric_3_01_t_00_01_d_00_01_n_01_4_01_4.html", null ],
+      [ "Felt::Impl::Traits< Partitioned::Tracked::Simple< T, D, N > >", "struct_felt_1_1_impl_1_1_traits_3_01_partitioned_1_1_tracked_1_1_simple_3_01_t_00_01_d_00_01_n_01_4_01_4.html", null ],
+      [ "Felt::Impl::Traits< Tracked::LazyMultiListSingleIdxByValue< T, D, N > >", "struct_felt_1_1_impl_1_1_traits_3_01_tracked_1_1_lazy_multi_list_single_idx_by_value_3_01_t_00_01_d_00_01_n_01_4_01_4.html", null ],
+      [ "Felt::Impl::Traits< Tracked::MultiListMultiIdxByRef< T, D, N > >", "struct_felt_1_1_impl_1_1_traits_3_01_tracked_1_1_multi_list_multi_idx_by_ref_3_01_t_00_01_d_00_01_n_01_4_01_4.html", null ]
     ] ],
     [ "Felt::Impl::Mixin::Poly::Geom< Derived, 2 >::Edge", "struct_felt_1_1_impl_1_1_mixin_1_1_poly_1_1_geom_3_01_derived_00_012_01_4.html#struct_felt_1_1_impl_1_1_mixin_1_1_poly_1_1_geom_3_01_derived_00_012_01_4_1_1_edge", null ],
     [ "Felt::Impl::Mixin::Poly::Geom< Derived, 3 >::Edge", "struct_felt_1_1_impl_1_1_mixin_1_1_poly_1_1_geom_3_01_derived_00_013_01_4.html#struct_felt_1_1_impl_1_1_mixin_1_1_poly_1_1_geom_3_01_derived_00_013_01_4_1_1_edge", null ],
@@ -65,13 +65,13 @@ var hierarchy =
     [ "Felt::Surface< D, L >", "class_felt_1_1_surface.html", null ],
     [ "Felt::Impl::Mixin::Partitioned::Tracked< Derived >", "class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_tracked.html", null ],
     [ "Felt::Impl::Traits< Derived >", "namespace_felt_1_1_impl.html#struct_felt_1_1_impl_1_1_traits", null ],
-    [ "Traits< Grid::Simple< T, D > >", "struct_traits_3_01_grid_1_1_simple_3_01_t_00_01_d_01_4_01_4.html", null ],
-    [ "Traits< Grid::Snapshot< T, D > >", "struct_traits_3_01_grid_1_1_snapshot_3_01_t_00_01_d_01_4_01_4.html", null ],
-    [ "Traits< Lookup::LazySingleListSingleIdx< D > >", "struct_traits_3_01_lookup_1_1_lazy_single_list_single_idx_3_01_d_01_4_01_4.html", null ],
-    [ "Traits< Lookup::SingleListSingleIdx< D > >", "struct_traits_3_01_lookup_1_1_single_list_single_idx_3_01_d_01_4_01_4.html", null ],
-    [ "Felt::Traits< Poly::Single< TIsoGrid > >", "struct_felt_1_1_traits_3_01_poly_1_1_single_3_01_t_iso_grid_01_4_01_4.html", null ],
+    [ "Felt::Impl::Traits< Grid::Simple< T, D > >", "struct_felt_1_1_impl_1_1_traits_3_01_grid_1_1_simple_3_01_t_00_01_d_01_4_01_4.html", null ],
+    [ "Felt::Impl::Traits< Grid::Snapshot< T, D > >", "struct_felt_1_1_impl_1_1_traits_3_01_grid_1_1_snapshot_3_01_t_00_01_d_01_4_01_4.html", null ],
+    [ "Felt::Impl::Traits< Lookup::LazySingleListSingleIdx< D > >", "struct_felt_1_1_impl_1_1_traits_3_01_lookup_1_1_lazy_single_list_single_idx_3_01_d_01_4_01_4.html", null ],
+    [ "Felt::Impl::Traits< Lookup::SingleListSingleIdx< D > >", "struct_felt_1_1_impl_1_1_traits_3_01_lookup_1_1_single_list_single_idx_3_01_d_01_4_01_4.html", null ],
+    [ "Felt::Impl::Traits< Poly::Single< TIsoGrid > >", "struct_felt_1_1_impl_1_1_traits_3_01_poly_1_1_single_3_01_t_iso_grid_01_4_01_4.html", null ],
     [ "Felt::Impl::Traits< Polys< TSurface > >", "struct_felt_1_1_impl_1_1_traits_3_01_polys_3_01_t_surface_01_4_01_4.html", null ],
-    [ "Traits< Tracked::SingleListSingleIdxByRef< T, D > >", "struct_traits_3_01_tracked_1_1_single_list_single_idx_by_ref_3_01_t_00_01_d_01_4_01_4.html", null ],
+    [ "Felt::Impl::Traits< Tracked::SingleListSingleIdxByRef< T, D > >", "struct_felt_1_1_impl_1_1_traits_3_01_tracked_1_1_single_list_single_idx_by_ref_3_01_t_00_01_d_01_4_01_4.html", null ],
     [ "Felt::Impl::Mixin::Partitioned::Untrack< Derived >", "class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_untrack.html", null ],
     [ "Felt::Impl::Mixin::Poly::Geom< Derived, 2 >::Vertex", "struct_felt_1_1_impl_1_1_mixin_1_1_poly_1_1_geom_3_01_derived_00_012_01_4_1_1_vertex.html", null ],
     [ "Felt::Impl::Mixin::Poly::Geom< Derived, 3 >::Vertex", "struct_felt_1_1_impl_1_1_mixin_1_1_poly_1_1_geom_3_01_derived_00_013_01_4_1_1_vertex.html", null ]

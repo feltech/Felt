@@ -1,9 +1,9 @@
 var _tracked_8hpp =
 [
-    [ "DefaultTrackedTraits", "struct_default_tracked_traits.html", "struct_default_tracked_traits" ],
-    [ "Traits< Tracked::LazyMultiListSingleIdxByValue< T, D, N > >", "struct_traits_3_01_tracked_1_1_lazy_multi_list_single_idx_by_value_3_01_t_00_01_d_00_01_n_01_4_01_4.html", "struct_traits_3_01_tracked_1_1_lazy_multi_list_single_idx_by_value_3_01_t_00_01_d_00_01_n_01_4_01_4" ],
-    [ "Traits< Tracked::MultiListMultiIdxByRef< T, D, N > >", "struct_traits_3_01_tracked_1_1_multi_list_multi_idx_by_ref_3_01_t_00_01_d_00_01_n_01_4_01_4.html", "struct_traits_3_01_tracked_1_1_multi_list_multi_idx_by_ref_3_01_t_00_01_d_00_01_n_01_4_01_4" ],
-    [ "Traits< Tracked::SingleListSingleIdxByRef< T, D > >", "struct_traits_3_01_tracked_1_1_single_list_single_idx_by_ref_3_01_t_00_01_d_01_4_01_4.html", "struct_traits_3_01_tracked_1_1_single_list_single_idx_by_ref_3_01_t_00_01_d_01_4_01_4" ],
+    [ "DefaultTrackedTraits", "struct_felt_1_1_impl_1_1_default_tracked_traits.html", "struct_felt_1_1_impl_1_1_default_tracked_traits" ],
+    [ "Traits< Tracked::LazyMultiListSingleIdxByValue< T, D, N > >", "struct_felt_1_1_impl_1_1_traits_3_01_tracked_1_1_lazy_multi_list_single_idx_by_value_3_01_t_00_01_d_00_01_n_01_4_01_4.html", "struct_felt_1_1_impl_1_1_traits_3_01_tracked_1_1_lazy_multi_list_single_idx_by_value_3_01_t_00_01_d_00_01_n_01_4_01_4" ],
+    [ "Traits< Tracked::MultiListMultiIdxByRef< T, D, N > >", "struct_felt_1_1_impl_1_1_traits_3_01_tracked_1_1_multi_list_multi_idx_by_ref_3_01_t_00_01_d_00_01_n_01_4_01_4.html", "struct_felt_1_1_impl_1_1_traits_3_01_tracked_1_1_multi_list_multi_idx_by_ref_3_01_t_00_01_d_00_01_n_01_4_01_4" ],
+    [ "Traits< Tracked::SingleListSingleIdxByRef< T, D > >", "struct_felt_1_1_impl_1_1_traits_3_01_tracked_1_1_single_list_single_idx_by_ref_3_01_t_00_01_d_01_4_01_4.html", "struct_felt_1_1_impl_1_1_traits_3_01_tracked_1_1_single_list_single_idx_by_ref_3_01_t_00_01_d_01_4_01_4" ],
     [ "AccessImpl", "_tracked_8hpp.html#a5b9e8657720184ab9cb18903fa0e9432", null ],
     [ "ActivateImpl", "_tracked_8hpp.html#ab0d79013919cc36e9a368746e65dc3bd", null ],
     [ "DataImpl", "_tracked_8hpp.html#a7ecedcbfda54bc01b8ccebf506e0203d", null ],

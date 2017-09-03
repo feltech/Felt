@@ -1,7 +1,7 @@
 var _grid_8hpp =
 [
-    [ "Traits< Grid::Simple< T, D > >", "struct_traits_3_01_grid_1_1_simple_3_01_t_00_01_d_01_4_01_4.html", "struct_traits_3_01_grid_1_1_simple_3_01_t_00_01_d_01_4_01_4" ],
-    [ "Traits< Grid::Snapshot< T, D > >", "struct_traits_3_01_grid_1_1_snapshot_3_01_t_00_01_d_01_4_01_4.html", "struct_traits_3_01_grid_1_1_snapshot_3_01_t_00_01_d_01_4_01_4" ],
+    [ "Traits< Grid::Simple< T, D > >", "struct_felt_1_1_impl_1_1_traits_3_01_grid_1_1_simple_3_01_t_00_01_d_01_4_01_4.html", "struct_felt_1_1_impl_1_1_traits_3_01_grid_1_1_simple_3_01_t_00_01_d_01_4_01_4" ],
+    [ "Traits< Grid::Snapshot< T, D > >", "struct_felt_1_1_impl_1_1_traits_3_01_grid_1_1_snapshot_3_01_t_00_01_d_01_4_01_4.html", "struct_felt_1_1_impl_1_1_traits_3_01_grid_1_1_snapshot_3_01_t_00_01_d_01_4_01_4" ],
     [ "AccessImpl", "_grid_8hpp.html#ac5c879ef56826039c0cd0567f3ac461a", null ],
     [ "AccessImpl", "_grid_8hpp.html#a67348f47f87edea18753dc71c0f5e025", null ],
     [ "ActivateImpl", "_grid_8hpp.html#a0635ea72198e48c59924d27766d61485", null ],

@@ -1,8 +1,8 @@
 var _partitioned_8hpp =
 [
-    [ "Traits< Partitioned::Lookup< D, N > >", "struct_traits_3_01_partitioned_1_1_lookup_3_01_d_00_01_n_01_4_01_4.html", "struct_traits_3_01_partitioned_1_1_lookup_3_01_d_00_01_n_01_4_01_4" ],
-    [ "Traits< Partitioned::Tracked::Numeric< T, D, N > >", "struct_traits_3_01_partitioned_1_1_tracked_1_1_numeric_3_01_t_00_01_d_00_01_n_01_4_01_4.html", "struct_traits_3_01_partitioned_1_1_tracked_1_1_numeric_3_01_t_00_01_d_00_01_n_01_4_01_4" ],
-    [ "Traits< Partitioned::Tracked::Simple< T, D, N > >", "struct_traits_3_01_partitioned_1_1_tracked_1_1_simple_3_01_t_00_01_d_00_01_n_01_4_01_4.html", "struct_traits_3_01_partitioned_1_1_tracked_1_1_simple_3_01_t_00_01_d_00_01_n_01_4_01_4" ],
+    [ "Traits< Partitioned::Lookup< D, N > >", "struct_felt_1_1_impl_1_1_traits_3_01_partitioned_1_1_lookup_3_01_d_00_01_n_01_4_01_4.html", "struct_felt_1_1_impl_1_1_traits_3_01_partitioned_1_1_lookup_3_01_d_00_01_n_01_4_01_4" ],
+    [ "Traits< Partitioned::Tracked::Numeric< T, D, N > >", "struct_felt_1_1_impl_1_1_traits_3_01_partitioned_1_1_tracked_1_1_numeric_3_01_t_00_01_d_00_01_n_01_4_01_4.html", "struct_felt_1_1_impl_1_1_traits_3_01_partitioned_1_1_tracked_1_1_numeric_3_01_t_00_01_d_00_01_n_01_4_01_4" ],
+    [ "Traits< Partitioned::Tracked::Simple< T, D, N > >", "struct_felt_1_1_impl_1_1_traits_3_01_partitioned_1_1_tracked_1_1_simple_3_01_t_00_01_d_00_01_n_01_4_01_4.html", "struct_felt_1_1_impl_1_1_traits_3_01_partitioned_1_1_tracked_1_1_simple_3_01_t_00_01_d_00_01_n_01_4_01_4" ],
     [ "ChildrenGrid", "_partitioned_8hpp.html#ab3ce8812629f9b20d69416b01cfcf937", null ],
     [ "ChildrenGrid", "_partitioned_8hpp.html#a25d0647a6a8df8f4c1825ac3c6b25051", null ],
     [ "ChildrenGrid", "_partitioned_8hpp.html#ab6127744f9b1f34e8206274c65b7ec6c", null ],

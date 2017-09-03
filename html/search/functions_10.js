@@ -1,5 +1,0 @@
-var searchData=
-[
-  ['vertex',['Vertex',['../struct_felt_1_1_impl_1_1_mixin_1_1_poly_1_1_geom_3_01_derived_00_012_01_4_1_1_vertex.html#a600d8edb73c1a04bb2d08c4b8225e206',1,'Felt::Impl::Mixin::Poly::Geom&lt; Derived, 2 &gt;::Vertex::Vertex(const GridType *grid, const PosType &amp;pos)'],['../struct_felt_1_1_impl_1_1_mixin_1_1_poly_1_1_geom_3_01_derived_00_012_01_4_1_1_vertex.html#ae9fd69d09c791fe12947d2de21fc51d4',1,'Felt::Impl::Mixin::Poly::Geom&lt; Derived, 2 &gt;::Vertex::Vertex()'],['../struct_felt_1_1_impl_1_1_mixin_1_1_poly_1_1_geom_3_01_derived_00_013_01_4_1_1_vertex.html#aa1569102606a0cfe8d14995973f9b145',1,'Felt::Impl::Mixin::Poly::Geom&lt; Derived, 3 &gt;::Vertex::Vertex(const GridType *grid, const PosType &amp;pos)'],['../struct_felt_1_1_impl_1_1_mixin_1_1_poly_1_1_geom_3_01_derived_00_013_01_4_1_1_vertex.html#aa37780676a3db88164d36d5121fec436',1,'Felt::Impl::Mixin::Poly::Geom&lt; Derived, 3 &gt;::Vertex::Vertex()']]],
-  ['vtxs',['vtxs',['../namespace_felt_1_1_impl_1_1_poly.html#abe10cbf8df25acc8e4261238efbbb094',1,'Felt::Impl::Poly']]]
-];

@@ -1,6 +1,6 @@
 var _poly_8hpp =
 [
-    [ "Traits< Poly::Single< TIsoGrid > >", "struct_felt_1_1_traits_3_01_poly_1_1_single_3_01_t_iso_grid_01_4_01_4.html", "struct_felt_1_1_traits_3_01_poly_1_1_single_3_01_t_iso_grid_01_4_01_4" ],
+    [ "Traits< Poly::Single< TIsoGrid > >", "struct_felt_1_1_impl_1_1_traits_3_01_poly_1_1_single_3_01_t_iso_grid_01_4_01_4.html", "struct_felt_1_1_impl_1_1_traits_3_01_poly_1_1_single_3_01_t_iso_grid_01_4_01_4" ],
     [ "ActivateImpl", "_poly_8hpp.html#ac5c70d1fcc39790f846657eacbe637e7", null ],
     [ "Edge", "_poly_8hpp.html#a82ce1931c36429c343f24643da859b29", null ],
     [ "GeomImpl", "_poly_8hpp.html#a229be4ed700f7665bd61d7894c28c967", null ],
