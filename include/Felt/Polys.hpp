@@ -2,34 +2,183 @@
 #define INCLUDE_FELT_POLYS_HPP_
 
 #include <Felt/Impl/Common.hpp>
+#include <Felt/Impl/Mixin/PartitionedMixin.hpp>
 #include <Felt/Impl/Mixin/PolyMixin.hpp>
 #include <Felt/Impl/Poly.hpp>
 
 namespace Felt
 {
 template <class TSurface>
-class Polys :
-	FELT_MIXINS(
-		(Polys<TSurface>),
-		(Poly::Children)(Poly::Update)
-	)
+class Polys : private Impl::Mixin::Partitioned::Children< Polys<TSurface> >
+{
 private:
 	using ThisType = Polys<TSurface>;
 	using TraitsType = Impl::Traits<ThisType>;
+
+	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
+
+	/// Surface type.
+	using SurfaceType = typename TraitsType::SurfaceType;
+	/// Child grid type.
 	using ChildType = typename TraitsType::ChildType;
+	/// Isogrid to (partially) polygonise.
+	using IsoGridType = typename TraitsType::IsoGridType;
+	/// Spatial partition type this poly will be responsible for.
+	using IsoChildType = typename IsoGridType::ChildType;
+	/// Lookup grid to track partitions containing zero-layer points.
+	using ChangesGridType = Impl::Lookup::SingleListSingleIdx<Impl::Traits<IsoGridType>::t_dims>;
 
-	using ChildrenImpl = Impl::Mixin::Poly::Children<ThisType>;
-	using UpdateImpl = Impl::Mixin::Poly::Update<ThisType>;
+	SurfaceType const* m_psurface;
+	std::unique_ptr<ChangesGridType> m_pgrid_update_pending;
+	std::unique_ptr<ChangesGridType> m_pgrid_update_done;
+
 public:
-	Polys(const TSurface& surface_) :
-		ChildrenImpl{surface_.isogrid()}, UpdateImpl{surface_}
-	{}
-
 	using ChildrenImpl::children;
-	using UpdateImpl::changes;
-	using UpdateImpl::invalidate;
-	using UpdateImpl::notify;
-	using UpdateImpl::march;
+
+	Polys(const TSurface& surface_) :
+		ChildrenImpl{
+			surface_.isogrid().size(), surface_.isogrid().offset(), surface_.isogrid().child_size(),
+			ChildType(surface_.isogrid())
+		},
+		m_psurface{&surface_},
+		m_pgrid_update_pending{
+			std::make_unique<ChangesGridType>(
+				surface_.isogrid().children().size(), surface_.isogrid().children().offset()
+			)
+		},
+		m_pgrid_update_done{
+			std::make_unique<ChangesGridType>(
+				surface_.isogrid().children().size(), surface_.isogrid().children().offset()
+			)
+		}
+	{
+		// Bind child polygonisation to isogrid child.
+		for (
+			PosIdx pos_idx_child = 0; pos_idx_child < this->children().data().size();
+			pos_idx_child++
+		) {
+			this->children().get(pos_idx_child).bind(
+				surface_.isogrid().children().get(pos_idx_child).lookup()
+			);
+		}
+	}
+
+	/**
+	 * Notify of an update to the surface in order to track changes.
+	 *
+	 * This should be called whenever the surface is updated to ensure that eventual
+	 * re-polygonisation only needs to update those spatial partitions that have actually changed.
+	 */
+	void notify()
+	{
+		static const TupleIdx num_lists = m_psurface->isogrid().children().lookup().num_lists;
+
+		// Cycle outermost bands of delta update spatial partitions. We have three cases:
+		// * Partition is currently polygonised, and since its in the delta grid it needs updating.
+		// * Partition is not currently polygonised, but isogrid is tracking it, in which case it
+		//   needs polygonising.
+		// * Partition is not currently polygonised and isogrid is no longer tracking, so we no
+		//   longer need to remember it.
+		for (TupleIdx layer_idx = 0; layer_idx <= num_lists; layer_idx += num_lists - 1) {
+			for (const PosIdx pos_idx_child : m_psurface->delta(layer_idx))
+			{
+				bool is_active = this->children().get(pos_idx_child).is_active();
+
+				for (
+					TupleIdx layer_idx = 0; !is_active && layer_idx <= num_lists;
+					layer_idx += num_lists - 1
+				) {
+					is_active = m_psurface->isogrid().children().lookup().is_tracked(
+						pos_idx_child, layer_idx
+					);
+				}
+
+				if (is_active)
+					m_pgrid_update_pending->track(pos_idx_child);
+				else
+					m_pgrid_update_pending->untrack(pos_idx_child);
+			}
+		}
+
+		// Cycle outermost status change lists, where a child may need resetting.
+		for (TupleIdx layer_idx = 0; layer_idx <= num_lists; layer_idx += num_lists - 1)
+		{
+			for (
+				const PosIdx pos_idx_child : m_psurface->status_change(layer_idx)
+			) {
+				if (this->children().get(pos_idx_child).is_active())
+					m_pgrid_update_pending->track(pos_idx_child);
+			}
+		}
+	}
+
+	/**
+	 * Repolygonise partitions marked as changed since last polygonisation.
+	 */
+	void march()
+	{
+		#pragma omp parallel for
+		for (ListIdx list_idx = 0; list_idx < m_pgrid_update_pending->list().size(); list_idx++)
+		{
+			const PosIdx pos_idx_child = m_pgrid_update_pending->list()[list_idx];
+
+			ChildType& child = this->children().get(pos_idx_child);
+
+			// If isogrid child partition is active, then polygonise it.
+			if (m_psurface->isogrid().children().get(pos_idx_child).is_active())
+			{
+				if (child.is_active())
+					child.reset();
+				else
+					child.activate();
+				child.march();
+
+			} else {
+				// Otherwise isogrid child partition has become inactive, so destroy the poly child.
+				if (child.is_active())
+					child.deactivate();
+			}
+		}
+
+		std::swap(m_pgrid_update_pending, m_pgrid_update_done);
+		m_pgrid_update_pending->reset();
+	}
+
+
+	/**
+	 * Add all active poly childs and isogrid childs to change tracking for (re)polygonisation.
+	 */
+	void invalidate()
+	{
+		static const TupleIdx num_lists = m_psurface->isogrid().children().lookup().num_lists;
+
+		// Remove pending changes, we're about to reconstruct the list.
+		m_pgrid_update_pending->reset();
+		// Flag curently active Poly::Single childs for re-polygonisation (or deactivation).
+		for (const PosIdx pos_idx_child : this->children().lookup().list())
+			m_pgrid_update_pending->track(pos_idx_child);
+
+		// Flag active outer-layer isogrid childs for re-polygonisation.
+		for (TupleIdx layer_idx = 0; layer_idx <= num_lists; layer_idx += num_lists - 1)
+		{
+			for (
+				const PosIdx pos_idx_child :
+				m_psurface->isogrid().children().lookup().list(layer_idx)
+			) {
+				m_pgrid_update_pending->track(pos_idx_child);
+			}
+		}
+	}
+
+	/**
+	 * Get list of partitions that were updated.
+	 *
+	 * @return list of position indices of partitions that were repolygonised in the last `march`.
+	 */
+	const PosIdxList& changes() const
+	{
+		return m_pgrid_update_done->list();
+	}
 };
 
 namespace Impl

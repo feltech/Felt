@@ -15,582 +15,8 @@ namespace Mixin
 namespace Poly
 {
 
-
-template <class Derived>
-class Activate : protected Tracked::Activate<Derived>
-{
-private:
-	/// Base class.
-	using Base = Felt::Impl::Mixin::Tracked::Activate<Derived>;
-	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
-	/// Tuple of vertex indices.
-	using IdxTuple = typename TraitsType::LeafType;
-
-	// Do not expose from base.
-	using Base::activate;
-protected:
-	Activate() : Base::Activate{IdxTuple::Constant(Felt::null_idx)}
-	{}
-
-	using Base::background;
-	using Base::is_active;
-
-	/**
-	 * Allocate the internal data array and lookup grid.
-	 */
-	void activate()
-	{
-		Base::activate();
-	}
-	/**
-	 * Destroy the internal data array and lookup grid.
-	 */
-	void deactivate()
-	{
-		Base::deactivate();
-		pself->m_a_vtx.resize(0);
-		pself->m_a_vtx.shrink_to_fit();
-		pself->m_a_spx.resize(0);
-		pself->m_a_spx.shrink_to_fit();
-	}
-};
-
-
-template <class Derived>
-class Children : protected Partitioned::Children<Derived>
-{
-private:
-	using Base = Partitioned::Children<Derived>;
-	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
-	/// Child grid type.
-	using ChildType = typename TraitsType::ChildType;
-	/// Isogrid to (partially) polygonise.
-	using IsoGridType = typename TraitsType::IsoGridType;
-	/// Spatial partition type this poly will be responsible for.
-	using IsoChildType = typename IsoGridType::ChildType;
-
-protected:
-	/**
-	 * Construct and initialise children grid to hold child sub-grids.
-	 */
-	Children(
-		const IsoGridType& isogrid_
-	) : Base{isogrid_.size(), isogrid_.offset(), isogrid_.child_size(), ChildType(isogrid_)}
-	{
-		// Bind child polygonisation to isogrid child.
-		for (PosIdx pos_idx = 0; pos_idx < this->children().data().size(); pos_idx++)
-		{
-			this->children().get(pos_idx).bind(isogrid_.children().get(pos_idx).lookup());
-		}
-	}
-};
-
-
-template <class Derived>
-class Update
-{
-private:
-	using Base = Partitioned::Children<Derived>;
-	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
-	/// Surface type.
-	using SurfaceType = typename TraitsType::SurfaceType;
-	/// Child grid type.
-	using ChildType = typename TraitsType::ChildType;
-	/// Isogrid to (partially) polygonise.
-	using IsoGridType = typename TraitsType::IsoGridType;
-	/// Spatial partition type this poly will be responsible for.
-	using IsoChildType = typename IsoGridType::ChildType;
-	/// Lookup grid to track partitions containing zero-layer points.
-	using ChangesGridType = Impl::Lookup::SingleListSingleIdx<Traits<IsoGridType>::t_dims>;
-
-	SurfaceType const* m_psurface;
-	std::unique_ptr<ChangesGridType> m_pgrid_update_pending;
-	std::unique_ptr<ChangesGridType> m_pgrid_update_done;
-
-protected:
-	Update(const SurfaceType& surface_) :
-		m_psurface{&surface_},
-		m_pgrid_update_pending{
-			std::make_unique<ChangesGridType>(
-				surface_.isogrid().children().size(), surface_.isogrid().children().offset()
-			)
-		},
-		m_pgrid_update_done{
-			std::make_unique<ChangesGridType>(
-				surface_.isogrid().children().size(), surface_.isogrid().children().offset()
-			)
-		}
-	{}
-
-	/**
-	 * Notify of an update to the surface in order to track changes.
-	 *
-	 * This should be called whenever the surface is updated to ensure that eventual
-	 * re-polygonisation only needs to update those spatial partitions that have actually changed.
-	 */
-	void notify()
-	{
-		static const TupleIdx num_lists = m_psurface->isogrid().children().lookup().num_lists;
-
-		// Cycle outermost bands of delta update spatial partitions. We have three cases:
-		// * Partition is currently polygonised, and since its in the delta grid it needs updating.
-		// * Partition is not currently polygonised, but isogrid is tracking it, in which case it
-		//   needs polygonising.
-		// * Partition is not currently polygonised and isogrid is no longer tracking, so we no
-		//   longer need to remember it.
-		for (TupleIdx layer_idx = 0; layer_idx <= num_lists; layer_idx += num_lists - 1) {
-			for (const PosIdx pos_idx_child : m_psurface->delta(layer_idx))
-			{
-				bool is_active = pself->children().get(pos_idx_child).is_active();
-
-				for (
-					TupleIdx layer_idx = 0; !is_active && layer_idx <= num_lists;
-					layer_idx += num_lists - 1
-				) {
-					is_active = m_psurface->isogrid().children().lookup().is_tracked(
-						pos_idx_child, layer_idx
-					);
-				}
-
-				if (is_active)
-					m_pgrid_update_pending->track(pos_idx_child);
-				else
-					m_pgrid_update_pending->untrack(pos_idx_child);
-			}
-		}
-
-		// Cycle outermost status change lists, where a child may need resetting.
-		for (TupleIdx layer_idx = 0; layer_idx <= num_lists; layer_idx += num_lists - 1)
-		{
-			for (
-				const PosIdx pos_idx_child : m_psurface->status_change(layer_idx)
-			) {
-				if (pself->children().get(pos_idx_child).is_active())
-					m_pgrid_update_pending->track(pos_idx_child);
-			}
-		}
-	}
-
-	/**
-	 * Repolygonise partitions marked as changed since last polygonisation.
-	 */
-	void march()
-	{
-		#pragma omp parallel for
-		for (ListIdx list_idx = 0; list_idx < m_pgrid_update_pending->list().size(); list_idx++)
-		{
-			const PosIdx pos_idx_child = m_pgrid_update_pending->list()[list_idx];
-
-			ChildType& child = pself->children().get(pos_idx_child);
-
-			// If isogrid child partition is active, then polygonise it.
-			if (m_psurface->isogrid().children().get(pos_idx_child).is_active())
-			{
-				if (child.is_active())
-					child.reset();
-				else
-					child.activate();
-				child.march();
-
-			} else {
-				// Otherwise isogrid child partition has become inactive, so destroy the poly child.
-				if (child.is_active())
-					child.deactivate();
-			}
-		}
-
-		std::swap(m_pgrid_update_pending, m_pgrid_update_done);
-		m_pgrid_update_pending->reset();
-	}
-
-
-	/**
-	 * Add all active poly childs and isogrid childs to change tracking for (re)polygonisation.
-	 */
-	void invalidate()
-	{
-		static const TupleIdx num_lists = m_psurface->isogrid().children().lookup().num_lists;
-
-		// Remove pending changes, we're about to reconstruct the list.
-		m_pgrid_update_pending->reset();
-		// Flag curently active Poly::Single childs for re-polygonisation (or deactivation).
-		for (const PosIdx pos_idx_child : pself->children().lookup().list())
-			m_pgrid_update_pending->track(pos_idx_child);
-
-		// Flag active outer-layer isogrid childs for re-polygonisation.
-		for (TupleIdx layer_idx = 0; layer_idx <= num_lists; layer_idx += num_lists - 1)
-		{
-			for (
-				const PosIdx pos_idx_child :
-				m_psurface->isogrid().children().lookup().list(layer_idx)
-			) {
-				m_pgrid_update_pending->track(pos_idx_child);
-			}
-		}
-	}
-
-	/**
-	 * Get list of partitions that were updated.
-	 *
-	 * @return list of position indices of partitions that were repolygonised in the last `march`.
-	 */
-	const PosIdxList& changes() const
-	{
-		return m_pgrid_update_done->list();
-	}
-};
-
-
-template <class Derived>
-class Reset : protected Tracked::SingleList::Reset<Derived>
-{
-private:
-	using Base = Tracked::SingleList::Reset<Derived>;
-	/// Dimension of the grid.
-	static const Dim t_dims = Traits<Derived>::t_dims;
-	/// D-dimensional signed integer vector.
-	using VecDi = Felt::VecDi<t_dims>;
-
-protected:
-
-	/**
-	 * Reset without deallocating.
-	 *
-	 * Visit all vertices in lookup grid and set to null value then resize vertex and simplex lists.
-	 */
-	void reset()
-	{
-		Base::reset();
-		pself->m_a_vtx.resize(0);
-		pself->m_a_spx.resize(0);
-	}
-};
-
-
-template <class Derived>
-class Resize : protected Tracked::Resize<Derived>
-{
-private:
-	using Base = Tracked::Resize<Derived>;
-	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
-	/// Isogrid child type.
-	using IsoChild = typename TraitsType::IsoGridType::ChildType;
-	/// Dimension of the grid.
-	static const Dim t_dims = TraitsType::t_dims;
-	/// D-dimensional signed integer vector.
-	using VecDi = Felt::VecDi<t_dims>;
-protected:
-
-	/**
-	 * Resize to fit size of isogrid child spatial partition.
-	 *
-	 * Will resize to one more than isochild size, since neighbouring Polys must overlap.
-	 *
-	 * @param size_ size of isogrid child partition.
-	 * @param offset_ offset of isogrid child partition.
-	 */
-	void resize(const VecDi& size_, const VecDi& offset_)
-	{
-		static const VecDi one = VecDi::Constant(1);
-		static const VecDi two = VecDi::Constant(2);
-
-		const VecDi& size = size_ + two;
-		const VecDi& offset = offset_ - one;
-
-		Base::resize(size, offset);
-	}
-};
-
-
-template <class Derived>
-class March {
-private:
-	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
-	/// Isogrid to (partially) polygonise.
-	using IsoGridType = typename TraitsType::IsoGridType;
-	/// Spatial partition type this poly will be responsible for.
-	using IsoChildType = typename IsoGridType::ChildType;
-	/// Spatial partition type this poly will be responsible for.
-	using IsoLookupType = typename IsoChildType::LookupType;
-	/// Vertex index tuple type (for spatial lookup grid).
-	using IdxTuple = typename TraitsType::LeafType;
-	/// Vertex type.
-	using Vertex = typename TraitsType::Vertex;
-	/// Simplex type.
-	using Simplex = typename TraitsType::Simplex;
-	/// Vertex array type for vertex storage.
-	using VtxArray = std::vector<Vertex>;
-	/// Simplex array type for simplex storage.
-	using SpxArray = std::vector<Simplex>;
-	/// Cube edge type.
-	using Edge = typename TraitsType::Edge;
-	/// Dimension of isogrid to polygonise.
-	static constexpr Dim t_dims = TraitsType::t_dims;
-	/// Integer vector.
-	using VecDi = Felt::VecDi<t_dims>;
-	/// Float vector.
-	using VecDf = Felt::VecDf<t_dims>;
-
-	/// Small epsilon value within which we consider vertex position as "exact".
-	static constexpr Distance epsilon = std::numeric_limits<Distance>::epsilon();
-
-	/// Isogrid to (partially) polygonise.
-	const IsoGridType*		m_pisogrid;
-	IsoLookupType const*	m_pisolookup;
-
-protected:
-	/// List of interpolated vertices.
-	VtxArray	m_a_vtx;
-	/// List of simplexes (i.e. lines for 2D or triangles for 3D).
-	SpxArray	m_a_spx;
-
-	March(const IsoGridType& isogrid_) : m_pisogrid{&isogrid_}, m_pisolookup{nullptr}
-	{}
-
-	/**
-	 * Update the
-	 */
-	void march()
-	{
-		for (TupleIdx list_idx = 0; list_idx < m_pisolookup->num_lists; list_idx++)
-		{
-			for (PosIdx pos_idx_leaf : m_pisolookup->list(list_idx))
-			{
-				spx(m_pisolookup->index(pos_idx_leaf));
-			}
-		}
-	}
-
-	/**
-	 * Bind this Poly to the given Lookup grid giving positions to march over.
-	 *
-	 * I.e. a child spatial partition of the isogrid.
-	 *
-	 * @param pisolookup
-	 */
-	void bind(const IsoLookupType& isolookup)
-	{
-		m_pisolookup = &isolookup;
-	}
-
-	/**
-	 * Get a pointer to the isogrid child's lookup grid that gives points to polygonise.
-	 *
-	 * @return lookup grid to iterate over.
-	 */
-	IsoLookupType const* bind() const
-	{
-		return m_pisolookup;
-	}
-
-	/**
-	 * Get the vertex array.
-	 *
-	 * @return
-	 */
-	const VtxArray& vtxs() const
-	{
-		return m_a_vtx;
-	}
-
-	/**
-	 * Get the array of simplices.
-	 *
-	 * @return
-	 */
-	const SpxArray& spxs() const
-	{
-		return m_a_spx;
-	}
-
-private:
-	/**
-	 * Generate simplex(es) for isogrid grid at position pos.
-	 *
-	 * @param pos
-	 * @param m_isogrid
-	 */
-	void spx(const VecDi& pos)
-	{
-		// TODO: this is here for consistency only, since the marching
-		// cubes implementation marches in the negative z-axis, but
-		// positive x and y axes. Hence an offset is required so that the
-		// negative z-axis marching is compensated by shifting the
-		// calculation in the +z direction by one grid node.
-		// (NOTE: has no effect for 2D).
-		const VecDi pos_calc = pos - TraitsType::SpxGridPosOffset;
-
-		// Get corner inside-outside bitmask at this position.
-		const unsigned short mask = this->mask(pos_calc);
-		// Array of indices of zero-crossing vertices along each axis from
-		// this corner.
-		ListIdx vtx_idxs[TraitsType::num_edges];
-		// Look up the edges that are crossed from the corner mask.
-		unsigned short vtx_mask = TraitsType::vtx_mask[mask];
-		const short* vtx_order = TraitsType::vtx_order[mask];
-
-		// Cube corners are all inside or all outside.
-		if (vtx_order[0] == -1)
-			return;
-
-		// Loop over each crossed edge in the cube, looking up
-		// (or calculating, if unavailable) the vertices at the
-		// zero-crossing.
-		for (ListIdx edge_idx = 0; edge_idx < TraitsType::num_edges; edge_idx++ )
-		{
-			// Check if current edge is crossed by the zero curve.
-			if ((vtx_mask >> edge_idx) & 1)
-			{
-				const Edge& edge = TraitsType::edges[edge_idx];
-				// Edges are defined as an axis and an offset.
-				// Look up index of vertex along current edge.
-				vtx_idxs[edge_idx] = idx(pos_calc + edge.offset, edge.axis);
-			}
-		}
-
-		// Check for degenerates. Compare every calculated vertex to every
-		// other to ensure they are not located on top of one-another.
-		// E.g. corners that lie at precisely zero will have D vertices that
-		// all lie on that corner.
-		// TODO: can't just throw away all triangles like this - others may
-		// be valid - must do a per-simplex degenerate check. Maybe not
-		// worth it, though.
-//			for (UINT edge_idx1 = 0; edge_idx1 < PolyBase<D>::num_edges - 1;
-//				edge_idx1++
-//			) {
-//				for (UINT edge_idx2 = edge_idx1+1;
-//					edge_idx2 < PolyBase<D>::num_edges; edge_idx2++)
-//				{
-//					// Check both edges are bisected by the zero-curve.
-//					if (!(((vtx_mask >> edge_idx1) & 1)
-//						&& ((vtx_mask >> edge_idx2) & 1)))
-//						continue;
-//
-//					// Get the position vector component of the vertex
-//					// information for both edges.
-//					const VecDf& pos1 = this->vtx(vtx_idxs[edge_idx1]).pos;
-//					const VecDf& pos2 = this->vtx(vtx_idxs[edge_idx2]).pos;
-//					const FLOAT dist = (pos1 - pos2).squaredNorm();
-//					// If they are essentially the same vertex,
-//					// then there is no simplex for this cube.
-//					if (dist <= ThisType::epsilon())
-//						return;
-//				}
-//			}
-
-		// Join the vertices along each edge that the surface crosses to
-		// make a simplex (or simplices).
-		// The vtx_order lookup translates corner in-out mask to CCW
-		// vertex ordering. We take D elements at a time from the lookup,
-		// with each successive subset of D elements forming the next
-		// simplex.
-		for (ListIdx order_idx = 0; vtx_order[order_idx] != -1; order_idx += t_dims )
-		{
-			Simplex simplex;
-			// A simplex for number of dimensions D has D vertices,
-			// i.e. D endpoints.
-			for (Dim endpoint = 0; endpoint < t_dims; endpoint++)
-			{
-				// Each vertex of the simplex is stored as an index
-				// reference into the 'global' vertex array.
-				simplex.idxs(endpoint) = vtx_idxs[ vtx_order[order_idx+ListIdx(endpoint)] ];
-			}
-			// Append the simplex to the list of simplices that make up the
-			// polygonisation of this grid location.
-			m_a_spx.push_back(std::move(simplex));
-		}
-	} // End spx.
-
-
-	/**
-	 * Lookup, or calculate then store, and return the index into the vertex
-	 * array of a vertex at the zero-crossing of isogrid at pos_a along axis.
-	 *
-	 * @return
-	 */
-	ListIdx idx(const VecDi& pos_a, const Dim axis)
-	{
-		// Check lookup to see if vertex has already been calculated.
-		const ListIdx idx_lookup = pself->get(pos_a)(axis);
-		if (idx_lookup != Felt::null_idx) {
-			return idx_lookup;
-		}
-
-		// Position of opposite endpoint.
-		VecDi pos_b(pos_a);
-		pos_b(axis) += 1;
-
-		// Value of isogrid at each endpoint of this edge.
-		const Distance val_a = m_pisogrid->get(pos_a);
-		const Distance val_b = m_pisogrid->get(pos_b);
-
-		// The newly created vertex.
-		Vertex vtx;
-
-		// Check if lies very close to an endpoint or midpoint, if so then no need (and possibly
-		// dangerous) to interpolate.
-		if (std::abs(val_a) <= epsilon) {
-			vtx = Vertex(m_pisogrid, pos_a);
-		} else if (std::abs(val_b) <= epsilon) {
-			vtx = Vertex(m_pisogrid, pos_b);
-		} else {
-			Distance mu;
-
-			// If close to midpoint then put at midpoint.
-			if (std::abs(val_a - val_b) <= epsilon) {
-				mu = Distance(0.5f);
-			} else
-			// Otherwise interpolate between endpoints.
-			{
-				mu = val_a / (val_a - val_b);
-			}
-
-			const VecDf vec_a = pos_a.template cast<FLOAT>();
-			const VecDf vec_b = pos_b.template cast<FLOAT>();
-			const VecDf vec_c = vec_a + (vec_b - vec_a) * mu;
-
-			vtx = Vertex(m_pisogrid, vec_c);
-		}
-
-		// Append newly created vertex to the cache and return a reference  to it.
-		const ListIdx idx = m_a_vtx.size();
-		m_a_vtx.push_back(std::move(vtx));
-		pself->get(pos_a)(axis) = idx;
-		pself->lookup().track(pself->lookup().index(pos_a));
-		return idx;
-	}
-
-	/**
-	 * Calculate corner mask of cube at pos, based on inside-outside status
-	 * of corners in isogrid.
-	 *
-	 * @param isogrid
-	 * @param pos
-	 * @return
-	 */
-	unsigned short mask (const VecDi& pos_) const
-	{
-		// Num corners == 2^D.  That is, 4 for 2D, 8 for 3D.
-		unsigned short mask = 0;
-		const ListIdx num_corners = (1 << t_dims);
-		for (ListIdx idx = 0; idx < num_corners; idx++)
-		{
-			const VecDi corner = pos_ + TraitsType::corners[idx];
-			const Distance val = m_pisogrid->get(corner);
-			mask |= (unsigned short)((val > 0) << idx);
-		}
-		return mask;
-	}
-};
-
-
-template <Dim D, typename Dummy>
-class Traits
+template <class Derived, Dim D = Traits<Derived>::t_dims>
+class Geom
 {
 	static_assert(D == 2 || D == 3, "Poly only supports 2D or 3D polygonisations");
 };
@@ -599,8 +25,9 @@ class Traits
 /**
  * 2D-specific definitions.
  */
-template <typename Dummy>
-struct Traits<2, Dummy> {
+template <class Derived>
+struct Geom<Derived, 2>
+{
 	/**
 	 * A 2D vertex (position only).
 	 */
@@ -690,8 +117,8 @@ struct Traits<2, Dummy> {
 /**
  * 3D-specific definitions.
  */
-template <typename Dummy>
-struct Traits<3, Dummy> {
+template <class Derived>
+struct Geom<Derived, 3> {
 	/**
 	 * A 3D vertex (position and normal).
 	 */
@@ -829,8 +256,8 @@ struct Traits<3, Dummy> {
 /*
  * Relative position of corners in CCW order.
  */
-template <typename Dummy>
-const std::array<Vec2i, 4> Traits<2, Dummy>::corners = {
+template <class Derived>
+const std::array<Vec2i, 4> Geom<Derived, 2>::corners = {
 	Vec2i(0, 0),
 	Vec2i(1, 0),
 	Vec2i(1, 1),
@@ -840,22 +267,22 @@ const std::array<Vec2i, 4> Traits<2, Dummy>::corners = {
 /*
  * Array of edge definitions (offset, direction) matching ::corners.
  */
-template <typename Dummy>
-const typename Traits<2, Dummy>::Edge Traits<2, Dummy>::edges [] = {
+template <class Derived>
+const typename Geom<Derived, 2>::Edge Geom<Derived, 2>::edges [] = {
 	// (x,y,axis)
 	{ Vec2i(0, 0), 0 },
 	{ Vec2i(1, 0), 1 },
 	{ Vec2i(0, 1), 0 },
 	{ Vec2i(0, 0), 1 }
 };
-template <typename Dummy>
-const Vec2i Traits<2, Dummy>::SpxGridPosOffset(0,0);
+template <class Derived>
+const Vec2i Geom<Derived, 2>::SpxGridPosOffset(0,0);
 
 /*
  * Lookup from corner mask to edge mask.
  */
-template <typename Dummy>
-const unsigned short Traits<2, Dummy>::vtx_mask [] ={
+template <class Derived>
+const unsigned short Geom<Derived, 2>::vtx_mask [] ={
 	0b0000,
 	0b1001,
 	0b0011,
@@ -878,8 +305,8 @@ const unsigned short Traits<2, Dummy>::vtx_mask [] ={
  * A lookup from inside/outside status bitmask to vertex ordering to
  * create representative simplices (lines).
  */
-template <typename Dummy>
-const short Traits<2, Dummy>::vtx_order [][4] = {
+template <class Derived>
+const short Geom<Derived, 2>::vtx_order [][4] = {
 	{ -1, -1, -1, -1 },
 	{  3,  0, -1, -1 },
 	{  0,  1, -1, -1 },
@@ -907,8 +334,8 @@ const short Traits<2, Dummy>::vtx_order [][4] = {
 /*
  * Lookup from corner mask to edge mask.
  */
-template <typename Dummy>
-const unsigned short Traits<3, Dummy>::vtx_mask [] = {
+template <class Derived>
+const unsigned short Geom<Derived, 3>::vtx_mask [] = {
 	0x0  , 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
 	0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
 	0x190, 0x99 , 0x393, 0x29a, 0x596, 0x49f, 0x795, 0x69c,
@@ -946,8 +373,8 @@ const unsigned short Traits<3, Dummy>::vtx_mask [] = {
 /**
  * Given node, march cube toward back, up and right (0,0,0)->(1,1,-1).
  */
-template <typename Dummy>
-const std::array<Vec3i, 8> Traits<3, Dummy>::corners = {
+template <class Derived>
+const std::array<Vec3i, 8> Geom<Derived, 3>::corners = {
 	Vec3i( 0,  0,  0),	// c0
 	Vec3i( 1,  0,  0),	// c1
 	Vec3i( 1,  0, -1),	// c2
@@ -961,8 +388,8 @@ const std::array<Vec3i, 8> Traits<3, Dummy>::corners = {
 /**
  * Array of edge definitions (offset, direction) matching ::corners.
  */
-template <typename Dummy>
-const typename Traits<3, Dummy>::Edge Traits<3, Dummy>::edges [] = {
+template <class Derived>
+const typename Geom<Derived, 3>::Edge Geom<Derived, 3>::edges [] = {
 	// (x,y,z, axis)
 	{ Vec3i( 0,  0,  0), 	0 },	// e0
 	{ Vec3i( 1,  0, -1), 	2 },	// e1
@@ -978,14 +405,14 @@ const typename Traits<3, Dummy>::Edge Traits<3, Dummy>::edges [] = {
 	{ Vec3i( 0,  0, -1), 	1 }		// e11
 };
 
-template <typename Dummy>
-const Vec3i Traits<3, Dummy>::SpxGridPosOffset(0,0,-1);
+template <class Derived>
+const Vec3i Geom<Derived, 3>::SpxGridPosOffset(0,0,-1);
 
 /**
  * Ordering of vertices to build simplex(es).
  */
-template <typename Dummy>
-const short Traits<3, Dummy>::vtx_order [][16] = {
+template <class Derived>
+const short Geom<Derived, 3>::vtx_order [][16] = {
 	{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	{0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	{0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -1244,9 +671,8 @@ const short Traits<3, Dummy>::vtx_order [][16] = {
 	{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 };
 
-
-} // Poly
-} // Mixin
-} // Impl
-} // Felt
+} // Poly.
+} // Mixin.
+} // Impl.
+} // Felt.
 #endif /* INCLUDE_FELT_IMPL_MIXIN_POLYMIXIN_HPP_ */
