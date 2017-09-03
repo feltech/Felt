@@ -159,8 +159,14 @@ public:
 
 } // Tracked.
 } // Partitioned.
+} // Impl.
+} // Felt.
 
 
+namespace Felt
+{
+namespace Impl
+{
 /**
  * Traits for Partitioned::Lookup.
  *

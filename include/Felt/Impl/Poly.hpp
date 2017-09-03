@@ -368,7 +368,14 @@ private:
 	}
 };
 } // Poly.
+} // Impl.
+} // Felt.
 
+
+namespace Felt
+{
+namespace Impl
+{
 /**
  * Traits for Poly::Single.
  *

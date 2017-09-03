@@ -224,7 +224,14 @@ public:
 };
 
 } // Lookup
+} // Impl
+} // Felt
 
+
+namespace Felt
+{
+namespace Impl
+{
 /**
  * Traits for Lookup::Simple.
  *

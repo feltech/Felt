@@ -154,7 +154,14 @@ public:
 
 
 } // Tracked.
+} // Impl
+} // Felt
 
+
+namespace Felt
+{
+namespace Impl
+{
 /**
  * Traits for Tracked::SingleByRef.
  *
@@ -220,7 +227,5 @@ struct Traits< Tracked::MultiListMultiIdxByRef<T, D, N> > : public DefaultTracke
 
 } // Impl
 } // Felt
-
-
 
 #endif /* FELT_PUBLIC_TRACKED_HPP_ */

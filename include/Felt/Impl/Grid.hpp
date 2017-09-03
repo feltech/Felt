@@ -96,8 +96,14 @@ public:
 	using SnapshotImpl::array;
 };
 } // Grid
+} // Impl
+} // Felt
 
 
+namespace Felt
+{
+namespace Impl
+{
 /**
  * Traits for Grid::Simple.
  *
