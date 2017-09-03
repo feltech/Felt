@@ -8,6 +8,23 @@
 
 namespace Felt
 {
+
+/**
+ * Polygonisation for a spatially partitioned level set surface.
+ *
+ * Holds child `Poly::Single` objects that are dynamically created, updated and destroyed as the
+ * surface changes.
+ *
+ * Call `notify` each time the surface is updated to keep track of spatial partitions that need
+ * (re)polygonising.
+ *
+ * Alternatively call `invalidate` to mark the whole isogrid for (re)polygonisation.
+ *
+ * Call `march` to go through tracked changes, updating the polygonisation of flagged spatial
+ * partitions.
+ *
+ * After each `march`, call `changes` to get the position indices of partitions that were updated.
+ */
 template <class TSurface>
 class Polys : private Impl::Mixin::Partitioned::Children< Polys<TSurface> >
 {

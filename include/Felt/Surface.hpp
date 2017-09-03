@@ -39,11 +39,10 @@ namespace Felt
 using LayerId = INT;
 
 /**
- * A n-dimensional sparse-field spatially partitioned level set.
+ * Arbitrarily-dimensional sparse-field spatially partitioned level set surface.
  *
  * @tparam D the number of dimensions of the surface.
- * @tparam L the number of narrow band layers surrounding the zero-level
- * surface.
+ * @tparam L the number of narrow band layers surrounding the zero-layer (surface).
  */
 template <Dim D, LayerId L>
 class Surface
