@@ -13,6 +13,10 @@ namespace Impl
 {
 namespace Grid
 {
+
+/**
+ * A simple grid storing arbitrary types with by-value getter/setter.
+ */
 template <typename T, Dim D>
 class Simple :
 	FELT_MIXINS(
@@ -49,6 +53,11 @@ public:
 };
 
 
+/**
+ * A simple grid storing arbitrary types with by-value getter/setter.
+ *
+ * Includes Eigen::Array access to underlying data.
+ */
 template <typename T, Dim D>
 class Snapshot :
 	FELT_MIXINS(
