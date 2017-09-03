@@ -21,7 +21,7 @@ Felt leverages C++14 and is header-only, with a dependencies on [boost](http://w
 [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) libraries.
 
 
-##To do
+## To do
 The library is in a stable state, but the documentation needs work.
 
 There are Doxygen annotations for almost all functions and classes, and quite extensive test cases.
@@ -35,7 +35,7 @@ the amazing game engine [Urho3D](https://urho3d.github.io/) in my test-bed demo 
 there to form an optional part of the main Felt project.
 
 
-##Example
+## Example
 A super simple example from the tests:
 
 ```cpp
@@ -84,6 +84,6 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid with 3x3 partitions")
 				CHECK(diff == Approx(0));
 ```
 
-##Legal
+## Legal
 _Copyright David Feltell all rights reserved._
 _Released under [GPL 3](http://www.gnu.org/licenses/gpl-3.0.en.html) (for now):_
