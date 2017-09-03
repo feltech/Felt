@@ -5,7 +5,7 @@
 #include <Felt/Impl/Mixin/GridMixin.hpp>
 #include <Felt/Impl/Mixin/PolyMixin.hpp>
 #include <Felt/Impl/Mixin/TrackedMixin.hpp>
-#include <Felt/Impl/Surface.hpp>
+#include <Felt/Surface.hpp>
 
 namespace Felt
 {
@@ -55,36 +55,7 @@ public:
 	using MarchImpl::vtxs;
 	using ResetterImpl::reset;
 };
-
-
-template <class TSurface>
-class Grid :
-	FELT_MIXINS(
-		(Grid<TSurface>),
-		(Poly::Children)(Poly::Update)
-	)
-private:
-	using ThisType = Grid<TSurface>;
-	using TraitsType = Traits<ThisType>;
-	using ChildType = typename TraitsType::ChildType;
-
-	using ChildrenImpl = Impl::Mixin::Poly::Children<ThisType>;
-	using UpdateImpl = Impl::Mixin::Poly::Update<ThisType>;
-public:
-	Grid(const TSurface& surface_) :
-		ChildrenImpl{surface_.isogrid()}, UpdateImpl{surface_}
-	{}
-
-	using ChildrenImpl::children;
-	using UpdateImpl::changes;
-	using UpdateImpl::invalidate;
-	using UpdateImpl::notify;
-	using UpdateImpl::march;
-};
-
-
 } // Poly.
-
 
 /**
  * Traits for Poly::Single.
@@ -100,32 +71,12 @@ struct Traits< Poly::Single<TIsoGrid> > : Mixin::Poly::Traits<Traits<TIsoGrid>::
 	using LeafType = Felt::VecDu<t_dims>;
 	/// Type of lookup grid for tracking active positions.
 	using LookupType = Lookup::LazySingleListSingleIdx<t_dims>;
-	/// TIsoGrid type that will be polygonised.
+	/// IsoGrid type that will be polygonised.
 	using IsoGridType = TIsoGrid;
 };
 
-
-/**
-  * Traits for Poly::Grid.
- *
- * @tparam SurfaceType surface type to polygonise.
- */
-template <class TSurface>
-struct Traits< Poly::Grid<TSurface> >
-{
-	/// Type of surface to polygonise.
-	using SurfaceType = TSurface;
-	/// Isogrid type that the surface wraps.
-	using IsoGridType = typename SurfaceType::IsoGrid;
-	/// Dimension of grid.
-	static constexpr Dim t_dims = Traits<IsoGridType>::t_dims;
-	/// Child poly type to polygonise a single spatial partition.
-	using ChildType = Impl::Poly::Single<IsoGridType>;
-	/// Children grid type to store and track active child polys.
-	using ChildrenType = Impl::Tracked::SingleListSingleIdxByRef<ChildType, t_dims>;
-};
-
 } // Impl.
+
 } // Felt.
 
 #endif /* INCLUDE_FELT_IMPL_POLY_HPP_ */

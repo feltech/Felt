@@ -69,14 +69,14 @@ private:
 	using typename BaseType::VecDi;
 protected:
 	/// List of position vectors, each of which have a corresponding grid node storing it's index.
-	PosArray	m_list_pos_idxs;
+	PosIdxList	m_list_pos_idxs;
 
 	/**
 	 * Get tracking list.
 	 *
 	 * @return tracking list.
 	 */
-	const PosArray& list() const
+	const PosIdxList& list() const
 	{
 		return m_list_pos_idxs;;
 	}
@@ -85,7 +85,7 @@ protected:
 	 *
 	 * @return tracking list.
 	 */
-	PosArray& list()
+	PosIdxList& list()
 	{
 		return m_list_pos_idxs;;
 	}
@@ -240,7 +240,7 @@ private:
 	static const TupleIdx t_num_lists = TraitsType::t_num_lists;
 protected:
 	/// N-tuple of lists of grid positions - the tracking lists.
-	Tuple<PosArray, t_num_lists>	m_a_list_pos_idxs;
+	Tuple<PosIdxList, t_num_lists>	m_a_list_pos_idxs;
 protected:
 	/**
 	 * Get tracking list by id.
@@ -248,7 +248,7 @@ protected:
 	 * @param list_idx_ id of tracking list to get.
 	 * @return tracking list at given index.
 	 */
-	PosArray& list (const TupleIdx list_idx_)
+	PosIdxList& list (const TupleIdx list_idx_)
 	{
 		return m_a_list_pos_idxs[list_idx_];
 	}
@@ -259,7 +259,7 @@ protected:
 	 * @param list_idx_ id of tracking list to get.
 	 * @return tracking list at given index.
 	 */
-	const PosArray& list (const TupleIdx list_idx_) const
+	const PosIdxList& list (const TupleIdx list_idx_) const
 	{
 		return m_a_list_pos_idxs[list_idx_];
 	}
@@ -314,7 +314,7 @@ protected:
 			#endif
 			return false;
 		}
-		PosArray& list_to_update = m_a_list_pos_idxs[list_idx_];
+		PosIdxList& list_to_update = m_a_list_pos_idxs[list_idx_];
 		pself->set(pos_idx_, ListIdx(list_to_update.size()));
 		list_to_update.push_back(pos_idx_);
 		return true;
@@ -339,7 +339,7 @@ protected:
 			return;
 
 		// Get a reference to the tracking list that we now need to update.
-		PosArray& list_to_update = m_a_list_pos_idxs[list_idx_];
+		PosIdxList& list_to_update = m_a_list_pos_idxs[list_idx_];
 
 		// If this is not the last remaining position in the array, then
 		// we must move the last position to this position and update the
@@ -368,7 +368,7 @@ protected:
 	{
 		for (TupleIdx list_idx = 0; list_idx < t_num_lists; list_idx++)
 		{
-			PosArray& list_pos_idxs = m_a_list_pos_idxs[list_idx];
+			PosIdxList& list_pos_idxs = m_a_list_pos_idxs[list_idx];
 			for (const PosIdx pos_idx : list_pos_idxs)
 				pself->set(pos_idx, Felt::null_idx);
 			list_pos_idxs.clear();
@@ -401,7 +401,7 @@ protected:
 private:
 	/// List of position vectors, each of which have a corresponding grid node storing it's index.
 	/// N-tuple of lists of grid positions - the tracking lists.
-	Tuple<PosArray, t_num_lists>	m_a_list_pos_idxs;
+	Tuple<PosIdxList, t_num_lists>	m_a_list_pos_idxs;
 protected:
 
 	/**
@@ -410,7 +410,7 @@ protected:
 	 * @param list_idx_ id of tracking list to get.
 	 * @return tracking list at given index.
 	 */
-	PosArray& list (const TupleIdx list_idx_)
+	PosIdxList& list (const TupleIdx list_idx_)
 	{
 		return m_a_list_pos_idxs[list_idx_];
 	}
@@ -421,7 +421,7 @@ protected:
 	 * @param list_idx_ id of tracking list to get.
 	 * @return tracking list at given index.
 	 */
-	const PosArray& list (const TupleIdx list_idx_) const
+	const PosIdxList& list (const TupleIdx list_idx_) const
 	{
 		return m_a_list_pos_idxs[list_idx_];
 	}
@@ -487,7 +487,7 @@ protected:
 			#endif
 			return false;
 		}
-		PosArray& list_to_update = m_a_list_pos_idxs[list_idx_];
+		PosIdxList& list_to_update = m_a_list_pos_idxs[list_idx_];
 		// Update value in grid at appropriate tuple index.
 		idx = ListIdx(list_to_update.size());
 		list_to_update.push_back(pos_idx_);
@@ -513,7 +513,7 @@ protected:
 			return;
 
 		// Get a reference to the tracking list that we now need to update.
-		PosArray& list_to_update = m_a_list_pos_idxs[list_idx_];
+		PosIdxList& list_to_update = m_a_list_pos_idxs[list_idx_];
 
 		// If this is not the last remaining position in the array, then
 		// we must move the last position to this position and update the
@@ -541,7 +541,7 @@ protected:
 	{
 		for (TupleIdx list_idx = 0; list_idx < t_num_lists; list_idx++)
 		{
-			PosArray& list_pos_idxs = m_a_list_pos_idxs[list_idx];
+			PosIdxList& list_pos_idxs = m_a_list_pos_idxs[list_idx];
 			for (const PosIdx pos_idx : list_pos_idxs)
 				pself->get(pos_idx)[list_idx] = Felt::null_idx;
 			list_pos_idxs.clear();

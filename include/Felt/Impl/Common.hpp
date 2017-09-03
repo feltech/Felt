@@ -1,6 +1,7 @@
 #ifndef INCLUDE_FELT_IMPL_COMMON_HPP_
 #define INCLUDE_FELT_IMPL_COMMON_HPP_
 
+/// Format Eigen vectors as row vectors, i.e. "(1,3,2)".
 #define EIGEN_DEFAULT_IO_FORMAT Eigen::IOFormat(3, DontAlignCols, " ", ",", "", "", "(", ")")
 
 #include <vector>
@@ -93,7 +94,7 @@ using Vec3i = VecDi<3>;
 /**
  * Array of position indices.
  */
-using PosArray = std::vector<PosIdx>;
+using PosIdxList = std::vector<PosIdx>;
 /**
  * Array of grid data.
  */

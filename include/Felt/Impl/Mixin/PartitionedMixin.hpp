@@ -3,7 +3,7 @@
 #include <memory>
 #include <mutex>
 
-#include <Felt/Util.hpp>
+#include <Felt/Impl/Util.hpp>
 #include <Felt/Impl/Grid.hpp>
 #include <Felt/Impl/Tracked.hpp>
 
@@ -148,7 +148,7 @@ protected:
 	template<typename Fn>
 	void leafs(const TupleIdx layer_idx_, Fn&& fn_) const
 	{
-		const PosArray& pos_idxs_child = pself->children().lookup().list(layer_idx_);
+		const PosIdxList& pos_idxs_child = pself->children().lookup().list(layer_idx_);
 		const ListIdx num_childs = pos_idxs_child.size();
 
 		for (ListIdx list_idx = 0; list_idx < num_childs; list_idx++)
@@ -467,7 +467,7 @@ protected:
 		// Untrack position in child sub-grid.
 		child.lookup().untrack(pos_idx_leaf_, list_idx_);
 		child.set(pos_idx_leaf_, background_);
-		const PosArray& pos_idxs = child.lookup().list(list_idx_);
+		const PosIdxList& pos_idxs = child.lookup().list(list_idx_);
 
 		// If tracking list is empty in child, untrack parent.  No race condition here, as long as
 		// we stick to one thread per child rule.

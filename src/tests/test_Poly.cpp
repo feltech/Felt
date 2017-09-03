@@ -1,616 +1,905 @@
-#include "catch.hpp"
-
-#define _TESTING
-
-#include "Felt/Poly.hpp"
+#include <Felt/Impl/Poly.hpp>
+#include <Felt/Polys.hpp>
+#include <Felt/Surface.hpp>
 
 #include "Utils.hpp"
+#include "catch.hpp"
 
-using namespace felt;
-/**
- * @defgroup Tests
- * @defgroup PolygonisationTests Polygonisation Tests
- *
- * Tests for polygonisation of scalar field within narrow band of felt::Surface.
- *
- * @{
- * 	@name Poly
- * 	@ref felt::Poly
- */
-SCENARIO("Poly")
+using namespace Felt;
+
+
+SCENARIO("Impl::Poly::Single")
 {
-	/**
-	 * Initialsing.
-	 */
-	WHEN("init")
+
+GIVEN("an empty 3D polygonisaton and a 9x9x9 3-layer surface with 3x3x3 partitions")
+{
+	using SurfaceType = Surface<3, 3>;
+	using IsoGridType = typename SurfaceType::IsoGrid;
+	using IsoChildType = typename IsoGridType::ChildType;
+	using PolyType = Impl::Poly::Single<IsoGridType>;
+
+	SurfaceType surface{Vec3i{9,9,9}, Vec3i{3,3,3}};
+	PolyType poly{surface.isogrid()};
+
+	THEN("poly is initially empty")
 	{
-		Surface<2> surface2D(Vec2u(9,9));
-		Surface<3> surface3D(Vec3u(9,9,9));
-		// Create a 2D polygonisation in a 9x9 embedding, offset by (-4,-4)
-		// so that (0,0) in coordinate space translates to (5,5) in grid space.
-		Poly<2> poly2D(surface2D.isogrid().size(), surface2D.isogrid().offset());
-		// Similarly, create a 3D polygonisation in a 9x9x9 embedding.
-		Poly<3> poly3D(surface3D.isogrid().size(), surface3D.isogrid().offset());
-
-		// Create a 2D vertex, consisting simply of position.
-		Poly<2>::Vertex vertex2D;
-		vertex2D.pos(0) = 1;
-		vertex2D.pos(1) = 1;
-
-		// Create a 3D vertex, consisting of position and normal.
-		Poly<3>::Vertex vertex3D;
-		vertex3D.pos(0) = 1;
-		vertex3D.pos(1) = 1;
-		vertex3D.pos(2) = 1;
-		vertex3D.norm(0) = 1;
-		vertex3D.norm(1) = 1;
-		vertex3D.norm(2) = 1;
-
-		// Create an (uninitialised) 3D simplex (i.e. triangle).
-		Poly<3>::Simplex triangle;
-
-		CHECK(poly2D.vtx().size() == 0);
-
-		CHECK(poly3D.vtx().size() == 0);
-
-		// Add dummy vertex and simplex to the polygonisation object.
-		poly3D.vtx().push_back(std::move(vertex3D));
-		poly3D.spx().push_back(triangle);
-		CHECK(poly3D.spx().size() == 1);
-
-		// Reset the polygonisation.
-		poly3D.reset();
-		// Ensure vertices and simplices are destroyed.
-		CHECK(poly3D.vtx().size() == 0);
-		CHECK(poly3D.spx().size() == 0);
+		CHECK(poly.vtxs().size() == 0);
+		CHECK(poly.spxs().size() == 0);
 	}
 
-	GIVEN("a polygonisation attached to a 7x7 surface of 0.4 units radius")
+	WHEN("poly is sized to cover central partition and activated")
 	{
-		Surface<2> surface(Vec2u(7,7));
-		surface.seed(Vec2i(0,0));
-		surface.update([](auto& pos, auto& grid) {
-			return -0.4f;
-		});
+		const IsoChildType& isochild = surface.isogrid().children().get(Vec3i{0,0,0});
 
-		INFO(stringify_grid_slice(surface.isogrid()));
+		poly.resize(isochild.size(), isochild.offset());
+		poly.bind(isochild.lookup());
+		poly.activate();
 
-		Poly<2> poly(surface.isogrid().size(), surface.isogrid().offset());
-
-		WHEN("we calculate the vertex position between (0,0) and (1,0)")
+		AND_WHEN("attempting to polygonise when no surface has been constructed")
 		{
-			// Index in vertex array of vertex along edge from centre to +x.
-			UINT idx = poly.idx(Vec2i(0,0), 0, surface.isogrid());
+			poly.march();
 
-			THEN("the returned index is 0")
+			THEN("poly is still empty")
 			{
-				CHECK(idx == 0);
-			}
-
-			AND_WHEN("we retrieve the vertex")
-			{
-				const Poly<2>::Vertex& vertex = poly.vtx(idx);
-
-				THEN("the vertex position is interpolated away from the centre")
-				{
-					CHECK(vertex.pos == Vec2f(0.4f, 0));
-				}
+				CHECK(poly.vtxs().size() == 0);
+				CHECK(poly.spxs().size() == 0);
 			}
 		}
-	}
 
-	GIVEN("a polygonisation attached to a 7x7x7 surface of 0.4 units radius")
-	{
-		Surface<3> surface(Vec3u(7,7,7));
-		surface.seed(Vec3i(0,0,0));
-		surface.update([](auto& pos, auto& grid) {
-			return -0.4f;
-		});
-
-		INFO(stringify_grid_slice(surface.isogrid()));
-
-		Poly<3> poly(surface.isogrid().size(), surface.isogrid().offset());
-		// Reserve space to prevent reallocation when testing for equality of memory addresses.
-		poly.vtx().reserve(2);
-
-		WHEN("we request the vertex between (0,0,0) and (0,0,1)")
+		AND_WHEN("surface is seeded and expanded slightly")
 		{
-			// Index in vertex array of vertex along edge from centre to +z.
-			UINT idx = poly.idx(Vec3i(0,0,0), 2, surface.isogrid());
-
-			THEN("the returned index is 0")
-			{
-				CHECK(idx == 0);
-			}
-
-			AND_WHEN("we retrieve the vertex")
-			{
-				const Poly<3>::Vertex& vertex = poly.vtx(idx);
-
-				THEN("the vertex position is interpolated away from the centre")
-				{
-					CHECK(vertex.pos == Vec3f(0, 0, 0.4f));
-				}
-
-				THEN("the vertex normal is in the +z direction")
-				{
-					CHECK(vertex.norm == Vec3f(0, 0, 1.0f));
-				}
-
-				AND_WHEN("we retrieve another vertex")
-				{
-					UINT idx = poly.idx(Vec3i(0,0,-1), 2, surface.isogrid());
-
-					THEN("the new vertex's index is 1")
-					{
-						CHECK(idx == 1);
-					}
-
-					AND_WHEN("we request the previous vertex again")
-					{
-						UINT idx = poly.idx(Vec3i(0,0,0), 2, surface.isogrid());
-						const Poly<3>::Vertex& vertex_again = poly.vtx(idx);
-
-						THEN("the index is unchanged and the vertex is the same object")
-						{
-							CHECK(idx == 0);
-							CHECK(&vertex == &vertex_again);
-						}
-					}
-				}
-			}
-		}
-	}
-
-	/**
-	 * Test the cube corner inside/outside status bitmask.
-	 */
-	WHEN("mask_2D")
-	{
-		// Initialise a 2D grid for testing.
-		Surface<2> surface(Vec2u(9,9), Vec2u(9,9));
-		Poly<2> poly(surface.isogrid().size(), surface.isogrid().offset());
-		surface.isogrid().add_child(Vec2i(0, 0));
-		surface.isogrid().snapshot().data() = {
-			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3,
-			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
-			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
-			 3,	 2,	 1,	 0,	-1,	 0,	 1,	 2,	 3,
-			 2,	 1,	 0,	-1,	-2,	-1,	 0,  1,	 2,
-			 3,	 2,	 1,	 0,	-1,	 0,	 1,	 2,	 3,
-			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
-			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
-			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3
-		};
-
-		surface.isogrid().flush_snapshot();
-
-		unsigned short mask;
-		mask = Poly<2>::mask(surface.isogrid(), Vec2i(-3,-3));
-		// All outside = 1111.
-		CHECK(mask == 15);
-
-		mask = Poly<2>::mask(surface.isogrid(), Vec2i(0,0));
-		// All inside = 0000
-		CHECK(mask == 0);
-
-		mask = Poly<2>::mask(surface.isogrid(), Vec2i(-1,-1));
-		// 0000
-		CHECK(mask == 0);
-
-		mask = Poly<2>::mask(surface.isogrid(), Vec2i(1,-1));
-		// 0010
-		CHECK(mask == 2);
-
-		mask = Poly<2>::mask(surface.isogrid(), Vec2i(2,1));
-		// 1111
-		CHECK(mask == 15);
-
-		mask = Poly<2>::mask(surface.isogrid(), Vec2i(-2,0));
-		// 1000
-		CHECK(mask == 8);
-
-		mask = Poly<2>::mask(surface.isogrid(), Vec2i(-1,-2));
-		// 0001
-		CHECK(mask == 1);
-	}
-
-	/**
-	 * Test the cube corner inside/outside status bitmask.
-	 */
-	WHEN("mask_3D")
-	{
-
-		// 3D.
-		{
-			// Initialise a surface.
-			Surface<3> surface(Vec3u(13,13,13));
-			Poly<3> poly(surface.isogrid().size(), surface.isogrid().offset());
-			unsigned short mask;
-			// At time of init, all points are "outside" the surface (there is
-			// no surface).
-			mask = poly.mask(surface.isogrid(), Vec3i(0,0,0));
-			// All outside = 11111111.
-			CHECK(mask == 255);
-
-			// Initialise a seed and expand it.
 			surface.seed(Vec3i(0,0,0));
-			surface.update_start();
-			surface.delta(Vec3i(0,0,0), -1);
-			surface.update_end();
+			surface.update([](const auto& pos_, const auto& grid_) {
+				(void)pos_; (void)grid_;
+				return -0.4f;
+			});
 
-			// Relative position of corners in bitmask order (LSB first,
-			// MSB last):
-//			(0, 0, 0),
-//			(1, 0, 0),
-//			(1, 0,-1),
-//			(0, 0,-1),
-//			(0, 1, 0),
-//			(1, 1, 0),
-//			(1, 1,-1),
-//			(0, 1,-1)
-
-			// Cross section of surface now looks like this:
-//			 3,	 3,	 3,	 3,	 3,	 3,	 3,	 3,	 3,
-//			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3,
-//			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
-//			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
-//			 3,	 2,	 1,	 0,	-1,	 0,	 1,	 2,	 3,
-//			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
-//			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
-//			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3,
-//			 3,	 3,	 3,	 3,	 3,	 3,	 3,	 3,	 3;
-
-
-			mask = poly.mask(surface.isogrid(), Vec3i(0,0,0));
-
-			// The mask of cube starting at (0,0,0)
-			CHECK(mask == 0b11100100);
-
-			// Expand the surface outwards twice.
-			surface.update_start();;
-			for (auto pos : surface.layer(0))
-				surface.delta(pos, -1);
-			surface.update_end();
-			surface.update_start();;
-			for (auto pos : surface.layer(0))
-				surface.delta(pos, -1);
-			surface.update_end();
-
-			// The central cube is now completely inside the surface.
-			mask = Poly<3>::mask(surface.isogrid(), Vec3i(0,0,0));
-
-//			for (unsigned bitIdx =0; bitIdx < 8; bitIdx++)
-//				std::cerr << (1 & (mask >> (7-bitIdx)));
-//			std::cerr << std::endl;
-
-			// All inside.
-			CHECK(mask == 0);
-		}
-	}
-
-	/**
-	 * Ensure corner bitmask translates to edge mask and vertex order lookup.
-	 *
-	 * Calculate vertices from edge mask and join them to make CCW ordered
-	 * simplices using vertex ordering lookup. 2D.
-	 */
-	WHEN("edge_vertices_2D")
-	{
-		Surface<2> surface(Vec2u(9,9), Vec2u(9,9));
-		Poly<2> poly(surface.isogrid().size(), surface.isogrid().offset());
-		surface.isogrid().add_child(Vec2i(0, 0));
-		surface.isogrid().snapshot().data() = {
-			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3,
-			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
-			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
-			 3,	 2,	 1,	 0,	-1,	 0,	 1,	 2,	 3,
-			 2,	 1,	 0,	-1,	-2,	-1,	 0,  1,	 2,
-			 3,	 2,	 1,	 0,	-1,	 0,	 1,	 2,	 3,
-			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
-			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
-			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3
-		};
-		surface.isogrid().flush_snapshot();
-
-		unsigned short mask, vtx_mask;
-
-
-		// 0010
-		mask = Poly<2>::mask(surface.isogrid(), Vec2i(1,-1));
-		// 0, -1
-		// 1,  0
-
-		vtx_mask = Poly<2>::vtx_mask[mask];
-		CHECK(vtx_mask == 0b0011);
-
-		// Map of edge index to axis in {0,1} and offset in
-		// {(0,0), (1,0), (0,1)}.
-		CHECK(Poly<2>::edges[0].axis == 0);
-		CHECK(Poly<2>::edges[0].offset == Vec2i(0,0));
-		CHECK(Poly<2>::edges[1].axis == 1);
-		CHECK(Poly<2>::edges[1].offset == Vec2i(1,0));
-
-		// CCW ordering of edge vertices.
-		const short* vtx_order = Poly<2>::vtx_order[mask];
-		CHECK(vtx_order[0] == 0);
-		CHECK(vtx_order[1] == 1);
-		CHECK(vtx_order[2] == -1);
-		CHECK(vtx_order[3] == -1);
-
-		// Simplex (line) at given position.
-		Poly<2>::SpxArray& spxs = poly.spx();
-		poly.spx(Vec2i(1,-1), surface.isogrid());
-		// Check only one simplex.
-		REQUIRE(spxs.size() == 1);
-
-		// Check ordering of indexes into vertices making up the simplex.
-		CHECK((UINT)spxs[0].idxs(0) == 0);
-		CHECK((UINT)spxs[0].idxs(1) == 1);
-
-		// Check position of vertices at the endpoints of the simplex.
-		Vec2f vtx1_pos = poly.vtx((UINT)spxs[0].idxs(0)).pos;
-		Vec2f vtx2_pos = poly.vtx((UINT)spxs[0].idxs(1)).pos;
-		CHECK((FLOAT)vtx1_pos(0) == 1);
-		CHECK((FLOAT)vtx1_pos(1) == -1);
-		CHECK((FLOAT)vtx2_pos(0) == 2);
-		CHECK((FLOAT)vtx2_pos(1) == 0);
-
-		// Check degenerate case: cube where corner is precisely zero.
-		// 0,  1
-		// 1,  2
-		// TODO: doesn't work, see discussion in 3D test below.
-//		poly.reset();
-//		poly.spx(Vec2i(2,0));
-//		CHECK(spxs.size() == 0);
-	}
-
-
-	/**
-	 * Test corner bitmask translates to edge mask and vertex order lookup.
-	 *
-	 * Calculate vertices from edge mask and join them to make CCW ordered
-	 * simplices using vertex ordering lookup. 3D.
-	 */
-	WHEN("edge_vertices_3D")
-	{
-		unsigned short mask, vtx_mask;
-
-		// Initialise a surface.
-		Surface<3> surface(Vec3u(13,13,13));
-		Poly<3> poly(surface.isogrid().size(), surface.isogrid().offset());
-		Poly<3>::SpxArray& spxs = poly.spx();
-		Poly<3>::VtxArray& vtxs = poly.vtx();
-
-		// At time of init, all points are "outside" the surface
-		// (there is no surface).
-		mask = poly.mask(surface.isogrid(), Vec3i(0,0,0));
-		// All outside = 11111111.
-		vtx_mask = Poly<3>::vtx_mask[mask];
-
-		CHECK(vtx_mask == 0b0000);
-
-		surface.isogrid().fill(-1);
-		// All inside = 00000000.
-		vtx_mask = Poly<3>::vtx_mask[mask];
-
-		// Reset back to 'all outside' status.
-		surface.isogrid().fill(3);
-
-		CHECK(vtx_mask == 0b0000);
-		// Initialise a seed and expand it.
-		surface.seed(Vec3i(0,0,0));
-
-		// Attempt to generate triangle mesh for cube at (0,0,0).
-		poly.spx(Vec3i(0,0,0), surface.isogrid());
-
-		// TODO: Currently, we have a degenerate case -- corners that are at
-		// precisely zero (i.e. points or lines rather than triangles),
-		// so no simplices should be created.
-		// 3x edges of the cube are cut, but interpolation yields all 3
-		// cut points come from the same corner, the singularity seed point.
-		// Should find a way to strip simplices/vertices of degenerate
-		// triangles.
-		CHECK(vtxs.size() == 3);
-		CHECK(spxs.size() == 1);
-
-		// Expand the surface outward.
-		surface.update_start();
-		surface.delta(Vec3i(0,0,0), -1);
-		surface.update_end();
-
-
-		// Relative position of corners in bitmask order
-		// (LSB first, MSB last):
-//			(0, 0, 0),
-//			(1, 0, 0),
-//			(1, 0,-1),
-//			(0, 0,-1),
-//			(0, 1, 0),
-//			(1, 1, 0),
-//			(1, 1,-1),
-//			(0, 1,-1)
-
-		// Cross section of surface now looks like this:
-//			 3,	 3,	 3,	 3,	 3,	 3,	 3,	 3,	 3,
-//			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3,
-//			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
-//			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
-//			 3,	 2,	 1,	 0,	-1,	 0,	 1,	 2,	 3,
-//			 3,	 3,	 2,	 1,	 0,	 1,	 2,	 3,	 3,
-//			 3,	 3,	 3,	 2,	 1,	 2,	 3,	 3,	 3,
-//			 3,	 3,	 3,	 3,	 2,	 3,	 3,	 3,	 3,
-//			 3,	 3,	 3,	 3,	 3,	 3,	 3,	 3,	 3;
-
-
-		mask = Poly<3>::mask(surface.isogrid(), Vec3i(0,0,0));
-/*
-		== 0b11100100 (see test 'mask').
-		(0, 0, 0) == inside
-		(1, 0, 0) == inside
-		(1, 0,-1) == outside
-		(0, 0,-1) == inside
-		(0, 1, 0) == inside
-		(1, 1, 0) == outside
-		(1, 1,-1) == outside
-		(0, 1,-1) == outside
-*/
-
-		vtx_mask = Poly<3>::vtx_mask[mask];
-/*
-		( 1,  0,  0 ) --- ( 1,  0, -1 ) == e1
-		( 1,  0, -1 ) --- ( 0,  0, -1 ) == e2
-		( 0,  1,  0 ) --- ( 1,  1,  0 ) == e4
-		( 0,  1,  0 ) --- ( 0,  1, -1 ) == e7
-		( 1,  0,  0 ) --- ( 1,  1,  0 ) == e9
-		( 0,  0, -1 ) --- ( 0,  1, -1 ) == e11
-*/
-
-		INFO(
-			std::to_string(mask) +
-			" = " + stringify_bitmask(mask, 8) +
-			" => " + stringify_bitmask(vtx_mask, 12)
-		);
-		CHECK(vtx_mask == 0b101010010110);
-
-		// Map of edge index to axis and offset.
-		CHECK(Poly<3>::edges[1].axis == 2);
-		CHECK(Poly<3>::edges[1].offset == Vec3i(1,0,-1));
-		CHECK(Poly<3>::edges[7].axis == 2);
-		CHECK(Poly<3>::edges[7].offset == Vec3i(0,1,-1));
-		CHECK(Poly<3>::edges[9].axis == 1);
-		CHECK(Poly<3>::edges[9].offset == Vec3i(1,0,0));
-
-		// CCW ordering of edge vertices.
-		const short* vtx_order = Poly<3>::vtx_order[mask];
-		// Triangle 1.
-		CHECK(vtx_order[0] == 4);
-		CHECK(vtx_order[1] == 11);
-		CHECK(vtx_order[2] == 7);
-		// Triangle 2.
-		CHECK(vtx_order[3] == 9);
-		CHECK(vtx_order[4] == 11);
-		CHECK(vtx_order[5] == 4);
-		// Triangle 3.
-		CHECK(vtx_order[6] == 9);
-		CHECK(vtx_order[7] == 2);
-		CHECK(vtx_order[8] == 11);
-		// Triangle 4.
-		CHECK(vtx_order[9] == 9);
-		CHECK(vtx_order[10] == 1);
-		CHECK(vtx_order[11] == 2);
-		// No triangle.
-		CHECK(vtx_order[12] == -1);
-		CHECK(vtx_order[13] == -1);
-		CHECK(vtx_order[14] == -1);
-		CHECK(vtx_order[15] == -1);
-
-		// Check that edge bitmask matches vertex order array.
-		for (UINT idx = 0; idx < 16; idx++)
-			if (vtx_order[idx] >= 0)
+			THEN("poly is still empty")
 			{
-				INFO(
-					stringify_bitmask(vtx_mask, 12) + " >> " +
-					std::to_string(vtx_order[idx])
-				);
-				CHECK(
-					(bool) ((vtx_mask >> vtx_order[idx]) & 1)
-				);
+				CHECK(poly.vtxs().size() == 0);
+				CHECK(poly.spxs().size() == 0);
 			}
 
-/*
-----+y
-|
-|
-+x
+			AND_WHEN("partial isogrid is polygonised")
+			{
+				poly.march();
 
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |  1.7 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |  1.7 |  0.7 |  1.7 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |  1.7 |  0.7 | -0.3 |  0.7 |  1.7 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |  1.7 |  0.7 | -0.3 | -1.3 | -0.3 |  0.7 |  1.7 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |  1.7 |  0.7 | -0.3 |  0.7 |  1.7 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |  1.7 |  0.7 |  1.7 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |  1.7 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-|    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |    3 |
-*/
+				THEN("number of vertices is as expected")
+				{
+					CHECK(poly.vtxs().size() == 6);
+				}
 
-		// Check that the corner inside/outside status mask is indeed still
-		// the same.
-		REQUIRE(
-			Poly<3>::mask(surface.isogrid(), Vec3i(0,0,0)) == mask
-		);
+				THEN("number of simplices is as expected")
+				{
+					CHECK(poly.spxs().size() == 8);
+				}
 
-		// Reset the polygonisation.
-		poly.reset();
+				THEN("vertices are correct")
+				{
+					CHECK(poly.vtxs()[0].pos == ApproxVec(Vec3f{0.4f, 0.0f, 0.0f}));
+					CHECK(poly.vtxs()[1].pos == ApproxVec(Vec3f{0.0f, 0.0f, 0.4f}));
+					CHECK(poly.vtxs()[2].pos == ApproxVec(Vec3f{0.0f, 0.4f, 0.0f}));
+					CHECK(poly.vtxs()[3].pos == ApproxVec(Vec3f{-0.4f, 0.0f, 0.0f}));
+					CHECK(poly.vtxs()[4].pos == ApproxVec(Vec3f{0.0f, -0.4f, 0.0f}));
+					CHECK(poly.vtxs()[5].pos == ApproxVec(Vec3f{0.0f, 0.0f, -0.4f}));
 
-		// Recalculate the polygonisation (triangle mesh) for the updated
-		// isogrid grid.
-		poly.spx(Vec3i(0,0,0), surface.isogrid());
+					CHECK(poly.vtxs()[0].norm == ApproxVec(Vec3f{1, 0, 0}));
+					CHECK(poly.vtxs()[1].norm == ApproxVec(Vec3f{0, 0, 1}));
+					CHECK(poly.vtxs()[2].norm == ApproxVec(Vec3f{0, 1, 0}));
+					CHECK(poly.vtxs()[3].norm == ApproxVec(Vec3f{-1, 0, 0}));
+					CHECK(poly.vtxs()[4].norm == ApproxVec(Vec3f{0, -1, 0}));
+					CHECK(poly.vtxs()[5].norm == ApproxVec(Vec3f{0, 0, -1}));
+				}
 
-		// Check 4 triangles are now created from 6 vertices.
-		CHECK(vtxs.size() == 6);
-		CHECK(spxs.size() == 4);
+				THEN("simplices are correct")
+				{
+					CHECK(poly.spxs()[0].idxs == (Vec3u{1,0,2}));
+					CHECK(poly.spxs()[1].idxs == (Vec3u{1,2,3}));
+					CHECK(poly.spxs()[2].idxs == (Vec3u{1,4,0}));
+					CHECK(poly.spxs()[3].idxs == (Vec3u{0,5,2}));
+					CHECK(poly.spxs()[4].idxs == (Vec3u{4,1,3}));
+					CHECK(poly.spxs()[5].idxs == (Vec3u{3,2,5}));
+					CHECK(poly.spxs()[6].idxs == (Vec3u{0,4,5}));
+					CHECK(poly.spxs()[7].idxs == (Vec3u{4,3,5}));
+				}
 
+				AND_WHEN("poly is deactivated")
+				{
+					poly.deactivate();
 
-		// Expand the surface a bit, but not enough to change the edges
-		// that cross the zero curve. This will mean that interpolation
-		// gives a vertex along the cube  edge, rather than precisely at the
-		// corner, so no degenerate triangles.
-		surface.update_start();
-		for (auto pos : surface.layer(0))
-			surface.delta(pos, -0.3);
-		surface.update_end();
+					THEN("poly is empty and deallocated")
+					{
+						CHECK(poly.vtxs().capacity() == 0);
+						CHECK(poly.spxs().capacity() == 0);
+					}
+				}
 
-		INFO(stringify_grid_slice(surface.isogrid()));
+				AND_WHEN("poly is reset")
+				{
+					poly.reset();
 
-		// Check that the corner inside/outside status mask is indeed still
-		// the same.
-		REQUIRE(
-			Poly<3>::mask(surface.isogrid(), Vec3i(0,0,0)) == mask
-		);
-
-		// Reset the polygonisation.
-		poly.reset();
-
-		// Recalculate the polygonisation (triangle mesh) for the updated
-		// isogrid grid.
-		poly.spx(Vec3i(0,0,0), surface.isogrid());
-
-		// Check 4 triangles are now created from 6 vertices.
-		CHECK(vtxs.size() == 6);
-		CHECK(spxs.size() == 4);
-
-	}
-
-
-	WHEN("poly_whole_surface")
-	{
-		// Initialise a surface.
-		Surface<3> surface(Vec3u(13,13,13));
-		Poly<3> poly(surface.isogrid().size(), surface.isogrid().offset());
-		// Initialise a seed and expand it.
-		surface.seed(Vec3i(0,0,0));
-		surface.update_start();
-		surface.delta(Vec3i(0,0,0), -1.3f);
-		surface.update_end();
-
-		// Polygonise zero-layer.
-		poly.surf(surface);
-
-		CHECK(poly.spx().size() == 56);
-		CHECK(poly.vtx().size() == 30);
+					THEN("poly is empty but not deallocated")
+					{
+						CHECK(poly.vtxs().size() == 0);
+						CHECK(poly.vtxs().size() == 0);
+						CHECK(poly.spxs().capacity() > 0);
+						CHECK(poly.spxs().capacity() > 0);
+					}
+				}
+			}
+		}
 	}
 }
 
+GIVEN("an empty 2D polygonisaton and a 9x9 3-layer surface with 3x3 partitions")
+{
+	using SurfaceType = Surface<2, 3>;
+	using IsoGridType = typename SurfaceType::IsoGrid;
+	using IsoChildType = typename IsoGridType::ChildType;
+	using PolyType = Impl::Poly::Single<IsoGridType>;
 
-/** @} */ // End group Tests.
+	SurfaceType surface{Vec2i{9,9}, Vec2i{3,3}};
+	PolyType poly{surface.isogrid()};
+
+	THEN("poly is initially empty")
+	{
+		CHECK(poly.vtxs().size() == 0);
+		CHECK(poly.spxs().size() == 0);
+	}
+
+	WHEN("poly is sized to cover central partition and activated")
+	{
+		const IsoChildType& isochild = surface.isogrid().children().get(Vec2i{0,0});
+
+		poly.resize(isochild.size(), isochild.offset());
+		poly.bind(isochild.lookup());
+		poly.activate();
+
+		AND_WHEN("attempting to polygonise when no surface has been constructed")
+		{
+			poly.march();
+
+			THEN("poly is still empty")
+			{
+				CHECK(poly.vtxs().size() == 0);
+				CHECK(poly.spxs().size() == 0);
+			}
+		}
+
+		AND_WHEN("surface is seeded and expanded slightly")
+		{
+			surface.seed(Vec2i{0,0});
+			surface.update([](const auto& pos_, const auto& grid_) {
+				(void)pos_; (void)grid_;
+				return -0.4f;
+			});
+
+			THEN("poly is still empty")
+			{
+				CHECK(poly.vtxs().size() == 0);
+				CHECK(poly.spxs().size() == 0);
+			}
+
+			AND_WHEN("partial isogrid is polygonised")
+			{
+				poly.march();
+
+				THEN("number of vertices is as expected")
+				{
+					CHECK(poly.vtxs().size() == 4);
+				}
+
+				THEN("number of simplices is as expected")
+				{
+					CHECK(poly.spxs().size() == 4);
+				}
+
+				THEN("vertices are correct")
+				{
+					CHECK(poly.vtxs()[0].pos == ApproxVec(Vec2f{0.4f, 0.0f}));
+					CHECK(poly.vtxs()[1].pos == ApproxVec(Vec2f{0.0f, 0.4f}));
+					CHECK(poly.vtxs()[2].pos == ApproxVec(Vec2f{-0.4f, 0.0f}));
+					CHECK(poly.vtxs()[3].pos == ApproxVec(Vec2f{0.0f, -0.4f}));
+				}
+
+				THEN("simplices are correct")
+				{
+					CHECK(poly.spxs()[0].idxs == (Vec2u{0,1}));
+					CHECK(poly.spxs()[1].idxs == (Vec2u{1,2}));
+					CHECK(poly.spxs()[2].idxs == (Vec2u{3,0}));
+					CHECK(poly.spxs()[3].idxs == (Vec2u{2,3}));
+				}
+
+				AND_WHEN("poly is deactivated")
+				{
+					poly.deactivate();
+
+					THEN("poly is empty and deallocated")
+					{
+						CHECK(poly.is_active() == false);
+						CHECK(poly.vtxs().capacity() == 0);
+						CHECK(poly.spxs().capacity() == 0);
+					}
+				}
+
+				AND_WHEN("poly is reset")
+				{
+					poly.reset();
+
+					THEN("poly is empty but not deallocated")
+					{
+						CHECK(poly.is_active() == true);
+						CHECK(poly.vtxs().size() == 0);
+						CHECK(poly.vtxs().size() == 0);
+						CHECK(poly.spxs().capacity() > 0);
+						CHECK(poly.spxs().capacity() > 0);
+					}
+				}
+			}
+		}
+	}
+}
+}
 
 /**
- *  @class felt::Poly
- *  @test see @ref Tests
+ * Utility: assert Poly::Grid matches simple Poly::Single polygonisation.
+ *
+ * Forward declaration.
  */
+template <class SurfaceType>
+ListIdx assert_partitioned_matches_baseline (
+	const Polys<SurfaceType>& polys_,
+	const Impl::Poly::Single<typename SurfaceType::IsoGrid>& poly_
+);
+
+/**
+ * Utility: construct a baseline Poly::Single for testing Poly::Grid against.
+ * @param surface
+ * @return
+ */
+template <class TSurface>
+Impl::Poly::Single<typename TSurface::IsoGrid> baseline_poly(const TSurface& surface_);
+
+
+SCENARIO("Polys")
+{
+
+GIVEN("an empty 3D polygonisaton and a 15x15x15 3-layer surface with 5x5x5 partitions")
+{
+	using SurfaceType = Surface<3, 3>;
+	using PolyGridType = Polys<SurfaceType>;
+	using IsoGridType = typename SurfaceType::IsoGrid;
+	using PolyType = Impl::Poly::Single<IsoGridType>;
+
+	// Surface to polygonise.
+	SurfaceType surface{Vec3i{15,15,15}, Vec3i{5,5,5}};
+
+	// The Poly::Grid to test.
+	PolyGridType polys{surface};
+
+	THEN("grid has a matching number of children polys to the isogrid")
+	{
+		CHECK(polys.children().data().size() == surface.isogrid().children().data().size());
+	}
+
+	THEN("child poly size is one greater than the isogrid child size")
+	{
+		const Vec3i& one = Vec3i::Constant(1);
+		const Vec3i& two = Vec3i::Constant(2);
+
+		CHECK(
+			polys.children().get(Vec3i(0,0,0)).size() == (
+				surface.isogrid().children().get(Vec3i(0,0,0)).size() + two
+			)
+		);
+		CHECK(
+			polys.children().get(Vec3i(0,0,0)).offset() == (
+				surface.isogrid().children().get(Vec3i(0,0,0)).offset() - one
+			)
+		);
+
+		CHECK(
+			polys.children().get(Vec3i(-1,-1,-1)).size() == (
+				surface.isogrid().children().get(Vec3i(-1,-1,-1)).size() + two
+			)
+		);
+		CHECK(
+			polys.children().get(Vec3i(-1,-1,-1)).offset() == (
+				surface.isogrid().children().get(Vec3i(-1,-1,-1)).offset() - one
+			)
+		);
+	}
+
+	THEN("child polys are inactive")
+	{
+		CHECK(polys.children().get(Vec3i(0,0,0)).is_active() == false);
+	}
+
+	THEN("child polys are bound to the correct isogrid child lookup")
+	{
+		CHECK(
+			polys.children().get(Vec3i(0,0,0)).bind() ==
+				&surface.isogrid().children().get(Vec3i(0,0,0)).lookup()
+		);
+		CHECK(
+			polys.children().get(Vec3i(-1,-1,-1)).bind() ==
+				&surface.isogrid().children().get(Vec3i(-1,-1,-1)).lookup()
+		);
+	}
+
+	WHEN("surface is seeded and expanded")
+	{
+		surface.seed(Vec3i(0,0,0));
+		surface.update([](const auto&, const auto&){ return -1.0f; });
+
+		AND_WHEN("surface is polygonised")
+		{
+			polys.notify();
+			polys.march();
+
+			THEN("central partition has correct number of vertices and simplices")
+			{
+				CHECK(polys.children().get(Vec3i(0,0,0)).vtxs().size() == 30);
+				CHECK(polys.children().get(Vec3i(0,0,0)).spxs().size() == 56);
+			}
+
+			AND_WHEN("surface is contracted and expanded back to how it was then polygonised")
+			{
+				surface.update([](const auto&, const auto&){ return 1.0f; });
+				polys.notify();
+				surface.update([](const auto&, const auto&){ return -1.0f; });
+				polys.notify();
+				polys.march();
+
+				THEN("central partition has correct number of vertices and simplices")
+				{
+					CHECK(polys.children().get(Vec3i(0,0,0)).vtxs().size() == 30);
+					CHECK(polys.children().get(Vec3i(0,0,0)).spxs().size() == 56);
+				}
+			}
+
+			THEN("we can get a list of the updated partitions")
+			{
+				const std::set<PosIdx> pos_idxs_expected {
+					polys.children().index(Vec3i{ 0, 0, -1}),
+					polys.children().index(Vec3i{ 0,-1, 0}),
+					polys.children().index(Vec3i{-1, 0, 0}),
+					polys.children().index(Vec3i{ 0, 0, 0}),
+					polys.children().index(Vec3i{ 0, 0, 1}),
+					polys.children().index(Vec3i{ 0, 1, 0}),
+					polys.children().index(Vec3i{ 1, 0, 0})
+				};
+				const std::set<PosIdx> pos_idxs_changed{
+					polys.changes().begin(), polys.changes().end()
+				};
+
+				CHECK(pos_idxs_changed == pos_idxs_expected);
+			}
+
+			AND_WHEN("one point is modified and poly is notified")
+			{
+				surface.update_start();
+				surface.delta(Vec3i(0,1,0), -0.3f);
+				surface.update_end();
+				polys.notify();
+
+				THEN("list of the updated partitions still hasn't changed")
+				{
+					const std::set<PosIdx> pos_idxs_expected {
+						polys.children().index(Vec3i{ 0, 0,-1}),
+						polys.children().index(Vec3i{ 0,-1, 0}),
+						polys.children().index(Vec3i{-1, 0, 0}),
+						polys.children().index(Vec3i{ 0, 0, 0}),
+						polys.children().index(Vec3i{ 0, 0, 1}),
+						polys.children().index(Vec3i{ 0, 1, 0}),
+						polys.children().index(Vec3i{ 1, 0, 0})
+					};
+					const std::set<PosIdx> pos_idxs_changed{
+						polys.changes().begin(), polys.changes().end()
+					};
+
+					CHECK(pos_idxs_changed.size() == pos_idxs_expected.size());
+					CHECK(pos_idxs_changed == pos_idxs_expected);
+				}
+
+				AND_WHEN("surface is polygonised")
+				{
+					polys.march();
+
+//					Impl::Grid::Simple<bool, 3> grid_changed{
+//						surface.isogrid().children().size(),
+//						surface.isogrid().children().offset(),
+//						false
+//					};
+//					std::stringstream ss;
+//					for (const PosIdx pos_idx : polys.changes())
+//					{
+//						grid_changed.set(pos_idx, true);
+//						ss << polys.children().index(pos_idx) << std::endl;
+//					}
+//					INFO(ss.str());
+//					INFO(stringify_grid_slice(grid_changed));
+
+					THEN("list of updated partitions has now changed")
+					{
+						const std::set<PosIdx> pos_idxs_expected {
+							polys.children().index(Vec3i{-1, 0, 0}),
+							polys.children().index(Vec3i{ 0, 0, 0}),
+							polys.children().index(Vec3i{ 0, 1, 0}),
+							polys.children().index(Vec3i{ 1, 0, 0}),
+							polys.children().index(Vec3i{ 0, 0,-1}),
+							polys.children().index(Vec3i{ 0, 0, 1})
+						};
+
+						const std::set<PosIdx> pos_idxs_changed{
+							polys.changes().begin(), polys.changes().end()
+						};
+
+						CHECK(pos_idxs_changed.size() == pos_idxs_expected.size());
+						CHECK(pos_idxs_changed == pos_idxs_expected);
+					}
+				}
+			}
+
+			AND_WHEN("surface is expanded and polygonised")
+			{
+				surface.update([](const auto&, const auto&){ return -1.0f; });
+				polys.notify();
+				polys.march();
+
+				THEN("poly grid matches single poly of whole surface")
+				{
+					const PolyType& poly = baseline_poly(surface);
+
+					const ListIdx total_vtx = assert_partitioned_matches_baseline(polys, poly);
+
+					// Total vertices will have duplicates at the border of the spatial
+					// partitions.
+					// The 'tip' of the shape at the three lowest corners (5 vertices making
+					// up a pyramid) will be outside the central partition. The central
+					// partition will thus have three points missing, one at each extremity,
+					// since they fall entirely outside the partition.  Thus 4x4 = 12
+					// vertices are duplicates of another 12 across the partition lines.
+					// So, 12 duplicates + 3 end points - 3 cut from the central partition.
+					CHECK(total_vtx == poly.vtxs().size() + 12 + 3 - 3);
+					// As mentioned above, each lower extremity non-central partition has 5
+					// vertices, making up the endpoint pyramids at those extremities.
+					CHECK(polys.children().get(Vec3i(-1,0,0)).vtxs().size() == 5);
+					CHECK(polys.children().get(Vec3i(0,-1,0)).vtxs().size() == 5);
+					CHECK(polys.children().get(Vec3i(0,0,-1)).vtxs().size() == 5);
+				}
+
+
+				AND_WHEN("surface is contracted and polygonised")
+				{
+					surface.update([](const auto&, const auto&){ return 1.0f; });
+					polys.notify();
+					polys.march();
+
+					THEN("poly grid matches single poly of whole surface")
+					{
+						const ListIdx total_vtx =
+							assert_partitioned_matches_baseline(polys, baseline_poly(surface));
+						CHECK(total_vtx == 30);
+						CHECK(polys.children().get(Vec3i(0,0,0)).vtxs().size() == 30);
+						CHECK(polys.children().get(Vec3i(0,0,0)).spxs().size() == 56);
+					}
+
+					THEN("poly has the same childs active as the isogrid")
+					{
+						for (
+							PosIdx pos_idx_child = 0;
+							pos_idx_child < polys.children().data().size(); pos_idx_child++
+						) {
+							const Vec3i& pos_child = polys.children().index(pos_idx_child);
+
+							INFO("Check if child " + Felt::format(pos_child) + " should be active");
+							CHECK(
+								polys.children().get(pos_idx_child).is_active() ==
+									surface.isogrid().children().get(pos_idx_child).is_active()
+							);
+						}
+					}
+
+					AND_WHEN("surface is contracted to destruction and polygonised")
+					{
+						surface.update([](const auto&, const auto&){ return 1.0f; });
+						polys.notify();
+						surface.update([](const auto&, const auto&){ return 1.0f; });
+						polys.notify();
+						polys.march();
+
+						THEN("poly grid matches single poly of whole surface")
+						{
+							const ListIdx total_vtx =
+								assert_partitioned_matches_baseline(polys, baseline_poly(surface));
+							CHECK(total_vtx == 0);
+							CHECK(polys.children().get(Vec3i(0,0,0)).vtxs().size() == 0);
+							CHECK(polys.children().get(Vec3i(0,0,0)).spxs().size() == 0);
+						}
+
+						THEN("poly has the same childs active as the isogrid (i.e. none)")
+						{
+							for (
+								PosIdx pos_idx_child = 0;
+								pos_idx_child < polys.children().data().size(); pos_idx_child++
+							) {
+								const Vec3i& pos_child = polys.children().index(pos_idx_child);
+
+								INFO(
+									"Check if child " + Felt::format(pos_child) +
+									" should be active"
+								);
+								CHECK(
+									polys.children().get(pos_idx_child).is_active() ==
+										surface.isogrid().children().get(pos_idx_child).is_active()
+								);
+							}
+						}
+					}
+				} // End WHEN surface is contracted and polygonised
+
+//				AND_WHEN("poly is reset")
+//				{
+//					poly.reset();
+//
+//					THEN("child polys are deactivated")
+//					{
+//						for (const Poly& child : poly.children().data())
+//						{
+//							CHECK(child.vtx().size() == 0);
+//							CHECK(child.spx().size() == 0);
+//							CHECK(child.is_active() == false);
+//						}
+//
+//						CHECK(poly.changes().list().size() == 0);
+//					}
+//				}
+			} // End WHEN surface is expanded and polygonised.
+
+			AND_WHEN(
+				"surface is expanded with one 'tip' pushed back into central partition, then"
+				" polygonised"
+			) {
+				surface.update([](const auto&, const auto&){ return -1.0f; });
+				polys.notify();
+				surface.update([](const auto&, const auto&){ return -0.3f; });
+				polys.notify();
+				surface.update_start();
+				surface.delta(Vec3i(0,-2,0), 1.0f);
+				surface.update_end();
+				polys.notify();
+
+				polys.march();
+
+				THEN("poly grid matches single poly of whole surface")
+				{
+					const PolyType& poly = baseline_poly(surface);
+					const ListIdx total_vtx =
+						assert_partitioned_matches_baseline(polys, poly);
+
+					// One of the 'tips' have been pushed back into the central partition,
+					// So, now just 8 duplicates + 2 endpoints - 2 cut from the central
+					// partition.
+					CHECK(total_vtx == poly.vtxs().size() + 8 + 2 - 2);
+				}
+			}
+		}
+
+		// Failed originally because of std::vector reinitialisation invalidating references
+		// during march (in v1).
+		AND_WHEN("notify + expand + notify + march")
+		{
+			polys.notify();
+			surface.update([](const auto&, const auto&){ return -1.0f; });
+			polys.notify();
+
+			polys.march();
+
+			THEN("poly grid matches single poly of whole surface")
+			{
+				const PolyType& poly = baseline_poly(surface);
+				const ListIdx total_vtx =
+					assert_partitioned_matches_baseline(polys, poly);
+
+				CHECK(total_vtx == poly.vtxs().size() + 12);
+			}
+		}
+
+		AND_WHEN("a point is modified without notifying poly")
+		{
+			surface.update_start();
+			surface.delta(Vec3i(0,-1,0), -1.0f);
+			surface.update_end();
+			surface.update_start();
+			surface.delta(Vec3i(0,-2,0), -1.0f);
+			surface.update_end();
+			surface.update_start();
+			surface.delta(Vec3i(0,-3,0), 0.3f);
+			surface.update_end();
+
+			AND_WHEN("poly is notified and marched")
+			{
+				polys.notify();
+				polys.march();
+
+				THEN("polygonisation has only been done on most recently modified partitions")
+				{
+					const std::set<PosIdx> pos_idxs_expected {
+						polys.children().index(Vec3i{ 0,-1, 0}),
+						polys.children().index(Vec3i{ 0,-1,-1}),
+						polys.children().index(Vec3i{ 0,-1, 1}),
+						polys.children().index(Vec3i{-1,-1, 0}),
+						polys.children().index(Vec3i{ 1,-1, 0})
+					};
+					const std::set<PosIdx> pos_idxs_changed{
+						polys.changes().begin(), polys.changes().end()
+					};
+
+//					Impl::Grid::Simple<bool, 3> grid_changed{
+//						surface.isogrid().children().size(), surface.isogrid().children().offset(),
+//						false
+//					};
+//					for (const PosIdx pos_idx : polys.changes())
+//						grid_changed.set(pos_idx, true);
+//					INFO(stringify_grid_slice(grid_changed));
+/*
+      1,    0,    0,
+      1,    0,    0,
+      1,    0,    0,
+ */
+					CHECK(pos_idxs_changed.size() == pos_idxs_expected.size());
+					CHECK(pos_idxs_changed == pos_idxs_expected);
+
+					PolyType poly{surface.isogrid()};
+					poly.resize(surface.isogrid().size(), surface.isogrid().offset());
+					poly.activate();
+
+					for (const PosIdx pos_idx_child : pos_idxs_expected)
+					{
+						poly.bind(surface.isogrid().children().get(pos_idx_child).lookup());
+						poly.march();
+					}
+
+					assert_partitioned_matches_baseline(polys, poly);
+					// Should fail:
+//					assert_partitioned_matches_baseline(polys, baseline_poly(surface));
+				}
+			}
+
+			AND_WHEN("poly is invalidated and polygonised")
+			{
+				polys.invalidate();
+				polys.march();
+
+				THEN("polygonisation has been done over whole surface")
+				{
+					const PolyType& poly = baseline_poly(surface);
+					const ListIdx total_vtx =
+						assert_partitioned_matches_baseline(polys, poly);
+
+					CHECK(total_vtx == poly.vtxs().size() + 12);
+				}
+			}
+		}
+	} // End WHEN surface is seeded and expanded.
+} // End GIVEN 15x15x15 3-layer surface with 5x5x5 partitions.
+
+
+GIVEN(
+	"a polygonisation of a surface with 16x16x16 isogrid in two 16x8x16 partitions, with two seeds"
+	" in separate partitions"
+) {
+	using SurfaceType = Surface<3, 3>;
+	using PolyGridType = Polys<SurfaceType>;
+
+	// Surface to polygonise.
+	SurfaceType surface{Vec3i{16,16,16}, Vec3i{16,8,16}};
+	// The Poly::Grid to test.
+	PolyGridType polys{surface};
+
+	surface.seed(Vec3i{0,-4,0});
+	surface.seed(Vec3i{0,2,0});
+	surface.update([](const auto&, const auto&) {
+		return -1.0f;
+	});
+
+	polys.notify();
+	polys.march();
+
+	INFO(stringify_grid_slice(surface.isogrid()));
+	// Record count of simplices in each spatial partition.
+	Impl::Grid::Simple<ListIdx, 3> grid_spx_count{
+		surface.isogrid().children().size(), surface.isogrid().children().offset(), 0
+	};
+	for (PosIdx pos_idx_child = 0; pos_idx_child < polys.children().data().size(); pos_idx_child++)
+		grid_spx_count.set(pos_idx_child, polys.children().get(pos_idx_child).spxs().size());
+
+
+	WHEN("surface is expanded and contracted across partitions, polygonising along the way")
+	{
+		// Expand - expanding across to other partition.
+		surface.update_start();
+		surface.delta(Vec3i(0,1,0), -1.0f);
+		surface.update_end();
+		polys.notify();
+		polys.march();
+
+		// Contract.
+		surface.update_start();
+		surface.delta(Vec3i(0,0,0), 1.0f);
+		surface.delta(Vec3i(-1,1,0), 1.0f);
+		surface.delta(Vec3i(1,1,0), 1.0f);
+		surface.delta(Vec3i(0,1,-1), 1.0f);
+		surface.delta(Vec3i(0,1,1), 1.0f);
+		surface.update_end();
+		polys.notify();
+		polys.march();
+
+		THEN("poly grid matches baseline poly")
+		{
+			assert_partitioned_matches_baseline(polys, baseline_poly(surface));
+		}
+
+		THEN("number of simplices is unchanged from before expand/contract")
+		{
+			for (
+				PosIdx pos_idx_child = 0; pos_idx_child < polys.children().data().size();
+				pos_idx_child++
+			) {
+				CHECK(
+					polys.children().get(pos_idx_child).spxs().size() ==
+						grid_spx_count.get(pos_idx_child)
+				);
+			}
+		}
+	}
+}
+
+}
+
+
+/**
+ * Utility: construct a baseline Poly::Single for testing Poly::Grid against.
+ * @param surface
+ * @return
+ */
+template <class TSurface>
+Impl::Poly::Single<typename TSurface::IsoGrid> baseline_poly(const TSurface& surface_)
+{
+	using SurfaceType = TSurface;
+	using IsoGridType = typename SurfaceType::IsoGrid;
+	using IsoChildType = typename IsoGridType::ChildType;
+	using PolyType = Impl::Poly::Single<IsoGridType>;
+
+	// Create a Poly::Single to encompass whole isogrid, for checking Poly::Grid against.
+	PolyType poly{surface_.isogrid()};
+	poly.resize(surface_.isogrid().size(), surface_.isogrid().offset());
+	poly.activate();
+
+	// Loop every child spatial partition, bind child and polygonise,
+	// resulting in one big polygonisation.
+	for (const IsoChildType& isochild : surface_.isogrid().children().data())
+	{
+		poly.bind(isochild.lookup());
+		poly.march();
+	}
+
+	return poly;
+}
+
+
+/**
+ * Utility: assert PolyGrid matches simple Poly polygonisation.
+ */
+template <class TSurface>
+ListIdx assert_partitioned_matches_baseline (
+	const Polys<TSurface>& polys_,
+	const Impl::Poly::Single<typename TSurface::IsoGrid>& poly_
+) {
+	using IsoGridType = typename TSurface::IsoGrid;
+	using PolyType = Impl::Poly::Single<IsoGridType>;
+	using Simplex = typename PolyType::Simplex;
+	static const Dim dims = Impl::Traits<IsoGridType>::t_dims;
+
+
+	ListIdx total_vtx = 0;
+	ListIdx total_spx = 0;
+	for (const PolyType& child : polys_.children().data())
+	{
+		total_vtx += child.vtxs().size();
+		total_spx += child.spxs().size();
+		const VecDi<dims>& pos_part_start = child.offset();
+		const VecDi<dims>& pos_part_end = child.offset() + child.size();
+
+		if (child.vtxs().size() > 0)
+			INFO(
+				"Partition "
+				+ Felt::format(pos_part_start) + "-" + Felt::format(pos_part_end)
+				+ " vtxs = "
+				+ std::to_string(child.vtxs().size())
+				+ ", spxs = "
+				+ std::to_string(child.spxs().size())
+			);
+
+		for (const Simplex& polys_spx : child.spxs())
+		{
+			Vec3f polys_vtxs[3];
+			polys_vtxs[0] = child.vtxs()[polys_spx.idxs(0)].pos;
+			polys_vtxs[1] = child.vtxs()[polys_spx.idxs(1)].pos;
+			polys_vtxs[2] = child.vtxs()[polys_spx.idxs(2)].pos;
+			auto it = std::find_if(
+				poly_.spxs().begin(), poly_.spxs().end(),
+				[&](const Simplex& poly_spx) {
+					Vec3f poly_vtxs[3];
+					poly_vtxs[0] = poly_.vtxs()[poly_spx.idxs(0)].pos;
+					poly_vtxs[1] = poly_.vtxs()[poly_spx.idxs(1)].pos;
+					poly_vtxs[2] = poly_.vtxs()[poly_spx.idxs(2)].pos;
+					return (
+						poly_vtxs[0] == polys_vtxs[0] &&
+						poly_vtxs[1] == polys_vtxs[1] &&
+						poly_vtxs[2] == polys_vtxs[2]
+					);
+				}
+			);
+
+			INFO(
+				"Simplex from partition "
+				+ Felt::format(polys_vtxs[0]) + "-"
+				+ Felt::format(polys_vtxs[1]) + "-"
+				+ Felt::format(polys_vtxs[2])
+				+ " found in baseline"
+			);
+			CHECK(it != child.spxs().end());
+		}
+	}
+
+
+	for (const Simplex& poly_spx : poly_.spxs())
+	{
+		Vec3f poly_vtxs[3];
+		poly_vtxs[0] = poly_.vtxs()[poly_spx.idxs(0)].pos;
+		poly_vtxs[1] = poly_.vtxs()[poly_spx.idxs(1)].pos;
+		poly_vtxs[2] = poly_.vtxs()[poly_spx.idxs(2)].pos;
+
+		bool found_match = false;
+
+		for (const PolyType& child : polys_.children().data())
+		{
+			for (const Simplex& polys_spx : child.spxs())
+			{
+				Vec3f polys_vtxs[3];
+				polys_vtxs[0] = child.vtxs()[polys_spx.idxs(0)].pos;
+				polys_vtxs[1] = child.vtxs()[polys_spx.idxs(1)].pos;
+				polys_vtxs[2] = child.vtxs()[polys_spx.idxs(2)].pos;
+
+				found_match = (
+					poly_vtxs[0] == polys_vtxs[0] &&
+					poly_vtxs[1] == polys_vtxs[1] &&
+					poly_vtxs[2] == polys_vtxs[2]
+				);
+				if (found_match)
+					break;
+			}
+			if (found_match)
+				break;
+		}
+
+		INFO(
+			"Simplex from baseline "
+			+ Felt::format(poly_vtxs[0]) + "-"
+			+ Felt::format(poly_vtxs[1]) + "-"
+			+ Felt::format(poly_vtxs[2])
+			+ " found in partition"
+		);
+		CHECK(found_match);
+	}
+
+	INFO("Total: " + std::to_string(total_spx) + " spxs");
+	INFO("Total: " + std::to_string(total_vtx) + " vtxs");
+
+	CHECK(total_spx == poly_.spxs().size());
+
+	return total_vtx;
+}
+

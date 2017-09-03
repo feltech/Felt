@@ -237,7 +237,7 @@ protected:
 	 *
 	 * @return list of position indices of partitions that were repolygonised in the last `march`.
 	 */
-	const PosArray& changes() const
+	const PosIdxList& changes() const
 	{
 		return m_pgrid_update_done->list();
 	}
