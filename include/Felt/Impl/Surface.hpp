@@ -538,6 +538,28 @@ public:
 	}
 
 	/**
+	 * Get list of spatial partitions where iso values were updated in last update.
+	 *
+	 * @param layer_idx_ index of layer list to get.
+	 * @return list of position indices.
+	 */
+	const PosArray& delta(const TupleIdx layer_idx_) const
+	{
+		return m_grid_delta.children().lookup().list(layer_idx_);
+	}
+
+	/**
+	 * Get list of spatial partitions where layer status change occurred in last update.
+	 *
+	 * @param layer_idx_ index of layer list to get.
+	 * @return list of position indices.
+	 */
+	const PosArray& status_change(const TupleIdx layer_idx_) const
+	{
+		return m_grid_status_change.children().lookup().list(layer_idx_);
+	}
+
+	/**
 	 * Get reference to isogrid grid.
 	 *
 	 * @return signed distance isogrid embedding the level set surface.

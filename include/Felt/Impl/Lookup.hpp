@@ -202,6 +202,7 @@ private:
 	using LeafType = typename TraitsType::LeafType;
 
 public:
+	static constexpr TupleIdx num_lists = TraitsType::t_num_lists;
 
 	MultiListMultiIdx(const VecDi& size, const VecDi& offset) :
 		SizeImpl{size, offset}, ActivateImpl{LookupImpl::s_null_idxs}

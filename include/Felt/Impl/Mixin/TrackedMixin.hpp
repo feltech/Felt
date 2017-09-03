@@ -76,7 +76,6 @@ private:
 	using VecDi = Felt::VecDi<t_dims>;
 
 protected:
-	using Base::Resize;
 
 	void resize(const VecDi& size_, const VecDi& offset_)
 	{

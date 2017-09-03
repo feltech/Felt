@@ -18,7 +18,8 @@ template <Dim D, TupleIdx N>
 class Lookup :
 	FELT_MIXINS(
 		(Lookup<D, N>),
-		(Grid::Size)(Partitioned::Children)(Partitioned::Lookup)(Partitioned::Reset::MultiList)
+		(Grid::Size)(Partitioned::Children)(Partitioned::Leafs)(Partitioned::Lookup)
+		(Partitioned::Reset::MultiList)
 	)
 private:
 	using VecDi = Felt::VecDi<D>;
@@ -27,6 +28,7 @@ private:
 	using TraitsType = Traits<ThisType>;
 
 	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
+	using LeafsImpl = Impl::Mixin::Partitioned::Leafs<ThisType>;
 	using LookupImpl = Impl::Mixin::Partitioned::Lookup<ThisType>;
 	using ResetImpl = Impl::Mixin::Partitioned::Reset::MultiList<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
@@ -42,7 +44,7 @@ public:
 
 	using LookupImpl::track;
 	using ChildrenImpl::children;
-	using ChildrenImpl::leafs;
+	using LeafsImpl::leafs;
 	using ResetImpl::reset;
 };
 
@@ -54,7 +56,8 @@ template <typename T, Dim D, TupleIdx N>
 class Simple :
 	FELT_MIXINS(
 		(Simple<T, D, N>),
-		(Grid::Size)(Partitioned::Children)(Partitioned::Reset::MultiList)(Partitioned::Tracked)
+		(Grid::Size)(Partitioned::Children)(Partitioned::Leafs)(Partitioned::Reset::MultiList)
+		(Partitioned::Tracked)
 	)
 private:
 	using VecDi = Felt::VecDi<D>;
@@ -64,6 +67,7 @@ private:
 	using LeafType = typename TraitsType::LeafType;
 
 	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
+	using LeafsImpl = Impl::Mixin::Partitioned::Leafs<ThisType>;
 	using ResetImpl = Impl::Mixin::Partitioned::Reset::MultiList<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
 	using TrackedImpl = Impl::Mixin::Partitioned::Tracked<ThisType>;
@@ -80,8 +84,8 @@ public:
 	{}
 
 	using ChildrenImpl::children;
-	using ChildrenImpl::track_children;
 	using ResetImpl::reset;
+	using ResetImpl::track_children;
 	using TrackedImpl::track;
 };
 
@@ -91,8 +95,8 @@ class Numeric :
 	FELT_MIXINS(
 		(Numeric<T, D, N>),
 		(Grid::Size)(Numeric::Spatial)(Partitioned::Access)(Partitioned::Children)
-		(Partitioned::Reset::MultiList)(Partitioned::Snapshot)(Partitioned::Tracked)
-		(Partitioned::Untrack)
+		(Partitioned::Leafs)(Partitioned::Reset::MultiList)(Partitioned::Snapshot)
+		(Partitioned::Tracked)(Partitioned::Untrack)
 	)
 private:
 	using VecDi = Felt::VecDi<D>;
@@ -103,6 +107,7 @@ private:
 
 	using AccessImpl = Impl::Mixin::Partitioned::Access<ThisType>;
 	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
+	using LeafsImpl = Impl::Mixin::Partitioned::Leafs<ThisType>;
 	using ResetImpl = Impl::Mixin::Partitioned::Reset::MultiList<ThisType>;
 	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
 	using SpatialImpl = Impl::Mixin::Numeric::Spatial<ThisType>;
@@ -126,11 +131,11 @@ public:
 	using AccessImpl::set;
 	using ChildrenImpl::child_size;
 	using ChildrenImpl::children;
-	using ChildrenImpl::pos_child;
-	using ChildrenImpl::pos_idx_child;
-	using ChildrenImpl::track_children;
-	using ChildrenImpl::leafs;
+	using LeafsImpl::pos_child;
+	using LeafsImpl::pos_idx_child;
+	using LeafsImpl::leafs;
 	using ResetImpl::reset;
+	using ResetImpl::track_children;
 	using SizeImpl::inside;
 	using SizeImpl::offset;
 	using SizeImpl::size;

@@ -59,10 +59,10 @@ protected:
 		)
 	{
 		// Set each child sub-grid's size and offset.
-		for (PosIdx idx = 0; idx < m_children.data().size(); idx++)
+		for (PosIdx pos_idx = 0; pos_idx < m_children.data().size(); pos_idx++)
 		{
 			// Position of child in children grid.
-			const VecDi& pos_child = m_children.index(idx);
+			const VecDi& pos_child = m_children.index(pos_idx);
 			// Position of child in children grid, without offset.
 			const VecDi& pos_child_offset = pos_child - m_children.offset();
 			// Scaled position of child == position in world space, without offset.
@@ -72,7 +72,7 @@ protected:
 			// Position of child in world space, including offset.
 			const VecDi& offset_child = offset_child_offset + offset_;
 
-			m_children.data()[idx].resize(m_child_size, offset_child);
+			m_children.get(pos_idx).resize(m_child_size, offset_child);
 		}
 	}
 
@@ -104,115 +104,6 @@ protected:
 		return m_child_size;
 	}
 
-	/**
-	 * Add a spatial partition to children grid's tracking sub-grid.
-	 *
-	 * Uses mutex for thread safety. Activates the child grid.
-	 *
-	 * @param pos_idx_child_ position index of child sub-grid in parent grid.
-	 * @param list_idx_ index of tracking list used to track position.
-	 */
-	void track_child(const PosIdx pos_idx_child_, const TupleIdx list_idx_)
-	{
-		FELT_DEBUG(m_children.assert_pos_idx_bounds(pos_idx_child_, "track:"));
-		if (m_children.lookup().is_tracked(pos_idx_child_, list_idx_))
-			return;
-		std::lock_guard<std::mutex> lock(m_mutex);
-		if (m_children.lookup().is_tracked(pos_idx_child_, list_idx_))
-			return;
-		ChildType& child = m_children.get(pos_idx_child_);
-		if (!child.is_active())
-			child.activate();
-		m_children.lookup().track(pos_idx_child_, list_idx_);
-	}
-
-	/**
-	 * Bulk add children to tracking list, activating if not already active.
-	 *
-	 * Not thread-safe.
-	 *
-	 * @param grid_mask_ grid to match partition activation with.
-	 */
-	template <class MaskGrid>
-	void track_children(const MaskGrid& grid_mask_)
-	{
-		for (TupleIdx list_idx = 0; list_idx < grid_mask_.children().t_num_lists; list_idx++)
-		{
-			for (const PosIdx pos_idx_child : grid_mask_.children().lookup().list(list_idx))
-			{
-				if (m_children.lookup().is_tracked(pos_idx_child, list_idx))
-					continue;
-				ChildType& child = m_children.get(pos_idx_child);
-				if (!child.is_active())
-					child.activate();
-				m_children.lookup().track(pos_idx_child, list_idx);
-			}
-		}
-	}
-
-	/**
-	 * Calculate the position of a child grid (i.e. partition) given the position of leaf grid node.
-	 *
-	 * @param pos_leaf_ leaf grid node position vector.
-	 * @return position index of spatial partition in which leaf position lies.
-	 */
-	PosIdx pos_idx_child (const VecDi& pos_leaf_) const
-	{
-		// Encode child position as an index.
-		return m_children.index(pos_child(pos_leaf_));
-	}
-
-	/**
-	 * Calculate the position of a child grid (i.e. partition) given the position of leaf grid node.
-	 *
-	 * @param pos_leaf_ leaf grid node position vector.
-	 * @return position vector of spatial partition in which leaf position lies.
-	 */
-	VecDi pos_child (const VecDi& pos_leaf_) const
-	{
-		// Position of leaf, without offset.
-		const VecDi& pos_leaf_offset =  pos_leaf_ - pself->offset();
-		// Position of child grid containing leaf, without offset.
-		const VecDi& pos_child_offset = (pos_leaf_offset.array() / m_child_size.array()).matrix();
-		// Position of child grid containing leaf, including offset.
-		const VecDi& pos_child = pos_child_offset + m_children.offset();
-		// Encode child position as an index.
-		return pos_child;
-	}
-
-	/**
-	 * Call lambda for each grid node in given tracking list.
-	 *
-	 * @param layer_idx_ tracking list to cycle.
-	 * @param fn_ lambda to call with leaf position given as a parameter.
-	 */
-	template<typename Fn>
-	void leafs(const TupleIdx layer_idx_, Fn&& fn_) const
-	{
-		const PosArray& pos_idxs_child = m_children.lookup().list(layer_idx_);
-		const ListIdx num_childs = pos_idxs_child.size();
-
-		for (ListIdx list_idx = 0; list_idx < num_childs; list_idx++)
-		{
-			const PosIdx pos_idx_child = pos_idxs_child[list_idx];
-			const ChildType& child = m_children.get(pos_idx_child);
-			for (const PosIdx pos_idx_leaf : child.list(layer_idx_))
-			{
-				fn_(child.index(pos_idx_leaf));
-			}
-		}
-	}
-
-	/**
-	 * Get the mutex associated with modifications to the children grid (e.g. tracking lists).
-	 *
-	 * @return mutex for changes to children grid.
-	 */
-	std::mutex& mutex_children()
-	{
-		return m_mutex;
-	}
-
 private:
 	/**
 	 * Calculate required size of children grid to contain child sub-grids.
@@ -227,6 +118,112 @@ private:
 		}
 
 		return children_size;
+	}
+};
+
+
+template <class Derived>
+class Leafs
+{
+private:
+	/// Traits of derived class.
+	using TraitsType = Traits<Derived>;
+	/// Child grid type.
+	using ChildType = typename TraitsType::ChildType;
+	/// Dimension of grid.
+	static constexpr Dim t_dims = TraitsType::t_dims;
+	/// D-dimensional integer vector.
+	using VecDi = Felt::VecDi<t_dims>;
+	/// Mutex used to synchrnonise the adding/removing of elements from the tracking list(s).
+	std::mutex	m_mutex;
+
+protected:
+
+	/**
+	 * Call lambda for each grid node in given tracking list.
+	 *
+	 * @param layer_idx_ tracking list to cycle.
+	 * @param fn_ lambda to call with leaf position given as a parameter.
+	 */
+	template<typename Fn>
+	void leafs(const TupleIdx layer_idx_, Fn&& fn_) const
+	{
+		const PosArray& pos_idxs_child = pself->children().lookup().list(layer_idx_);
+		const ListIdx num_childs = pos_idxs_child.size();
+
+		for (ListIdx list_idx = 0; list_idx < num_childs; list_idx++)
+		{
+			const PosIdx pos_idx_child = pos_idxs_child[list_idx];
+			const ChildType& child = pself->children().get(pos_idx_child);
+			for (const PosIdx pos_idx_leaf : child.list(layer_idx_))
+			{
+				fn_(child.index(pos_idx_leaf));
+			}
+		}
+	}
+
+	/**
+	 * Add a spatial partition to children grid's tracking sub-grid.
+	 *
+	 * Uses mutex for thread safety. Activates the child grid.
+	 *
+	 * @param pos_idx_child_ position index of child sub-grid in parent grid.
+	 * @param list_idx_ index of tracking list used to track position.
+	 */
+	void track_child(const PosIdx pos_idx_child_, const TupleIdx list_idx_)
+	{
+		FELT_DEBUG(pself->children().assert_pos_idx_bounds(pos_idx_child_, "track:"));
+		if (pself->children().lookup().is_tracked(pos_idx_child_, list_idx_))
+			return;
+		std::lock_guard<std::mutex> lock(m_mutex);
+		if (pself->children().lookup().is_tracked(pos_idx_child_, list_idx_))
+			return;
+		ChildType& child = pself->children().get(pos_idx_child_);
+		if (!child.is_active())
+			child.activate();
+		pself->children().lookup().track(pos_idx_child_, list_idx_);
+	}
+
+	/**
+	 * Calculate the position of a child grid (i.e. partition) given the position of leaf grid node.
+	 *
+	 * @param pos_leaf_ leaf grid node position vector.
+	 * @return position index of spatial partition in which leaf position lies.
+	 */
+	PosIdx pos_idx_child (const VecDi& pos_leaf_) const
+	{
+		// Encode child position as an index.
+		return pself->children().index(pos_child(pos_leaf_));
+	}
+
+	/**
+	 * Calculate the position of a child grid (i.e. partition) given the position of leaf grid node.
+	 *
+	 * @param pos_leaf_ leaf grid node position vector.
+	 * @return position vector of spatial partition in which leaf position lies.
+	 */
+	VecDi pos_child (const VecDi& pos_leaf_) const
+	{
+		// Position of leaf, without offset.
+		const VecDi& pos_leaf_offset =  pos_leaf_ - pself->offset();
+		// Position of child grid containing leaf, without offset.
+		const VecDi& pos_child_offset = (
+			pos_leaf_offset.array() / pself->child_size().array()
+		).matrix();
+		// Position of child grid containing leaf, including offset.
+		const VecDi& pos_child = pos_child_offset + pself->children().offset();
+		// Encode child position as an index.
+		return pos_child;
+	}
+
+	/**
+	 * Get the mutex associated with modifications to the children grid (e.g. tracking lists).
+	 *
+	 * @return mutex for changes to children grid.
+	 */
+	std::mutex& mutex_children()
+	{
+		return m_mutex;
 	}
 };
 
@@ -284,6 +281,30 @@ private:
 	/// Number of tracking lists.
 	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
 protected:
+	/**
+	 * Bulk add children to tracking list, activating if not already active.
+	 *
+	 * Not thread-safe.
+	 *
+	 * @param grid_mask_ grid to match partition activation with.
+	 */
+	template <class MaskGrid>
+	void track_children(const MaskGrid& grid_mask_)
+	{
+		for (TupleIdx list_idx = 0; list_idx < grid_mask_.children().t_num_lists; list_idx++)
+		{
+			for (const PosIdx pos_idx_child : grid_mask_.children().lookup().list(list_idx))
+			{
+				if (pself->children().lookup().is_tracked(pos_idx_child, list_idx))
+					continue;
+				ChildType& child = pself->children().get(pos_idx_child);
+				if (!child.is_active())
+					child.activate();
+				pself->children().lookup().track(pos_idx_child, list_idx);
+			}
+		}
+	}
+
 	template <class MaskGrid>
 	void reset(const MaskGrid& grid_mask_)
 	{

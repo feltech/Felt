@@ -2,6 +2,8 @@
 #define INCLUDE_FELT_IMPL_MIXIN_POLYMIXIN_HPP_
 
 #include <Felt/Impl/Common.hpp>
+#include <Felt/Impl/Lookup.hpp>
+#include <Felt/Impl/Mixin/PartitionedMixin.hpp>
 #include <Felt/Impl/Mixin/TrackedMixin.hpp>
 
 namespace Felt
@@ -27,12 +29,12 @@ private:
 
 	// Do not expose from base.
 	using Base::activate;
-	using Base::is_active;
 protected:
 	Activate() : Base::Activate{IdxTuple::Constant(Felt::null_idx)}
 	{}
 
 	using Base::background;
+	using Base::is_active;
 
 	/**
 	 * Allocate the internal data array and lookup grid.
@@ -51,6 +53,193 @@ protected:
 		pself->m_a_vtx.shrink_to_fit();
 		pself->m_a_spx.resize(0);
 		pself->m_a_spx.shrink_to_fit();
+	}
+};
+
+
+template <class Derived>
+class Children : protected Partitioned::Children<Derived>
+{
+private:
+	using Base = Partitioned::Children<Derived>;
+	/// Traits of derived class.
+	using TraitsType = Traits<Derived>;
+	/// Child grid type.
+	using ChildType = typename TraitsType::ChildType;
+	/// Isogrid to (partially) polygonise.
+	using IsoGridType = typename TraitsType::IsoGridType;
+	/// Spatial partition type this poly will be responsible for.
+	using IsoChildType = typename IsoGridType::ChildType;
+
+protected:
+	/**
+	 * Construct and initialise children grid to hold child sub-grids.
+	 */
+	Children(
+		const IsoGridType& isogrid_
+	) : Base{isogrid_.size(), isogrid_.offset(), isogrid_.child_size(), ChildType(isogrid_)}
+	{
+		// Bind child polygonisation to isogrid child.
+		for (PosIdx pos_idx = 0; pos_idx < this->children().data().size(); pos_idx++)
+		{
+			this->children().get(pos_idx).bind(isogrid_.children().get(pos_idx).lookup());
+		}
+	}
+};
+
+
+template <class Derived>
+class Update
+{
+private:
+	using Base = Partitioned::Children<Derived>;
+	/// Traits of derived class.
+	using TraitsType = Traits<Derived>;
+	/// Surface type.
+	using SurfaceType = typename TraitsType::SurfaceType;
+	/// Child grid type.
+	using ChildType = typename TraitsType::ChildType;
+	/// Isogrid to (partially) polygonise.
+	using IsoGridType = typename TraitsType::IsoGridType;
+	/// Spatial partition type this poly will be responsible for.
+	using IsoChildType = typename IsoGridType::ChildType;
+	/// Lookup grid to track partitions containing zero-layer points.
+	using ChangesGridType = Impl::Lookup::SingleListSingleIdx<Traits<IsoGridType>::t_dims>;
+
+	SurfaceType const* m_psurface;
+	std::unique_ptr<ChangesGridType> m_pgrid_update_pending;
+	std::unique_ptr<ChangesGridType> m_pgrid_update_done;
+
+protected:
+	Update(const SurfaceType& surface_) :
+		m_psurface{&surface_},
+		m_pgrid_update_pending{
+			std::make_unique<ChangesGridType>(
+				surface_.isogrid().children().size(), surface_.isogrid().children().offset()
+			)
+		},
+		m_pgrid_update_done{
+			std::make_unique<ChangesGridType>(
+				surface_.isogrid().children().size(), surface_.isogrid().children().offset()
+			)
+		}
+	{}
+
+	/**
+	 * Notify of an update to the surface in order to track changes.
+	 *
+	 * This should be called whenever the surface is updated to ensure that eventual
+	 * re-polygonisation only needs to update those spatial partitions that have actually changed.
+	 */
+	void notify()
+	{
+		static const TupleIdx num_lists = m_psurface->isogrid().children().lookup().num_lists;
+
+		// Cycle outermost bands of delta update spatial partitions. We have three cases:
+		// * Partition is currently polygonised, and since its in the delta grid it needs updating.
+		// * Partition is not currently polygonised, but isogrid is tracking it, in which case it
+		//   needs polygonising.
+		// * Partition is not currently polygonised and isogrid is no longer tracking, so we no
+		//   longer need to remember it.
+		for (TupleIdx layer_idx = 0; layer_idx <= num_lists; layer_idx += num_lists - 1) {
+			for (const PosIdx pos_idx_child : m_psurface->delta(layer_idx))
+			{
+				bool is_active = pself->children().get(pos_idx_child).is_active();
+
+				for (
+					TupleIdx layer_idx = 0; !is_active && layer_idx <= num_lists;
+					layer_idx += num_lists - 1
+				) {
+					is_active = m_psurface->isogrid().children().lookup().is_tracked(
+						pos_idx_child, layer_idx
+					);
+				}
+
+				if (is_active)
+					m_pgrid_update_pending->track(pos_idx_child);
+				else
+					m_pgrid_update_pending->untrack(pos_idx_child);
+			}
+		}
+
+		// Cycle outermost status change lists, where a child may need resetting.
+		for (TupleIdx layer_idx = 0; layer_idx <= num_lists; layer_idx += num_lists - 1)
+		{
+			for (
+				const PosIdx pos_idx_child : m_psurface->status_change(layer_idx)
+			) {
+				if (pself->children().get(pos_idx_child).is_active())
+					m_pgrid_update_pending->track(pos_idx_child);
+			}
+		}
+	}
+
+	/**
+	 * Repolygonise partitions marked as changed since last polygonisation.
+	 */
+	void march()
+	{
+		#pragma omp parallel for
+		for (ListIdx list_idx = 0; list_idx < m_pgrid_update_pending->list().size(); list_idx++)
+		{
+			const PosIdx pos_idx_child = m_pgrid_update_pending->list()[list_idx];
+
+			ChildType& child = pself->children().get(pos_idx_child);
+
+			// If isogrid child partition is active, then polygonise it.
+			if (m_psurface->isogrid().children().get(pos_idx_child).is_active())
+			{
+				if (child.is_active())
+					child.reset();
+				else
+					child.activate();
+				child.march();
+
+			} else {
+				// Otherwise isogrid child partition has become inactive, so destroy the poly child.
+				if (child.is_active())
+					child.deactivate();
+			}
+		}
+
+		std::swap(m_pgrid_update_pending, m_pgrid_update_done);
+		m_pgrid_update_pending->reset();
+	}
+
+
+	/**
+	 * Add all active poly childs and isogrid childs to change tracking for (re)polygonisation.
+	 */
+	void invalidate()
+	{
+		static const TupleIdx num_lists = m_psurface->isogrid().children().lookup().num_lists;
+
+		// Remove pending changes, we're about to reconstruct the list.
+		m_pgrid_update_pending->reset();
+		// Flag curently active Poly::Single childs for re-polygonisation (or deactivation).
+		for (const PosIdx pos_idx_child : pself->children().lookup().list())
+			m_pgrid_update_pending->track(pos_idx_child);
+
+		// Flag active outer-layer isogrid childs for re-polygonisation.
+		for (TupleIdx layer_idx = 0; layer_idx <= num_lists; layer_idx += num_lists - 1)
+		{
+			for (
+				const PosIdx pos_idx_child :
+				m_psurface->isogrid().children().lookup().list(layer_idx)
+			) {
+				m_pgrid_update_pending->track(pos_idx_child);
+			}
+		}
+	}
+
+	/**
+	 * Get list of partitions that were updated.
+	 *
+	 * @return list of position indices of partitions that were repolygonised in the last `march`.
+	 */
+	const PosArray& changes() const
+	{
+		return m_pgrid_update_done->list();
 	}
 };
 
@@ -95,8 +284,6 @@ private:
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 protected:
-
-	using Base::Resize;
 
 	/**
 	 * Resize to fit size of isogrid child spatial partition.
@@ -162,7 +349,7 @@ protected:
 	/// List of simplexes (i.e. lines for 2D or triangles for 3D).
 	SpxArray	m_a_spx;
 
-	March(const IsoGridType& isogrid_) : m_pisogrid{&isogrid_}
+	March(const IsoGridType& isogrid_) : m_pisogrid{&isogrid_}, m_pisolookup{nullptr}
 	{}
 
 	/**
@@ -189,6 +376,16 @@ protected:
 	void bind(const IsoLookupType& isolookup)
 	{
 		m_pisolookup = &isolookup;
+	}
+
+	/**
+	 * Get a pointer to the isogrid child's lookup grid that gives points to polygonise.
+	 *
+	 * @return lookup grid to iterate over.
+	 */
+	IsoLookupType const* bind() const
+	{
+		return m_pisolookup;
 	}
 
 	/**

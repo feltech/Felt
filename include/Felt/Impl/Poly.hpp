@@ -14,17 +14,17 @@ namespace Impl
 namespace Poly
 {
 
-template <class IsoGrid>
+template <class TIsoGrid>
 class Single :
 	FELT_MIXINS(
-		(Single<IsoGrid>),
+		(Single<TIsoGrid>),
 		(Grid::Access::ByRef)(Grid::Data)(Poly::Activate)(Poly::Reset)(Poly::Resize)(Poly::March)
 		(Tracked::LookupInterface),
 		(Grid::Activate)(Grid::Index)(Grid::Resize)(Grid::Size)(Tracked::Resize)
 		(Tracked::Activate)(Tracked::SingleList::Reset)
 	)
 private:
-	using ThisType = Single<IsoGrid>;
+	using ThisType = Single<TIsoGrid>;
 	using TraitsType = Impl::Traits<ThisType>;
 
 	using ActivateImpl = Impl::Mixin::Poly::Activate<ThisType>;
@@ -37,13 +37,18 @@ private:
 	using IsoGridType = typename TraitsType::IsoGridType;
 
 public:
+	using Simplex = typename TraitsType::Simplex;
+
 	Single(const IsoGridType& isogrid_) :
 		MarchImpl{isogrid_}, LookupInterfaceImpl{LookupType{}}
 	{}
 
 	using ActivateImpl::activate;
 	using ActivateImpl::deactivate;
+	using ActivateImpl::is_active;
+	using SizeImpl::offset;
 	using SizeImpl::resize;
+	using SizeImpl::size;
 	using MarchImpl::bind;
 	using MarchImpl::march;
 	using MarchImpl::spxs;
@@ -52,27 +57,29 @@ public:
 };
 
 
-template <class SurfaceType>
+template <class TSurface>
 class Grid :
 	FELT_MIXINS(
-		(Grid<SurfaceType>),
-		(Partitioned::Children)
+		(Grid<TSurface>),
+		(Poly::Children)(Poly::Update)
 	)
 private:
-	using ThisType = Grid<SurfaceType>;
+	using ThisType = Grid<TSurface>;
 	using TraitsType = Traits<ThisType>;
 	using ChildType = typename TraitsType::ChildType;
 
-	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
+	using ChildrenImpl = Impl::Mixin::Poly::Children<ThisType>;
+	using UpdateImpl = Impl::Mixin::Poly::Update<ThisType>;
 public:
-	Grid(const SurfaceType& surface_) :
-		ChildrenImpl{
-			surface_.isogrid().size(), surface_.isogrid().offset(),
-			surface_.isogrid().child_size(), ChildType(surface_.isogrid())
-		}
+	Grid(const TSurface& surface_) :
+		ChildrenImpl{surface_.isogrid()}, UpdateImpl{surface_}
 	{}
 
 	using ChildrenImpl::children;
+	using UpdateImpl::changes;
+	using UpdateImpl::invalidate;
+	using UpdateImpl::notify;
+	using UpdateImpl::march;
 };
 
 
@@ -84,17 +91,17 @@ public:
  *
  * @tparam IsoGrid isogrid type to polygonise.
  */
-template <class IsoGrid>
-struct Traits< Poly::Single<IsoGrid> > : Mixin::Poly::Traits<Traits<IsoGrid>::t_dims, void>
+template <class TIsoGrid>
+struct Traits< Poly::Single<TIsoGrid> > : Mixin::Poly::Traits<Traits<TIsoGrid>::t_dims, void>
 {
 	/// Dimension of grid.
-	static constexpr Dim t_dims = Traits<IsoGrid>::t_dims;
+	static constexpr Dim t_dims = Traits<TIsoGrid>::t_dims;
 	/// A vertex index for each positively directed edge stored at each grid node.
 	using LeafType = Felt::VecDu<t_dims>;
 	/// Type of lookup grid for tracking active positions.
 	using LookupType = Lookup::LazySingleListSingleIdx<t_dims>;
-	/// Isogrid type that will be polygonised.
-	using IsoGridType = IsoGrid;
+	/// TIsoGrid type that will be polygonised.
+	using IsoGridType = TIsoGrid;
 };
 
 
@@ -103,14 +110,18 @@ struct Traits< Poly::Single<IsoGrid> > : Mixin::Poly::Traits<Traits<IsoGrid>::t_
  *
  * @tparam SurfaceType surface type to polygonise.
  */
-template <class SurfaceType>
-struct Traits< Poly::Grid<SurfaceType> >
+template <class TSurface>
+struct Traits< Poly::Grid<TSurface> >
 {
+	/// Type of surface to polygonise.
+	using SurfaceType = TSurface;
+	/// Isogrid type that the surface wraps.
 	using IsoGridType = typename SurfaceType::IsoGrid;
 	/// Dimension of grid.
 	static constexpr Dim t_dims = Traits<IsoGridType>::t_dims;
 	/// Child poly type to polygonise a single spatial partition.
 	using ChildType = Impl::Poly::Single<IsoGridType>;
+	/// Children grid type to store and track active child polys.
 	using ChildrenType = Impl::Tracked::SingleListSingleIdxByRef<ChildType, t_dims>;
 };
 
