@@ -362,7 +362,7 @@ private:
 		{
 			const VecDi corner = pos_ + GeomImpl::corners[idx];
 			const Distance val = m_pisogrid->get(corner);
-			mask |= (unsigned short)((val > 0) << idx);
+			mask = (unsigned short)(mask | ((val > 0) << idx));
 		}
 		return mask;
 	}

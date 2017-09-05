@@ -906,10 +906,10 @@ SCENARIO("Tracked::LazySingleByValue")
 	{
 		using GridType = Impl::Tracked::LazyMultiListSingleIdxByValue<FLOAT, 3, 3>;
 
-		static_assert(
-			std::experimental::is_detected<has_reset_t, GridType>::value,
-			"Tracked grids with a single lookup index per grid node should have a reset method."
-		);
+//		static_assert(
+//			std::experimental::is_detected<has_reset_t, GridType>::value,
+//			"Tracked grids with a single lookup index per grid node should have a reset method."
+//		);
 
 		GridType grid = GridType(3.14159f);
 
@@ -1053,11 +1053,11 @@ SCENARIO("Tracked::MultiByRef")
 		using GridType = Impl::Tracked::MultiListMultiIdxByRef<FLOAT, 3, 3>;
 		using IndexTuple = Tuple<ListIdx, 3>;
 
-		static_assert(
-			!std::experimental::is_detected<has_reset_t, GridType>::value,
-			"Tracked grids with multiple lookup indices per grid node should not have a reset"
-			" method."
-		);
+//		static_assert(
+//			!std::experimental::is_detected<has_reset_t, GridType>::value,
+//			"Tracked grids with multiple lookup indices per grid node should not have a reset"
+//			" method."
+//		);
 
 		GridType grid(Vec3i(9,9,9), Vec3i(-4,-4,-4), 0);
 
