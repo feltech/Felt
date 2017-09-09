@@ -49,10 +49,10 @@ GIVEN("a 2-layer 2D surface in a 7x7 isogrid with 3x3 spatial partitions")
 GIVEN("a 2-layer 2D surface in a 9x9 isogrid with 3x3 partitions")
 {
 	// 2D surface with 2x narrow band layers, respectively.
-	using SurfaceType = Surface<2, 2>;
+	using Surface = Surface<2, 2>;
 
 	// Construct the surface.
-	SurfaceType surface(Vec2i(9, 9), Vec2i(3, 3));
+	Surface surface(Vec2i(9, 9), Vec2i(3, 3));
 
 
 	WHEN("a singularity seed is created at the centre")
@@ -447,8 +447,8 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid with 3x3 partitions")
 
 GIVEN("a 2-layer 2D surface in a 21x21 isogrid with 2x2 partitions")
 {
-	using SurfaceType = Surface<2, 2>;
-	SurfaceType surface(Vec2i{21, 21}, Vec2i{2, 2});
+	using Surface = Surface<2, 2>;
+	Surface surface(Vec2i{21, 21}, Vec2i{2, 2});
 	// Grid to set values of manually, for checking against.
 	Impl::Grid::Snapshot<Distance, 2> isogrid_check(Vec2i{21, 21}, Vec2i::Zero(), 0);
 
@@ -516,8 +516,8 @@ SCENARIO("Surface - local updates")
 {
 	GIVEN("a 9x9 2-layer surface with 2x2 partitions initialised with a seed point in the centre")
 	{
-		using SurfaceType = Surface<2, 2>;
-		SurfaceType surface(Vec2i{9, 9}, Vec2i{2, 2});
+		using Surface = Surface<2, 2>;
+		Surface surface(Vec2i{9, 9}, Vec2i{2, 2});
 
 		// Grid to set values of manually, for checking against.
 		Impl::Grid::Snapshot<Distance, 2> isogrid_check(Vec2i{9, 9}, Vec2i::Zero(), 0);
@@ -985,10 +985,10 @@ SCENARIO("Surface - layer interactions")
 		"a 12x12 3-layer grid with two seeds diagonally opposite, and the left seed expanded"
 		" towards the right"
 	) {
-		using SurfaceType = Surface<2, 3>;
+		using Surface = Surface<2, 3>;
 		Vec2i size(12, 12);
 
-		SurfaceType surface(size, Vec2i(2, 2));
+		Surface surface(size, Vec2i(2, 2));
 
 		// Grid to set values of manually, for checking against.
 		Impl::Grid::Snapshot<Distance, 2> isogrid_check(size, Vec2i::Zero(), 0);
@@ -1280,8 +1280,8 @@ GIVEN(
 
 	AND_WHEN("we rotate around the surface casting rays from different directions")
 	{
-		using MatrixType = Eigen::Matrix3f;
-		MatrixType mat_rot(MatrixType::Identity());
+		using Matrix = Eigen::Matrix3f;
+		Matrix mat_rot(Matrix::Identity());
 
 		auto check = [&](const Vec3f& axis_) {
 			for (FLOAT rot_mult = 0; rot_mult < 2.0f; rot_mult += 0.1f)
@@ -1408,8 +1408,8 @@ GIVEN(
 
 	AND_WHEN("we rotate around the surface casting rays from different directions")
 	{
-		using MatrixType = Eigen::Matrix3f;
-		MatrixType mat_rot(MatrixType::Identity());
+		using Matrix = Eigen::Matrix3f;
+		Matrix mat_rot(Matrix::Identity());
 
 		auto check = [&](const Vec3f& axis_) {
 			Vec3f pos_hit;

@@ -29,25 +29,25 @@ template <class TSurface>
 class Polys : private Impl::Mixin::Partitioned::Children< Polys<TSurface> >
 {
 private:
-	using ThisType = Polys<TSurface>;
-	using TraitsType = Impl::Traits<ThisType>;
+	using This = Polys<TSurface>;
+	using Traits = Impl::Traits<This>;
 
-	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
+	using ChildrenImpl = Impl::Mixin::Partitioned::Children<This>;
 
 	/// Surface type.
-	using SurfaceType = typename TraitsType::SurfaceType;
+	using Surface = typename Traits::Surface;
 	/// Child grid type.
-	using ChildType = typename TraitsType::ChildType;
+	using Child = typename Traits::Child;
 	/// Isogrid to (partially) polygonise.
-	using IsoGridType = typename TraitsType::IsoGridType;
+	using IsoGrid = typename Traits::IsoGrid;
 	/// Spatial partition type this poly will be responsible for.
-	using IsoChildType = typename IsoGridType::ChildType;
+	using IsoChild = typename IsoGrid::Child;
 	/// Lookup grid to track partitions containing zero-layer points.
-	using ChangesGridType = Impl::Lookup::SingleListSingleIdx<Impl::Traits<IsoGridType>::t_dims>;
+	using ChangesGrid = Impl::Lookup::SingleListSingleIdx<Impl::Traits<IsoGrid>::t_dims>;
 
-	SurfaceType const* m_psurface;
-	std::unique_ptr<ChangesGridType> m_pgrid_update_pending;
-	std::unique_ptr<ChangesGridType> m_pgrid_update_done;
+	Surface const* m_psurface;
+	std::unique_ptr<ChangesGrid> m_pgrid_update_pending;
+	std::unique_ptr<ChangesGrid> m_pgrid_update_done;
 
 public:
 	using ChildrenImpl::children;
@@ -55,16 +55,16 @@ public:
 	Polys(const TSurface& surface_) :
 		ChildrenImpl{
 			surface_.isogrid().size(), surface_.isogrid().offset(), surface_.isogrid().child_size(),
-			ChildType(surface_.isogrid())
+			Child(surface_.isogrid())
 		},
 		m_psurface{&surface_},
 		m_pgrid_update_pending{
-			std::make_unique<ChangesGridType>(
+			std::make_unique<ChangesGrid>(
 				surface_.isogrid().children().size(), surface_.isogrid().children().offset()
 			)
 		},
 		m_pgrid_update_done{
-			std::make_unique<ChangesGridType>(
+			std::make_unique<ChangesGrid>(
 				surface_.isogrid().children().size(), surface_.isogrid().children().offset()
 			)
 		}
@@ -139,7 +139,7 @@ public:
 		{
 			const PosIdx pos_idx_child = m_pgrid_update_pending->list()[list_idx];
 
-			ChildType& child = this->children().get(pos_idx_child);
+			Child& child = this->children().get(pos_idx_child);
 
 			// If isogrid child partition is active, then polygonise it.
 			if (m_psurface->isogrid().children().get(pos_idx_child).is_active())
@@ -203,21 +203,21 @@ namespace Impl
 /**
  * Traits for Polys.
  *
- * @tparam SurfaceType surface type to polygonise.
+ * @tparam Surface surface type to polygonise.
  */
 template <class TSurface>
 struct Traits< Polys<TSurface> >
 {
 	/// Type of surface to polygonise.
-	using SurfaceType = TSurface;
+	using Surface = TSurface;
 	/// Isogrid type that the surface wraps.
-	using IsoGridType = typename SurfaceType::IsoGrid;
+	using IsoGrid = typename Surface::IsoGrid;
 	/// Dimension of grid.
-	static constexpr Dim t_dims = Traits<IsoGridType>::t_dims;
+	static constexpr Dim t_dims = Traits<IsoGrid>::t_dims;
 	/// Child poly type to polygonise a single spatial partition.
-	using ChildType = Impl::Poly::Single<IsoGridType>;
+	using Child = Impl::Poly::Single<IsoGrid>;
 	/// Children grid type to store and track active child polys.
-	using ChildrenType = Impl::Tracked::SingleListSingleIdxByRef<ChildType, t_dims>;
+	using Children = Impl::Tracked::SingleListSingleIdxByRef<Child, t_dims>;
 };
 } // Impl.
 

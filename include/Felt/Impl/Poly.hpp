@@ -23,29 +23,29 @@ class Single :
 		(Grid::Activate)(Grid::Index)(Grid::Resize)(Grid::Size)
 	)
 private:
-	using ThisType = Single<TIsoGrid>;
-	using TraitsType = Impl::Traits<ThisType>;
+	using This = Single<TIsoGrid>;
+	using Traits = Impl::Traits<This>;
 
 	/// Small epsilon value within which we consider vertex position as "exact".
 	static constexpr Distance epsilon = std::numeric_limits<Distance>::epsilon();
 	/// Dimension of isogrid to polygonise.
-	static constexpr Dim t_dims = TraitsType::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 
-	using ActivateImpl = Impl::Mixin::Tracked::Activate<ThisType>;
-	using GeomImpl = Impl::Mixin::Poly::Geom<ThisType>;
-	using LookupInterfaceImpl = Impl::Mixin::Tracked::LookupInterface<ThisType>;
-	using ResetImpl = Impl::Mixin::Tracked::SingleList::Reset<ThisType>;
-	using ResizeImpl = Impl::Mixin::Tracked::Resize<ThisType>;
+	using ActivateImpl = Impl::Mixin::Tracked::Activate<This>;
+	using GeomImpl = Impl::Mixin::Poly::Geom<This>;
+	using LookupInterfaceImpl = Impl::Mixin::Tracked::LookupInterface<This>;
+	using ResetImpl = Impl::Mixin::Tracked::SingleList::Reset<This>;
+	using ResizeImpl = Impl::Mixin::Tracked::Resize<This>;
 
-	using LookupType = typename TraitsType::LookupType;
+	using Lookup = typename Traits::Lookup;
 	/// Isogrid to (partially) polygonise.
-	using IsoGridType = typename TraitsType::IsoGridType;
+	using IsoGrid = typename Traits::IsoGrid;
 	/// Spatial partition type this poly will be responsible for.
-	using IsoChildType = typename IsoGridType::ChildType;
+	using IsoChild = typename IsoGrid::Child;
 	/// Spatial partition type this poly will be responsible for.
-	using IsoLookupType = typename IsoChildType::LookupType;
+	using IsoLookup = typename IsoChild::Lookup;
 	/// Vertex index tuple type (for spatial lookup grid).
-	using IdxTuple = typename TraitsType::LeafType;
+	using IdxTuple = typename Traits::Leaf;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 	/// Float vector.
@@ -65,8 +65,8 @@ private:
 
 
 	/// Isogrid to (partially) polygonise.
-	const IsoGridType*		m_pisogrid;
-	IsoLookupType const*	m_pisolookup;
+	const IsoGrid*		m_pisogrid;
+	IsoLookup const*	m_pisolookup;
 
 	/// List of interpolated vertices.
 	VtxArray	m_a_vtx;
@@ -84,8 +84,8 @@ public:
 	 *
 	 * @param isogrid_ grid to be (partially) polygonised.
 	 */
-	Single(const IsoGridType& isogrid_) :
-		ActivateImpl{IdxTuple::Constant(Felt::null_idx)}, LookupInterfaceImpl{LookupType{}},
+	Single(const IsoGrid& isogrid_) :
+		ActivateImpl{IdxTuple::Constant(Felt::null_idx)}, LookupInterfaceImpl{Lookup{}},
 		m_pisogrid{&isogrid_}, m_pisolookup{nullptr}
 	{}
 
@@ -153,7 +153,7 @@ public:
 	 *
 	 * @param pisolookup
 	 */
-	void bind(const IsoLookupType& isolookup)
+	void bind(const IsoLookup& isolookup)
 	{
 		m_pisolookup = &isolookup;
 	}
@@ -163,7 +163,7 @@ public:
 	 *
 	 * @return lookup grid to iterate over.
 	 */
-	IsoLookupType const* bind() const
+	IsoLookup const* bind() const
 	{
 		return m_pisolookup;
 	}
@@ -258,7 +258,7 @@ private:
 //					const FLOAT dist = (pos1 - pos2).squaredNorm();
 //					// If they are essentially the same vertex,
 //					// then there is no simplex for this cube.
-//					if (dist <= ThisType::epsilon())
+//					if (dist <= This::epsilon())
 //						return;
 //				}
 //			}
@@ -387,11 +387,11 @@ struct Traits< Poly::Single<TIsoGrid> >
 	/// Dimension of grid.
 	static constexpr Dim t_dims = Traits<TIsoGrid>::t_dims;
 	/// A vertex index for each positively directed edge stored at each grid node.
-	using LeafType = Felt::VecDu<t_dims>;
+	using Leaf = Felt::VecDu<t_dims>;
 	/// Type of lookup grid for tracking active positions.
-	using LookupType = Lookup::LazySingleListSingleIdx<t_dims>;
+	using Lookup = Lookup::LazySingleListSingleIdx<t_dims>;
 	/// IsoGrid type that will be polygonised.
-	using IsoGridType = TIsoGrid;
+	using IsoGrid = TIsoGrid;
 };
 
 } // Impl.

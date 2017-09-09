@@ -17,11 +17,11 @@ using namespace Felt;
  */
 SCENARIO("Grid::Simple")
 {
-	using GridType = Impl::Grid::Simple<FLOAT, 3>;
+	using Grid = Impl::Grid::Simple<FLOAT, 3>;
 	/// [Grid - basics: GIVEN 3x7x11]
 	GIVEN("a 3x7x11 grid with no offset and background value of 0")
 	{
-		GridType grid(Vec3i(3, 7, 11), Vec3i::Zero(), 0);
+		Grid grid(Vec3i(3, 7, 11), Vec3i::Zero(), 0);
 		/// [Grid - basics: GIVEN 3x7x11]
 
 		/// [Grid - basics: THEN memory is allocated]
@@ -72,7 +72,7 @@ SCENARIO("Grid::Simple")
 	{
 		Vec3i size(7, 11, 13);
 		Vec3i offset(-3, -3, -3);
-		GridType grid(size, offset, 0);
+		Grid grid(size, offset, 0);
 
 		//! [Position index]
 		THEN("the index of a point in the data array is reported correctly")
@@ -112,21 +112,21 @@ SCENARIO("Grid::Simple")
 
 SCENARIO("Grid::Snapshot")
 {
-	using GridType = Impl::Grid::Snapshot<FLOAT, 3>;
+	using Grid = Impl::Grid::Snapshot<FLOAT, 3>;
 	GIVEN("a 7x11x13 grid with (-3,-3,-3) offset and background value of 2")
 	{
-		GridType grid(Vec3i(7, 11, 13), Vec3i(-3, -3, -3), 2);
+		Grid grid(Vec3i(7, 11, 13), Vec3i(-3, -3, -3), 2);
 
 		static_assert(
 			std::is_same<
-				GridType::VArrayData, Eigen::Map< Eigen::Array<FLOAT, 1, Eigen::Dynamic> >
+				Grid::VArrayData, Eigen::Map< Eigen::Array<FLOAT, 1, Eigen::Dynamic> >
 			>::value,
 			"Vector form of underlying data should be an Eigen::Map to an Eigen::Array type"
 		);
 
 		WHEN("the underlying data is wrapped in an Eigen vector")
 		{
-			GridType::VArrayData array = grid.array();
+			Grid::VArrayData array = grid.array();
 
 			THEN("the data contains the expected (background) values")
 			{
@@ -149,10 +149,10 @@ SCENARIO("Grid::Snapshot")
 
 SCENARIO("Lookup::Simple")
 {
-	using GridType = Impl::Lookup::SingleListSingleIdx<3>;
+	using Grid = Impl::Lookup::SingleListSingleIdx<3>;
 	GIVEN("a 10x10x10 grid with (0,-5,-5) offset")
 	{
-		GridType grid(Vec3i(10,10,10), Vec3i(0, -5, -5));
+		Grid grid(Vec3i(10,10,10), Vec3i(0, -5, -5));
 
 		const Vec3i pos1(1, 0, -1);
 		const Vec3i pos2(2, 1, 0);
@@ -328,11 +328,11 @@ SCENARIO("Lookup::Simple")
 
 SCENARIO("Lookup::Single")
 {
-	using GridType = Impl::Lookup::MultiListSingleIdx<3, 3>;
+	using Grid = Impl::Lookup::MultiListSingleIdx<3, 3>;
 
 	GIVEN("a grid and some locations")
 	{
-		GridType grid(Vec3i(10,10,10), Vec3i(0, -5, -5));
+		Grid grid(Vec3i(10,10,10), Vec3i(0, -5, -5));
 
 		const Vec3i pos1(1, 0, -1);
 		const Vec3i pos2(2, 1, 0);
@@ -503,8 +503,8 @@ SCENARIO("Lookup::Multi")
 
 	GIVEN("a 2D grid with 5 tracking lists")
 	{
-		using GridType = Impl::Lookup::MultiListMultiIdx<2, 5>;
-		GridType grid(Vec2i(3,3), Vec2i(-1,-1));
+		using Grid = Impl::Lookup::MultiListMultiIdx<2, 5>;
+		Grid grid(Vec2i(3,3), Vec2i(-1,-1));
 
 		THEN("the grid has the correct dimension")
 		{
@@ -519,11 +519,11 @@ SCENARIO("Lookup::Multi")
 		}
 	}
 
-	using GridType = Impl::Lookup::MultiListMultiIdx<3, 3>;
+	using Grid = Impl::Lookup::MultiListMultiIdx<3, 3>;
 
 	GIVEN("a 10x10x10 grid with 3 tracking lists, and some locations")
 	{
-		GridType grid(Vec3i(10,10,10), Vec3i(0, -5, -5));
+		Grid grid(Vec3i(10,10,10), Vec3i(0, -5, -5));
 
 		const Vec3i pos1(1, 0, -1);
 		const Vec3i pos2(2, 1, 0);
@@ -731,13 +731,13 @@ SCENARIO("Lookup::Multi")
 
 SCENARIO("Lookup::LazySimple")
 {
-	using GridType = Impl::Lookup::LazySingleListSingleIdx<3>;
+	using Grid = Impl::Lookup::LazySingleListSingleIdx<3>;
 
 	GIVEN("a 3x3x3 lazy single-index lookup grid with 3 tracking lists")
 	{
 		/// [LazySingleLookupGrid initialisation]
 
-		GridType grid = GridType();
+		Grid grid = Grid();
 
 		THEN("the grid is initially inactive")
 		{
@@ -807,13 +807,13 @@ SCENARIO("Lookup::LazySimple")
 
 SCENARIO("Lookup::LazySingle")
 {
-	using GridType = Impl::Lookup::LazyMultiListSingleIdx<3, 3>;
+	using Grid = Impl::Lookup::LazyMultiListSingleIdx<3, 3>;
 
 	GIVEN("a 3x3x3 lazy single-index lookup grid with 3 tracking lists")
 	{
 		/// [LazySingleLookupGrid initialisation]
 
-		GridType grid = GridType();
+		Grid grid = Grid();
 
 		THEN("the grid is initially inactive")
 		{
@@ -904,14 +904,21 @@ SCENARIO("Tracked::LazySingleByValue")
 {
 	GIVEN("a 3x3x3 grid with (-1,-1,-1) offset and background value of 3.14159")
 	{
-		using GridType = Impl::Tracked::LazyMultiListSingleIdxByValue<FLOAT, 3, 3>;
+		using Grid = Impl::Tracked::LazyMultiListSingleIdxByValue<FLOAT, 3, 3>;
 
+<<<<<<< Upstream, based on branch 'master' of https://github.com/feltech/Felt.git
 //		static_assert(
 //			std::experimental::is_detected<has_reset_t, GridType>::value,
 //			"Tracked grids with a single lookup index per grid node should have a reset method."
 //		);
+=======
+		static_assert(
+			std::experimental::is_detected<has_reset_t, Grid>::value,
+			"Tracked grids with a single lookup index per grid node should have a reset method."
+		);
+>>>>>>> 6b6a1e0 Remove `Type` suffixes
 
-		GridType grid = GridType(3.14159f);
+		Grid grid = Grid(3.14159f);
 
 		const PosIdx NULL_IDX = Felt::null_idx;
 
@@ -1009,16 +1016,16 @@ SCENARIO("Tracked::LazySingleByValue")
 
 	GIVEN("a 9x9x9 grid of std::vectors with (-4,-4,-4) offset")
 	{
-		using LeafType = std::vector<int>;
-		using GridType = Impl::Tracked::LazyMultiListSingleIdxByValue<LeafType, 3, 3>;
+		using Leaf = std::vector<int>;
+		using Grid = Impl::Tracked::LazyMultiListSingleIdxByValue<Leaf, 3, 3>;
 
-		GridType grid(LeafType{1,2,3});
+		Grid grid(Leaf{1,2,3});
 		grid.resize(Vec3i(9,9,9), Vec3i(-4,-4,-4));
 		grid.activate();
 
 		WHEN("a value is set with an lvalue reference")
 		{
-			LeafType move_me{5,6,7};
+			Leaf move_me{5,6,7};
 			int* pdata = &move_me[0];
 			grid.set(Vec3i(2,2,2), move_me);
 
@@ -1031,8 +1038,8 @@ SCENARIO("Tracked::LazySingleByValue")
 
 		WHEN("a value is set with an rvalue reference")
 		{
-			LeafType move_me{5,6,7};
-			LeafType copied = move_me;
+			Leaf move_me{5,6,7};
+			Leaf copied = move_me;
 			int* pdata = &move_me[0];
 			grid.set(Vec3i(2,2,2), std::move(move_me));
 
@@ -1050,16 +1057,24 @@ SCENARIO("Tracked::MultiByRef")
 {
 	GIVEN("a 9x9x9 grid of floats with (-4,-4,-4) offset and background value of 0")
 	{
-		using GridType = Impl::Tracked::MultiListMultiIdxByRef<FLOAT, 3, 3>;
+		using Grid = Impl::Tracked::MultiListMultiIdxByRef<FLOAT, 3, 3>;
 		using IndexTuple = Tuple<ListIdx, 3>;
 
+<<<<<<< Upstream, based on branch 'master' of https://github.com/feltech/Felt.git
 //		static_assert(
 //			!std::experimental::is_detected<has_reset_t, GridType>::value,
 //			"Tracked grids with multiple lookup indices per grid node should not have a reset"
 //			" method."
 //		);
+=======
+		static_assert(
+			!std::experimental::is_detected<has_reset_t, Grid>::value,
+			"Tracked grids with multiple lookup indices per grid node should not have a reset"
+			" method."
+		);
+>>>>>>> 6b6a1e0 Remove `Type` suffixes
 
-		GridType grid(Vec3i(9,9,9), Vec3i(-4,-4,-4), 0);
+		Grid grid(Vec3i(9,9,9), Vec3i(-4,-4,-4), 0);
 
 		THEN("the grid size is as expected and is initialised to all zero")
 		{
@@ -1110,13 +1125,13 @@ SCENARIO("Tracked::MultiByRef")
 
 	GIVEN("a 9x9x9 grid of std::vectors with (-4,-4,-4) offset")
 	{
-		using LeafType = std::vector<int>;
-		using GridType = Impl::Tracked::MultiListMultiIdxByRef<LeafType, 3, 3>;
-		GridType grid(Vec3i(9,9,9), Vec3i(-4,-4,-4), LeafType{1,2,3});
+		using Leaf = std::vector<int>;
+		using Grid = Impl::Tracked::MultiListMultiIdxByRef<Leaf, 3, 3>;
+		Grid grid(Vec3i(9,9,9), Vec3i(-4,-4,-4), Leaf{1,2,3});
 
 		WHEN("a value is set with an lvalue reference")
 		{
-			LeafType move_me{5,6,7};
+			Leaf move_me{5,6,7};
 			int* pdata = &move_me[0];
 			grid.get(Vec3i(2,2,2)) = move_me;
 
@@ -1129,8 +1144,8 @@ SCENARIO("Tracked::MultiByRef")
 
 		WHEN("a value is set with an rvalue reference")
 		{
-			LeafType move_me{5,6,7};
-			LeafType copied = move_me;
+			Leaf move_me{5,6,7};
+			Leaf copied = move_me;
 			int* pdata = &move_me[0];
 			grid.get(Vec3i(2,2,2)) = std::move(move_me);
 
@@ -1143,7 +1158,7 @@ SCENARIO("Tracked::MultiByRef")
 
 		WHEN("a value is tracked with an lvalue reference")
 		{
-			LeafType move_me{5,6,7};
+			Leaf move_me{5,6,7};
 			int* pdata = &move_me[0];
 			grid.track(move_me, grid.index(Vec3i(2,2,2)), 1);
 
@@ -1156,8 +1171,8 @@ SCENARIO("Tracked::MultiByRef")
 
 		WHEN("a value is tracked with an rvalue reference")
 		{
-			LeafType move_me{5,6,7};
-			LeafType copied = move_me;
+			Leaf move_me{5,6,7};
+			Leaf copied = move_me;
 			int* pdata = &move_me[0];
 			grid.track(std::move(move_me), grid.index(Vec3i(2,2,2)), 1);
 
@@ -1173,8 +1188,8 @@ SCENARIO("Tracked::MultiByRef")
 
 SCENARIO("Paritioned::Lookup")
 {
-	using GridType = Impl::Partitioned::Lookup<3, 3>;
-	using ChildrenGrid = GridType::ChildrenGrid;
+	using Grid = Impl::Partitioned::Lookup<3, 3>;
+	using ChildrenGrid = Grid::ChildrenGrid;
 
 	static_assert(
 		std::is_same<
@@ -1186,7 +1201,7 @@ SCENARIO("Paritioned::Lookup")
 
 	GIVEN("a 9x9x9 grid with (-4,-4,-4) offset in 3x3x3 partitions")
 	{
-		GridType grid(Vec3i(9,9,9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3));
+		Grid grid(Vec3i(9,9,9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3));
 
 		THEN("the children tracking grid has been initialised with lazy subgrids")
 		{
@@ -1242,7 +1257,7 @@ SCENARIO("Paritioned::Lookup")
 
 		WHEN("some points are tracked which overlap points tracked in a masking grid")
 		{
-			GridType grid_master(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3));
+			Grid grid_master(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3));
 
 			const Vec3i pos_list_0(0, 0, 0);
 			const Vec3i pos_active_because_master(-4, 0, 4);
@@ -1301,11 +1316,11 @@ SCENARIO("Paritioned::Lookup")
 
 SCENARIO("Paritioned::Tracked::Simple")
 {
-	using GridType = Impl::Partitioned::Tracked::Simple<INT, 3, 3>;
+	using Grid = Impl::Partitioned::Tracked::Simple<INT, 3, 3>;
 
 	GIVEN("a 9x9x9 grid with (-4,-4,-4) offset in 3x3x3 partitions with background value -42")
 	{
-		GridType grid(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3), -42);
+		Grid grid(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3), -42);
 
 		const Vec3i pos12_child(-1, -1, -1);
 		const Vec3i pos3_child(0, 0, 0);
@@ -1348,7 +1363,7 @@ SCENARIO("Paritioned::Tracked::Simple")
 
 		AND_WHEN("a mask grid is tracking some partitions")
 		{
-			GridType grid_master(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3), 0);
+			Grid grid_master(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3), 0);
 			grid_master.track(1234, pos1, 0);
 			grid_master.track(1234, pos3, 0);
 
@@ -1516,11 +1531,11 @@ SCENARIO("Paritioned::Tracked::Simple")
 
 SCENARIO("Paritioned::Tracked::Numeric")
 {
-	using GridType = Impl::Partitioned::Tracked::Numeric<FLOAT, 3, 3>;
+	using Grid = Impl::Partitioned::Tracked::Numeric<FLOAT, 3, 3>;
 
 	GIVEN("a 9x9x9 grid with (-4,-4,-4) offset in 3x3x3 partitions with background value -42")
 	{
-		GridType grid(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3), -42);
+		Grid grid(Vec3i(9, 9, 9), Vec3i(-4,-4,-4), Vec3i(3, 3, 3), -42);
 
 		const Vec3i pos123_child(-1, -1, -1);
 		const Vec3i pos4_child(1, 1, 1);
@@ -1537,7 +1552,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 		const PosIdx pos3_idx = grid.children().get(pos123_child_idx).index(pos3);
 		const PosIdx pos4_idx = grid.children().get(pos4_child_idx).index(pos4);
 
-		GridType::ChildType& child = grid.children().get(pos123_child_idx);
+		Grid::Child& child = grid.children().get(pos123_child_idx);
 
 		WHEN("positions in the same partition are tracked")
 		{
@@ -1751,11 +1766,11 @@ SCENARIO("Paritioned::Tracked::Numeric")
 			{
 				static_assert(
 					std::is_same<
-						GridType::SnapshotPtr, std::unique_ptr< Impl::Grid::Snapshot<FLOAT, 3> >
+						Grid::SnapshotPtr, std::unique_ptr< Impl::Grid::Snapshot<FLOAT, 3> >
 					>::value,
 					"Snapshot grid must be smart pointer to a simple Grid::Snapshot."
 				);
-				GridType::SnapshotPtr psnapshot = grid.snapshot();
+				Grid::SnapshotPtr psnapshot = grid.snapshot();
 
 				THEN("the snapshot grid is of the correct size")
 				{
@@ -1796,7 +1811,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 
 	GIVEN("A 1D grid type and input vector of values")
 	{
-		using GridType = Impl::Partitioned::Tracked::Numeric<FLOAT, 1, 3>;
+		using Grid = Impl::Partitioned::Tracked::Numeric<FLOAT, 1, 3>;
 		std::vector<FLOAT> input = { 1.0f, 0 };
 
 		WHEN("we interpolate a distance of 0.3 between the vector values")
@@ -1804,7 +1819,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 			using Vec1f = Eigen::Matrix<FLOAT, 1, 1>;
 			const Vec1f pos(0.3);
 
-			GridType::interp(input, pos);
+			Grid::interp(input, pos);
 
 			THEN("the input vector now contains the single interpolated value")
 			{
@@ -1816,7 +1831,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 
 	GIVEN("A 2D grid type and input vector of values")
 	{
-		using GridType = Impl::Partitioned::Tracked::Numeric<FLOAT, 2, 3>;
+		using Grid = Impl::Partitioned::Tracked::Numeric<FLOAT, 2, 3>;
 
 		std::vector<FLOAT> input = std::vector<FLOAT>(4);
 		input[0 /*00*/] = 2.0f;
@@ -1828,7 +1843,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 		{
 			const Vec2f pos(0.8f, 0.5f);
 
-			GridType::interp(input, pos);
+			Grid::interp(input, pos);
 
 			THEN("the input vector now contains the correct interpolated values")
 			{
@@ -1838,7 +1853,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 
 				AND_WHEN("we interpolate along this line")
 				{
-					GridType::interp(input, pos);
+					Grid::interp(input, pos);
 
 					THEN("the input vector now contains the final interpolated value")
 					{
@@ -1860,7 +1875,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 				|/		 |/
 				000----001
 		*/
-		using GridType = Impl::Partitioned::Tracked::Numeric<FLOAT, 3, 3>;
+		using Grid = Impl::Partitioned::Tracked::Numeric<FLOAT, 3, 3>;
 
 		std::vector<FLOAT> input = std::vector<FLOAT>(8);
 		input[0 /**000*/] = 0.0f;
@@ -1876,7 +1891,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 		{
 			Vec3f pos(0.5f, 0.75f, 0.5f);
 
-			GridType::interp(input, pos);
+			Grid::interp(input, pos);
 
 			THEN("the input vector now contains the correct interpolated values")
 			{
@@ -1889,7 +1904,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 				AND_WHEN(
 					"we bilinearly interpolate a distance of (0.8, 0.5) between these vector values"
 				) {
-					GridType::interp(input, pos);
+					Grid::interp(input, pos);
 
 					THEN("the input vector now contains the correct interpolated values")
 					{
@@ -1899,7 +1914,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 
 						AND_WHEN("we interpolate along this line")
 						{
-							GridType::interp(input, pos);
+							Grid::interp(input, pos);
 
 							THEN("the input vector now contains the final interpolated value")
 							{
@@ -1916,8 +1931,8 @@ SCENARIO("Paritioned::Tracked::Numeric")
 
 	GIVEN("a 3x3 grid with (-1,-1) offset and background value of 0")
 	{
-		using GridType = Impl::Partitioned::Tracked::Numeric<FLOAT, 2, 3>;
-		GridType grid(Vec2i(3, 3), Vec2i(-1,-1), Vec2i(3,3), 0);
+		using Grid = Impl::Partitioned::Tracked::Numeric<FLOAT, 2, 3>;
+		Grid grid(Vec2i(3, 3), Vec2i(-1,-1), Vec2i(3,3), 0);
 		// Only a single partition in this case.
 		grid.children().get(0).activate();
 
@@ -2150,9 +2165,9 @@ SCENARIO("Paritioned::Tracked::Numeric")
 
 	GIVEN("a 3x3x3 grid with (-1,-1,-1) offset and background value of 0")
 	{
-		using GridType = Impl::Partitioned::Tracked::Numeric<FLOAT, 3, 3>;
+		using Grid = Impl::Partitioned::Tracked::Numeric<FLOAT, 3, 3>;
 
-		GridType grid(Vec3i(3, 3, 3), Vec3i(-1,-1,-1), Vec3i(3,3,3), 0);
+		Grid grid(Vec3i(3, 3, 3), Vec3i(-1,-1,-1), Vec3i(3,3,3), 0);
 		grid.children().get(0).activate();
 
 		WHEN("we set up a gradient about the centre")
@@ -2322,7 +2337,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 		WHEN("neighbours of an arbitrary position vector are cycled")
 		{
 			std::vector<Vec3i> apos;
-			GridType::neighs(Vec3i(-67, 54, 3), [&apos](const Vec3i& pos) {
+			Grid::neighs(Vec3i(-67, 54, 3), [&apos](const Vec3i& pos) {
 				apos.push_back(pos);
 			});
 

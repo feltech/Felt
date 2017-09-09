@@ -45,8 +45,8 @@ struct Geom<Derived, 2>
 		 * @param <unused>
 		 * @param pos
 		 */
-		template <typename PosType, class GridType>
-		Vertex(const GridType* grid, const PosType& pos)
+		template <typename Pos, class Grid>
+		Vertex(const Grid* grid, const Pos& pos)
 		{
 			(void)grid;
 			this->pos = pos.template cast<FLOAT>();
@@ -139,8 +139,8 @@ struct Geom<Derived, 3> {
 		 * @param grid
 		 * @param pos
 		 */
-		template <typename PosType, class GridType>
-		Vertex(const GridType* grid, const PosType& pos)
+		template <typename Pos, class Grid>
+		Vertex(const Grid* grid, const Pos& pos)
 		{
 			this->pos = pos.template cast<FLOAT>();
 			this->norm = grid->grad(pos);

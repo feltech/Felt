@@ -23,17 +23,17 @@ class SingleListSingleIdx :
 		(Grid::Index)
 	)
 private:
-	using ThisType = SingleListSingleIdx<D>;
-	using TraitsType = Impl::Traits<ThisType>;
+	using This = SingleListSingleIdx<D>;
+	using Traits = Impl::Traits<This>;
 
-	using AccessImpl = Impl::Mixin::Grid::Access::ByValue<ThisType>;
-	using ActivateImpl = Impl::Mixin::Grid::Activate<ThisType>;
-	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
-	using LookupImpl = Impl::Mixin::Lookup::SingleList::SingleIdx<ThisType>;
-	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
+	using AccessImpl = Impl::Mixin::Grid::Access::ByValue<This>;
+	using ActivateImpl = Impl::Mixin::Grid::Activate<This>;
+	using DataImpl = Impl::Mixin::Grid::Data<This>;
+	using LookupImpl = Impl::Mixin::Lookup::SingleList::SingleIdx<This>;
+	using SizeImpl = Impl::Mixin::Grid::Size<This>;
 
-	using VecDi = Felt::VecDi<TraitsType::t_dims>;
-	using LeafType = typename TraitsType::LeafType;
+	using VecDi = Felt::VecDi<Traits::t_dims>;
+	using Leaf = typename Traits::Leaf;
 
 public:
 	SingleListSingleIdx(const VecDi& size_, const VecDi& offset_) :
@@ -61,18 +61,18 @@ class LazySingleListSingleIdx :
 		(Grid::Activate)(Grid::Size)(Grid::Index)
 	)
 private:
-	using ThisType = LazySingleListSingleIdx<D>;
-	using TraitsType = Impl::Traits<ThisType>;
+	using This = LazySingleListSingleIdx<D>;
+	using Traits = Impl::Traits<This>;
 
-	using AccessImpl = Impl::Mixin::Grid::Access::ByValue<ThisType>;
-	using ActivateImpl = Impl::Mixin::Lookup::SingleList::Activate<ThisType>;
-	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
-	using LookupImpl = Impl::Mixin::Lookup::SingleList::SingleIdx<ThisType>;
-	using ResizeImpl = Impl::Mixin::Grid::Resize<ThisType>;
-	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
+	using AccessImpl = Impl::Mixin::Grid::Access::ByValue<This>;
+	using ActivateImpl = Impl::Mixin::Lookup::SingleList::Activate<This>;
+	using DataImpl = Impl::Mixin::Grid::Data<This>;
+	using LookupImpl = Impl::Mixin::Lookup::SingleList::SingleIdx<This>;
+	using ResizeImpl = Impl::Mixin::Grid::Resize<This>;
+	using SizeImpl = Impl::Mixin::Grid::Size<This>;
 
-	using VecDi = Felt::VecDi<TraitsType::t_dims>;
-	using LeafType = typename TraitsType::LeafType;
+	using VecDi = Felt::VecDi<Traits::t_dims>;
+	using Leaf = typename Traits::Leaf;
 
 public:
 	LazySingleListSingleIdx() :
@@ -104,17 +104,17 @@ class MultiListSingleIdx :
 		(Grid::Index)
 	)
 private:
-	using ThisType = MultiListSingleIdx<D, N>;
-	using TraitsType = Impl::Traits<ThisType>;
+	using This = MultiListSingleIdx<D, N>;
+	using Traits = Impl::Traits<This>;
 
-	using AccessImpl = Impl::Mixin::Grid::Access::ByValue<ThisType>;
-	using ActivateImpl = Impl::Mixin::Grid::Activate<ThisType>;
-	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
-	using LookupImpl = Impl::Mixin::Lookup::MultiList::SingleIdx<ThisType>;
-	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
+	using AccessImpl = Impl::Mixin::Grid::Access::ByValue<This>;
+	using ActivateImpl = Impl::Mixin::Grid::Activate<This>;
+	using DataImpl = Impl::Mixin::Grid::Data<This>;
+	using LookupImpl = Impl::Mixin::Lookup::MultiList::SingleIdx<This>;
+	using SizeImpl = Impl::Mixin::Grid::Size<This>;
 
-	using VecDi = Felt::VecDi<TraitsType::t_dims>;
-	using LeafType = typename TraitsType::LeafType;
+	using VecDi = Felt::VecDi<Traits::t_dims>;
+	using Leaf = typename Traits::Leaf;
 
 public:
 	MultiListSingleIdx(const VecDi& size, const VecDi& offset) :
@@ -143,20 +143,20 @@ class LazyMultiListSingleIdx :
 		(Grid::Access::ByValue)(Grid::Activate)(Grid::Index)(Grid::Size)
 	)
 private:
-	using ThisType = LazyMultiListSingleIdx<D, N>;
-	using TraitsType = Impl::Traits<ThisType>;
+	using This = LazyMultiListSingleIdx<D, N>;
+	using Traits = Impl::Traits<This>;
 
-	using AccessImpl = Impl::Mixin::Grid::Access::LazyByValue<ThisType>;
-	using ActivateImpl = Impl::Mixin::Lookup::MultiList::Activate<ThisType>;
-	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
-	using LookupImpl = Impl::Mixin::Lookup::MultiList::SingleIdx<ThisType>;
-	using SizeImpl = Impl::Mixin::Grid::Resize<ThisType>;
+	using AccessImpl = Impl::Mixin::Grid::Access::LazyByValue<This>;
+	using ActivateImpl = Impl::Mixin::Lookup::MultiList::Activate<This>;
+	using DataImpl = Impl::Mixin::Grid::Data<This>;
+	using LookupImpl = Impl::Mixin::Lookup::MultiList::SingleIdx<This>;
+	using SizeImpl = Impl::Mixin::Grid::Resize<This>;
 
-	using VecDi = Felt::VecDi<TraitsType::t_dims>;
-	using LeafType = typename TraitsType::LeafType;
+	using VecDi = Felt::VecDi<Traits::t_dims>;
+	using Leaf = typename Traits::Leaf;
 
 public:
-	static constexpr TupleIdx num_lists = TraitsType::t_num_lists;
+	static constexpr TupleIdx num_lists = Traits::t_num_lists;
 
 	LazyMultiListSingleIdx() :
 		ActivateImpl{null_idx}
@@ -189,20 +189,20 @@ class MultiListMultiIdx :
 		(Grid::Activate)(Grid::Index)
 	)
 private:
-	using ThisType = MultiListMultiIdx<D, N>;
-	using TraitsType = Impl::Traits<ThisType>;
+	using This = MultiListMultiIdx<D, N>;
+	using Traits = Impl::Traits<This>;
 
-	using AccessImpl = Impl::Mixin::Grid::Access::ByRef<ThisType>;
-	using ActivateImpl = Impl::Mixin::Lookup::MultiList::Activate<ThisType>;
-	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
-	using LookupImpl = Impl::Mixin::Lookup::MultiList::MultiIdx<ThisType>;
-	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
+	using AccessImpl = Impl::Mixin::Grid::Access::ByRef<This>;
+	using ActivateImpl = Impl::Mixin::Lookup::MultiList::Activate<This>;
+	using DataImpl = Impl::Mixin::Grid::Data<This>;
+	using LookupImpl = Impl::Mixin::Lookup::MultiList::MultiIdx<This>;
+	using SizeImpl = Impl::Mixin::Grid::Size<This>;
 
-	using VecDi = Felt::VecDi<TraitsType::t_dims>;
-	using LeafType = typename TraitsType::LeafType;
+	using VecDi = Felt::VecDi<Traits::t_dims>;
+	using Leaf = typename Traits::Leaf;
 
 public:
-	static constexpr TupleIdx num_lists = TraitsType::t_num_lists;
+	static constexpr TupleIdx num_lists = Traits::t_num_lists;
 
 	MultiListMultiIdx(const VecDi& size, const VecDi& offset) :
 		SizeImpl{size, offset}, ActivateImpl{LookupImpl::s_null_idxs}
@@ -240,7 +240,7 @@ namespace Impl
 template <Dim D>
 struct Traits< Lookup::SingleListSingleIdx<D> >
 {
-	using LeafType = ListIdx;
+	using Leaf = ListIdx;
 	static constexpr UINT t_dims = D;
 };
 
@@ -252,7 +252,7 @@ struct Traits< Lookup::SingleListSingleIdx<D> >
 template <Dim D>
 struct Traits< Lookup::LazySingleListSingleIdx<D> >
 {
-	using LeafType = ListIdx;
+	using Leaf = ListIdx;
 	static constexpr UINT t_dims = D;
 };
 
@@ -263,7 +263,7 @@ template <Dim D, TupleIdx N>
 struct DefaultLookupTraits
 {
 	/// Single index stored in each grid node.
-	using LeafType = ListIdx;
+	using Leaf = ListIdx;
 	/// Dimension of grid.
 	static constexpr Dim t_dims = D;
 	/// Number of lists tracking grid nodes.
@@ -300,7 +300,7 @@ template <Dim D, TupleIdx N>
 struct Traits< Lookup::MultiListMultiIdx<D, N> > : public DefaultLookupTraits<D, N>
 {
 	/// Multiple indices stored at each grid node, one per tracking list.
-	using LeafType = Tuple<ListIdx, N>;
+	using Leaf = Tuple<ListIdx, N>;
 };
 
 

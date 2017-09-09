@@ -16,10 +16,10 @@ class Snapshot
 {
 private:
 	/// Type of data to store in grid nodes.
-	using LeafType = typename Traits<Derived>::LeafType;
+	using Leaf = typename Traits<Derived>::Leaf;
 protected:
 	/// Map of of POD to Eigen::Array for manipulation using Eigen BLAS methods.
-	using VArrayData = Eigen::Map< Eigen::Array<LeafType, 1, Eigen::Dynamic> >;
+	using VArrayData = Eigen::Map< Eigen::Array<Leaf, 1, Eigen::Dynamic> >;
 
 	/**
 	 * Map the raw data to an Eigen::Map, which can be used for BLAS arithmetic.
@@ -37,12 +37,12 @@ template <class Derived>
 class Spatial
 {
 private:
-	using TraitsType = Impl::Traits<Derived>;
-	using LeafType = typename TraitsType::LeafType;
-	static constexpr Dim t_dims = TraitsType::t_dims;
+	using Traits = Impl::Traits<Derived>;
+	using Leaf = typename Traits::Leaf;
+	static constexpr Dim t_dims = Traits::t_dims;
 	using VecDf = Felt::VecDf<t_dims>;
 	using VecDi = Felt::VecDi<t_dims>;
-	using VecDT = Felt::VecDT<LeafType, t_dims>;
+	using VecDT = Felt::VecDT<Leaf, t_dims>;
 
 	FLOAT m_dx;
 	const VecDi m_pos_min;
@@ -63,12 +63,12 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return curvature value
 	 */
-	template <typename PosType>
-	LeafType curv (const Felt::VecDT<PosType, t_dims>& pos_) const
+	template <typename Pos>
+	Leaf curv (const Felt::VecDT<Pos, t_dims>& pos_) const
 	{
-		using VecDp = Felt::VecDT<PosType, t_dims>;
+		using VecDp = Felt::VecDT<Pos, t_dims>;
 
-		const LeafType val_centre = pself->get(pos_);
+		const Leaf val_centre = pself->get(pos_);
 		const VecDi& size = pself->size();
 		VecDp dir(pos_);
 
@@ -79,8 +79,8 @@ protected:
 		{
 			dir(axis) += 1;
 
-			const LeafType val_axis = pself->get(dir) - val_centre;
-			LeafType val_neighs_sq = 0;
+			const Leaf val_axis = pself->get(dir) - val_centre;
+			Leaf val_neighs_sq = 0;
 
 			// Loop other dimensions to get central difference across them.
 			for (INT axis_neigh = 0; axis_neigh < size.size(); axis_neigh++)
@@ -91,11 +91,11 @@ protected:
 					// Central difference across pself forward point.
 					VecDp dir_neigh(dir);
 					dir_neigh(axis_neigh) -= 1;
-					const LeafType val_low = pself->get(dir_neigh);
+					const Leaf val_low = pself->get(dir_neigh);
 					dir_neigh(axis_neigh) += 2;
-					const LeafType val_high = pself->get(dir_neigh);
+					const Leaf val_high = pself->get(dir_neigh);
 
-					const LeafType val_neigh = (val_high - val_low) / 2;
+					const Leaf val_neigh = (val_high - val_low) / 2;
 					val_neighs_sq += val_neigh*val_neigh;
 				}
 			}
@@ -114,8 +114,8 @@ protected:
 		{
 			dir(axis) -= 1;
 
-			const LeafType val_axis = val_centre - pself->get(dir);
-			LeafType val_neighs_sq = 0;
+			const Leaf val_axis = val_centre - pself->get(dir);
+			Leaf val_neighs_sq = 0;
 
 			// Loop other dimensions to get central difference across them.
 			for (
@@ -127,11 +127,11 @@ protected:
 					// Central difference across pself backward point.
 					VecDp dir_neigh(dir);
 					dir_neigh(axis_neigh) -= 1;
-					const LeafType val_low = pself->get(dir_neigh);
+					const Leaf val_low = pself->get(dir_neigh);
 					dir_neigh(axis_neigh) += 2;
-					const LeafType val_high = pself->get(dir_neigh);
+					const Leaf val_high = pself->get(dir_neigh);
 
-					const LeafType val_neigh = (val_high - val_low) / 2;
+					const Leaf val_neigh = (val_high - val_low) / 2;
 					val_neighs_sq += val_neigh*val_neigh;
 				}
 			}
@@ -144,7 +144,7 @@ protected:
 
 		const VecDT dn_by_dx = (n_forward - n_backward);
 
-		LeafType curvature = dn_by_dx.sum() / 2;
+		Leaf curvature = dn_by_dx.sum() / 2;
 
 		return curvature;
 	}
@@ -155,15 +155,15 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return divergence value
 	 */
-	template <typename PosType>
-	LeafType divergence (const Felt::VecDT<PosType, t_dims>& pos_) const
+	template <typename Pos>
+	Leaf divergence (const Felt::VecDT<Pos, t_dims>& pos_) const
 	{
 		const VecDT vec_grad_f = gradF(pos_);
 		const VecDT vec_grad_b = gradB(pos_);
 		const VecDT vec_grad_diff = vec_grad_f - vec_grad_b;
 
 		// Component-wise sum.
-		const LeafType val = vec_grad_diff.sum();
+		const Leaf val = vec_grad_diff.sum();
 
 		return val / (m_dx*m_dx);
 	}
@@ -179,10 +179,10 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return vector with 2nd order if possible, 1st order if not, gradient.
 	 */
-	template <typename PosType>
-	VecDT grad (const Felt::VecDT<PosType, t_dims>& pos_) const
+	template <typename Pos>
+	VecDT grad (const Felt::VecDT<Pos, t_dims>& pos_) const
 	{
-		using VecDR = Felt::VecDT<PosType, t_dims>;
+		using VecDR = Felt::VecDT<Pos, t_dims>;
 		// Reference to GridBase dimensions.
 		const VecDi& size = pself->size();
 		// Vector to store gradient calculation.
@@ -191,12 +191,12 @@ protected:
 		VecDR pos_test(pos_);
 
 		// Central value.
-		LeafType centre = pself->get(pos_);
+		Leaf centre = pself->get(pos_);
 
 		for (Dim axis = 0; axis < size.size(); axis++)
 		{
-			LeafType back = centre;
-			LeafType forward = centre;
+			Leaf back = centre;
+			Leaf forward = centre;
 			Dim order = 0;
 			// Check if backward value is within GridBase.
 			pos_test(axis) -= 1;
@@ -216,7 +216,7 @@ protected:
 			// Calculate central/forward/backward difference along pself
 			// axis.
 			if (order != 0)
-				vec_grad(axis) = (forward - back) / LeafType(order);
+				vec_grad(axis) = (forward - back) / Leaf(order);
 			else
 				vec_grad(axis) = 0;
 		}
@@ -233,12 +233,12 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return vector of entropy satisfying gradient.
 	 */
-	template <typename PosType>
-	VecDT gradE (const Felt::VecDT<PosType, t_dims>& pos_) const
+	template <typename Pos>
+	VecDT gradE (const Felt::VecDT<Pos, t_dims>& pos_) const
 	{
-		using VecDp = Felt::VecDT<PosType, t_dims>;
+		using VecDp = Felt::VecDT<Pos, t_dims>;
 		// Value at pself point.
-		const LeafType centre = pself->get(pos_);
+		const Leaf centre = pself->get(pos_);
 		// Reference to grid dimensions.
 		const VecDi& size = pself->size();
 		// Vector to store gradient calculation.
@@ -249,9 +249,9 @@ protected:
 		for (INT axis = 0; axis < size.size(); axis++)
 		{
 			pos_test(axis) -= 1;
-			LeafType back = pself->get(pos_test);
+			Leaf back = pself->get(pos_test);
 			pos_test(axis) += 2;
-			LeafType forward = pself->get(pos_test);
+			Leaf forward = pself->get(pos_test);
 			pos_test(axis) -= 1;
 
 			back = std::max(centre - back, 0.0f);
@@ -269,17 +269,17 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return vector with forward difference gradient.
 	 */
-	template <typename PosType>
-	VecDT gradF (const Felt::VecDT<PosType, t_dims>& pos_) const
+	template <typename Pos>
+	VecDT gradF (const Felt::VecDT<Pos, t_dims>& pos_) const
 	{
 		// Value at this point.
-		const LeafType centre = pself->get(pos_);
+		const Leaf centre = pself->get(pos_);
 		// Reference to GridBase dimensions.
 		const VecDi& size = pself->size();
 		// Vector to store gradient calculation.
 		VecDT vec_grad;
 		// Position for look-ahead.
-		Felt::VecDT<PosType, t_dims> pos_neigh(pos_);
+		Felt::VecDT<Pos, t_dims> pos_neigh(pos_);
 
 		for (INT axis = 0; axis < size.size(); axis++)
 		{
@@ -298,17 +298,17 @@ protected:
 	 * @return vector with backward difference gradient.
 	 * @return
 	 */
-	template <typename PosType>
-	VecDT gradB (const Felt::VecDT<PosType, t_dims>& pos_) const
+	template <typename Pos>
+	VecDT gradB (const Felt::VecDT<Pos, t_dims>& pos_) const
 	{
 		// pself->getue at pself point.
-		const LeafType centre = pself->get(pos_);
+		const Leaf centre = pself->get(pos_);
 		// Reference to GridBase dimensions.
 		const VecDi& size = pself->size();
 		// Vector to store gradient calculation.
 		VecDT vec_grad;
 		// Position for look-behind.
-		Felt::VecDT<PosType, t_dims> vec_dir(pos_);
+		Felt::VecDT<Pos, t_dims> vec_dir(pos_);
 
 		for (INT axis = 0; axis < size.size(); axis++) {
 			vec_dir(axis) -= 1;
@@ -325,21 +325,21 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return vector with central difference gradient.
 	 */
-	template <typename PosType>
-	VecDT gradC (const Felt::VecDT<PosType, t_dims>& pos_) const
+	template <typename Pos>
+	VecDT gradC (const Felt::VecDT<Pos, t_dims>& pos_) const
 	{
 		// Reference to GridBase dimensions.
 		const VecDi& size = pself->size();
 		// Vector to store gradient calculation.
 		VecDT vec_grad;
 		// Position for look-around.
-		Felt::VecDT<PosType, t_dims> vec_dir(pos_);
+		Felt::VecDT<Pos, t_dims> vec_dir(pos_);
 
 		for (INT axis = 0; axis < size.size(); axis++) {
 			vec_dir(axis) -= 1;
-			const LeafType back = pself->get(vec_dir);
+			const Leaf back = pself->get(vec_dir);
 			vec_dir(axis) += 2;
-			const LeafType forward = pself->get(vec_dir);
+			const Leaf forward = pself->get(vec_dir);
 			vec_dir(axis) -= 1;
 
 			vec_grad(axis) = (forward - back) /  2;
@@ -381,7 +381,7 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return linearly interpolated value at given position.
 	 */
-	LeafType get (const VecDf& pos_) const
+	Leaf get (const VecDf& pos_) const
 	{
 		return interp(pos_);
 	}
@@ -394,13 +394,13 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return interpolated value at given position.
 	 */
-	LeafType interp (const VecDf& pos_) const
+	Leaf interp (const VecDf& pos_) const
 	{
 		const VecDi& size = pself->size();
 		const VecDi& pos_floor = pos_.array().floor().matrix().template cast<INT>();
 
 		// Store all 2^d corners.
-		DataArray< LeafType > val_corners(PosIdx(1 << size.size()));
+		DataArray< Leaf > val_corners(PosIdx(1 << size.size()));
 
 		// Get all corners of containing cell.
 		for (ListIdx i = 0; i < val_corners.size(); i++)
@@ -442,7 +442,7 @@ protected:
 	 * @param pos_ real-valued position to interpolate to.
 	 * @return list of interpolated values
 	 */
-	static void interp (DataArray<LeafType>& val_corners_, const VecDf& pos_)
+	static void interp (DataArray<Leaf>& val_corners_, const VecDf& pos_)
 	{
 		const ListIdx num_corners = val_corners_.size();
 
@@ -466,9 +466,9 @@ protected:
 
 		for (ListIdx i = 0; i < num_out; i++)
 		{
-			const LeafType low = val_corners_[(i << 1)];
-			const LeafType high = val_corners_[(i << 1) + 1];
-			const LeafType val = axis_pos*high + (1.0f-axis_pos)*low;
+			const Leaf low = val_corners_[(i << 1)];
+			const Leaf high = val_corners_[(i << 1) + 1];
+			const Leaf val = axis_pos*high + (1.0f-axis_pos)*low;
 			val_corners_[i] = val;
 		}
 		val_corners_.resize(num_out);

@@ -23,11 +23,11 @@ private:
 	/// Base class.
 	using Base = Felt::Impl::Mixin::Grid::Activate<Derived>;
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 	/// Type of data to store in grid nodes.
-	using LeafType = typename TraitsType::LeafType;
+	using Leaf = typename Traits::Leaf;
 	/// Number of tracking lists.
-	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
+	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 
 protected:
 	using Base::Activate;
@@ -47,7 +47,7 @@ protected:
 	 *
 	 * @param background_ new background value to report when (now-inactive) grid is queried.
 	 */
-	void deactivate(LeafType background_)
+	void deactivate(Leaf background_)
 	{
 		this->m_background = background_;
 		deactivate();
@@ -90,25 +90,25 @@ class LookupInterface
 {
 private:
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 
 	/// Dimensions of the grid.
-	static constexpr UINT t_dims = TraitsType::t_dims;
+	static constexpr UINT t_dims = Traits::t_dims;
 	/// Number of tracking lists.
-	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
+	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
-	using LeafType = typename TraitsType::LeafType;
-	using LookupType = typename TraitsType::LookupType;
+	using Leaf = typename Traits::Leaf;
+	using Lookup = typename Traits::Lookup;
 
 protected:
-	LookupType m_grid_lookup;
+	Lookup m_grid_lookup;
 
 
 protected:
-	LookupInterface(LookupType&& grid_lookup_)
+	LookupInterface(Lookup&& grid_lookup_)
 		: m_grid_lookup(grid_lookup_)
 	{}
 
@@ -117,7 +117,7 @@ protected:
 	 *
 	 * @return the internal lookup grid tracking active grid positions.
 	 */
-	LookupType& lookup()
+	Lookup& lookup()
 	{
 		return m_grid_lookup;
 	}
@@ -127,7 +127,7 @@ protected:
 	 *
 	 * @return the internal lookup grid tracking active grid positions.
 	 */
-	const LookupType& lookup() const
+	const Lookup& lookup() const
 	{
 		return m_grid_lookup;
 	}
@@ -142,11 +142,11 @@ class ByRef
 {
 private:
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
-	static constexpr UINT t_dims = TraitsType::t_dims;
+	using Traits = Traits<Derived>;
+	static constexpr UINT t_dims = Traits::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
-	using LeafType = typename TraitsType::LeafType;
+	using Leaf = typename Traits::Leaf;
 protected:
 	/**
 	 * Set value in grid at given position and track position to lookup grid.
@@ -161,9 +161,9 @@ protected:
 	 * tracking list, false if grid node was already set so position already
 	 * in a list.
 	 */
-	bool track(LeafType&& val_, const PosIdx pos_idx_)
+	bool track(Leaf&& val_, const PosIdx pos_idx_)
 	{
-		pself->get(pos_idx_) = std::forward<LeafType>(val_);
+		pself->get(pos_idx_) = std::forward<Leaf>(val_);
 		return pself->lookup().track(pos_idx_);
 	}
 
@@ -180,7 +180,7 @@ protected:
 	 * tracking list, false if grid node was already set so position already
 	 * in a list.
 	 */
-	bool track(const LeafType& val_, const PosIdx pos_idx_)
+	bool track(const Leaf& val_, const PosIdx pos_idx_)
 	{
 		pself->get(pos_idx_) = val_;
 		return pself->lookup().track(pos_idx_);
@@ -193,8 +193,8 @@ class Reset
 {
 private:
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
-	static constexpr Dim t_dims = TraitsType::t_dims;
+	using Traits = Traits<Derived>;
+	static constexpr Dim t_dims = Traits::t_dims;
 protected:
 
 	/**
@@ -226,11 +226,11 @@ class ByRef
 {
 private:
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
-	static constexpr UINT t_dims = TraitsType::t_dims;
+	using Traits = Traits<Derived>;
+	static constexpr UINT t_dims = Traits::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
-	using LeafType = typename TraitsType::LeafType;
+	using Leaf = typename Traits::Leaf;
 protected:
 	/**
 	 * Set value in grid at given position and track position to lookup grid.
@@ -245,9 +245,9 @@ protected:
 	 * tracking list, false if grid node was already set so position already
 	 * in a list.
 	 */
-	bool track(LeafType&& val_, const PosIdx pos_idx_, const TupleIdx list_idx_)
+	bool track(Leaf&& val_, const PosIdx pos_idx_, const TupleIdx list_idx_)
 	{
-		pself->get(pos_idx_) = std::forward<LeafType>(val_);
+		pself->get(pos_idx_) = std::forward<Leaf>(val_);
 		return pself->lookup().track(pos_idx_, list_idx_);
 	}
 
@@ -264,7 +264,7 @@ protected:
 	 * tracking list, false if grid node was already set so position already
 	 * in a list.
 	 */
-	bool track(const LeafType& val_, const PosIdx pos_idx_, const TupleIdx list_idx_)
+	bool track(const Leaf& val_, const PosIdx pos_idx_, const TupleIdx list_idx_)
 	{
 		pself->get(pos_idx_) = val_;
 		return pself->lookup().track(pos_idx_, list_idx_);
@@ -277,11 +277,11 @@ class ByValue
 {
 private:
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
-	static constexpr UINT t_dims = TraitsType::t_dims;
+	using Traits = Traits<Derived>;
+	static constexpr UINT t_dims = Traits::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
-	using LeafType = typename TraitsType::LeafType;
+	using Leaf = typename Traits::Leaf;
 protected:
 	/**
 	 * Set value in grid at given position and track position to lookup grid.
@@ -296,7 +296,7 @@ protected:
 	 * tracking list, false if grid node was already set so position already
 	 * in a list.
 	 */
-	bool track(const LeafType val_, const PosIdx pos_idx_, const TupleIdx list_idx_)
+	bool track(const Leaf val_, const PosIdx pos_idx_, const TupleIdx list_idx_)
 	{
 		pself->set(pos_idx_, val_);
 		return pself->lookup().track(pos_idx_, list_idx_);
@@ -309,24 +309,24 @@ class LookupInterface : protected Tracked::LookupInterface<Derived>
 {
 private:
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 	/// Base class
 	using Base = Tracked::LookupInterface<Derived>;
 
 	/// Dimensions of the grid.
-	static constexpr UINT t_dims = TraitsType::t_dims;
+	static constexpr UINT t_dims = Traits::t_dims;
 	/// Number of tracking lists.
-	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
+	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
-	using LeafType = typename TraitsType::LeafType;
-	using LookupType = typename TraitsType::LookupType;
+	using Leaf = typename Traits::Leaf;
+	using Lookup = typename Traits::Lookup;
 
 
 protected:
-	LookupInterface(LookupType&& grid_lookup_) : Base(std::forward<LookupType>(grid_lookup_))
+	LookupInterface(Lookup&& grid_lookup_) : Base(std::forward<Lookup>(grid_lookup_))
 	{}
 
 	/**
@@ -358,9 +358,9 @@ class Reset
 {
 private:
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
-	static constexpr Dim t_dims = TraitsType::t_dims;
-	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
+	using Traits = Traits<Derived>;
+	static constexpr Dim t_dims = Traits::t_dims;
+	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 protected:
 
 	/**

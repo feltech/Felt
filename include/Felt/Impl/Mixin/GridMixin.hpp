@@ -22,17 +22,17 @@ private:
 	/// Dimension of the grid.
 	static const UINT t_dims = Traits<Derived>::t_dims;
 	/// Type of data to store in grid nodes.
-	using LeafType = typename Traits<Derived>::LeafType;
+	using Leaf = typename Traits<Derived>::Leaf;
 
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
 protected:
 	/// Default/initial value of grid nodes.
-	LeafType	m_background;
+	Leaf	m_background;
 
 protected:
-	Activate(const LeafType background_) :
+	Activate(const Leaf background_) :
 		m_background{background_}
 	{}
 
@@ -51,7 +51,7 @@ protected:
 	 *
 	 * @return backround value.
 	 */
-	LeafType background() const
+	Leaf background() const
 	{
 		return m_background;
 	}
@@ -94,12 +94,12 @@ template <class Derived>
 class Data
 {
 private:
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 	/// Type of data to store in grid nodes.
-	using LeafType = typename TraitsType::LeafType;
-	static constexpr Dim t_dims = TraitsType::t_dims;
+	using Leaf = typename Traits::Leaf;
+	static constexpr Dim t_dims = Traits::t_dims;
 	using VecDi = Felt::VecDi<t_dims>;
-	using DataArray = Felt::DataArray<LeafType>;
+	using DataArray = Felt::DataArray<Leaf>;
 protected:
 	DataArray	m_data;
 
@@ -162,7 +162,7 @@ class Index
 {
 private:
 	/// CRTP derived class.
-	using DerivedType = Derived;
+	using Derived = Derived;
 	/// Dimension of the grid.
 	static const UINT t_dims = Traits<Derived>::t_dims;
 	/**
@@ -240,12 +240,12 @@ protected:
 	/**
 	 * Test if a position is inside the grid bounds.
 	 *
-	 * @tparam PosType the type of position vector (i.e. float vs. int).
+	 * @tparam Pos the type of position vector (i.e. float vs. int).
 	 * @param pos_ position in grid to query.
 	 * @return true if position lies inside the grid, false otherwise.
 	 */
-	template <typename PosType>
-	bool inside (const Felt::VecDT<PosType, t_dims>& pos_) const
+	template <typename Pos>
+	bool inside (const Felt::VecDT<Pos, t_dims>& pos_) const
 	{
 		return inside(pos_, m_offset, m_offset + m_size);
 	}
@@ -253,21 +253,21 @@ protected:
 	/**
 	 * Test if a position is inside given bounds.
 	 *
-	 * @tparam PosType the type of position vector (i.e. float vs. int).
+	 * @tparam Pos the type of position vector (i.e. float vs. int).
 	 * @param pos_ position in grid to query.
 	 * @param pos_min_ minimum allowed position.
 	 * @param pos_max_ one more than the maximum allowed position.
 	 * @return true if position lies inside the grid, false otherwise.
 	 */
-	template <typename ElemType>
+	template <typename Elem>
 	static bool inside (
-		const Felt::VecDT<ElemType, t_dims>& pos_, const VecDi& pos_min_, const VecDi& pos_max_
+		const Felt::VecDT<Elem, t_dims>& pos_, const VecDi& pos_min_, const VecDi& pos_max_
 	) {
 		for (Dim i = 0; i < pos_.size(); i++)
 		{
-			if (pos_(i) >= static_cast<ElemType>(pos_max_(i)))
+			if (pos_(i) >= static_cast<Elem>(pos_max_(i)))
 				return false;
-			if (pos_(i) < static_cast<ElemType>(pos_min_(i)))
+			if (pos_(i) < static_cast<Elem>(pos_min_(i)))
 				return false;
 		}
 		return true;
@@ -340,7 +340,7 @@ private:
 	/// Dimension of the grid.
 	static const UINT t_dims = Traits<Derived>::t_dims;
 	/// Type of data to store in grid nodes.
-	using LeafType = typename Traits<Derived>::LeafType;
+	using Leaf = typename Traits<Derived>::Leaf;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -351,7 +351,7 @@ protected:
 	 * @param pos_idx_ data index of position to query.
 	 * @return reference to grid value.
 	 */
-	LeafType& ref(const PosIdx pos_idx_)
+	Leaf& ref(const PosIdx pos_idx_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pself->index(pos_idx_), "ref: ");
@@ -360,9 +360,9 @@ protected:
 	}
 
 	/**
-	 * @copydoc LeafType& ref(const UINT)
+	 * @copydoc Leaf& ref(const UINT)
 	 */
-	const LeafType& ref(const PosIdx pos_idx_) const
+	const Leaf& ref(const PosIdx pos_idx_) const
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pself->index(pos_idx_), "ref: ");
@@ -376,7 +376,7 @@ protected:
 	 * @param pos_ position to query.
 	 * @return reference to grid value.
 	 */
-	LeafType& ref(const VecDi& pos_)
+	Leaf& ref(const VecDi& pos_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_, "ref: ");
@@ -386,9 +386,9 @@ protected:
 	}
 
 	/**
-	 * @copydoc LeafType& ref(const VecDi&)
+	 * @copydoc Leaf& ref(const VecDi&)
 	 */
-	const LeafType& ref(const VecDi& pos_) const
+	const Leaf& ref(const VecDi& pos_) const
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_, "ref: ");
@@ -404,11 +404,11 @@ class ByValue : protected Index<Derived>
 {
 private:
 	/// CRTP derived class.
-	using DerivedType = Derived;
+	using Derived = Derived;
 	/// Dimension of the grid.
 	static const Dim t_dims = Traits<Derived>::t_dims;
 	/// Type of data to store in grid nodes.
-	using LeafType = typename Traits<Derived>::LeafType;
+	using Leaf = typename Traits<Derived>::Leaf;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -420,7 +420,7 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return internally stored value at given grid position
 	 */
-	LeafType get (const VecDi& pos_) const
+	Leaf get (const VecDi& pos_) const
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_, "get: ");
@@ -435,7 +435,7 @@ protected:
 	 * @param pos_idx_ data index of position to query.
 	 * @return internally stored value at given grid position
 	 */
-	LeafType get (const PosIdx pos_idx_) const
+	Leaf get (const PosIdx pos_idx_) const
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(this->index(pos_idx_), "get: ");
@@ -449,7 +449,7 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @param val_ value to copy into grid at pos_.
 	 */
-	void set (const VecDi& pos_, LeafType val_)
+	void set (const VecDi& pos_, Leaf val_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_, "set: ");
@@ -465,7 +465,7 @@ protected:
 	 * @param pos_idx_ data index of position to query.
 	 * @param val_ value to copy into grid at pos_.
 	 */
-	void set (const PosIdx pos_idx_, LeafType val_)
+	void set (const PosIdx pos_idx_, Leaf val_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_idx_, "set: ");
@@ -481,11 +481,11 @@ class ByRef : protected Index<Derived>
 {
 private:
 	/// CRTP derived class.
-	using DerivedType = Derived;
+	using Derived = Derived;
 	/// Dimension of the grid.
 	static const UINT t_dims = Traits<Derived>::t_dims;
 	/// Type of data to store in grid nodes.
-	using LeafType = typename Traits<Derived>::LeafType;
+	using Leaf = typename Traits<Derived>::Leaf;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -497,7 +497,7 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return internally stored value at given grid position
 	 */
-	LeafType& get (const VecDi& pos_)
+	Leaf& get (const VecDi& pos_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_, "get: ");
@@ -512,7 +512,7 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return internally stored value at given grid position
 	 */
-	const LeafType& get (const VecDi& pos_) const
+	const Leaf& get (const VecDi& pos_) const
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_, "get: ");
@@ -527,7 +527,7 @@ protected:
 	 * @param pos_idx_ data index of position to query.
 	 * @return internally stored value at given grid position
 	 */
-	LeafType& get (const PosIdx pos_idx_)
+	Leaf& get (const PosIdx pos_idx_)
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(this->index(pos_idx_), "get: ");
@@ -541,7 +541,7 @@ protected:
 	 * @param pos_idx_ data index of position to query.
 	 * @return internally stored value at given grid position
 	 */
-	const LeafType& get (const PosIdx pos_idx_) const
+	const Leaf& get (const PosIdx pos_idx_) const
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(this->index(pos_idx_), "get: ");
@@ -557,13 +557,13 @@ class LazyByValue : protected ByValue<Derived>
 {
 private:
 	/// CRTP derived class.
-	using DerivedType = Derived;
+	using Derived = Derived;
 	/// Base class
-	using BaseType = ByValue<Derived>;
+	using Base = ByValue<Derived>;
 	/// Dimension of the grid.
 	static const UINT t_dims = Traits<Derived>::t_dims;
 	/// Type of data to store in grid nodes.
-	using LeafType = typename Traits<Derived>::LeafType;
+	using Leaf = typename Traits<Derived>::Leaf;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -579,14 +579,14 @@ protected:
 	 * @param pos_ position in grid to query.
 	 * @return internally stored value at given grid position
 	 */
-	LeafType get (const VecDi& pos_) const
+	Leaf get (const VecDi& pos_) const
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_, "get: ");
 		#endif
 		if (pself->data().size())
 		{
-			return BaseType::get(pos_);
+			return Base::get(pos_);
 		}
 		else
 		{
@@ -600,14 +600,14 @@ protected:
 	 * @param pos_idx_ index of position in grid to query.
 	 * @return internally stored value at given grid position
 	 */
-	LeafType get (const PosIdx pos_idx_) const
+	Leaf get (const PosIdx pos_idx_) const
 	{
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pself->index(pos_idx_), "get: ");
 		#endif
 		if (pself->data().size())
 		{
-			return BaseType::get(pos_idx_);
+			return Base::get(pos_idx_);
 		}
 		else
 		{

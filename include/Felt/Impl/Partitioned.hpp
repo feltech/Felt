@@ -24,22 +24,22 @@ class Lookup :
 private:
 	using VecDi = Felt::VecDi<D>;
 
-	using ThisType = Lookup<D, N>;
-	using TraitsType = Traits<ThisType>;
+	using This = Lookup<D, N>;
+	using Traits = Traits<This>;
 
-	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
-	using LeafsImpl = Impl::Mixin::Partitioned::Leafs<ThisType>;
-	using LookupImpl = Impl::Mixin::Partitioned::Lookup<ThisType>;
-	using ResetImpl = Impl::Mixin::Partitioned::Reset::MultiList<ThisType>;
-	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
+	using ChildrenImpl = Impl::Mixin::Partitioned::Children<This>;
+	using LeafsImpl = Impl::Mixin::Partitioned::Leafs<This>;
+	using LookupImpl = Impl::Mixin::Partitioned::Lookup<This>;
+	using ResetImpl = Impl::Mixin::Partitioned::Reset::MultiList<This>;
+	using SizeImpl = Impl::Mixin::Grid::Size<This>;
 
 public:
 	using ChildrenGrid = typename ChildrenImpl::ChildrenGrid;
-	using ChildType = typename TraitsType::ChildType;
+	using Child = typename Traits::Child;
 
 	Lookup(const VecDi& size_, const VecDi& offset_, const VecDi& child_size_) :
 		SizeImpl{size_, offset_},
-		ChildrenImpl{size_, offset_, child_size_, ChildType()}
+		ChildrenImpl{size_, offset_, child_size_, Child()}
 	{}
 
 	using LookupImpl::track;
@@ -62,25 +62,25 @@ class Simple :
 private:
 	using VecDi = Felt::VecDi<D>;
 
-	using ThisType = Simple<T, D, N>;
-	using TraitsType = Traits<ThisType>;
-	using LeafType = typename TraitsType::LeafType;
+	using This = Simple<T, D, N>;
+	using Traits = Traits<This>;
+	using Leaf = typename Traits::Leaf;
 
-	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
-	using LeafsImpl = Impl::Mixin::Partitioned::Leafs<ThisType>;
-	using ResetImpl = Impl::Mixin::Partitioned::Reset::MultiList<ThisType>;
-	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
-	using TrackedImpl = Impl::Mixin::Partitioned::Tracked<ThisType>;
+	using ChildrenImpl = Impl::Mixin::Partitioned::Children<This>;
+	using LeafsImpl = Impl::Mixin::Partitioned::Leafs<This>;
+	using ResetImpl = Impl::Mixin::Partitioned::Reset::MultiList<This>;
+	using SizeImpl = Impl::Mixin::Grid::Size<This>;
+	using TrackedImpl = Impl::Mixin::Partitioned::Tracked<This>;
 public:
 	using ChildrenGrid = typename ChildrenImpl::ChildrenGrid;
-	using ChildType = typename TraitsType::ChildType;
+	using Child = typename Traits::Child;
 
 	Simple(
 		const VecDi& size_, const VecDi& offset_, const VecDi& child_size_,
-		const LeafType background_
+		const Leaf background_
 	) :
 		SizeImpl{size_, offset_},
-		ChildrenImpl{size_, offset_, child_size_, ChildType(background_)}
+		ChildrenImpl{size_, offset_, child_size_, Child(background_)}
 	{}
 
 	using ChildrenImpl::children;
@@ -101,30 +101,30 @@ class Numeric :
 private:
 	using VecDi = Felt::VecDi<D>;
 
-	using ThisType = Numeric<T, D, N>;
-	using TraitsType = Traits<ThisType>;
-	using LeafType = typename TraitsType::LeafType;
+	using This = Numeric<T, D, N>;
+	using Traits = Traits<This>;
+	using Leaf = typename Traits::Leaf;
 
-	using AccessImpl = Impl::Mixin::Partitioned::Access<ThisType>;
-	using ChildrenImpl = Impl::Mixin::Partitioned::Children<ThisType>;
-	using LeafsImpl = Impl::Mixin::Partitioned::Leafs<ThisType>;
-	using ResetImpl = Impl::Mixin::Partitioned::Reset::MultiList<ThisType>;
-	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
-	using SpatialImpl = Impl::Mixin::Numeric::Spatial<ThisType>;
-	using SnapshotImpl = Impl::Mixin::Partitioned::Snapshot<ThisType>;
-	using TrackedImpl = Impl::Mixin::Partitioned::Tracked<ThisType>;
-	using UntrackImpl = Impl::Mixin::Partitioned::Untrack<ThisType>;
+	using AccessImpl = Impl::Mixin::Partitioned::Access<This>;
+	using ChildrenImpl = Impl::Mixin::Partitioned::Children<This>;
+	using LeafsImpl = Impl::Mixin::Partitioned::Leafs<This>;
+	using ResetImpl = Impl::Mixin::Partitioned::Reset::MultiList<This>;
+	using SizeImpl = Impl::Mixin::Grid::Size<This>;
+	using SpatialImpl = Impl::Mixin::Numeric::Spatial<This>;
+	using SnapshotImpl = Impl::Mixin::Partitioned::Snapshot<This>;
+	using TrackedImpl = Impl::Mixin::Partitioned::Tracked<This>;
+	using UntrackImpl = Impl::Mixin::Partitioned::Untrack<This>;
 public:
-	using ChildType = typename TraitsType::ChildType;
+	using Child = typename Traits::Child;
 	using ChildrenGrid = typename ChildrenImpl::ChildrenGrid;
 	using SnapshotPtr = typename SnapshotImpl::SnapshotGridPtr;
 public:
 	Numeric(
 		const VecDi& size_, const VecDi& offset_, const VecDi& child_size_,
-		const LeafType background_
+		const Leaf background_
 	) :
 		SizeImpl{size_, offset_},
-		ChildrenImpl{size_, offset_, child_size_, ChildType(background_)}
+		ChildrenImpl{size_, offset_, child_size_, Child(background_)}
 	{}
 
 	using AccessImpl::get;
@@ -176,8 +176,8 @@ namespace Impl
 template <Dim D, TupleIdx N>
 struct Traits< Partitioned::Lookup<D, N> > : public DefaultLookupTraits<D, N>
 {
-	using ChildType = Impl::Lookup::LazyMultiListSingleIdx<D, N>;
-	using ChildrenType = Impl::Tracked::MultiListMultiIdxByRef<ChildType, D, N>;
+	using Child = Impl::Lookup::LazyMultiListSingleIdx<D, N>;
+	using Children = Impl::Tracked::MultiListMultiIdxByRef<Child, D, N>;
 };
 
 
@@ -191,8 +191,8 @@ struct Traits< Partitioned::Lookup<D, N> > : public DefaultLookupTraits<D, N>
 template <typename T, Dim D, TupleIdx N>
 struct Traits< Partitioned::Tracked::Simple<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
-	using ChildType = Impl::Tracked::LazyMultiListSingleIdxByValue<T, D, N>;
-	using ChildrenType = Impl::Tracked::MultiListMultiIdxByRef<ChildType, D, N>;
+	using Child = Impl::Tracked::LazyMultiListSingleIdxByValue<T, D, N>;
+	using Children = Impl::Tracked::MultiListMultiIdxByRef<Child, D, N>;
 };
 
 /**
@@ -205,8 +205,8 @@ struct Traits< Partitioned::Tracked::Simple<T, D, N> > : public DefaultTrackedTr
 template <typename T, Dim D, TupleIdx N>
 struct Traits< Partitioned::Tracked::Numeric<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
-	using ChildType = Impl::Tracked::LazyMultiListSingleIdxByValue<T, D, N>;
-	using ChildrenType = Impl::Tracked::MultiListMultiIdxByRef<ChildType, D, N>;
+	using Child = Impl::Tracked::LazyMultiListSingleIdxByValue<T, D, N>;
+	using Children = Impl::Tracked::MultiListMultiIdxByRef<Child, D, N>;
 };
 
 } // Impl.

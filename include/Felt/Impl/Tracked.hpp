@@ -22,25 +22,25 @@ class LazyMultiListSingleIdxByValue :
 		(Grid::Access::ByValue)(Grid::Activate)(Grid::Index)(Grid::Resize)(Grid::Size)
 	)
 private:
-	using ThisType = LazyMultiListSingleIdxByValue<T, D, N>;
-	using TraitsType = Impl::Traits<ThisType>;
+	using This = LazyMultiListSingleIdxByValue<T, D, N>;
+	using Traits = Impl::Traits<This>;
 
-	using AccessImpl = Impl::Mixin::Grid::Access::LazyByValue<ThisType>;
-	using ActivateImpl = Impl::Mixin::Tracked::Activate<ThisType>;
-	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
-	using LookupInterfaceImpl = Impl::Mixin::Tracked::MultiList::LookupInterface<ThisType>;
-	using ResetterImpl = Impl::Mixin::Tracked::MultiList::Reset<ThisType>;
-	using SizeImpl = Impl::Mixin::Tracked::Resize<ThisType>;
-	using TrackedImpl = Impl::Mixin::Tracked::MultiList::ByValue<ThisType>;
+	using AccessImpl = Impl::Mixin::Grid::Access::LazyByValue<This>;
+	using ActivateImpl = Impl::Mixin::Tracked::Activate<This>;
+	using DataImpl = Impl::Mixin::Grid::Data<This>;
+	using LookupInterfaceImpl = Impl::Mixin::Tracked::MultiList::LookupInterface<This>;
+	using ResetterImpl = Impl::Mixin::Tracked::MultiList::Reset<This>;
+	using SizeImpl = Impl::Mixin::Tracked::Resize<This>;
+	using TrackedImpl = Impl::Mixin::Tracked::MultiList::ByValue<This>;
 
-	using VecDi = Felt::VecDi<TraitsType::t_dims>;
-	using LeafType = typename TraitsType::LeafType;
+	using VecDi = Felt::VecDi<Traits::t_dims>;
+	using Leaf = typename Traits::Leaf;
 
 public:
-	using LookupType = typename TraitsType::LookupType;
+	using Lookup = typename Traits::Lookup;
 
-	LazyMultiListSingleIdxByValue(const LeafType background_) :
-		ActivateImpl{background_}, LookupInterfaceImpl{LookupType{}}
+	LazyMultiListSingleIdxByValue(const Leaf background_) :
+		ActivateImpl{background_}, LookupInterfaceImpl{Lookup{}}
 	{}
 
 	using AccessImpl::get;
@@ -72,26 +72,26 @@ class SingleListSingleIdxByRef :
 		(Grid::Index)
 	)
 private:
-	using ThisType = SingleListSingleIdxByRef<T, D>;
-	using TraitsType = Impl::Traits<ThisType>;
+	using This = SingleListSingleIdxByRef<T, D>;
+	using Traits = Impl::Traits<This>;
 
-	using AccessImpl = Impl::Mixin::Grid::Access::ByRef<ThisType>;
-	using ActivateImpl = Impl::Mixin::Grid::Activate<ThisType>;
-	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
-	using LookupInterfaceImpl = Impl::Mixin::Tracked::LookupInterface<ThisType>;
-	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
-	using TrackedImpl = Impl::Mixin::Tracked::SingleList::ByRef<ThisType>;
+	using AccessImpl = Impl::Mixin::Grid::Access::ByRef<This>;
+	using ActivateImpl = Impl::Mixin::Grid::Activate<This>;
+	using DataImpl = Impl::Mixin::Grid::Data<This>;
+	using LookupInterfaceImpl = Impl::Mixin::Tracked::LookupInterface<This>;
+	using SizeImpl = Impl::Mixin::Grid::Size<This>;
+	using TrackedImpl = Impl::Mixin::Tracked::SingleList::ByRef<This>;
 
-	using VecDi = Felt::VecDi<TraitsType::t_dims>;
-	using LeafType = typename TraitsType::LeafType;
-	using LookupType = typename TraitsType::LookupType;
+	using VecDi = Felt::VecDi<Traits::t_dims>;
+	using Leaf = typename Traits::Leaf;
+	using Lookup = typename Traits::Lookup;
 
 public:
-	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
+	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 
-	SingleListSingleIdxByRef(const VecDi& size_, const VecDi& offset_, const LeafType background_) :
+	SingleListSingleIdxByRef(const VecDi& size_, const VecDi& offset_, const Leaf background_) :
 		ActivateImpl{background_}, SizeImpl{size_, offset_},
-		LookupInterfaceImpl{LookupType{size_, offset_}}
+		LookupInterfaceImpl{Lookup{size_, offset_}}
 	{
 		this->activate();
 	}
@@ -117,26 +117,26 @@ class MultiListMultiIdxByRef :
 		(Grid::Index)
 	)
 private:
-	using ThisType = MultiListMultiIdxByRef<T, D, N>;
-	using TraitsType = Impl::Traits<ThisType>;
+	using This = MultiListMultiIdxByRef<T, D, N>;
+	using Traits = Impl::Traits<This>;
 
-	using AccessImpl = Impl::Mixin::Grid::Access::ByRef<ThisType>;
-	using ActivateImpl = Impl::Mixin::Grid::Activate<ThisType>;
-	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
-	using LookupInterfaceImpl = Impl::Mixin::Tracked::MultiList::LookupInterface<ThisType>;
-	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
-	using TrackedImpl = Impl::Mixin::Tracked::MultiList::ByRef<ThisType>;
+	using AccessImpl = Impl::Mixin::Grid::Access::ByRef<This>;
+	using ActivateImpl = Impl::Mixin::Grid::Activate<This>;
+	using DataImpl = Impl::Mixin::Grid::Data<This>;
+	using LookupInterfaceImpl = Impl::Mixin::Tracked::MultiList::LookupInterface<This>;
+	using SizeImpl = Impl::Mixin::Grid::Size<This>;
+	using TrackedImpl = Impl::Mixin::Tracked::MultiList::ByRef<This>;
 
-	using VecDi = Felt::VecDi<TraitsType::t_dims>;
-	using LeafType = typename TraitsType::LeafType;
-	using LookupType = typename TraitsType::LookupType;
+	using VecDi = Felt::VecDi<Traits::t_dims>;
+	using Leaf = typename Traits::Leaf;
+	using Lookup = typename Traits::Lookup;
 
 public:
-	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
+	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 
-	MultiListMultiIdxByRef(const VecDi& size_, const VecDi& offset_, const LeafType background_) :
+	MultiListMultiIdxByRef(const VecDi& size_, const VecDi& offset_, const Leaf background_) :
 		ActivateImpl{background_}, SizeImpl{size_, offset_},
-		LookupInterfaceImpl{LookupType{size_, offset_}}
+		LookupInterfaceImpl{Lookup{size_, offset_}}
 	{
 		this->activate();
 	}
@@ -172,11 +172,11 @@ template <typename T, Dim D>
 struct Traits< Tracked::SingleListSingleIdxByRef<T, D> >
 {
 	/// Single index stored in each grid node.
-	using LeafType = T;
+	using Leaf = T;
 	/// Dimension of grid.
 	static constexpr Dim t_dims = D;
 	/// Type of lookup grid for tracking active positions.
-	using LookupType = Lookup::SingleListSingleIdx<D>;
+	using Lookup = Lookup::SingleListSingleIdx<D>;
 };
 
 /**
@@ -190,7 +190,7 @@ template <typename T, Dim D, TupleIdx N>
 struct DefaultTrackedTraits
 {
 	/// Single index stored in each grid node.
-	using LeafType = T;
+	using Leaf = T;
 	/// Dimension of grid.
 	static constexpr Dim t_dims = D;
 	/// Number of lists tracking grid nodes.
@@ -208,7 +208,7 @@ template <typename T, Dim D, TupleIdx N>
 struct Traits< Tracked::LazyMultiListSingleIdxByValue<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
 	/// Type of lookup grid for tracking active positions.
-	using LookupType = Lookup::LazyMultiListSingleIdx<D, N>;
+	using Lookup = Lookup::LazyMultiListSingleIdx<D, N>;
 };
 
 /**
@@ -222,7 +222,7 @@ template <typename T, Dim D, TupleIdx N>
 struct Traits< Tracked::MultiListMultiIdxByRef<T, D, N> > : public DefaultTrackedTraits<T, D, N>
 {
 	/// Type of lookup grid for tracking active positions.
-	using LookupType = Lookup::MultiListMultiIdx<D, N>;
+	using Lookup = Lookup::MultiListMultiIdx<D, N>;
 };
 
 } // Impl

@@ -21,17 +21,17 @@ class Children
 {
 private:
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 	/// Child grid type.
-	using ChildType = typename TraitsType::ChildType;
+	using Child = typename Traits::Child;
 	/// Dimension of grid.
-	static constexpr Dim t_dims = TraitsType::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
 protected:
 	/// Grid of partitions with tracking list(s) of active partitions.
-	using ChildrenGrid = typename TraitsType::ChildrenType;
+	using ChildrenGrid = typename Traits::Children;
 private:
 	/// Size of a child sub-grid.
 	VecDi m_child_size;
@@ -49,7 +49,7 @@ protected:
 	 */
 	Children(
 		const VecDi& size_, const VecDi& offset_, const VecDi& child_size_,
-		const ChildType& background_
+		const Child& background_
 	) :
 		m_child_size(child_size_),
 		m_children(
@@ -127,11 +127,11 @@ class Leafs
 {
 private:
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 	/// Child grid type.
-	using ChildType = typename TraitsType::ChildType;
+	using Child = typename Traits::Child;
 	/// Dimension of grid.
-	static constexpr Dim t_dims = TraitsType::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 	/// Mutex used to synchrnonise the adding/removing of elements from the tracking list(s).
@@ -154,7 +154,7 @@ protected:
 		for (ListIdx list_idx = 0; list_idx < num_childs; list_idx++)
 		{
 			const PosIdx pos_idx_child = pos_idxs_child[list_idx];
-			const ChildType& child = pself->children().get(pos_idx_child);
+			const Child& child = pself->children().get(pos_idx_child);
 			for (const PosIdx pos_idx_leaf : child.list(layer_idx_))
 			{
 				fn_(child.index(pos_idx_leaf));
@@ -178,7 +178,7 @@ protected:
 		std::lock_guard<std::mutex> lock(m_mutex);
 		if (pself->children().lookup().is_tracked(pos_idx_child_, list_idx_))
 			return;
-		ChildType& child = pself->children().get(pos_idx_child_);
+		Child& child = pself->children().get(pos_idx_child_);
 		if (!child.is_active())
 			child.activate();
 		pself->children().lookup().track(pos_idx_child_, list_idx_);
@@ -236,9 +236,9 @@ class SingleList
 {
 private:
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 	/// Child grid type.
-	using ChildType = typename TraitsType::ChildType;
+	using Child = typename Traits::Child;
 protected:
 	/**
 	 * Reset all children, also deactivating them if they are not active in master/mask grid.
@@ -252,7 +252,7 @@ protected:
 		{
 			pself->children().lookup().untrack(pos_idx_child);
 
-			ChildType& child = pself->children().get(pos_idx_child);
+			Child& child = pself->children().get(pos_idx_child);
 
 			// If the master grid is not tracking this child, then destroy it.
 			if (not grid_mask_.children().lookup().is_tracked(pos_idx_child))
@@ -275,11 +275,11 @@ class MultiList
 {
 private:
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 	/// Child grid type.
-	using ChildType = typename TraitsType::ChildType;
+	using Child = typename Traits::Child;
 	/// Number of tracking lists.
-	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
+	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 protected:
 	/**
 	 * Bulk add children to tracking list, activating if not already active.
@@ -297,7 +297,7 @@ protected:
 			{
 				if (pself->children().lookup().is_tracked(pos_idx_child, list_idx))
 					continue;
-				ChildType& child = pself->children().get(pos_idx_child);
+				Child& child = pself->children().get(pos_idx_child);
 				if (!child.is_active())
 					child.activate();
 				pself->children().lookup().track(pos_idx_child, list_idx);
@@ -314,7 +314,7 @@ protected:
 			{
 				pself->children().lookup().untrack(pos_idx_child, layer_idx);
 
-				ChildType& child = pself->children().get(pos_idx_child);
+				Child& child = pself->children().get(pos_idx_child);
 
 				// If the master grid is not tracking this child, then destroy it.
 				if (not grid_mask_.children().lookup().is_tracked(pos_idx_child))
@@ -340,11 +340,11 @@ class Lookup
 {
 private:
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 	/// Child grid type.
-	using ChildType = typename TraitsType::ChildType;
+	using Child = typename Traits::Child;
 	/// Dimension of grid.
-	static constexpr UINT t_dims = TraitsType::t_dims;
+	static constexpr UINT t_dims = Traits::t_dims;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -361,7 +361,7 @@ protected:
 	{
 		const PosIdx pos_idx_child_ = pself->pos_idx_child(pos_leaf_);
 		pself->track_child(pos_idx_child_, list_idx_);
-		ChildType& child = pself->children().get(pos_idx_child_);
+		Child& child = pself->children().get(pos_idx_child_);
 		const PosIdx pos_idx_leaf = child.index(pos_leaf_);
 		child.track(pos_idx_leaf, list_idx_);
 	}
@@ -391,13 +391,13 @@ class Tracked
 {
 private:
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 	/// Child grid type.
-	using ChildType = typename TraitsType::ChildType;
+	using Child = typename Traits::Child;
 	/// Leaf type.
-	using LeafType = typename TraitsType::LeafType;
+	using Leaf = typename Traits::Leaf;
 	/// Dimension of grid.
-	static constexpr UINT t_dims = TraitsType::t_dims;
+	static constexpr UINT t_dims = Traits::t_dims;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -410,11 +410,11 @@ protected:
 	 * @param pos_idx_leaf_ position to track.
 	 * @param list_idx_ tracking list id.
 	 */
-	void track(const LeafType val_, const VecDi& pos_leaf_, const TupleIdx list_idx_)
+	void track(const Leaf val_, const VecDi& pos_leaf_, const TupleIdx list_idx_)
 	{
 		const PosIdx pos_idx_child_ = pself->pos_idx_child(pos_leaf_);
 		pself->track_child(pos_idx_child_, list_idx_);
-		ChildType& child = pself->children().get(pos_idx_child_);
+		Child& child = pself->children().get(pos_idx_child_);
 		const PosIdx pos_idx_leaf = child.index(pos_leaf_);
 		child.track(val_, pos_idx_leaf, list_idx_);
 	}
@@ -429,14 +429,14 @@ protected:
 	 * @param list_idx_ tracking list id.
 	 */
 	void track(
-		const LeafType val_, const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_,
+		const Leaf val_, const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_,
 		const TupleIdx list_idx_
 	) {
 		pself->track_child(pos_idx_child_, list_idx_);
 		FELT_DEBUG(
 			pself->children().get(pos_idx_child_).assert_pos_idx_bounds(pos_idx_leaf_, "track:")
 		);
-		ChildType& child = pself->children().get(pos_idx_child_);
+		Child& child = pself->children().get(pos_idx_child_);
 		child.track(val_, pos_idx_leaf_, list_idx_);
 	}
 };
@@ -447,22 +447,22 @@ class Untrack
 {
 private:
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 	/// Child grid type.
-	using ChildType = typename TraitsType::ChildType;
+	using Child = typename Traits::Child;
 	/// Leaf type.
-	using LeafType = typename TraitsType::LeafType;
+	using Leaf = typename Traits::Leaf;
 	/// Dimension of grid.
-	static constexpr UINT t_dims = TraitsType::t_dims;
+	static constexpr UINT t_dims = Traits::t_dims;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
 protected:
 	void untrack(
-		const LeafType background_, const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_,
+		const Leaf background_, const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_,
 		const TupleIdx list_idx_
 	) {
-		ChildType& child = pself->children().get(pos_idx_child_);
+		Child& child = pself->children().get(pos_idx_child_);
 
 		// Untrack position in child sub-grid.
 		child.lookup().untrack(pos_idx_leaf_, list_idx_);
@@ -492,7 +492,7 @@ protected:
 		const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_, const TupleIdx list_idx_from_,
 		const TupleIdx list_idx_to_
 	) {
-		ChildType& child = pself->children().get(pos_idx_child_);
+		Child& child = pself->children().get(pos_idx_child_);
 
 		#ifdef FELT_DEBUG_ENABLED
 		if (not pself->children().lookup().is_tracked(pos_idx_child_))
@@ -535,13 +535,13 @@ class Access
 {
 private:
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 	/// Child grid type.
-	using ChildType = typename TraitsType::ChildType;
+	using Child = typename Traits::Child;
 	/// Leaf type.
-	using LeafType = typename TraitsType::LeafType;
+	using Leaf = typename Traits::Leaf;
 	/// D-dimensional integer vector.
-	using VecDi = Felt::VecDi<TraitsType::t_dims>;
+	using VecDi = Felt::VecDi<Traits::t_dims>;
 
 protected:
 	/**
@@ -550,10 +550,10 @@ protected:
 	 * @param pos_ position in grid to fetch.
 	 * @return value stored at grid point.
 	 */
-	LeafType get (const VecDi& pos_) const
+	Leaf get (const VecDi& pos_) const
 	{
 		const PosIdx pos_idx_child = pself->pos_idx_child(pos_);
-		const ChildType& child = pself->children().get(pos_idx_child);
+		const Child& child = pself->children().get(pos_idx_child);
 		return child.get(pos_);
 	}
 
@@ -563,10 +563,10 @@ protected:
 	 * @param pos_ position in grid to store at.
 	 * @param value_ value to store at grid point.
 	 */
-	void set (const VecDi& pos_, const LeafType value_)
+	void set (const VecDi& pos_, const Leaf value_)
 	{
 		const PosIdx pos_idx_child = pself->pos_idx_child(pos_);
-		ChildType& child = pself->children().get(pos_idx_child);
+		Child& child = pself->children().get(pos_idx_child);
 		child.set(pos_, value_);
 	}
 };
@@ -577,17 +577,17 @@ class Snapshot
 {
 private:
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 	/// Child grid type.
-	using ChildType = typename TraitsType::ChildType;
+	using Child = typename Traits::Child;
 	/// Leaf type.
-	using LeafType = typename TraitsType::LeafType;
+	using Leaf = typename Traits::Leaf;
 	/// Dimension of grid.
-	static constexpr UINT t_dims = TraitsType::t_dims;
+	static constexpr UINT t_dims = Traits::t_dims;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 	/// Simple non-partitioned grid type for snapshotting the partitioned data, e.g. for tests.
-	using SnapshotGrid = Impl::Grid::Snapshot<LeafType, t_dims>;
+	using SnapshotGrid = Impl::Grid::Snapshot<Leaf, t_dims>;
 protected:
 	/**
 	 * Non-partitioned Grid class to store snapshots of partitioned grids.
@@ -600,7 +600,7 @@ public:
 	SnapshotGridPtr snapshot() const
 	{
 		SnapshotGridPtr psnapshot = std::make_unique<SnapshotGrid>(
-			pself->size(), pself->offset(), LeafType()
+			pself->size(), pself->offset(), Leaf()
 		);
 
 		const VecDi pos_max = (
@@ -621,11 +621,11 @@ public:
 	{
 		for (PosIdx pos_idx = 0; pos_idx < psnapshot->data().size(); pos_idx++)
 		{
-			const LeafType val = psnapshot->get(pos_idx);
+			const Leaf val = psnapshot->get(pos_idx);
 			const VecDi& pos = psnapshot->index(pos_idx);
 
 			const PosIdx pos_idx_child = pself->pos_idx_child(pos);
-			ChildType& child = pself->children().get(pos_idx_child);
+			Child& child = pself->children().get(pos_idx_child);
 			const PosIdx pos_idx_leaf = child.index(pos);
 
 			if (!child.is_active())
@@ -638,10 +638,10 @@ public:
 		}
 	}
 
-	void operator=(std::initializer_list<LeafType>&& vals_)
+	void operator=(std::initializer_list<Leaf>&& vals_)
 	{
 		SnapshotGridPtr  psnapshot = std::make_unique<SnapshotGrid>(
-			pself->size(), pself->offset(), LeafType()
+			pself->size(), pself->offset(), Leaf()
 		);
 		psnapshot->data() = vals_;
 		snapshot(psnapshot);

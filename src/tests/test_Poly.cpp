@@ -13,13 +13,13 @@ SCENARIO("Impl::Poly::Single")
 
 GIVEN("an empty 3D polygonisaton and a 9x9x9 3-layer surface with 3x3x3 partitions")
 {
-	using SurfaceType = Surface<3, 3>;
-	using IsoGridType = typename SurfaceType::IsoGrid;
-	using IsoChildType = typename IsoGridType::ChildType;
-	using PolyType = Impl::Poly::Single<IsoGridType>;
+	using Surface = Surface<3, 3>;
+	using IsoGrid = typename Surface::IsoGrid;
+	using IsoChild = typename IsoGrid::Child;
+	using Poly = Impl::Poly::Single<IsoGrid>;
 
-	SurfaceType surface{Vec3i{9,9,9}, Vec3i{3,3,3}};
-	PolyType poly{surface.isogrid()};
+	Surface surface{Vec3i{9,9,9}, Vec3i{3,3,3}};
+	Poly poly{surface.isogrid()};
 
 	THEN("poly is initially empty")
 	{
@@ -29,7 +29,7 @@ GIVEN("an empty 3D polygonisaton and a 9x9x9 3-layer surface with 3x3x3 partitio
 
 	WHEN("poly is sized to cover central partition and activated")
 	{
-		const IsoChildType& isochild = surface.isogrid().children().get(Vec3i{0,0,0});
+		const IsoChild& isochild = surface.isogrid().children().get(Vec3i{0,0,0});
 
 		poly.resize(isochild.size(), isochild.offset());
 		poly.bind(isochild.lookup());
@@ -133,13 +133,13 @@ GIVEN("an empty 3D polygonisaton and a 9x9x9 3-layer surface with 3x3x3 partitio
 
 GIVEN("an empty 2D polygonisaton and a 9x9 3-layer surface with 3x3 partitions")
 {
-	using SurfaceType = Surface<2, 3>;
-	using IsoGridType = typename SurfaceType::IsoGrid;
-	using IsoChildType = typename IsoGridType::ChildType;
-	using PolyType = Impl::Poly::Single<IsoGridType>;
+	using Surface = Surface<2, 3>;
+	using IsoGrid = typename Surface::IsoGrid;
+	using IsoChild = typename IsoGrid::Child;
+	using Poly = Impl::Poly::Single<IsoGrid>;
 
-	SurfaceType surface{Vec2i{9,9}, Vec2i{3,3}};
-	PolyType poly{surface.isogrid()};
+	Surface surface{Vec2i{9,9}, Vec2i{3,3}};
+	Poly poly{surface.isogrid()};
 
 	THEN("poly is initially empty")
 	{
@@ -149,7 +149,7 @@ GIVEN("an empty 2D polygonisaton and a 9x9 3-layer surface with 3x3 partitions")
 
 	WHEN("poly is sized to cover central partition and activated")
 	{
-		const IsoChildType& isochild = surface.isogrid().children().get(Vec2i{0,0});
+		const IsoChild& isochild = surface.isogrid().children().get(Vec2i{0,0});
 
 		poly.resize(isochild.size(), isochild.offset());
 		poly.bind(isochild.lookup());
@@ -246,10 +246,10 @@ GIVEN("an empty 2D polygonisaton and a 9x9 3-layer surface with 3x3 partitions")
  *
  * Forward declaration.
  */
-template <class SurfaceType>
+template <class Surface>
 ListIdx assert_partitioned_matches_baseline (
-	const Polys<SurfaceType>& polys_,
-	const Impl::Poly::Single<typename SurfaceType::IsoGrid>& poly_
+	const Polys<Surface>& polys_,
+	const Impl::Poly::Single<typename Surface::IsoGrid>& poly_
 );
 
 /**
@@ -266,16 +266,16 @@ SCENARIO("Polys")
 
 GIVEN("an empty 3D polygonisaton and a 15x15x15 3-layer surface with 5x5x5 partitions")
 {
-	using SurfaceType = Surface<3, 3>;
-	using PolyGridType = Polys<SurfaceType>;
-	using IsoGridType = typename SurfaceType::IsoGrid;
-	using PolyType = Impl::Poly::Single<IsoGridType>;
+	using Surface = Surface<3, 3>;
+	using PolyGrid = Polys<Surface>;
+	using IsoGrid = typename Surface::IsoGrid;
+	using Poly = Impl::Poly::Single<IsoGrid>;
 
 	// Surface to polygonise.
-	SurfaceType surface{Vec3i{15,15,15}, Vec3i{5,5,5}};
+	Surface surface{Vec3i{15,15,15}, Vec3i{5,5,5}};
 
 	// The Poly::Grid to test.
-	PolyGridType polys{surface};
+	PolyGrid polys{surface};
 
 	THEN("grid has a matching number of children polys to the isogrid")
 	{
@@ -449,7 +449,7 @@ GIVEN("an empty 3D polygonisaton and a 15x15x15 3-layer surface with 5x5x5 parti
 
 				THEN("poly grid matches single poly of whole surface")
 				{
-					const PolyType& poly = baseline_poly(surface);
+					const Poly& poly = baseline_poly(surface);
 
 					const ListIdx total_vtx = assert_partitioned_matches_baseline(polys, poly);
 
@@ -574,7 +574,7 @@ GIVEN("an empty 3D polygonisaton and a 15x15x15 3-layer surface with 5x5x5 parti
 
 				THEN("poly grid matches single poly of whole surface")
 				{
-					const PolyType& poly = baseline_poly(surface);
+					const Poly& poly = baseline_poly(surface);
 					const ListIdx total_vtx =
 						assert_partitioned_matches_baseline(polys, poly);
 
@@ -598,7 +598,7 @@ GIVEN("an empty 3D polygonisaton and a 15x15x15 3-layer surface with 5x5x5 parti
 
 			THEN("poly grid matches single poly of whole surface")
 			{
-				const PolyType& poly = baseline_poly(surface);
+				const Poly& poly = baseline_poly(surface);
 				const ListIdx total_vtx =
 					assert_partitioned_matches_baseline(polys, poly);
 
@@ -651,7 +651,7 @@ GIVEN("an empty 3D polygonisaton and a 15x15x15 3-layer surface with 5x5x5 parti
 					CHECK(pos_idxs_changed.size() == pos_idxs_expected.size());
 					CHECK(pos_idxs_changed == pos_idxs_expected);
 
-					PolyType poly{surface.isogrid()};
+					Poly poly{surface.isogrid()};
 					poly.resize(surface.isogrid().size(), surface.isogrid().offset());
 					poly.activate();
 
@@ -674,7 +674,7 @@ GIVEN("an empty 3D polygonisaton and a 15x15x15 3-layer surface with 5x5x5 parti
 
 				THEN("polygonisation has been done over whole surface")
 				{
-					const PolyType& poly = baseline_poly(surface);
+					const Poly& poly = baseline_poly(surface);
 					const ListIdx total_vtx =
 						assert_partitioned_matches_baseline(polys, poly);
 
@@ -690,13 +690,13 @@ GIVEN(
 	"a polygonisation of a surface with 16x16x16 isogrid in two 16x8x16 partitions, with two seeds"
 	" in separate partitions"
 ) {
-	using SurfaceType = Surface<3, 3>;
-	using PolyGridType = Polys<SurfaceType>;
+	using Surface = Surface<3, 3>;
+	using PolyGrid = Polys<Surface>;
 
 	// Surface to polygonise.
-	SurfaceType surface{Vec3i{16,16,16}, Vec3i{16,8,16}};
+	Surface surface{Vec3i{16,16,16}, Vec3i{16,8,16}};
 	// The Poly::Grid to test.
-	PolyGridType polys{surface};
+	PolyGrid polys{surface};
 
 	surface.seed(Vec3i{0,-4,0});
 	surface.seed(Vec3i{0,2,0});
@@ -767,19 +767,19 @@ GIVEN(
 template <class TSurface>
 Impl::Poly::Single<typename TSurface::IsoGrid> baseline_poly(const TSurface& surface_)
 {
-	using SurfaceType = TSurface;
-	using IsoGridType = typename SurfaceType::IsoGrid;
-	using IsoChildType = typename IsoGridType::ChildType;
-	using PolyType = Impl::Poly::Single<IsoGridType>;
+	using Surface = TSurface;
+	using IsoGrid = typename Surface::IsoGrid;
+	using IsoChild = typename IsoGrid::Child;
+	using Poly = Impl::Poly::Single<IsoGrid>;
 
 	// Create a Poly::Single to encompass whole isogrid, for checking Poly::Grid against.
-	PolyType poly{surface_.isogrid()};
+	Poly poly{surface_.isogrid()};
 	poly.resize(surface_.isogrid().size(), surface_.isogrid().offset());
 	poly.activate();
 
 	// Loop every child spatial partition, bind child and polygonise,
 	// resulting in one big polygonisation.
-	for (const IsoChildType& isochild : surface_.isogrid().children().data())
+	for (const IsoChild& isochild : surface_.isogrid().children().data())
 	{
 		poly.bind(isochild.lookup());
 		poly.march();
@@ -797,15 +797,15 @@ ListIdx assert_partitioned_matches_baseline (
 	const Polys<TSurface>& polys_,
 	const Impl::Poly::Single<typename TSurface::IsoGrid>& poly_
 ) {
-	using IsoGridType = typename TSurface::IsoGrid;
-	using PolyType = Impl::Poly::Single<IsoGridType>;
-	using Simplex = typename PolyType::Simplex;
-	static const Dim dims = Impl::Traits<IsoGridType>::t_dims;
+	using IsoGrid = typename TSurface::IsoGrid;
+	using Poly = Impl::Poly::Single<IsoGrid>;
+	using Simplex = typename Poly::Simplex;
+	static const Dim dims = Impl::Traits<IsoGrid>::t_dims;
 
 
 	ListIdx total_vtx = 0;
 	ListIdx total_spx = 0;
-	for (const PolyType& child : polys_.children().data())
+	for (const Poly& child : polys_.children().data())
 	{
 		total_vtx += child.vtxs().size();
 		total_spx += child.spxs().size();
@@ -864,7 +864,7 @@ ListIdx assert_partitioned_matches_baseline (
 
 		bool found_match = false;
 
-		for (const PolyType& child : polys_.children().data())
+		for (const Poly& child : polys_.children().data())
 		{
 			for (const Simplex& polys_spx : child.spxs())
 			{

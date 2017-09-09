@@ -48,7 +48,7 @@ template <Dim D, LayerId L>
 class Surface
 {
 private:
-	using ThisType = Surface<D, L>;
+	using This = Surface<D, L>;
 	/// Dimensions of the underlying isogrid.
 	static constexpr Dim s_dims	= D;
 	/// Furthest layer from the zero-layer on the inside of the volume.
@@ -230,7 +230,7 @@ public:
 		for (ListIdx list_idx = 0; list_idx < pos_idxs_children.size(); list_idx++)
 		{
 			const PosIdx pos_idx_child = pos_idxs_children[list_idx];
-			typename IsoGrid::ChildType& isochild = m_grid_isogrid.children().get(pos_idx_child);
+			typename IsoGrid::Child& isochild = m_grid_isogrid.children().get(pos_idx_child);
 
 			for (const PosIdx pos_idx_leaf : isochild.lookup().list(layer_idx(0)))
 			{
@@ -293,7 +293,7 @@ public:
 			);
 			const VecDi& pos_child = pos_child_without_offset + pos_child_lower;
 			const PosIdx pos_idx_child = m_grid_isogrid.children().index(pos_child);
-			typename IsoGrid::ChildType& child = m_grid_isogrid.children().get(pos_idx_child);
+			typename IsoGrid::Child& child = m_grid_isogrid.children().get(pos_idx_child);
 
 			// Loop all zero-layer points within this partition.
 			for (const PosIdx pos_idx_leaf : child.lookup().list(layer_idx(0)))
@@ -733,7 +733,7 @@ private:
 						idx_neigh < aidx_last_neigh[ListIdx(layer_idx)][idx_child];
 						idx_neigh++
 					) {
-						using AffectedChild = typename AffectedLookupGrid::ChildType;
+						using AffectedChild = typename AffectedLookupGrid::Child;
 						const AffectedChild& child =  m_grid_affected.children().get(pos_idx_child);
 						// This leaf grid node is the centre to search about.
 						const PosIdx pos_idx_centre = child.list(layer_idx)[idx_neigh];
@@ -787,8 +787,8 @@ private:
 	 */
 	void update_zero_layer (AffectedLookupGrid* plookup_buffer_)
 	{
-		using DeltaChild = typename DeltaIsoGrid::ChildType;
-		using IsoChild = typename IsoGrid::ChildType;
+		using DeltaChild = typename DeltaIsoGrid::Child;
+		using IsoChild = typename IsoGrid::Child;
 
 		const TupleIdx layer_idx_zero = layer_idx(0);
 		const PosIdxList& pos_idxs_children =  m_grid_delta.children().lookup().list(layer_idx_zero);
@@ -869,9 +869,9 @@ private:
 	 * @param plookup_buffer_ buffer to store grid points that need a layer update and may need
 	 * additional iterations to converge.
 	 */
-	template <typename GridType>
+	template <typename Grid>
 	bool update_distance(
-		const GridType* plookup_, AffectedLookupGrid* plookup_buffer_
+		const Grid* plookup_, AffectedLookupGrid* plookup_buffer_
 	) {
 		bool is_status_changed = false;
 
@@ -895,13 +895,13 @@ private:
 	 * @param plookup_buffer_ grid to store points that need to change layers.
 	 * @return true if any point status changed, false otherwise.
 	 */
-	template <typename GridType>
+	template <typename Grid>
 	bool update_distance(
 		const LayerId layer_id_, const LayerId side_,
-		const GridType* plookup_, AffectedLookupGrid* plookup_buffer_
+		const Grid* plookup_, AffectedLookupGrid* plookup_buffer_
 	) {
-		using IsoChild = typename IsoGrid::ChildType;
-		using DeltaIsoChild = typename DeltaIsoGrid::ChildType;
+		using IsoChild = typename IsoGrid::Child;
+		using DeltaIsoChild = typename DeltaIsoGrid::Child;
 
 		bool is_status_changed = false;
 
@@ -1023,7 +1023,7 @@ private:
 		const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_, const LayerId layer_id_from_,
 		const LayerId layer_id_to_, AffectedLookupGrid* plookup_buffer_
 	) {
-		using StatusChangeChild = typename StatusChangeGrid::ChildType;
+		using StatusChangeChild = typename StatusChangeGrid::Child;
 
 		if (layer_id_from_ == layer_id_to_)
 			return false;
@@ -1066,7 +1066,7 @@ private:
 	 */
 	void flush_status_change ()
 	{
-		using StatusChangeChild = typename StatusChangeGrid::ChildType;
+		using StatusChangeChild = typename StatusChangeGrid::Child;
 
 		for (LayerId layer_id_from = s_layer_min; layer_id_from <= s_layer_max; layer_id_from++)
 		{
@@ -1132,7 +1132,7 @@ private:
 	 */
 	void expand_narrow_band()
 	{
-		using StatusChangeChild = typename StatusChangeGrid::ChildType;
+		using StatusChangeChild = typename StatusChangeGrid::Child;
 
 		// Cycle innermost layer and outermost layer.
 		for (
@@ -1251,7 +1251,7 @@ private:
 		const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_, const LayerId side_
 	) const {
 
-		typename IsoGrid::ChildType child = m_grid_isogrid.children().get(pos_idx_child_);
+		typename IsoGrid::Child child = m_grid_isogrid.children().get(pos_idx_child_);
 		// Position vector from position index.
 		const VecDi& pos = child.index(pos_idx_leaf_);
 		// Current distance recorded at this point.
@@ -1335,7 +1335,7 @@ private:
 	 * curve.
 	 */
 	VecDf ray(
-		VecDf pos_sample, const VecDf& dir, const typename IsoGrid::ChildType& child
+		VecDf pos_sample, const VecDf& dir, const typename IsoGrid::Child& child
 	) const {
 		using Line = Eigen::ParametrizedLine<FLOAT, D>;
 
@@ -1502,7 +1502,7 @@ private:
 		const Distance dist_pos = m_grid_isogrid.get(pos_);
 		const LayerId layer_id_pos = layer_id(pos_);
 		const VecDi& pos_child = m_grid_isogrid.pos_child(pos_);
-		const typename IsoGrid::ChildType child = m_grid_isogrid.children().get(pos_child);
+		const typename IsoGrid::Child child = m_grid_isogrid.children().get(pos_child);
 		const VecDi& pos_child_lower = child.offset();
 		const VecDi& pos_child_upper = child.offset() + child.size();
 		const Felt::Tuple<ListIdx, s_num_layers>& list_idxs_child =
@@ -1562,8 +1562,8 @@ private:
 	 * @param pos_ position vector of location
 	 * @return integer layer ID that given location should belong to.
 	 */
-	template <class PosType>
-	LayerId layer_id(const PosType& pos_) const
+	template <class Pos>
+	LayerId layer_id(const Pos& pos_) const
 	{
 		const LayerId layer_id_pos = layer_id(m_grid_isogrid.get(pos_));
 
@@ -1593,8 +1593,8 @@ private:
 	 * @param val float or int value to test
 	 * @return true if inside the narrow band, false otherwise.
 	 */
-	template <typename ValType>
-	bool inside_band (const ValType& val) const
+	template <typename Val>
+	bool inside_band (const Val& val) const
 	{
 		return (UINT)std::abs(val) <= s_layer_max;
 	}

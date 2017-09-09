@@ -35,9 +35,9 @@ protected:
 	/// CRTP derived class.
 	using Base =  Grid::Activate<Derived>;
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 	/// Number of tracking lists.
-	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
+	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 
 	// Base class methods.
 	using Base::Activate;
@@ -62,11 +62,11 @@ class SingleIdx : protected Base<Derived>
 {
 private:
 	/// CRTP derived class.
-	using DerivedType = Derived;
+	using Derived = Derived;
 	/// Base class
-	using BaseType = Base<Derived>;
+	using Base = Base<Derived>;
 	/// Integer vector
-	using typename BaseType::VecDi;
+	using typename Base::VecDi;
 protected:
 	/// List of position vectors, each of which have a corresponding grid node storing it's index.
 	PosIdxList	m_list_pos_idxs;
@@ -200,9 +200,9 @@ protected:
 	/// CRTP derived class.
 	using Base =  Grid::Activate<Derived>;
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 	/// Number of tracking lists.
-	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
+	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 
 	// Base class methods.
 	using Base::Activate;
@@ -229,15 +229,15 @@ class SingleIdx : protected Base<Derived>
 {
 private:
 	/// CRTP derived class.
-	using DerivedType = Derived;
+	using Derived = Derived;
 	/// Base class
-	using BaseType = Base<Derived>;
+	using Base = Base<Derived>;
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 	/// Integer vector
-	using typename BaseType::VecDi;
+	using typename Base::VecDi;
 	/// Number of tracking lists.
-	static const TupleIdx t_num_lists = TraitsType::t_num_lists;
+	static const TupleIdx t_num_lists = Traits::t_num_lists;
 protected:
 	/// N-tuple of lists of grid positions - the tracking lists.
 	Tuple<PosIdxList, t_num_lists>	m_a_list_pos_idxs;
@@ -382,19 +382,19 @@ class MultiIdx : private Base<Derived>
 {
 private:
 	/// CRTP derived class.
-	using DerivedType = Derived;
+	using Derived = Derived;
 	/// Base class
-	using BaseType = Base<Derived>;
+	using Base = Base<Derived>;
 	/// Traits of derived class.
-	using TraitsType = Traits<Derived>;
+	using Traits = Traits<Derived>;
 
 	/// Integer vector
-	using typename BaseType::VecDi;
+	using typename Base::VecDi;
 
 	/// Number of tracking lists.
-	static constexpr TupleIdx t_num_lists = TraitsType::t_num_lists;
+	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 	/// Tuple of indices stored at grid nodes.
-	using IndexTuple = typename TraitsType::LeafType;
+	using IndexTuple = typename Traits::Leaf;
 
 protected:
 	static const IndexTuple s_null_idxs;
@@ -551,7 +551,7 @@ protected:
 };
 
 template <class Derived>
-const typename Traits<Derived>::LeafType
+const typename Traits<Derived>::Leaf
 MultiIdx<Derived>::s_null_idxs = IndexTuple::Constant(Felt::null_idx);
 } // Multi
 

@@ -88,8 +88,8 @@ x = (idx/Dz)/Dy % Dx
  * @param vec_ vector to stringify.
  * @return formatted vector.
  */
-template<class VecType>
-std::string format(const VecType& vec_)
+template<class Vec>
+std::string format(const Vec& vec_)
 {
 	using namespace Eigen;
 	IOFormat fmt(

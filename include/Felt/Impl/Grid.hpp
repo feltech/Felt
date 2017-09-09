@@ -25,19 +25,19 @@ class Simple :
 		(Grid::Index)
 	)
 private:
-	using ThisType = Simple<T, D>;
-	using TraitsType = Impl::Traits<ThisType>;
+	using This = Simple<T, D>;
+	using Traits = Impl::Traits<This>;
 
-	using AccessImpl = Impl::Mixin::Grid::Access::ByValue<ThisType>;
-	using ActivateImpl = Impl::Mixin::Grid::Activate<ThisType>;
-	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
-	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
+	using AccessImpl = Impl::Mixin::Grid::Access::ByValue<This>;
+	using ActivateImpl = Impl::Mixin::Grid::Activate<This>;
+	using DataImpl = Impl::Mixin::Grid::Data<This>;
+	using SizeImpl = Impl::Mixin::Grid::Size<This>;
 
-	using VecDi = Felt::VecDi<TraitsType::t_dims>;
-	using LeafType = typename TraitsType::LeafType;
+	using VecDi = Felt::VecDi<Traits::t_dims>;
+	using Leaf = typename Traits::Leaf;
 
 public:
-	Simple(const VecDi& size_, const VecDi& offset_, const LeafType background_) :
+	Simple(const VecDi& size_, const VecDi& offset_, const Leaf background_) :
 		ActivateImpl{background_}, SizeImpl{size_, offset_}
 	{
 		this->activate();
@@ -66,22 +66,22 @@ class Snapshot :
 		(Grid::Index)
 	)
 private:
-	using ThisType = Snapshot<T, D>;
-	using TraitsType = Impl::Traits<ThisType>;
+	using This = Snapshot<T, D>;
+	using Traits = Impl::Traits<This>;
 
-	using AccessImpl = Impl::Mixin::Grid::Access::ByValue<ThisType>;
-	using ActivateImpl = Impl::Mixin::Grid::Activate<ThisType>;
-	using DataImpl = Impl::Mixin::Grid::Data<ThisType>;
-	using SizeImpl = Impl::Mixin::Grid::Size<ThisType>;
-	using SnapshotImpl = Impl::Mixin::Numeric::Snapshot<ThisType>;
+	using AccessImpl = Impl::Mixin::Grid::Access::ByValue<This>;
+	using ActivateImpl = Impl::Mixin::Grid::Activate<This>;
+	using DataImpl = Impl::Mixin::Grid::Data<This>;
+	using SizeImpl = Impl::Mixin::Grid::Size<This>;
+	using SnapshotImpl = Impl::Mixin::Numeric::Snapshot<This>;
 
-	using VecDi = Felt::VecDi<TraitsType::t_dims>;
-	using LeafType = typename TraitsType::LeafType;
+	using VecDi = Felt::VecDi<Traits::t_dims>;
+	using Leaf = typename Traits::Leaf;
 
 public:
 	using SnapshotImpl::VArrayData;
 
-	Snapshot(const VecDi& size_, const VecDi& offset_, const LeafType background_) :
+	Snapshot(const VecDi& size_, const VecDi& offset_, const Leaf background_) :
 		 ActivateImpl{background_}, SizeImpl{size_, offset_}
 	{
 		this->activate();
@@ -113,7 +113,7 @@ namespace Impl
 template <typename T, Dim D>
 struct Traits< Grid::Simple<T, D> >
 {
-	using LeafType = T;
+	using Leaf = T;
 	static constexpr Dim t_dims = D;
 };
 
@@ -126,7 +126,7 @@ struct Traits< Grid::Simple<T, D> >
 template <typename T, Dim D>
 struct Traits< Grid::Snapshot<T, D> >
 {
-	using LeafType = T;
+	using Leaf = T;
 	static constexpr Dim t_dims = D;
 };
 
