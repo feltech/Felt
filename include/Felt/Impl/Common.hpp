@@ -112,7 +112,7 @@ static constexpr ListIdx	null_idx = std::numeric_limits<ListIdx>::max();
 
 namespace Impl
 {
-template <class Derived> struct Traits {};
+template <class TDerived> struct Traits {};
 } // Impl
 } // Felt
 
@@ -120,7 +120,7 @@ template <class Derived> struct Traits {};
 /**
  * Shorthand cast to CRTP derived type.
  */
-#define pself Derived::upcast(this)
+#define pself TDerived::upcast(this)
 
 /**
  * Helper to unwrap parenthesised argument.

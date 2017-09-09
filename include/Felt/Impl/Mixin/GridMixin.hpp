@@ -15,14 +15,14 @@ namespace Mixin
 namespace Grid
 {
 
-template <class Derived>
+template <class TDerived>
 class Activate
 {
 private:
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<Derived>::t_dims;
+	static const UINT t_dims = Traits<TDerived>::t_dims;
 	/// Type of data to store in grid nodes.
-	using Leaf = typename Traits<Derived>::Leaf;
+	using Leaf = typename Traits<TDerived>::Leaf;
 
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
@@ -90,11 +90,11 @@ protected:
 };
 
 
-template <class Derived>
+template <class TDerived>
 class Data
 {
 private:
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	/// Type of data to store in grid nodes.
 	using Leaf = typename Traits::Leaf;
 	static constexpr Dim t_dims = Traits::t_dims;
@@ -157,14 +157,14 @@ protected:
 };
 
 
-template <class Derived>
+template <class TDerived>
 class Index
 {
 private:
 	/// CRTP derived class.
-	using Derived = Derived;
+	using Derived = TDerived;
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<Derived>::t_dims;
+	static const UINT t_dims = Traits<TDerived>::t_dims;
 	/**
 	 * D-dimensional signed integer vector.
 	 */
@@ -206,12 +206,12 @@ protected:
 };
 
 
-template <class Derived>
+template <class TDerived>
 class Size
 {
 private:
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<Derived>::t_dims;
+	static const UINT t_dims = Traits<TDerived>::t_dims;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -308,13 +308,13 @@ protected:
 };
 
 
-template <class Derived>
-class Resize : protected Size<Derived>
+template <class TDerived>
+class Resize : protected Size<TDerived>
 {
 private:
-	using Base = Size<Derived>;
+	using Base = Size<TDerived>;
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<Derived>::t_dims;
+	static const UINT t_dims = Traits<TDerived>::t_dims;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -333,14 +333,14 @@ protected:
 namespace Access
 {
 
-template <class Derived>
+template <class TDerived>
 class Ref
 {
 private:
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<Derived>::t_dims;
+	static const UINT t_dims = Traits<TDerived>::t_dims;
 	/// Type of data to store in grid nodes.
-	using Leaf = typename Traits<Derived>::Leaf;
+	using Leaf = typename Traits<TDerived>::Leaf;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -399,16 +399,16 @@ protected:
 };
 
 
-template <class Derived>
-class ByValue : protected Index<Derived>
+template <class TDerived>
+class ByValue : protected Index<TDerived>
 {
 private:
 	/// CRTP derived class.
-	using Derived = Derived;
+	using Derived = TDerived;
 	/// Dimension of the grid.
-	static const Dim t_dims = Traits<Derived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/// Type of data to store in grid nodes.
-	using Leaf = typename Traits<Derived>::Leaf;
+	using Leaf = typename Traits<TDerived>::Leaf;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -476,16 +476,16 @@ protected:
 };
 
 
-template <class Derived>
-class ByRef : protected Index<Derived>
+template <class TDerived>
+class ByRef : protected Index<TDerived>
 {
 private:
 	/// CRTP derived class.
-	using Derived = Derived;
+	using Derived = TDerived;
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<Derived>::t_dims;
+	static const UINT t_dims = Traits<TDerived>::t_dims;
 	/// Type of data to store in grid nodes.
-	using Leaf = typename Traits<Derived>::Leaf;
+	using Leaf = typename Traits<TDerived>::Leaf;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -552,25 +552,20 @@ protected:
 };
 
 
-template <class Derived>
-class LazyByValue : protected ByValue<Derived>
+template <class TDerived>
+class LazyByValue : protected ByValue<TDerived>
 {
 private:
 	/// CRTP derived class.
-	using Derived = Derived;
-	/// Base class
-	using Base = ByValue<Derived>;
+	using Derived = TDerived;
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<Derived>::t_dims;
+	static const UINT t_dims = Traits<TDerived>::t_dims;
 	/// Type of data to store in grid nodes.
-	using Leaf = typename Traits<Derived>::Leaf;
+	using Leaf = typename Traits<TDerived>::Leaf;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
-
-protected:
 	/// Base class, for subclass friending.
-	using Base = ByValue<Derived>;
-
+	using Base = ByValue<TDerived>;
 protected:
 
 	/**

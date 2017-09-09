@@ -25,7 +25,7 @@ private:
 	using VecDi = Felt::VecDi<D>;
 
 	using This = Lookup<D, N>;
-	using Traits = Traits<This>;
+	using Traits = Impl::Traits<This>;
 
 	using ChildrenImpl = Impl::Mixin::Partitioned::Children<This>;
 	using LeafsImpl = Impl::Mixin::Partitioned::Leafs<This>;
@@ -63,7 +63,7 @@ private:
 	using VecDi = Felt::VecDi<D>;
 
 	using This = Simple<T, D, N>;
-	using Traits = Traits<This>;
+	using Traits = Impl::Traits<This>;
 	using Leaf = typename Traits::Leaf;
 
 	using ChildrenImpl = Impl::Mixin::Partitioned::Children<This>;
@@ -102,7 +102,7 @@ private:
 	using VecDi = Felt::VecDi<D>;
 
 	using This = Numeric<T, D, N>;
-	using Traits = Traits<This>;
+	using Traits = Impl::Traits<This>;
 	using Leaf = typename Traits::Leaf;
 
 	using AccessImpl = Impl::Mixin::Partitioned::Access<This>;

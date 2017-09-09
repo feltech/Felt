@@ -14,12 +14,12 @@ namespace Mixin
 namespace Lookup
 {
 
-template <class Derived>
+template <class TDerived>
 class Base
 {
 protected:
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<Derived>::t_dims;
+	static const UINT t_dims = Traits<TDerived>::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 };
@@ -28,14 +28,14 @@ protected:
 namespace SingleList
 {
 
-template <class Derived>
-class Activate : protected Grid::Activate<Derived>
+template <class TDerived>
+class Activate : protected Grid::Activate<TDerived>
 {
 protected:
 	/// CRTP derived class.
-	using Base =  Grid::Activate<Derived>;
+	using Base =  Grid::Activate<TDerived>;
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	/// Number of tracking lists.
 	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 
@@ -57,14 +57,14 @@ protected:
 };
 
 
-template <class Derived>
-class SingleIdx : protected Base<Derived>
+template <class TDerived>
+class SingleIdx : protected Base<TDerived>
 {
 private:
 	/// CRTP derived class.
-	using Derived = Derived;
+	using Derived = TDerived;
 	/// Base class
-	using Base = Base<Derived>;
+	using Base = Lookup::Base<TDerived>;
 	/// Integer vector
 	using typename Base::VecDi;
 protected:
@@ -193,14 +193,14 @@ protected:
 namespace MultiList
 {
 
-template <class Derived>
-class Activate : protected Grid::Activate<Derived>
+template <class TDerived>
+class Activate : protected Grid::Activate<TDerived>
 {
 protected:
 	/// CRTP derived class.
-	using Base =  Grid::Activate<Derived>;
+	using Base =  Grid::Activate<TDerived>;
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	/// Number of tracking lists.
 	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 
@@ -224,16 +224,16 @@ protected:
 	}
 };
 
-template <class Derived>
-class SingleIdx : protected Base<Derived>
+template <class TDerived>
+class SingleIdx : protected Base<TDerived>
 {
 private:
 	/// CRTP derived class.
-	using Derived = Derived;
+	using Derived = TDerived;
 	/// Base class
-	using Base = Base<Derived>;
+	using Base = Lookup::Base<TDerived>;
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	/// Integer vector
 	using typename Base::VecDi;
 	/// Number of tracking lists.
@@ -377,16 +377,16 @@ protected:
 };
 
 
-template <class Derived>
-class MultiIdx : private Base<Derived>
+template <class TDerived>
+class MultiIdx : private Base<TDerived>
 {
 private:
 	/// CRTP derived class.
-	using Derived = Derived;
+	using Derived = TDerived;
 	/// Base class
-	using Base = Base<Derived>;
+	using Base = Lookup::Base<TDerived>;
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 
 	/// Integer vector
 	using typename Base::VecDi;
@@ -550,9 +550,9 @@ protected:
 
 };
 
-template <class Derived>
-const typename Traits<Derived>::Leaf
-MultiIdx<Derived>::s_null_idxs = IndexTuple::Constant(Felt::null_idx);
+template <class TDerived>
+const typename Traits<TDerived>::Leaf
+MultiIdx<TDerived>::s_null_idxs = IndexTuple::Constant(Felt::null_idx);
 } // Multi
 
 } // Lookup

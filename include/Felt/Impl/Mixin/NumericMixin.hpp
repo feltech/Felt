@@ -11,12 +11,12 @@ namespace Mixin
 namespace Numeric
 {
 
-template <class Derived>
+template <class TDerived>
 class Snapshot
 {
 private:
 	/// Type of data to store in grid nodes.
-	using Leaf = typename Traits<Derived>::Leaf;
+	using Leaf = typename Traits<TDerived>::Leaf;
 protected:
 	/// Map of of POD to Eigen::Array for manipulation using Eigen BLAS methods.
 	using VArrayData = Eigen::Map< Eigen::Array<Leaf, 1, Eigen::Dynamic> >;
@@ -33,11 +33,11 @@ protected:
 };
 
 
-template <class Derived>
+template <class TDerived>
 class Spatial
 {
 private:
-	using Traits = Impl::Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	using Leaf = typename Traits::Leaf;
 	static constexpr Dim t_dims = Traits::t_dims;
 	using VecDf = Felt::VecDf<t_dims>;

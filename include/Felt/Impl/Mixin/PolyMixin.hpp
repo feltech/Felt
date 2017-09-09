@@ -15,7 +15,7 @@ namespace Mixin
 namespace Poly
 {
 
-template <class Derived, Dim D = Traits<Derived>::t_dims>
+template <class TDerived, Dim D = Traits<TDerived>::t_dims>
 class Geom
 {
 	static_assert(D == 2 || D == 3, "Poly only supports 2D or 3D polygonisations");
@@ -25,8 +25,8 @@ class Geom
 /**
  * 2D-specific definitions.
  */
-template <class Derived>
-struct Geom<Derived, 2>
+template <class TDerived>
+struct Geom<TDerived, 2>
 {
 	/**
 	 * A 2D vertex (position only).
@@ -117,8 +117,8 @@ struct Geom<Derived, 2>
 /**
  * 3D-specific definitions.
  */
-template <class Derived>
-struct Geom<Derived, 3> {
+template <class TDerived>
+struct Geom<TDerived, 3> {
 	/**
 	 * A 3D vertex (position and normal).
 	 */
@@ -199,7 +199,7 @@ struct Geom<Derived, 3> {
 	static const unsigned short vtx_mask [];
 
 	/**
-	 * @copydoc PolyBase<2,Derived>::SpxGridPosOffset
+	 * @copydoc PolyBase<2,TDerived>::SpxGridPosOffset
 	 */
 	static const Vec3i SpxGridPosOffset;
 };
@@ -256,8 +256,8 @@ struct Geom<Derived, 3> {
 /*
  * Relative position of corners in CCW order.
  */
-template <class Derived>
-const std::array<Vec2i, 4> Geom<Derived, 2>::corners = {
+template <class TDerived>
+const std::array<Vec2i, 4> Geom<TDerived, 2>::corners = {
 	Vec2i(0, 0),
 	Vec2i(1, 0),
 	Vec2i(1, 1),
@@ -267,22 +267,22 @@ const std::array<Vec2i, 4> Geom<Derived, 2>::corners = {
 /*
  * Array of edge definitions (offset, direction) matching ::corners.
  */
-template <class Derived>
-const typename Geom<Derived, 2>::Edge Geom<Derived, 2>::edges [] = {
+template <class TDerived>
+const typename Geom<TDerived, 2>::Edge Geom<TDerived, 2>::edges [] = {
 	// (x,y,axis)
 	{ Vec2i(0, 0), 0 },
 	{ Vec2i(1, 0), 1 },
 	{ Vec2i(0, 1), 0 },
 	{ Vec2i(0, 0), 1 }
 };
-template <class Derived>
-const Vec2i Geom<Derived, 2>::SpxGridPosOffset(0,0);
+template <class TDerived>
+const Vec2i Geom<TDerived, 2>::SpxGridPosOffset(0,0);
 
 /*
  * Lookup from corner mask to edge mask.
  */
-template <class Derived>
-const unsigned short Geom<Derived, 2>::vtx_mask [] ={
+template <class TDerived>
+const unsigned short Geom<TDerived, 2>::vtx_mask [] ={
 	0b0000,
 	0b1001,
 	0b0011,
@@ -305,8 +305,8 @@ const unsigned short Geom<Derived, 2>::vtx_mask [] ={
  * A lookup from inside/outside status bitmask to vertex ordering to
  * create representative simplices (lines).
  */
-template <class Derived>
-const short Geom<Derived, 2>::vtx_order [][4] = {
+template <class TDerived>
+const short Geom<TDerived, 2>::vtx_order [][4] = {
 	{ -1, -1, -1, -1 },
 	{  3,  0, -1, -1 },
 	{  0,  1, -1, -1 },
@@ -334,8 +334,8 @@ const short Geom<Derived, 2>::vtx_order [][4] = {
 /*
  * Lookup from corner mask to edge mask.
  */
-template <class Derived>
-const unsigned short Geom<Derived, 3>::vtx_mask [] = {
+template <class TDerived>
+const unsigned short Geom<TDerived, 3>::vtx_mask [] = {
 	0x0  , 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
 	0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
 	0x190, 0x99 , 0x393, 0x29a, 0x596, 0x49f, 0x795, 0x69c,
@@ -373,8 +373,8 @@ const unsigned short Geom<Derived, 3>::vtx_mask [] = {
 /**
  * Given node, march cube toward back, up and right (0,0,0)->(1,1,-1).
  */
-template <class Derived>
-const std::array<Vec3i, 8> Geom<Derived, 3>::corners = {
+template <class TDerived>
+const std::array<Vec3i, 8> Geom<TDerived, 3>::corners = {
 	Vec3i( 0,  0,  0),	// c0
 	Vec3i( 1,  0,  0),	// c1
 	Vec3i( 1,  0, -1),	// c2
@@ -388,8 +388,8 @@ const std::array<Vec3i, 8> Geom<Derived, 3>::corners = {
 /**
  * Array of edge definitions (offset, direction) matching ::corners.
  */
-template <class Derived>
-const typename Geom<Derived, 3>::Edge Geom<Derived, 3>::edges [] = {
+template <class TDerived>
+const typename Geom<TDerived, 3>::Edge Geom<TDerived, 3>::edges [] = {
 	// (x,y,z, axis)
 	{ Vec3i( 0,  0,  0), 	0 },	// e0
 	{ Vec3i( 1,  0, -1), 	2 },	// e1
@@ -405,14 +405,14 @@ const typename Geom<Derived, 3>::Edge Geom<Derived, 3>::edges [] = {
 	{ Vec3i( 0,  0, -1), 	1 }		// e11
 };
 
-template <class Derived>
-const Vec3i Geom<Derived, 3>::SpxGridPosOffset(0,0,-1);
+template <class TDerived>
+const Vec3i Geom<TDerived, 3>::SpxGridPosOffset(0,0,-1);
 
 /**
  * Ordering of vertices to build simplex(es).
  */
-template <class Derived>
-const short Geom<Derived, 3>::vtx_order [][16] = {
+template <class TDerived>
+const short Geom<TDerived, 3>::vtx_order [][16] = {
 	{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	{0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	{0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},

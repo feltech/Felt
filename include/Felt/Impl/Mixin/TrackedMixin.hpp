@@ -16,14 +16,14 @@ namespace Tracked
 {
 
 
-template <class Derived>
-class Activate : protected Grid::Activate<Derived>
+template <class TDerived>
+class Activate : protected Grid::Activate<TDerived>
 {
 private:
 	/// Base class.
-	using Base = Felt::Impl::Mixin::Grid::Activate<Derived>;
+	using Base = Felt::Impl::Mixin::Grid::Activate<TDerived>;
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	/// Type of data to store in grid nodes.
 	using Leaf = typename Traits::Leaf;
 	/// Number of tracking lists.
@@ -65,13 +65,13 @@ protected:
 };
 
 
-template <class Derived>
-class Resize : protected Grid::Resize<Derived>
+template <class TDerived>
+class Resize : protected Grid::Resize<TDerived>
 {
 private:
-	using Base = Grid::Resize<Derived>;
+	using Base = Grid::Resize<TDerived>;
 	/// Dimension of the grid.
-	static const Dim t_dims = Traits<Derived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -85,12 +85,12 @@ protected:
 };
 
 
-template <class Derived>
+template <class TDerived>
 class LookupInterface
 {
 private:
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 
 	/// Dimensions of the grid.
 	static constexpr UINT t_dims = Traits::t_dims;
@@ -137,12 +137,12 @@ protected:
 namespace SingleList
 {
 
-template <class Derived>
+template <class TDerived>
 class ByRef
 {
 private:
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	static constexpr UINT t_dims = Traits::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
@@ -188,12 +188,12 @@ protected:
 };
 
 
-template <class Derived>
+template <class TDerived>
 class Reset
 {
 private:
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	static constexpr Dim t_dims = Traits::t_dims;
 protected:
 
@@ -221,12 +221,12 @@ protected:
 namespace MultiList
 {
 
-template <class Derived>
+template <class TDerived>
 class ByRef
 {
 private:
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	static constexpr UINT t_dims = Traits::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
@@ -272,12 +272,12 @@ protected:
 };
 
 
-template <class Derived>
+template <class TDerived>
 class ByValue
 {
 private:
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	static constexpr UINT t_dims = Traits::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
@@ -304,14 +304,14 @@ protected:
 };
 
 
-template <class Derived>
-class LookupInterface : protected Tracked::LookupInterface<Derived>
+template <class TDerived>
+class LookupInterface : protected Tracked::LookupInterface<TDerived>
 {
 private:
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	/// Base class
-	using Base = Tracked::LookupInterface<Derived>;
+	using Base = Tracked::LookupInterface<TDerived>;
 
 	/// Dimensions of the grid.
 	static constexpr UINT t_dims = Traits::t_dims;
@@ -353,12 +353,12 @@ protected:
 };
 
 
-template <class Derived>
+template <class TDerived>
 class Reset
 {
 private:
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	static constexpr Dim t_dims = Traits::t_dims;
 	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 protected:

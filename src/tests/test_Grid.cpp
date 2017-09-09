@@ -906,17 +906,10 @@ SCENARIO("Tracked::LazySingleByValue")
 	{
 		using Grid = Impl::Tracked::LazyMultiListSingleIdxByValue<FLOAT, 3, 3>;
 
-<<<<<<< Upstream, based on branch 'master' of https://github.com/feltech/Felt.git
 //		static_assert(
 //			std::experimental::is_detected<has_reset_t, GridType>::value,
 //			"Tracked grids with a single lookup index per grid node should have a reset method."
 //		);
-=======
-		static_assert(
-			std::experimental::is_detected<has_reset_t, Grid>::value,
-			"Tracked grids with a single lookup index per grid node should have a reset method."
-		);
->>>>>>> 6b6a1e0 Remove `Type` suffixes
 
 		Grid grid = Grid(3.14159f);
 
@@ -1060,19 +1053,11 @@ SCENARIO("Tracked::MultiByRef")
 		using Grid = Impl::Tracked::MultiListMultiIdxByRef<FLOAT, 3, 3>;
 		using IndexTuple = Tuple<ListIdx, 3>;
 
-<<<<<<< Upstream, based on branch 'master' of https://github.com/feltech/Felt.git
 //		static_assert(
 //			!std::experimental::is_detected<has_reset_t, GridType>::value,
 //			"Tracked grids with multiple lookup indices per grid node should not have a reset"
 //			" method."
 //		);
-=======
-		static_assert(
-			!std::experimental::is_detected<has_reset_t, Grid>::value,
-			"Tracked grids with multiple lookup indices per grid node should not have a reset"
-			" method."
-		);
->>>>>>> 6b6a1e0 Remove `Type` suffixes
 
 		Grid grid(Vec3i(9,9,9), Vec3i(-4,-4,-4), 0);
 

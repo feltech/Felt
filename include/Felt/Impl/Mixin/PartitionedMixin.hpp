@@ -16,12 +16,12 @@ namespace Mixin
 namespace Partitioned
 {
 
-template <class Derived>
+template <class TDerived>
 class Children
 {
 private:
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	/// Child grid type.
 	using Child = typename Traits::Child;
 	/// Dimension of grid.
@@ -122,12 +122,12 @@ private:
 };
 
 
-template <class Derived>
+template <class TDerived>
 class Leafs
 {
 private:
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	/// Child grid type.
 	using Child = typename Traits::Child;
 	/// Dimension of grid.
@@ -231,12 +231,12 @@ protected:
 namespace Reset
 {
 
-template <class Derived>
+template <class TDerived>
 class SingleList
 {
 private:
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	/// Child grid type.
 	using Child = typename Traits::Child;
 protected:
@@ -270,12 +270,12 @@ protected:
 };
 
 
-template <class Derived>
+template <class TDerived>
 class MultiList
 {
 private:
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	/// Child grid type.
 	using Child = typename Traits::Child;
 	/// Number of tracking lists.
@@ -335,12 +335,12 @@ protected:
 } // Reset.
 
 
-template <class Derived>
+template <class TDerived>
 class Lookup
 {
 private:
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	/// Child grid type.
 	using Child = typename Traits::Child;
 	/// Dimension of grid.
@@ -386,12 +386,12 @@ protected:
 };
 
 
-template <class Derived>
+template <class TDerived>
 class Tracked
 {
 private:
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	/// Child grid type.
 	using Child = typename Traits::Child;
 	/// Leaf type.
@@ -442,12 +442,12 @@ protected:
 };
 
 
-template <class Derived>
+template <class TDerived>
 class Untrack
 {
 private:
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	/// Child grid type.
 	using Child = typename Traits::Child;
 	/// Leaf type.
@@ -530,12 +530,12 @@ protected:
 	}
 };
 
-template <class Derived>
+template <class TDerived>
 class Access
 {
 private:
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	/// Child grid type.
 	using Child = typename Traits::Child;
 	/// Leaf type.
@@ -572,12 +572,12 @@ protected:
 };
 
 
-template <class Derived>
+template <class TDerived>
 class Snapshot
 {
 private:
 	/// Traits of derived class.
-	using Traits = Traits<Derived>;
+	using Traits = Impl::Traits<TDerived>;
 	/// Child grid type.
 	using Child = typename Traits::Child;
 	/// Leaf type.
