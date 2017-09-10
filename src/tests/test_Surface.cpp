@@ -1226,7 +1226,7 @@ GIVEN(
 
 		THEN("the ray does not hit")
 		{
-			CHECK(pos_hit == surface.s_ray_miss);
+			CHECK(pos_hit == surface.ray_miss);
 		}
 	}
 
@@ -1274,7 +1274,7 @@ GIVEN(
 
 		THEN("the ray hits the surface somewhere")
 		{
-			CHECK(pos_hit != surface.s_ray_miss);
+			CHECK(pos_hit != surface.ray_miss);
 		}
 	}
 
@@ -1298,7 +1298,7 @@ GIVEN(
 					"Ray hit from " + Felt::format(origin) + " in direction " + Felt::format(dir) +
 					" should not be NULL_POS"
 				);
-				CHECK(pos_hit != surface.s_ray_miss);
+				CHECK(pos_hit != surface.ray_miss);
 			}
 		};
 
@@ -1428,7 +1428,7 @@ GIVEN(
 					"Ray hit from " + Felt::format(origin) + " in direction " + Felt::format(dir) +
 					" should not be NULL_POS"
 				);
-				CHECK(pos_hit != surface.s_ray_miss);
+				CHECK(pos_hit != surface.ray_miss);
 			}
 		};
 
@@ -1508,7 +1508,7 @@ GIVEN("a 3-layer flat surface in an 20x20x20 grid with 16x16x16 partitions")
 
 		THEN("the surface is hit")
 		{
-			CHECK(pos_hit != surface.s_ray_miss);
+			CHECK(pos_hit != surface.ray_miss);
 		}
 	}
 }
@@ -1557,9 +1557,9 @@ GIVEN("a 3-layer flat surface in an 50x50x50 grid with 16x16x16 partitions")
 
 		THEN("the surface is hit")
 		{
-			CHECK(pos_hit1 != surface.s_ray_miss);
-			CHECK(pos_hit2 != surface.s_ray_miss);
-			CHECK(pos_hit3 != surface.s_ray_miss);
+			CHECK(pos_hit1 != surface.ray_miss);
+			CHECK(pos_hit2 != surface.ray_miss);
+			CHECK(pos_hit3 != surface.ray_miss);
 		}
 	}
 }

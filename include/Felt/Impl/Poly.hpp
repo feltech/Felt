@@ -209,7 +209,7 @@ private:
 		const unsigned short mask = this->mask(pos_calc);
 		// Array of indices of zero-crossing vertices along each axis from
 		// this corner.
-		ListIdx vtx_idxs[GeomImpl::num_edges];
+		unsigned vtx_idxs[GeomImpl::num_edges];
 		// Look up the edges that are crossed from the corner mask.
 		unsigned short vtx_mask = GeomImpl::vtx_mask[mask];
 		const short* vtx_order = GeomImpl::vtx_order[mask];
@@ -229,7 +229,7 @@ private:
 				const Edge& edge = GeomImpl::edges[edge_idx];
 				// Edges are defined as an axis and an offset.
 				// Look up index of vertex along current edge.
-				vtx_idxs[edge_idx] = idx(pos_calc + edge.offset, edge.axis);
+				vtx_idxs[edge_idx] = unsigned(idx(pos_calc + edge.offset, edge.axis));
 			}
 		}
 

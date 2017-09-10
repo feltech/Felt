@@ -617,6 +617,16 @@ public:
 		return bool(m_grid_isogrid.children().get(pos_idx_child).list(layer_idx(0)).size());
 	}
 
+	/**
+	 * Get points affected by most recent update, in the form of a lookup grid.
+	 *
+	 * @return the affected lookup grid.
+	 */
+	const AffectedLookupGrid& affected() const
+	{
+		return m_grid_affected;
+	}
+
 private:
 
 	/**

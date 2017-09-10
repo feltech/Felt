@@ -231,8 +231,8 @@ protected:
 
 	Size(const VecDi& size_, const VecDi& offset_) :
 		m_size{size_}, m_offset{offset_}, m_offset_plus_size{offset_ + size_},
-		m_offset_plus_one{m_offset + VecDi::Constant(1)},
-		m_offset_plus_size_minus_two{m_offset_plus_size - VecDi::Constant(2)}
+		m_offset_plus_size_minus_two{m_offset_plus_size - VecDi::Constant(2)},
+		m_offset_plus_one{m_offset + VecDi::Constant(1)}
 	{}
 
 	const VecDi& size () const
