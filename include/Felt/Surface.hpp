@@ -1,5 +1,9 @@
 #ifndef Impl_Surface_hpp
 #define Impl_Surface_hpp
+#include <Felt/Impl/Common.hpp>
+#include <Felt/Impl/Partitioned.hpp>
+#include <Felt/Impl/Partitioned.hpp>
+#include <Felt/Impl/Util.hpp>
 
 #include <vector>
 #include <functional>
@@ -10,9 +14,6 @@
 #include <eigen3/Eigen/Dense>
 #include <omp.h>
 
-#include <Felt/Impl/Partitioned.hpp>
-#include <Felt/Impl/Partitioned.hpp>
-#include <Felt/Impl/Util.hpp>
 
 #ifndef FELT_SURFACE_OMP_MIN_CHUNK_SIZE
 /**
@@ -135,6 +136,11 @@ private:
 public:
 
 	/**
+	 * Get vector representing a raycast miss.
+	 */
+	static const VecDf ray_miss;
+
+	/**
 	 * Explicitly defined default constructor.
 	 */
 	Surface () = delete;
@@ -168,14 +174,14 @@ public:
 	 *
 	 * @param pos_centre
 	 */
-	void seed (const VecDi& pos_centre)
+	void seed (const VecDi& pos_centre_)
 	{
 		// Width of seed.
 		const VecDi& vec_width = VecDi::Constant(INT(s_layer_max));
 
 		// Min and max positions affected by placing seed point.
-		const VecDi& pos_min = pos_centre - vec_width;
-		const VecDi& pos_max = pos_centre + vec_width;
+		const VecDi& pos_min = pos_centre_ - vec_width;
+		const VecDi& pos_max = pos_centre_ + vec_width;
 
 		// Get vector size of window formed by pos_min and pos_max.
 		const VecDi& pos_window_size = pos_max - pos_min + VecDi::Constant(1); //+1 for zero coord.
@@ -191,7 +197,7 @@ public:
 			// Translate position into isogrid grid space.
 			pos += pos_min;
 			// Calculate vector distance from this position to seed centre.
-			const VecDi& vec_dist = pos - pos_centre;
+			const VecDi& vec_dist = pos - pos_centre_;
 			// Sum of absolute distance along each axis == city-block distance.
 			const Distance dist = Distance(vec_dist.template lpNorm<1>());
 			const LayerId layer_id_pos = layer_id(dist);
@@ -418,7 +424,7 @@ public:
 					m_grid_isogrid.pos_child(pos_origin_.template cast<INT>())
 				)
 			);
-			if (pos_hit != s_ray_miss)
+			if (pos_hit != ray_miss)
 				return pos_hit;
 		}
 
@@ -547,11 +553,11 @@ public:
 				m_grid_isogrid.children().get(child_hit.pos_idx_child)
 			);
 
-			if (pos_hit != s_ray_miss)
+			if (pos_hit != ray_miss)
 				return pos_hit;
 		}
 
-		return s_ray_miss;
+		return ray_miss;
 	}
 
 	/**
@@ -587,21 +593,6 @@ public:
 	}
 
 	/**
-	 * Get points affected by most recent update, in the form of a lookup grid.
-	 *
-	 * @return the affected lookup grid.
-	 */
-	const AffectedLookupGrid& affected() const
-	{
-		return m_grid_affected;
-	}
-
-	/**
-	 * Get vector representing a raycast miss.
-	 */
-	static const VecDf s_ray_miss;
-
-	/**
 	 * Get narrow band layer index of ID for indexing into arrays.
 	 *
 	 * Internally we can of course not have negative array indices, so must convert to an
@@ -613,6 +604,17 @@ public:
 	static constexpr TupleIdx layer_idx(const LayerId id_)
 	{
 		return TupleIdx(id_ + LayerId(s_num_layers) / 2);
+	}
+
+	/**
+	 * Check if child spatial partition contains zero-layer points.
+	 *
+	 * @param pos_idx_child position index of child partition.
+	 * @return true if zero-curve cuts through partition, false otherwise.
+	 */
+	bool is_intersected(const PosIdx pos_idx_child)
+	{
+		return bool(m_grid_isogrid.children().get(pos_idx_child).list(layer_idx(0)).size());
 	}
 
 private:
@@ -1251,15 +1253,15 @@ private:
 		const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_, const LayerId side_
 	) const {
 
-		typename IsoGrid::Child child = m_grid_isogrid.children().get(pos_idx_child_);
+		const typename IsoGrid::Child& child = m_grid_isogrid.children().get(pos_idx_child_);
 		// Position vector from position index.
-		const VecDi& pos = child.index(pos_idx_leaf_);
+		VecDi pos = child.index(pos_idx_leaf_);
 		// Current distance recorded at this point.
 		const Distance dist = child.get(pos_idx_leaf_);
 		// Direction away from surface along surface normal in distance units.
 		const Distance dir = Distance(side_);
 
-		return distance(pos, dist, dir);
+		return distance(std::move(pos), dist, dir);
 	}
 
 	/**
@@ -1280,8 +1282,8 @@ private:
 
 		// Get neighbouring point that is next closest to the zero-layer.
 		m_grid_isogrid.neighs(
-			pos_,
-			[this, &pos_, &dist_, dir_](const VecDi& pos_neigh_) {
+			std::move(pos_),
+			[this, &dist_, dir_](const VecDi& pos_neigh_) {
 				if (not m_grid_isogrid.inside(pos_neigh_))
 					return;
 				const Distance dist_neigh = m_grid_isogrid.get(pos_neigh_);
@@ -1292,7 +1294,6 @@ private:
 				//   prefers those points, which is good because we're interested in the neighbour
 				//   in the *direction* of the zero-curve.
 				if (dist_neigh*dir_ < dist_) {
-					pos_ = pos_neigh_;
 					dist_ = dist_neigh*dir_;
 				}
 			}
@@ -1345,7 +1346,7 @@ private:
 //		std::cerr << "Child: (" << child.offset().transpose() << ") + (" <<
 //			child.size().transpose() << ")" << std::endl;
 
-		while (child.inside(pos_sample))
+		while (child.inside(pos_sample) && m_grid_isogrid.inside_interp(pos_sample))
 		{
 			const INT layer_id = this->layer_id(pos_sample);
 
@@ -1382,7 +1383,7 @@ private:
 						pos_sample -= normal*dist;
 
 						if (!m_grid_isogrid.inside(pos_sample))
-							return s_ray_miss;
+							return ray_miss;
 
 						if (std::abs(dist) <= TINY || normal.dot(dir) >= 0)
 							break;
@@ -1412,7 +1413,7 @@ private:
 			pos_sample = line_leaf.pointAt(t_leaf);
 		} // End while inside child grid.
 
-		return s_ray_miss;
+		return ray_miss;
 	}
 
 	/**
@@ -1611,7 +1612,7 @@ private:
 };
 
 template <Dim D, LayerId L>
-const typename Surface<D, L>::VecDf Surface<D, L>::s_ray_miss =
+const typename Surface<D, L>::VecDf Surface<D, L>::ray_miss =
 	VecDf::Constant(std::numeric_limits<Distance>::max());
 
 }

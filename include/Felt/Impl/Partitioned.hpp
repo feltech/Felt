@@ -137,6 +137,7 @@ public:
 	using ResetImpl::reset;
 	using ResetImpl::track_children;
 	using SizeImpl::inside;
+	using SizeImpl::inside_interp;
 	using SizeImpl::offset;
 	using SizeImpl::size;
 	using SpatialImpl::curv;

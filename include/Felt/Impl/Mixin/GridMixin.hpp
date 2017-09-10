@@ -220,11 +220,19 @@ protected:
 	VecDi	m_size;
 	/// The translational offset of the grid's zero coordinate.
 	VecDi	m_offset;
+	/// Cache for use in `inside`.
+	VecDi	m_offset_plus_size;
+	/// Cache for use in `inside`.
+	VecDi	m_offset_plus_size_minus_two;
+	/// Cache for use in `inside`.
+	VecDi	m_offset_plus_one;
 
 protected:
 
 	Size(const VecDi& size_, const VecDi& offset_) :
-		m_size{size_}, m_offset{offset_}
+		m_size{size_}, m_offset{offset_}, m_offset_plus_size{offset_ + size_},
+		m_offset_plus_one{m_offset + VecDi::Constant(1)},
+		m_offset_plus_size_minus_two{m_offset_plus_size - VecDi::Constant(2)}
 	{}
 
 	const VecDi& size () const
@@ -238,16 +246,29 @@ protected:
 	}
 
 	/**
+	 * Test if a position is inside the grid bounds, with a buffer to allow for interpolation.
+	 *
+	 * @tparam Pos the type of position vector (i.e. float vs. int).
+	 * @param pos_ position in grid to query.
+	 * @return true if position lies inside the grid, false otherwise.
+	 */
+	template <typename T>
+	bool inside_interp (const Felt::VecDT<T, t_dims>& pos_) const
+	{
+		return inside(pos_, m_offset_plus_one, m_offset_plus_size_minus_two);
+	}
+
+	/**
 	 * Test if a position is inside the grid bounds.
 	 *
 	 * @tparam Pos the type of position vector (i.e. float vs. int).
 	 * @param pos_ position in grid to query.
 	 * @return true if position lies inside the grid, false otherwise.
 	 */
-	template <typename Pos>
-	bool inside (const Felt::VecDT<Pos, t_dims>& pos_) const
+	template <typename T>
+	bool inside (const Felt::VecDT<T, t_dims>& pos_) const
 	{
-		return inside(pos_, m_offset, m_offset + m_size);
+		return inside(pos_, m_offset, m_offset_plus_size);
 	}
 
 	/**
@@ -259,15 +280,15 @@ protected:
 	 * @param pos_max_ one more than the maximum allowed position.
 	 * @return true if position lies inside the grid, false otherwise.
 	 */
-	template <typename Elem>
+	template <typename T>
 	static bool inside (
-		const Felt::VecDT<Elem, t_dims>& pos_, const VecDi& pos_min_, const VecDi& pos_max_
+		const Felt::VecDT<T, t_dims>& pos_, const VecDi& pos_min_, const VecDi& pos_max_
 	) {
 		for (Dim i = 0; i < pos_.size(); i++)
 		{
-			if (pos_(i) >= static_cast<Elem>(pos_max_(i)))
+			if (pos_(i) >= static_cast<T>(pos_max_(i)))
 				return false;
-			if (pos_(i) < static_cast<Elem>(pos_min_(i)))
+			if (pos_(i) < static_cast<T>(pos_min_(i)))
 				return false;
 		}
 		return true;
@@ -326,6 +347,9 @@ protected:
 	{
 		this->m_size = size_;
 		this->m_offset = offset_;
+		this->m_offset_plus_size = this->m_offset + size_;
+		this->m_offset_plus_one = this->m_offset + VecDi::Constant(1);
+		this->m_offset_plus_size_minus_two = this->m_offset_plus_size - VecDi::Constant(2);
 	}
 };
 
