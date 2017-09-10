@@ -387,7 +387,7 @@ struct Traits< Poly::Single<TIsoGrid> >
 	/// Dimension of grid.
 	static constexpr Dim t_dims = Traits<TIsoGrid>::t_dims;
 	/// A vertex index for each positively directed edge stored at each grid node.
-	using Leaf = Felt::VecDu<t_dims>;
+	using Leaf = VecDT<ListIdx, t_dims>;
 	/// Type of lookup grid for tracking active positions.
 	using Lookup = Lookup::LazySingleListSingleIdx<t_dims>;
 	/// IsoGrid type that will be polygonised.

@@ -65,7 +65,7 @@ using VecDi = VecDT<INT, D>;
  * Shorthand for D-dimensional unsigned integer vector.
  */
 template <Dim D>
-using VecDu = VecDT<ListIdx, D>;
+using VecDu = VecDT<unsigned, D>;
 
 /**
  * Shorthand for 2D float vector.
