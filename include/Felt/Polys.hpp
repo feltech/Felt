@@ -36,8 +36,10 @@ private:
 
 	/// Surface type.
 	using Surface = typename Traits::Surface;
+public:
 	/// Child grid type.
 	using Child = typename Traits::Child;
+private:
 	/// Isogrid to (partially) polygonise.
 	using IsoGrid = typename Traits::IsoGrid;
 	/// Spatial partition type this poly will be responsible for.
