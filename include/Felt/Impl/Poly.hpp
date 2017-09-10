@@ -65,8 +65,8 @@ private:
 
 
 	/// Isogrid to (partially) polygonise.
-	const IsoGrid*		m_pisogrid;
-	IsoLookup const*	m_pisolookup;
+	const IsoGrid*			m_pisogrid;
+	const IsoLookup*		m_pisolookup;
 
 	/// List of interpolated vertices.
 	VtxArray	m_a_vtx;
