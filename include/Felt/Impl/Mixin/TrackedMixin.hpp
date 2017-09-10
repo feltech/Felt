@@ -189,6 +189,38 @@ protected:
 
 
 template <class TDerived>
+class ByValue
+{
+private:
+	/// Traits of derived class.
+	using Traits = Impl::Traits<TDerived>;
+	static constexpr UINT t_dims = Traits::t_dims;
+	/// Integer vector.
+	using VecDi = Felt::VecDi<t_dims>;
+	using Leaf = typename Traits::Leaf;
+protected:
+	/**
+	 * Set value in grid at given position and track position to lookup grid.
+	 *
+	 * Will set value regardless whether lookup grid already set for given
+	 * position + tracking list.
+	 *
+	 * @param pos_ position in grid.
+	 * @param val_ value to set.
+	 * @param list_idx_ tracking list id.
+	 * @return true if grid node set in lookup grid and position added to
+	 * tracking list, false if grid node was already set so position already
+	 * in a list.
+	 */
+	bool track(const Leaf val_, const PosIdx pos_idx_)
+	{
+		pself->set(pos_idx_, val_);
+		return pself->lookup().track(pos_idx_);
+	}
+};
+
+
+template <class TDerived>
 class Reset
 {
 private:
@@ -212,6 +244,7 @@ protected:
 		pself->m_grid_lookup.reset();
 	}
 };
+
 } // SingleList.
 
 

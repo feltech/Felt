@@ -108,6 +108,53 @@ public:
 };
 
 
+template <typename T, Dim D>
+class SingleListSingleIdxByValue :
+	FELT_MIXINS(
+		(SingleListSingleIdxByValue<T, D>),
+		(Grid::Access::ByValue)(Grid::Activate)(Grid::Data)(Grid::Size)
+		(Tracked::SingleList::ByValue)
+		(Tracked::LookupInterface),
+		(Grid::Index)
+	)
+private:
+	using This = SingleListSingleIdxByValue<T, D>;
+	using Traits = Impl::Traits<This>;
+
+	using AccessImpl = Impl::Mixin::Grid::Access::ByValue<This>;
+	using ActivateImpl = Impl::Mixin::Grid::Activate<This>;
+	using DataImpl = Impl::Mixin::Grid::Data<This>;
+	using LookupInterfaceImpl = Impl::Mixin::Tracked::LookupInterface<This>;
+	using SizeImpl = Impl::Mixin::Grid::Size<This>;
+	using TrackedImpl = Impl::Mixin::Tracked::SingleList::ByValue<This>;
+
+	using VecDi = Felt::VecDi<Traits::t_dims>;
+	using Leaf = typename Traits::Leaf;
+	using Lookup = typename Traits::Lookup;
+
+public:
+	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
+
+	SingleListSingleIdxByValue(const VecDi& size_, const VecDi& offset_, const Leaf background_) :
+		ActivateImpl{background_}, SizeImpl{size_, offset_},
+		LookupInterfaceImpl{Lookup{size_, offset_}}
+	{
+		this->activate();
+	}
+
+	using AccessImpl::get;
+	using AccessImpl::index;
+	using AccessImpl::set;
+	using ActivateImpl::activate;
+	using DataImpl::assert_pos_idx_bounds;
+	using DataImpl::data;
+	using SizeImpl::offset;
+	using SizeImpl::size;
+	using LookupInterfaceImpl::lookup;
+	using TrackedImpl::track;
+};
+
+
 template <typename T, Dim D, TupleIdx N>
 class MultiListMultiIdxByRef :
 	FELT_MIXINS(
@@ -162,8 +209,9 @@ namespace Felt
 {
 namespace Impl
 {
+
 /**
- * Traits for Tracked::SingleByRef.
+ * Traits for Tracked::SingleListSingleIdxByRef.
  *
  * @tparam T type of data to store in the grid.
  * @tparam D number of dimensions of the grid.
@@ -178,6 +226,17 @@ struct Traits< Tracked::SingleListSingleIdxByRef<T, D> >
 	/// Type of lookup grid for tracking active positions.
 	using Lookup = Lookup::SingleListSingleIdx<D>;
 };
+
+/**
+ * Traits for Tracked::SingleListSingleIdxByValue.
+ *
+ * @tparam T type of data to store in the grid.
+ * @tparam D number of dimensions of the grid.
+ */
+template <typename T, Dim D>
+struct Traits< Tracked::SingleListSingleIdxByValue<T, D> > :
+	Traits< Tracked::SingleListSingleIdxByRef<T, D> >
+{};
 
 /**
  * Common base traits for tracked grids with multiple tracking lists but single index per grid node.
