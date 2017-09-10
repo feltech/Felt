@@ -216,7 +216,7 @@ protected:
 	{
 		pself->m_data.clear();
 		pself->m_data.shrink_to_fit();
-		for (UINT list_idx = 0; list_idx < t_num_lists; list_idx++)
+		for (TupleIdx list_idx = 0; list_idx < t_num_lists; list_idx++)
 		{
 			pself->m_a_list_pos_idxs[list_idx].clear();
 			pself->m_a_list_pos_idxs[list_idx].shrink_to_fit();
