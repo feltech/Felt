@@ -240,9 +240,11 @@ public:
 
 			for (const PosIdx pos_idx_leaf : isochild.lookup().list(layer_idx(0)))
 			{
+				const VecDi& pos_leaf = isochild.index(pos_idx_leaf);
 				const Distance dist_delta = fn_(
-					isochild.index(pos_idx_leaf), const_cast<const IsoGrid&>(m_grid_isogrid)
+					pos_leaf, const_cast<const IsoGrid&>(m_grid_isogrid)
 				);
+				// Disallow expansion to edge of grid.
 				m_grid_delta.children().get(pos_idx_child).track(
 					dist_delta, pos_idx_leaf, layer_idx(0)
 				);
@@ -310,7 +312,7 @@ public:
 				{
 					const Distance dist_delta = fn_(pos_leaf, m_grid_isogrid);
 
-					#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+					#ifdef FELT_DEBUG_ENABLED
 
 					if (m_grid_delta.children().get(pos_idx_child).get(pos_idx_leaf) != 0)
 					{
@@ -1356,7 +1358,7 @@ private:
 //		std::cerr << "Child: (" << child.offset().transpose() << ") + (" <<
 //			child.size().transpose() << ")" << std::endl;
 
-		while (child.inside(pos_sample) && m_grid_isogrid.inside_interp(pos_sample))
+		while (child.inside(pos_sample))
 		{
 			const INT layer_id = this->layer_id(pos_sample);
 

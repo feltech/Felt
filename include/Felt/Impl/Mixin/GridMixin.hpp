@@ -222,17 +222,11 @@ protected:
 	VecDi	m_offset;
 	/// Cache for use in `inside`.
 	VecDi	m_offset_plus_size;
-	/// Cache for use in `inside`.
-	VecDi	m_offset_plus_size_minus_two;
-	/// Cache for use in `inside`.
-	VecDi	m_offset_plus_one;
 
 protected:
 
 	Size(const VecDi& size_, const VecDi& offset_) :
-		m_size{size_}, m_offset{offset_}, m_offset_plus_size{offset_ + size_},
-		m_offset_plus_size_minus_two{m_offset_plus_size - VecDi::Constant(2)},
-		m_offset_plus_one{m_offset + VecDi::Constant(1)}
+		m_size{size_}, m_offset{offset_}, m_offset_plus_size{offset_ + size_}
 	{}
 
 	const VecDi& size () const
@@ -243,19 +237,6 @@ protected:
 	const VecDi& offset () const
 	{
 		return m_offset;
-	}
-
-	/**
-	 * Test if a position is inside the grid bounds, with a buffer to allow for interpolation.
-	 *
-	 * @tparam Pos the type of position vector (i.e. float vs. int).
-	 * @param pos_ position in grid to query.
-	 * @return true if position lies inside the grid, false otherwise.
-	 */
-	template <typename T>
-	bool inside_interp (const Felt::VecDT<T, t_dims>& pos_) const
-	{
-		return inside(pos_, m_offset_plus_one, m_offset_plus_size_minus_two);
 	}
 
 	/**

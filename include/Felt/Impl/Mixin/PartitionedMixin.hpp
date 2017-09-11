@@ -542,8 +542,14 @@ private:
 	using Leaf = typename Traits::Leaf;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<Traits::t_dims>;
+	/// Value to return for queries out of bounds.
+	const Leaf m_background;
 
+	Access() = delete;
 protected:
+	Access(const Leaf background_) : m_background{background_}
+	{}
+
 	/**
 	 * Get the leaf grid node at pos by navigating to the correct partition.
 	 *
@@ -552,6 +558,8 @@ protected:
 	 */
 	Leaf get (const VecDi& pos_) const
 	{
+		if (not pself->inside(pos_))
+			return m_background;
 		const PosIdx pos_idx_child = pself->pos_idx_child(pos_);
 		const Child& child = pself->children().get(pos_idx_child);
 		return child.get(pos_);
