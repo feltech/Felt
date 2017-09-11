@@ -123,8 +123,8 @@ public:
 		const VecDi& size_, const VecDi& offset_, const VecDi& child_size_,
 		const Leaf background_
 	) :
-		AccessImpl{background_},
 		SizeImpl{size_, offset_},
+		AccessImpl{background_},
 		ChildrenImpl{size_, offset_, child_size_, Child(background_)}
 	{}
 

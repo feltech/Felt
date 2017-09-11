@@ -329,8 +329,6 @@ protected:
 		this->m_size = size_;
 		this->m_offset = offset_;
 		this->m_offset_plus_size = this->m_offset + size_;
-		this->m_offset_plus_one = this->m_offset + VecDi::Constant(1);
-		this->m_offset_plus_size_minus_two = this->m_offset_plus_size - VecDi::Constant(2);
 	}
 };
 

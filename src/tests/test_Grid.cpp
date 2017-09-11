@@ -1539,6 +1539,12 @@ SCENARIO("Paritioned::Tracked::Numeric")
 
 		Grid::Child& child = grid.children().get(pos123_child_idx);
 
+		THEN("querying outside of the grid returns background value")
+		{
+			CHECK(grid.get(Vec3i(20,20,20)) == -42);
+			CHECK(grid.get(Vec3i(-20,-20,-20)) == -42);
+		}
+
 		WHEN("positions in the same partition are tracked")
 		{
 			grid.track(345, pos1, 0);
