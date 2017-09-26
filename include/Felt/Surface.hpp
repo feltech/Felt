@@ -87,10 +87,6 @@ private:
 	 */
 	using AffectedLookupGrid = Impl::Partitioned::Lookup<D, s_num_layers>;
 
-	/// D-dimensional hyperplane type (using Eigen library), for raycasting.
-	using Plane = Eigen::Hyperplane<Distance, D>;
-	/// D-dimensional parameterised line, for raycasting.
-	using Line = Eigen::ParametrizedLine<Distance, D>;
 	/**
 	 * Grid tracking locations that are to be moved to another narrow band layer.
 	 *
@@ -134,6 +130,10 @@ private:
 	AffectedLookupGrid 	m_grid_affected_buffer;
 
 public:
+	/// D-dimensional hyperplane type (using Eigen library), for raycasting.
+	using Plane = Eigen::Hyperplane<Distance, D>;
+	/// D-dimensional parameterised line, for raycasting.
+	using Line = Eigen::ParametrizedLine<Distance, D>;
 
 	/**
 	 * Get vector representing a raycast miss.
@@ -308,7 +308,7 @@ public:
 			{
 				const VecDi& pos_leaf = child.index(pos_idx_leaf);
 				// Skip zero-layer points not within finer-grained bounding box.
-				if (IsoGrid::inside(pos_leaf, pos_leaf_lower_, pos_leaf_upper_bound))
+				if (Felt::inside(pos_leaf, pos_leaf_lower_, pos_leaf_upper_bound))
 				{
 					const Distance dist_delta = fn_(pos_leaf, m_grid_isogrid);
 
