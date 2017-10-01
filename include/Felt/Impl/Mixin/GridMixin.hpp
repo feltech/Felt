@@ -249,31 +249,9 @@ protected:
 	template <typename T>
 	bool inside (const Felt::VecDT<T, t_dims>& pos_) const
 	{
-		return inside(pos_, m_offset, m_offset_plus_size);
+		return Felt::inside(pos_, m_offset, m_offset_plus_size);
 	}
 
-	/**
-	 * Test if a position is inside given bounds.
-	 *
-	 * @tparam Pos the type of position vector (i.e. float vs. int).
-	 * @param pos_ position in grid to query.
-	 * @param pos_min_ minimum allowed position.
-	 * @param pos_max_ one more than the maximum allowed position.
-	 * @return true if position lies inside the grid, false otherwise.
-	 */
-	template <typename T>
-	static bool inside (
-		const Felt::VecDT<T, t_dims>& pos_, const VecDi& pos_min_, const VecDi& pos_max_
-	) {
-		for (Dim i = 0; i < pos_.size(); i++)
-		{
-			if (pos_(i) >= static_cast<T>(pos_max_(i)))
-				return false;
-			if (pos_(i) < static_cast<T>(pos_min_(i)))
-				return false;
-		}
-		return true;
-	}
 
 	/**
 	 * Check if given position is within the grid and raise a domain_error if not.

@@ -83,6 +83,30 @@ x = (idx/Dz)/Dy % Dx
 }
 
 /**
+ * Test if a position is inside given bounds.
+ *
+ * @tparam Pos the type of position vector (i.e. float vs. int).
+ * @param pos_ position in grid to query.
+ * @param pos_min_ minimum allowed position.
+ * @param pos_max_ one more than the maximum allowed position.
+ * @return true if position lies inside the grid, false otherwise.
+ */
+template <typename TPoint, typename TBounds>
+bool inside (
+	const TPoint& pos_,
+	const TBounds& pos_min_, const TBounds& pos_max_
+) {
+	for (Dim i = 0; i < pos_.size(); i++)
+	{
+		if (static_cast<Distance>(pos_(i)) >= static_cast<Distance>(pos_max_(i)))
+			return false;
+		if (static_cast<Distance>(pos_(i)) < static_cast<Distance>(pos_min_(i)))
+			return false;
+	}
+	return true;
+}
+
+/**
  * String format a vector (useful for logging).
  *
  * @param vec_ vector to stringify.
