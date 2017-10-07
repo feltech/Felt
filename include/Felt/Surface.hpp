@@ -244,6 +244,18 @@ public:
 				const Distance dist_delta = fn_(
 					pos_leaf, const_cast<const IsoGrid&>(m_grid_isogrid)
 				);
+
+				#ifdef FELT_DEBUG_ENABLED
+				if (std::abs(dist_delta) > 1.0f)
+				{
+					std::stringstream strs;
+					strs << "Zero layer update value out of bounds: " << Felt::format(pos_leaf)
+						<< " with value " << dist_delta;
+					std::string str = strs.str();
+					throw std::domain_error(str);
+				}
+				#endif
+
 				// Disallow expansion to edge of grid.
 				m_grid_delta.children().get(pos_idx_child).track(
 					dist_delta, pos_idx_leaf, layer_idx(0)
