@@ -1202,7 +1202,7 @@ private:
 							// band.
 							if (inside_band(layer_id_from))
 							{
-								#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+								#ifdef FELT_DEBUG_ENABLED
 
 								const ListIdx lookup_idx = m_grid_isogrid.children().get(
 										m_grid_isogrid.pos_child(pos_neigh_)

@@ -172,7 +172,7 @@ template <class TDerived> struct Traits {};
 	_FELT_ENABLE_UPCAST(derived)
 
 
-#if defined(FELT_EXCEPTIONS)
+#ifdef FELT_EXCEPTIONS
 #define FELT_DEBUG_ENABLED
 #define FELT_DEBUG(...) __VA_ARGS__;
 #else
