@@ -32,9 +32,22 @@ protected:
 	Leaf	m_background;
 
 protected:
+	Activate() {};
+
 	Activate(const Leaf background_) :
 		m_background{background_}
 	{}
+
+	/**
+	 * Serialisation hook for cereal library.
+	 *
+	 * @param ar
+	 */
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_background);
+	}
 
 	/**
 	 * Get whether this grid has been activated (data allocated) or not.
@@ -115,6 +128,16 @@ protected:
 		return m_data;
 	}
 
+	/**
+	 * Serialisation hook for cereal library.
+	 *
+	 * @param ar
+	 */
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_data);
+	}
 
 	/**
 	 * Check if given position's index is within the data array and raise a domain_error if not.
@@ -224,10 +247,17 @@ protected:
 	VecDi	m_offset_plus_size;
 
 protected:
+	Size() = default;
 
 	Size(const VecDi& size_, const VecDi& offset_) :
 		m_size{size_}, m_offset{offset_}, m_offset_plus_size{offset_ + size_}
 	{}
+
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_size, m_offset, m_offset_plus_size);
+	}
 
 	const VecDi& size () const
 	{

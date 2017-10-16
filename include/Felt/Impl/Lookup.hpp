@@ -204,11 +204,23 @@ private:
 public:
 	static constexpr TupleIdx num_lists = Traits::t_num_lists;
 
+	MultiListMultiIdx() = default;
+
 	MultiListMultiIdx(const VecDi& size, const VecDi& offset) :
 		SizeImpl{size, offset}, ActivateImpl{LookupImpl::s_null_idxs}
 	{
 		this->activate();
 	}
+
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ActivateImpl::serialize(ar);
+		DataImpl::serialize(ar);
+		LookupImpl::serialize(ar);
+		SizeImpl::serialize(ar);
+	}
+
 
 	using AccessImpl::get;
 	using AccessImpl::index;

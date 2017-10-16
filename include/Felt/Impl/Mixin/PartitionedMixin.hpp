@@ -3,9 +3,18 @@
 #include <memory>
 #include <mutex>
 
+#include <fstream>
+#pragma GCC system_header // Disable warnings.
+#include <cereal/access.hpp>
+#pragma GCC system_header // Disable warnings.
+#include <cereal/archives/binary.hpp>
+#pragma GCC system_header // Disable warnings.
+#include <cereal/types/vector.hpp>
+
 #include <Felt/Impl/Util.hpp>
 #include <Felt/Impl/Grid.hpp>
 #include <Felt/Impl/Tracked.hpp>
+
 
 namespace Felt
 {
@@ -41,8 +50,8 @@ private:
 	std::mutex	m_mutex;
 
 protected:
-	/// Deleted default constructor.
-	Children() = delete;
+	/// Default constructor.
+	Children() {};
 
 	/**
 	 * Construct and initialise children grid to hold child sub-grids.
@@ -74,6 +83,17 @@ protected:
 
 			m_children.get(pos_idx).resize(m_child_size, offset_child);
 		}
+	}
+
+	Children(Children&& other_) :
+		m_child_size{other_.m_child_size}, m_children{other_.m_children}
+	{}
+
+
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_child_size, m_children);
 	}
 
 	/**
@@ -138,6 +158,14 @@ private:
 	std::mutex	m_mutex;
 
 protected:
+	Leafs() = default;
+
+	/**
+	 * No-op move constructor - this mixin only has a mutex.
+	 *
+	 * @param other_
+	 */
+	Leafs(Leafs&&) {}
 
 	/**
 	 * Call lambda for each grid node in given tracking list.
@@ -543,12 +571,19 @@ private:
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<Traits::t_dims>;
 	/// Value to return for queries out of bounds.
-	const Leaf m_background;
+	Leaf m_background;
 
-	Access() = delete;
 protected:
+	Access() = default;
+
 	Access(const Leaf background_) : m_background{background_}
 	{}
+
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_background);
+	}
 
 	/**
 	 * Get the leaf grid node at pos by navigating to the correct partition.
@@ -604,7 +639,6 @@ protected:
 	 */
 	using SnapshotGridPtr = std::unique_ptr<SnapshotGrid>;
 
-public:
 	SnapshotGridPtr snapshot() const
 	{
 		SnapshotGridPtr psnapshot = std::make_unique<SnapshotGrid>(
@@ -654,6 +688,24 @@ public:
 		psnapshot->data() = vals_;
 		snapshot(psnapshot);
 	}
+
+	void save(const std::string& file_path_) const
+	{
+		std::ofstream ofs(file_path_, std::ios::binary);
+		cereal::BinaryOutputArchive oa(ofs);
+
+		oa << *pself;
+	}
+
+	static TDerived load(const std::string& file_path_)
+	{
+		std::ifstream ifs(file_path_, std::ios::binary);
+		cereal::BinaryInputArchive ia(ifs);
+		TDerived grid{};
+		ia >> grid;
+
+		return grid;
+	}
 };
 
 } // Partitioned.
@@ -662,4 +714,44 @@ public:
 } // Felt.
 
 
+namespace cereal
+{
+
+template <
+	class Archive, class _Scalar, int _Rows, int _Cols, int _Options,
+	int _MaxRows, int _MaxCols
+>
+inline typename std::enable_if <
+	traits::is_output_serializable < BinaryData<_Scalar>, Archive >::value, void
+>::type
+save(Archive & ar, const Eigen::Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>& m)
+{
+	int32_t rows = m.rows();
+	int32_t cols = m.cols();
+	ar(rows);
+	ar(cols);
+	ar(binary_data(m.data(), rows * cols * sizeof(_Scalar)));
+}
+
+template <
+	class Archive, class _Scalar, int _Rows, int _Cols, int _Options,
+	int _MaxRows, int _MaxCols
+>
+inline typename std::enable_if <
+	traits::is_input_serializable < BinaryData<_Scalar>, Archive >::value, void
+>::type
+load(
+	Archive & ar, Eigen::Matrix <_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>& m
+) {
+	int32_t rows;
+	int32_t cols;
+	ar(rows);
+	ar(cols);
+
+	m.resize(rows, cols);
+
+	ar(binary_data(m.data(), static_cast < std::size_t >(rows * cols * sizeof(_Scalar))));
+}
+
+}
 #endif /* INCLUDE_FELT_IMPL_MIXIN_PARTITIONEDMIXIN_HPP_ */

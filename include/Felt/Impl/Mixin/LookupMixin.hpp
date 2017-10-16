@@ -405,6 +405,17 @@ private:
 protected:
 
 	/**
+	 * Serialisation hook for cereal library.
+	 *
+	 * @param ar
+	 */
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_a_list_pos_idxs);
+	}
+
+	/**
 	 * Get tracking list by id.
 	 *
 	 * @param list_idx_ id of tracking list to get.

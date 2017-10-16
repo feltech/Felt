@@ -44,15 +44,21 @@ private:
 	using VecDi = Felt::VecDi<t_dims>;
 	using VecDT = Felt::VecDT<Leaf, t_dims>;
 
-	FLOAT m_dx;
-	const VecDi m_pos_min;
-	const VecDi m_pos_max;
+	Distance m_dx;
+	VecDi m_pos_min;
+	VecDi m_pos_max;
 
 protected:
 	Spatial() : m_dx{1.0f}, m_pos_min{pself->offset()}, m_pos_max{pself->offset() + pself->size()}
-	{
+	{}
 
+
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_dx, m_pos_min, m_pos_max);
 	}
+
 
 	/**
 	 * Mean curvature,
@@ -473,7 +479,7 @@ protected:
 		}
 		val_corners_.resize(num_out);
 	}
-	
+
 	/**
 	 * Call a lambda passing neighbours of a position in the cardinal directions.
 	 *

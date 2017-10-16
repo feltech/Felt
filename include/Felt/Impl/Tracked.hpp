@@ -39,9 +39,23 @@ private:
 public:
 	using Lookup = typename Traits::Lookup;
 
+	LazyMultiListSingleIdxByValue() = default;
+
 	LazyMultiListSingleIdxByValue(const Leaf background_) :
 		ActivateImpl{background_}, LookupInterfaceImpl{Lookup{}}
 	{}
+
+	/**
+	 * Serialisation hook for cereal library.
+	 *
+	 * @param ar
+	 */
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ActivateImpl::serialize(ar);
+		DataImpl::serialize(ar);
+	}
 
 	using AccessImpl::get;
 	using AccessImpl::index;
@@ -181,11 +195,22 @@ private:
 public:
 	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 
+	MultiListMultiIdxByRef() {};
+
 	MultiListMultiIdxByRef(const VecDi& size_, const VecDi& offset_, const Leaf background_) :
 		ActivateImpl{background_}, SizeImpl{size_, offset_},
 		LookupInterfaceImpl{Lookup{size_, offset_}}
 	{
 		this->activate();
+	}
+
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(
+			this->m_size, this->m_offset, this->m_offset_plus_size, this->m_background,
+			this->m_data, this->m_grid_lookup
+		);
 	}
 
 	using AccessImpl::get;

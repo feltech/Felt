@@ -9,11 +9,12 @@
 #include <functional>
 #include <limits>
 #include <iostream>
-#include <boost/math/special_functions/round.hpp>
-#include <boost/math/constants/constants.hpp>
-#include <eigen3/Eigen/Dense>
 #include <omp.h>
 
+#include <boost/math/special_functions/round.hpp>
+#include <boost/math/constants/constants.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 
 #ifndef FELT_SURFACE_OMP_MIN_CHUNK_SIZE
 /**
@@ -58,6 +59,8 @@ private:
 	static constexpr LayerId s_layer_max	= L;
 	/// Value to indicate a "layer" outside of the volume.
 	static constexpr LayerId s_outside		= s_layer_max + 1;
+	/// Value to indicate a "layer" inside the volume.
+	static constexpr LayerId s_inside		= s_layer_min - 1;
 	/// Total number of layers.
 	static constexpr LayerId s_num_layers = 2*L+1;
 	/// A tiny number used for error margin when raycasting.
@@ -139,11 +142,6 @@ public:
 	 * Get vector representing a raycast miss.
 	 */
 	static const VecDf ray_miss;
-
-	/**
-	 * Explicitly defined default constructor.
-	 */
-	Surface () = delete;
 
 	/**
 	 * Construct a level set embedding of size size.
@@ -642,6 +640,11 @@ public:
 	}
 
 private:
+
+	/**
+	 * Explicitly deleted default constructor.
+	 */
+	Surface () = delete;
 
 	/**
 	 * Update zero layer then update distance transform for all points in all layers.
@@ -1640,4 +1643,5 @@ const typename Surface<D, L>::VecDf Surface<D, L>::ray_miss =
 	VecDf::Constant(std::numeric_limits<Distance>::max());
 
 }
+
 #endif

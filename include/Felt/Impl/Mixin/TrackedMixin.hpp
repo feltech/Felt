@@ -108,9 +108,23 @@ protected:
 
 
 protected:
+	LookupInterface() {};
+
 	LookupInterface(Lookup&& grid_lookup_)
 		: m_grid_lookup(grid_lookup_)
 	{}
+
+
+	/**
+	 * Serialisation hook for cereal library.
+	 *
+	 * @param ar
+	 */
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_grid_lookup);
+	}
 
 	/**
 	 * Get lookup grid.
@@ -359,6 +373,9 @@ private:
 
 
 protected:
+	LookupInterface() {};
+
+
 	LookupInterface(Lookup&& grid_lookup_) : Base(std::forward<Lookup>(grid_lookup_))
 	{}
 

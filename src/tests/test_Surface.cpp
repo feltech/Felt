@@ -29,7 +29,6 @@ using PosSet = std::unordered_set< Vec2i, matrix_hash<Vec2i> >;
 SCENARIO("Surface - global updates")
 {
 
-
 GIVEN("a 2-layer 2D surface in a 7x7 isogrid with 3x3 spatial partitions")
 {
 	Surface<2, 2> surface(Vec2i(7, 7), Vec2i(3, 3));

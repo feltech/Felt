@@ -98,6 +98,7 @@ class Numeric :
 		(Partitioned::Leafs)(Partitioned::Reset::MultiList)(Partitioned::Snapshot)
 		(Partitioned::Tracked)(Partitioned::Untrack)
 	)
+	friend class cereal::access;
 private:
 	using VecDi = Felt::VecDi<D>;
 
@@ -118,15 +119,43 @@ public:
 	using Child = typename Traits::Child;
 	using ChildrenGrid = typename ChildrenImpl::ChildrenGrid;
 	using SnapshotPtr = typename SnapshotImpl::SnapshotGridPtr;
-public:
+
+	static constexpr TupleIdx num_lists = N;
+
 	Numeric(
 		const VecDi& size_, const VecDi& offset_, const VecDi& child_size_,
 		const Leaf background_
 	) :
 		SizeImpl{size_, offset_},
 		AccessImpl{background_},
-		ChildrenImpl{size_, offset_, child_size_, Child(background_)}
+		ChildrenImpl{size_, offset_, child_size_, Child{background_}}
 	{}
+
+	Numeric(Numeric&& other_) :
+		SizeImpl{std::move(other_)},
+		SpatialImpl{std::move(other_)},
+		AccessImpl{std::move(other_)},
+		ChildrenImpl{std::move(other_)},
+		LeafsImpl{std::move(other_)},
+		ResetImpl{std::move(other_)},
+		SnapshotImpl{std::move(other_)},
+		TrackedImpl{std::move(other_)},
+		UntrackImpl{std::move(other_)}
+	{}
+
+	/**
+	 * Serialisation hook for cereal library.
+	 *
+	 * @param ar
+	 */
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		AccessImpl::serialize(ar);
+		ChildrenImpl::serialize(ar);
+		SizeImpl::serialize(ar);
+		SpatialImpl::serialize(ar);
+	}
 
 	using AccessImpl::get;
 	using AccessImpl::set;
@@ -151,12 +180,18 @@ public:
 	using SpatialImpl::gradF;
 	using SpatialImpl::interp;
 	using SpatialImpl::neighs;
+	using SnapshotImpl::load;
 	using SnapshotImpl::operator=;
+	using SnapshotImpl::save;
 	using SnapshotImpl::snapshot;
 	using TrackedImpl::track;
 	using UntrackImpl::untrack;
 	using UntrackImpl::retrack;
+
+private:
+	Numeric() {};
 };
+
 
 } // Tracked.
 } // Partitioned.
