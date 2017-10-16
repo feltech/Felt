@@ -55,6 +55,8 @@ public:
 	{
 		ActivateImpl::serialize(ar);
 		DataImpl::serialize(ar);
+		LookupInterfaceImpl::serialize(ar);
+		SizeImpl::serialize(ar);
 	}
 
 	using AccessImpl::get;
@@ -204,13 +206,18 @@ public:
 		this->activate();
 	}
 
+	/**
+	 * Serialisation hook for cereal library.
+	 *
+	 * @param ar
+	 */
 	template<class Archive>
 	void serialize(Archive & ar)
 	{
-		ar(
-			this->m_size, this->m_offset, this->m_offset_plus_size, this->m_background,
-			this->m_data, this->m_grid_lookup
-		);
+		ActivateImpl::serialize(ar);
+		DataImpl::serialize(ar);
+		LookupInterfaceImpl::serialize(ar);
+		SizeImpl::serialize(ar);
 	}
 
 	using AccessImpl::get;

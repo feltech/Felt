@@ -162,6 +162,20 @@ public:
 		ActivateImpl{null_idx}
 	{}
 
+	/**
+	 * Serialisation hook for cereal library.
+	 *
+	 * @param ar
+	 */
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ActivateImpl::serialize(ar);
+		DataImpl::serialize(ar);
+		LookupImpl::serialize(ar);
+		SizeImpl::serialize(ar);
+	}
+
 	using AccessImpl::get;
 	using AccessImpl::index;
 	using ActivateImpl::activate;

@@ -242,6 +242,18 @@ protected:
 	/// N-tuple of lists of grid positions - the tracking lists.
 	Tuple<PosIdxList, t_num_lists>	m_a_list_pos_idxs;
 protected:
+
+	/**
+	 * Serialisation hook for cereal library.
+	 *
+	 * @param ar
+	 */
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_a_list_pos_idxs);
+	}
+
 	/**
 	 * Get tracking list by id.
 	 *
