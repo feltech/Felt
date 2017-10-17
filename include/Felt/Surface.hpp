@@ -163,6 +163,29 @@ public:
 		m_grid_affected_buffer(size_, offset(size_), size_partition_)
 	{}
 
+	/**
+	 * Save isogrid to disk.
+	 *
+	 * @param file_path path to save to.
+	 */
+	void save(const std::string& file_path) const
+	{
+		m_grid_isogrid.save(file_path);
+	}
+
+	/**
+	 * Load isogrid from disk and construct surface.
+	 *
+	 * @param file_path path to load from.
+	 *
+	 * @return new Surface instance.
+	 */
+	static This load(const std::string& file_path)
+	{
+		IsoGrid isogrid{IsoGrid::load(file_path)};
+		return This{std::move(isogrid)};
+	}
+
 
 	/**
 	 * Create a single singularity seed point in the isogrid grid.
@@ -645,6 +668,32 @@ private:
 	 * Explicitly deleted default constructor.
 	 */
 	Surface () = delete;
+
+	/**
+	 * Construct surface from isogrid.
+	 *
+	 * @param isogrid_
+	 */
+	Surface (IsoGrid&& isogrid_) :
+		// Configure isogrid embedding, initialising to all outside values.
+		m_grid_isogrid{std::move(isogrid_)},
+		// Configure delta isogrid embedding, initialising to zero delta.
+		m_grid_delta{
+			m_grid_isogrid.size(), m_grid_isogrid.offset(), m_grid_isogrid.child_size(), 0
+		},
+		// Configure status change partitioned lists, use "outside" value as convenient "null".
+		m_grid_status_change{
+			m_grid_isogrid.size(), m_grid_isogrid.offset(), m_grid_isogrid.child_size(), s_outside
+		},
+		// Configure de-dupe grid for neighbourhood queries.
+		m_grid_affected{
+			m_grid_isogrid.size(), m_grid_isogrid.offset(), m_grid_isogrid.child_size()
+		},
+		m_grid_affected_buffer{
+			m_grid_isogrid.size(), m_grid_isogrid.offset(), m_grid_isogrid.child_size()
+		}
+	{}
+
 
 	/**
 	 * Update zero layer then update distance transform for all points in all layers.
