@@ -486,7 +486,6 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid with 3x3 partitions")
 							isogrid_check.array() - surface_loaded.isogrid().snapshot()->array();
 						const Distance diff = isogrid_check.array().sum();
 						CHECK(diff == Approx(0));
-						CHECK(false);
 					}
 				}
 			}
