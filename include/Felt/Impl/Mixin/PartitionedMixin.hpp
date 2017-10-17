@@ -728,9 +728,11 @@ save(Archive & ar, const Eigen::Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows
 {
 	int32_t rows = m.rows();
 	int32_t cols = m.cols();
+	std::vector<_Scalar> vec(m.data(), m.data() + m.rows() * m.cols());
+
 	ar(rows);
-	ar(cols);
-	ar(binary_data(m.data(), rows * cols * sizeof(_Scalar)));
+	ar(cols);	
+	ar(vec);
 }
 
 template <
@@ -743,14 +745,17 @@ inline typename std::enable_if <
 load(
 	Archive & ar, Eigen::Matrix <_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>& m
 ) {
+	using Matrix = Eigen::Matrix <_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>; 
 	int32_t rows;
 	int32_t cols;
+	std::vector<_Scalar> vec;
+
 	ar(rows);
 	ar(cols);
-
+	ar(vec);
+	
 	m.resize(rows, cols);
-
-	ar(binary_data(m.data(), static_cast < std::size_t >(rows * cols * sizeof(_Scalar))));
+	m = Eigen::Map<Matrix>(vec.data(), vec.size());
 }
 
 }
