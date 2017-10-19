@@ -93,7 +93,7 @@ private:
 	using Traits = Impl::Traits<TDerived>;
 
 	/// Dimensions of the grid.
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// Number of tracking lists.
 	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 
@@ -157,7 +157,7 @@ class ByRef
 private:
 	/// Traits of derived class.
 	using Traits = Impl::Traits<TDerived>;
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 	using Leaf = typename Traits::Leaf;
@@ -208,7 +208,7 @@ class ByValue
 private:
 	/// Traits of derived class.
 	using Traits = Impl::Traits<TDerived>;
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 	using Leaf = typename Traits::Leaf;
@@ -274,7 +274,7 @@ class ByRef
 private:
 	/// Traits of derived class.
 	using Traits = Impl::Traits<TDerived>;
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 	using Leaf = typename Traits::Leaf;
@@ -325,7 +325,7 @@ class ByValue
 private:
 	/// Traits of derived class.
 	using Traits = Impl::Traits<TDerived>;
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 	using Leaf = typename Traits::Leaf;
@@ -361,7 +361,7 @@ private:
 	using Base = Tracked::LookupInterface<TDerived>;
 
 	/// Dimensions of the grid.
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// Number of tracking lists.
 	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 

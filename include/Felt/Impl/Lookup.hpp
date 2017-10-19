@@ -267,7 +267,7 @@ template <Dim D>
 struct Traits< Lookup::SingleListSingleIdx<D> >
 {
 	using Leaf = ListIdx;
-	static constexpr UINT t_dims = D;
+	static constexpr Dim t_dims = D;
 };
 
 /**
@@ -279,7 +279,7 @@ template <Dim D>
 struct Traits< Lookup::LazySingleListSingleIdx<D> >
 {
 	using Leaf = ListIdx;
-	static constexpr UINT t_dims = D;
+	static constexpr Dim t_dims = D;
 };
 
 /**

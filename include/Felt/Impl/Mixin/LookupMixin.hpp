@@ -19,7 +19,7 @@ class Base
 {
 protected:
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<TDerived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 };

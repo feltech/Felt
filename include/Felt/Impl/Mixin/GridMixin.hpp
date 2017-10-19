@@ -20,7 +20,7 @@ class Activate
 {
 private:
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<TDerived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/// Type of data to store in grid nodes.
 	using Leaf = typename Traits<TDerived>::Leaf;
 
@@ -187,7 +187,7 @@ private:
 	/// CRTP derived class.
 	using Derived = TDerived;
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<TDerived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/**
 	 * D-dimensional signed integer vector.
 	 */
@@ -234,7 +234,7 @@ class Size
 {
 private:
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<TDerived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -323,7 +323,7 @@ class Resize : protected Size<TDerived>
 private:
 	using Base = Size<TDerived>;
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<TDerived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -348,7 +348,7 @@ class Ref
 {
 private:
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<TDerived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/// Type of data to store in grid nodes.
 	using Leaf = typename Traits<TDerived>::Leaf;
 	/// D-dimensional signed integer vector.
@@ -493,7 +493,7 @@ private:
 	/// CRTP derived class.
 	using Derived = TDerived;
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<TDerived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/// Type of data to store in grid nodes.
 	using Leaf = typename Traits<TDerived>::Leaf;
 	/// D-dimensional signed integer vector.
@@ -569,7 +569,7 @@ private:
 	/// CRTP derived class.
 	using Derived = TDerived;
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<TDerived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/// Type of data to store in grid nodes.
 	using Leaf = typename Traits<TDerived>::Leaf;
 	/// D-dimensional signed integer vector.

@@ -464,7 +464,7 @@ protected:
 		// The axis along which to interpolate.
 		// This is computed from the dimensions of the original input and
 		// the dimensions of the intended output.
-		const Dim axis_idx = pos_.size() - Dim(__builtin_ctzl(num_corners));
+		const Eigen::Index axis_idx = pos_.size() - Eigen::Index(__builtin_ctzl(num_corners));
 
 		// The weighting to be used in interpolating each pair of points.
 		// This is the position along the axis of interpolation.

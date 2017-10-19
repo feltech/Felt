@@ -16,7 +16,7 @@ namespace Felt
 	std::string stringify_grid_slice(
 		const GridType& grid, UINT axis_plane = 2, INT axis_plane_offset = 0
 	) {
-		static constexpr UINT t_dims = Impl::Traits<GridType>::t_dims;
+		static constexpr Dim t_dims = Impl::Traits<GridType>::t_dims;
 		using VecDi = typename Felt::VecDi<t_dims>;
 
 		const VecDi& size = grid.size();
