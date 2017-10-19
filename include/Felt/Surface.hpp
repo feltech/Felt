@@ -69,10 +69,12 @@ private:
 	 * A delta isogrid update grid with active (non-zero) grid points tracked.
 	 */
 	using DeltaIsoGrid = Impl::Partitioned::Tracked::Simple<Distance, D, s_num_layers>;
+public:
 	/**
 	 * A level set embedding isogrid grid, with active grid points (the narrow band) tracked.
 	 */
 	using IsoGrid = Impl::Partitioned::Tracked::Numeric<Distance, D, s_num_layers>;
+private:
 	/**
 	 * D-dimensional unsigned int vector.
 	 */
@@ -168,9 +170,10 @@ public:
 	 *
 	 * @param file_path path to save to.
 	 */
-	void save(const std::string& file_path) const
+	template <class TOStream>
+	void save(TOStream& output_stream_) const
 	{
-		m_grid_isogrid.save(file_path);
+		m_grid_isogrid.write(output_stream_);
 	}
 
 	/**
@@ -180,9 +183,10 @@ public:
 	 *
 	 * @return new Surface instance.
 	 */
-	static This load(const std::string& file_path)
+	template <class TIStream>
+	static This load(TIStream& input_stream_)
 	{
-		IsoGrid isogrid{IsoGrid::load(file_path)};
+		IsoGrid isogrid{IsoGrid::read(input_stream_)};
 		return This{std::move(isogrid)};
 	}
 
@@ -746,8 +750,8 @@ private:
 
 		// Arrays to store first and last element in tracking list within each spatial partition of
 		// tracking grid.
-		std::array<std::vector<ListIdx>, s_num_layers> aidx_first_neigh;
-		std::array<std::vector<ListIdx>, s_num_layers> aidx_last_neigh;
+		std::array<std::vector<ListIdx>, std::size_t(s_num_layers)> aidx_first_neigh;
+		std::array<std::vector<ListIdx>, std::size_t(s_num_layers)> aidx_last_neigh;
 
 		// Loop round L times, searching outward for affected outer layer grid nodes.
 		for (LayerId udist = 1; udist <= s_layer_max; udist++)

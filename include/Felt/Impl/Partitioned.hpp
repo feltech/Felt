@@ -180,9 +180,9 @@ public:
 	using SpatialImpl::gradF;
 	using SpatialImpl::interp;
 	using SpatialImpl::neighs;
-	using SnapshotImpl::load;
+	using SnapshotImpl::read;
 	using SnapshotImpl::operator=;
-	using SnapshotImpl::save;
+	using SnapshotImpl::write;
 	using SnapshotImpl::snapshot;
 	using TrackedImpl::track;
 	using UntrackImpl::untrack;

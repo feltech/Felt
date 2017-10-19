@@ -3,7 +3,6 @@
 #include <memory>
 #include <mutex>
 
-#include <fstream>
 #pragma GCC system_header // Disable warnings.
 #include <cereal/access.hpp>
 #pragma GCC system_header // Disable warnings.
@@ -372,7 +371,7 @@ private:
 	/// Child grid type.
 	using Child = typename Traits::Child;
 	/// Dimension of grid.
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -425,7 +424,7 @@ private:
 	/// Leaf type.
 	using Leaf = typename Traits::Leaf;
 	/// Dimension of grid.
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -481,7 +480,7 @@ private:
 	/// Leaf type.
 	using Leaf = typename Traits::Leaf;
 	/// Dimension of grid.
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -626,7 +625,7 @@ private:
 	/// Leaf type.
 	using Leaf = typename Traits::Leaf;
 	/// Dimension of grid.
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 	/// Simple non-partitioned grid type for snapshotting the partitioned data, e.g. for tests.
@@ -689,18 +688,20 @@ protected:
 		snapshot(psnapshot);
 	}
 
-	void save(const std::string& file_path_) const
+	template <class TOStream>
+	void write(TOStream&& output_stream_) const
 	{
-		std::ofstream ofs(file_path_, std::ios::binary);
-		cereal::BinaryOutputArchive oa(ofs);
+		cereal::BinaryOutputArchive oa{output_stream_};
 
 		oa << *pself;
+
+		output_stream_.flush();
 	}
 
-	static TDerived load(const std::string& file_path_)
+	template <class TIStream>
+	static TDerived read(TIStream&& input_stream_)
 	{
-		std::ifstream ifs(file_path_, std::ios::binary);
-		cereal::BinaryInputArchive ia(ifs);
+		cereal::BinaryInputArchive ia{input_stream_};
 		TDerived grid{};
 		ia >> grid;
 
@@ -731,7 +732,7 @@ save(Archive & ar, const Eigen::Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows
 	std::vector<_Scalar> vec(m.data(), m.data() + m.rows() * m.cols());
 
 	ar(rows);
-	ar(cols);	
+	ar(cols);
 	ar(vec);
 }
 
@@ -745,7 +746,7 @@ inline typename std::enable_if <
 load(
 	Archive & ar, Eigen::Matrix <_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>& m
 ) {
-	using Matrix = Eigen::Matrix <_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>; 
+	using Matrix = Eigen::Matrix <_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>;
 	int32_t rows;
 	int32_t cols;
 	std::vector<_Scalar> vec;
@@ -753,7 +754,7 @@ load(
 	ar(rows);
 	ar(cols);
 	ar(vec);
-	
+
 	m.resize(rows, cols);
 	m = Eigen::Map<Matrix>(vec.data(), vec.size());
 }

@@ -1,5 +1,6 @@
 #include <type_traits>
 #include <experimental/type_traits>
+#include <fstream>
 
 #include <Felt/Impl/Grid.hpp>
 #include <Felt/Impl/Lookup.hpp>
@@ -1805,11 +1806,11 @@ SCENARIO("Paritioned::Tracked::Numeric")
 			grid.track(123, pos3, 2);
 			grid.track(234, pos4, 1);
 
-			grid.save("/tmp/grid.felt");
+			grid.write(std::ofstream{"/tmp/grid.felt", std::ios::binary});
 
 			AND_WHEN("grid is loaded")
 			{
-				Grid grid_loaded{Grid::load("/tmp/grid.felt")};
+				Grid grid_loaded{Grid::read(std::ifstream{"/tmp/grid.felt", std::ios::binary})};
 
 				THEN("loaded grid size matches")
 				{

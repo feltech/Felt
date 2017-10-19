@@ -1,3 +1,4 @@
+#include <fstream>
 #include <unordered_set>
 
 #include "catch.hpp"
@@ -443,9 +444,11 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid with 3x3 partitions")
 
 			AND_WHEN("surface is serialised to disk then loaded")
 			{
-				surface.save("/tmp/surface.felt");
+				std::ofstream ofs{"/tmp/surface.felt", std::ios::binary};
+				surface.save(ofs);
 
-				Surface surface_loaded{Surface::load("/tmp/surface.felt")};
+				std::ifstream ifs{"/tmp/surface.felt", std::ios::binary};
+				Surface surface_loaded{Surface::load(ifs)};
 
 				THEN("isogrid matches")
 				{
