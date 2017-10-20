@@ -10,6 +10,7 @@
 #include <limits>
 #include <iostream>
 #include <omp.h>
+#include <iostream>
 
 #include <boost/math/special_functions/round.hpp>
 #include <boost/math/constants/constants.hpp>
@@ -170,8 +171,7 @@ public:
 	 *
 	 * @param file_path path to save to.
 	 */
-	template <class TOStream>
-	void save(TOStream& output_stream_) const
+	void save(std::ostream& output_stream_) const
 	{
 		m_grid_isogrid.write(output_stream_);
 	}
@@ -183,8 +183,7 @@ public:
 	 *
 	 * @return new Surface instance.
 	 */
-	template <class TIStream>
-	static This load(TIStream& input_stream_)
+	static This load(std::istream& input_stream_)
 	{
 		IsoGrid isogrid{IsoGrid::read(input_stream_)};
 		return This{std::move(isogrid)};

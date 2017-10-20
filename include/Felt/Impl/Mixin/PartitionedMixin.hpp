@@ -2,6 +2,7 @@
 #define INCLUDE_FELT_IMPL_MIXIN_PARTITIONEDMIXIN_HPP_
 #include <memory>
 #include <mutex>
+#include <iostream>
 
 #pragma GCC system_header // Disable warnings.
 #include <cereal/access.hpp>
@@ -688,8 +689,7 @@ protected:
 		snapshot(psnapshot);
 	}
 
-	template <class TOStream>
-	void write(TOStream&& output_stream_) const
+	void write(std::ostream& output_stream_) const
 	{
 		cereal::BinaryOutputArchive oa{output_stream_};
 
@@ -698,8 +698,7 @@ protected:
 		output_stream_.flush();
 	}
 
-	template <class TIStream>
-	static TDerived read(TIStream&& input_stream_)
+	static TDerived read(std::istream& input_stream_)
 	{
 		cereal::BinaryInputArchive ia{input_stream_};
 		TDerived grid{};
