@@ -1806,11 +1806,14 @@ SCENARIO("Paritioned::Tracked::Numeric")
 			grid.track(123, pos3, 2);
 			grid.track(234, pos4, 1);
 
-			grid.write(std::ofstream{"/tmp/grid.felt", std::ios::binary});
+			std::ofstream writer{"/tmp/grid.bin", std::ios::binary};
+			grid.write(writer);
+			writer.flush();
 
 			AND_WHEN("grid is loaded")
 			{
-				Grid grid_loaded{Grid::read(std::ifstream{"/tmp/grid.felt", std::ios::binary})};
+				std::ifstream reader{"/tmp/grid.bin", std::ios::binary};
+				Grid grid_loaded{Grid::read(reader)};
 
 				THEN("loaded grid size matches")
 				{
