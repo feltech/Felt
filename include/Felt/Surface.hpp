@@ -403,9 +403,7 @@ public:
 		m_grid_delta.track_children(m_grid_affected);
 
 		// Update the zero layer, applying delta to isogrid.
-		update_zero_layer(&m_grid_affected_buffer);
-
-		converge_distance(&m_grid_affected, &m_grid_affected_buffer);
+		update_zero_layer();
 
 		flush_status_change();
 
@@ -703,12 +701,12 @@ private:
 	 */
 	void update_end_global ()
 	{
-		update_zero_layer(&m_grid_affected_buffer);
+		update_zero_layer();
 
-		if (update_distance(&m_grid_isogrid, &m_grid_affected_buffer))
-			converge_distance(&m_grid_affected_buffer, &m_grid_affected);
+		while (update_distance(m_grid_isogrid))
+		{};
 
-		flush_status_change();
+		status_change(m_grid_isogrid);
 
 		expand_narrow_band();
 	}
@@ -866,17 +864,17 @@ private:
 	 *
 	 * @param plookup_buffer_ grid to store points that need a layer update.
 	 */
-	void update_zero_layer (AffectedLookupGrid* plookup_buffer_)
+	void update_zero_layer ()
 	{
 		using DeltaChild = typename DeltaIsoGrid::Child;
 		using IsoChild = typename IsoGrid::Child;
 
 		const TupleIdx layer_idx_zero = layer_idx(0);
-		const PosIdxList& pos_idxs_children =  m_grid_delta.children().lookup().list(layer_idx_zero);
+		const PosIdxList& pos_idxs_children = m_grid_delta.children().lookup().list(layer_idx_zero);
 
 		const ListIdx num_childs = pos_idxs_children.size();
 
-		FELT_PARALLEL_FOR(num_childs, firstprivate(plookup_buffer_))
+		FELT_PARALLEL_FOR(num_childs,)
 		for (ListIdx list_idx_child = 0; list_idx_child < num_childs; list_idx_child++)
 		{
 			const PosIdx pos_idx_child = pos_idxs_children[list_idx_child];
@@ -898,8 +896,8 @@ private:
 				{
 					std::stringstream strs;
 					strs << "Zero layer update attempted at non-zero layer point " <<
-						Felt::format(isogrid_child.index(pos_idx_leaf)) << ": " << iso_prev <<
-						" + " << iso_delta << " = " << iso_new;
+						 iso_prev << " + " << iso_delta << " = " << iso_new << std::endl <<
+						 str_neighs(isogrid_child.index(pos_idx_leaf)) << std::endl;
 					std::string str = strs.str();
 					throw std::domain_error(str);
 				}
@@ -922,24 +920,7 @@ private:
 
 				// Update value in grid with new signed distance.
 				isogrid_child.set(pos_idx_leaf, iso_new);
-				// Potentially track to status change, if narrow band layer has changed.
-				status_change(pos_idx_child, pos_idx_leaf, 0, layer_id_new, plookup_buffer_);
 			}
-		}
-	}
-
-	/**
-	 * Repeatedly update the distance in the affected grid, until no more status changes are made.
-	 *
-	 * @param plookup initial lookup grid supplying points to check.
-	 * @param plookup_buffer double-buffer grid for async iterative convergence.
-	 */
-	void converge_distance(AffectedLookupGrid* plookup, AffectedLookupGrid* plookup_buffer)
-	{
-		while (update_distance(plookup, plookup_buffer))
-		{
-			plookup->reset(m_grid_isogrid);
-			std::swap(plookup, plookup_buffer);
 		}
 	}
 
@@ -951,18 +932,17 @@ private:
 	 * additional iterations to converge.
 	 */
 	template <typename Grid>
-	bool update_distance(
-		const Grid* plookup_, AffectedLookupGrid* plookup_buffer_
-	) {
+	bool update_distance(const Grid& lookup_)
+	{
 		bool is_status_changed = false;
 
 		// Update distance transform for inner layers of the narrow band.
 		for (LayerId layer_id = -1; layer_id >= s_layer_min; layer_id--)
-			is_status_changed |= update_distance(layer_id, -1, plookup_, plookup_buffer_);
+			is_status_changed |= update_distance(layer_id, -1, lookup_);
 
 		// Update distance transform for outer layers of the narrow band.
 		for (LayerId layer_id = 1; layer_id <= s_layer_max; layer_id++)
-			is_status_changed |= update_distance(layer_id, 1, plookup_, plookup_buffer_);
+			is_status_changed |= update_distance(layer_id, 1, lookup_);
 
 		return is_status_changed;
 	}
@@ -978,116 +958,94 @@ private:
 	 */
 	template <typename Grid>
 	bool update_distance(
-		const LayerId layer_id_, const LayerId side_,
-		const Grid* plookup_, AffectedLookupGrid* plookup_buffer_
+		const LayerId layer_id_from_, const LayerId side_, const Grid& lookup_
 	) {
 		using IsoChild = typename IsoGrid::Child;
 		using DeltaIsoChild = typename DeltaIsoGrid::Child;
 
 		bool is_status_changed = false;
 
-		const TupleIdx layer_idx = this->layer_idx(layer_id_);
-		const PosIdxList& pos_idxs_children = plookup_->children().lookup().list(layer_idx);
+		const TupleIdx layer_idx = this->layer_idx(layer_id_from_);
+		const PosIdxList& pos_idxs_children = lookup_.children().lookup().list(layer_idx);
 		const ListIdx num_childs = pos_idxs_children.size();
 
 		// First pass: calculate distance and add to delta isogrid.
-		FELT_PARALLEL_FOR(num_childs, firstprivate(plookup_, plookup_buffer_))
+		FELT_PARALLEL_FOR(num_childs,)
 		for (ListIdx list_idx = 0; list_idx < num_childs; list_idx++)
 		{
 			// Child spatial partition position
 			const ListIdx pos_idx_child = pos_idxs_children[list_idx];
+			IsoChild& child = m_grid_isogrid.children().get(pos_idx_child);
 
-			const PosIdxList& apos_leafs =
-				plookup_->children().get(pos_idx_child).list(layer_idx);
-
-			// Calculate distance of every point in this layer to the zero
-			// layer, and store in delta isogrid grid.
-			// Delta isogrid grid is used to allow for asynchronous updates, that
-			// is, to prevent neighbouring points affecting the distance
-			// transform.
-			for (const PosIdx pos_idx_leaf : apos_leafs)
-			{
+			for (
+				const PosIdx pos_idx_leaf : lookup_.children().get(pos_idx_child).list(layer_idx)
+			) {
 				// Distance from this position to zero layer.
-				const Distance dist = distance(pos_idx_child, pos_idx_leaf, side_);
+				const Distance dist_from = child.get(pos_idx_leaf);
+				const Distance dist_to = distance(pos_idx_child, pos_idx_leaf, side_);
+				const LayerId layer_id_to = layer_id(dist_to);
 
-				#ifdef FELT_DEBUG_ENABLED
+				child.set(pos_idx_leaf, dist_to);
 
-				const LayerId layer_id_new = layer_id(dist);
-
-				if (
-					layer_id_new != layer_id_ &&
-					layer_id_new != layer_id_ + 1 &&
-					layer_id_new != layer_id_ - 1
-				) {
-					const VecDi& pos =
-						m_grid_isogrid.children().get(pos_idx_child).index(pos_idx_leaf);
-					std::stringstream strs;
-					strs << "Outer layer distance update value out of bounds." << std::endl <<
-						str_neighs(pos) << " distance of " << dist <<
-						", which is too much of a jump";
-
-					std::string str = strs.str();
-					throw std::domain_error(str);
-				}
-
-				#endif
-
-				// Update delta isogrid grid.
-				m_grid_delta.children().get(pos_idx_child).track(dist, pos_idx_leaf, layer_idx);
+				is_status_changed |= dist_from != dist_to;
 			}
-		}
-
-		// Second pass: apply distance to isogrid and update status change lists.
-		FELT_PARALLEL_FOR(num_childs, firstprivate(plookup_, plookup_buffer_))
-		for (ListIdx list_idx = 0; list_idx < num_childs; list_idx++)
-		{
-			const PosIdx pos_idx_child = pos_idxs_children[list_idx];
-
-			IsoChild& grid_isogrid_child = m_grid_isogrid.children().get(pos_idx_child);
-			DeltaIsoChild& grid_delta_child = m_grid_delta.children().get(pos_idx_child);
-
-			const PosIdxList& pos_idxs_leafs =
-				plookup_->children().get(pos_idx_child).list(layer_idx);
-
-			// Update distance in isogrid from delta isogrid and append any points that
-			// move out of their layer to a status change list.
-			for (const PosIdx pos_idx_leaf : pos_idxs_leafs)
-			{
-				// Distance calculated above.
-				const Distance dist = grid_delta_child.get(pos_idx_leaf);
-				const LayerId layer_id_new = layer_id(dist);
-
-				#ifdef FELT_DEBUG_ENABLED
-
-				if (
-					layer_id_new != layer_id_ &&
-					layer_id_new != layer_id_ + 1 &&
-					layer_id_new != layer_id_ - 1
-				) {
-					const VecDi& pos =
-						m_grid_isogrid.children().get(pos_idx_child).index(pos_idx_leaf);
-					std::stringstream strs;
-					strs << "Outer layer distance update value out of bounds. Attempting to" <<
-						" move " << Felt::format(pos) << " in layer " << layer_id_ << " to a" <<
-						" distance of " << dist << " would result in a layer of " <<
-						layer_id_new << ", which is too much of a jump" ;
-					std::string str = strs.str();
-					throw std::domain_error(str);
-				}
-
-				#endif
-
-				grid_isogrid_child.set(pos_idx_leaf, dist);
-				is_status_changed |= status_change(
-					pos_idx_child, pos_idx_leaf, layer_id_, layer_id_new, plookup_buffer_
-				);
-			}
-
 		}
 
 		return is_status_changed;
 
 	} // End update_distance.
+
+
+	template <typename Grid>
+	bool status_change(const Grid& lookup_)
+	{
+		using IsoChild = typename IsoGrid::Child;
+
+		for (TupleIdx layer_idx_from = 0; layer_idx_from < s_num_layers; layer_idx_from++)
+		{
+			const PosIdxList& list_pos_idx_child =
+				lookup_.children().lookup().list(layer_idx_from);
+			const ListIdx num_childs = list_pos_idx_child.size();
+
+			// First pass: calculate distance and add to delta isogrid.
+			FELT_PARALLEL_FOR(num_childs,)
+			for (ListIdx list_idx = 0; list_idx < num_childs; list_idx++)
+			{
+				// Child spatial partition position
+				const ListIdx pos_idx_child = list_pos_idx_child[list_idx];
+				IsoChild& child = m_grid_isogrid.children().get(pos_idx_child);
+
+				for (
+					const PosIdx pos_idx_leaf :
+					lookup_.children().get(pos_idx_child).list(layer_idx_from)
+				) {
+					// Distance from this position to zero layer.
+					const Distance dist_to = child.get(pos_idx_leaf);
+					const LayerId layer_id_to = layer_id(dist_to);
+					const TupleIdx layer_idx_to = layer_idx(layer_id_to);
+
+					if (layer_idx_to == layer_idx_from)
+						continue;
+
+					if (inside_band(layer_id_to))
+					{
+						m_grid_isogrid.retrack(
+							pos_idx_child, pos_idx_leaf, layer_idx_from, layer_idx_to
+						);
+					}
+					else
+					{
+						// Remove from tracking, potentially deactivating child and setting it's
+						// background value (distance) to value of target layer id.
+						m_grid_isogrid.untrack(
+							Distance(layer_id_to), pos_idx_child, pos_idx_leaf, layer_idx_from
+						);
+					}
+				}
+			}
+
+		}
+	}
 
 	/**
 	 * Potentially track a point to the status change list to eventually be moved from one layer to
@@ -1102,7 +1060,7 @@ private:
 	 */
 	bool status_change (
 		const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_, const LayerId layer_id_from_,
-		const LayerId layer_id_to_, AffectedLookupGrid* plookup_buffer_
+		const LayerId layer_id_to_
 	) {
 		using StatusChangeChild = typename StatusChangeGrid::Child;
 
@@ -1119,8 +1077,8 @@ private:
 		StatusChangeChild& child = m_grid_status_change.children().get(pos_idx_child_);
 		LayerId layer_id_to = child.get(pos_idx_leaf_);
 
-		// If the position is already marked for status change, this must be a subsequent loop
-		// around `converge_distance`, and this leaf position is "jumping" more than one layer.
+		// If the position is already marked for status change, this leaf position is "jumping"
+		// more than one layer.
 		if (layer_id_to != s_outside)
 		{
 			child.set(pos_idx_leaf_, layer_id_to_);
@@ -1131,13 +1089,6 @@ private:
 				layer_id_to_, pos_idx_child_, pos_idx_leaf_, layer_idx(layer_id_from_)
 			);
 		}
-
-		// Keep a record of points that undergo a status change, since these will have to have
-		// their distance calculated again, and again, until they no longer status change.  This
-		// is required for collapsing regions where the surface should disappear because the
-		// zero-layer is gone.
-		if (inside_band(layer_id_to_))
-			plookup_buffer_->track(pos_idx_child_, pos_idx_leaf_, layer_idx(layer_id_to_));
 
 		return true;
 	}
@@ -1384,24 +1335,24 @@ private:
 		const Distance dist_neigh = dist_*dir_;
 		dist_ = dist_neigh + dir_;
 
-		#ifdef FELT_DEBUG_ENABLED
-		const LayerId layer_id_pos = layer_id(pos_original);
-		const LayerId layer_id_neigh = layer_id(dist_neigh);
-
-		if (
-			std::abs(layer_id_pos) < std::abs(layer_id_neigh) &&
-			sgn(layer_id_pos) == sgn(layer_id_neigh)
-		) {
-			std::stringstream sstr;
-			sstr << "Neighbour closest to zero curve is further away than source position: " <<
-				Felt::format(pos_original) << " at " << m_grid_isogrid.get(pos_original) <<
-				" is closer than " << Felt::format(pos_) << " at " << m_grid_isogrid.get(pos_) <<
-				" but should not be";
-			std::string str = sstr.str();
-			throw std::domain_error(str);
-		}
-
-		#endif
+//		#ifdef FELT_DEBUG_ENABLED
+//		const LayerId layer_id_pos = layer_id(pos_original);
+//		const LayerId layer_id_neigh = layer_id(dist_neigh);
+//
+//		if (
+//			std::abs(layer_id_pos) < std::abs(layer_id_neigh) &&
+//			sgn(layer_id_pos) == sgn(layer_id_neigh)
+//		) {
+//			std::stringstream sstr;
+//			sstr << "Neighbour closest to zero curve is further away than source position: " <<
+//				Felt::format(pos_original) << " at " << m_grid_isogrid.get(pos_original) <<
+//				" is closer than " << Felt::format(pos_) << " at " << m_grid_isogrid.get(pos_) <<
+//				" but should not be";
+//			std::string str = sstr.str();
+//			throw std::domain_error(str);
+//		}
+//
+//		#endif
 
 		return dist_;
 	}
