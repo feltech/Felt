@@ -330,7 +330,8 @@ GIVEN("an empty 3D polygonisaton and a 15x15x15 3-layer surface with 5x5x5 parti
 	WHEN("surface is seeded and expanded")
 	{
 		surface.seed(Vec3i(0,0,0));
-		surface.update([](const auto&, const auto&){ return -1.0f; });
+		surface.update([](const auto&, const auto&){ return -0.5f; });
+		surface.update([](const auto&, const auto&){ return -0.5f; });
 
 		AND_WHEN("surface is polygonised")
 		{
@@ -443,7 +444,9 @@ GIVEN("an empty 3D polygonisaton and a 15x15x15 3-layer surface with 5x5x5 parti
 
 			AND_WHEN("surface is expanded and polygonised")
 			{
-				surface.update([](const auto&, const auto&){ return -1.0f; });
+				surface.update([](const auto&, const auto&){ return -0.5f; });
+				polys.notify();
+				surface.update([](const auto&, const auto&){ return -0.5f; });
 				polys.notify();
 				polys.march();
 

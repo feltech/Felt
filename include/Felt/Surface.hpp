@@ -400,12 +400,14 @@ public:
 		calc_affected();
 
 		m_grid_isogrid.track_children(m_grid_affected);
-		m_grid_delta.track_children(m_grid_affected);
 
 		// Update the zero layer, applying delta to isogrid.
 		update_zero_layer();
 
-		flush_status_change();
+		while (update_distance(m_grid_affected))
+		{};
+
+		status_change(m_grid_affected);
 
 		expand_narrow_band();
 	}
@@ -961,7 +963,6 @@ private:
 		const LayerId layer_id_from_, const LayerId side_, const Grid& lookup_
 	) {
 		using IsoChild = typename IsoGrid::Child;
-		using DeltaIsoChild = typename DeltaIsoGrid::Child;
 
 		bool is_status_changed = false;
 
@@ -983,7 +984,6 @@ private:
 				// Distance from this position to zero layer.
 				const Distance dist_from = child.get(pos_idx_leaf);
 				const Distance dist_to = distance(pos_idx_child, pos_idx_leaf, side_);
-				const LayerId layer_id_to = layer_id(dist_to);
 
 				child.set(pos_idx_leaf, dist_to);
 
@@ -997,9 +997,10 @@ private:
 
 
 	template <typename Grid>
-	bool status_change(const Grid& lookup_)
+	void status_change(const Grid& lookup_)
 	{
 		using IsoChild = typename IsoGrid::Child;
+		using StatusChild = typename StatusChangeGrid::Child;
 
 		for (TupleIdx layer_idx_from = 0; layer_idx_from < s_num_layers; layer_idx_from++)
 		{
@@ -1007,7 +1008,6 @@ private:
 				lookup_.children().lookup().list(layer_idx_from);
 			const ListIdx num_childs = list_pos_idx_child.size();
 
-			// First pass: calculate distance and add to delta isogrid.
 			FELT_PARALLEL_FOR(num_childs,)
 			for (ListIdx list_idx = 0; list_idx < num_childs; list_idx++)
 			{
@@ -1027,121 +1027,35 @@ private:
 					if (layer_idx_to == layer_idx_from)
 						continue;
 
-					if (inside_band(layer_id_to))
-					{
-						m_grid_isogrid.retrack(
-							pos_idx_child, pos_idx_leaf, layer_idx_from, layer_idx_to
-						);
-					}
-					else
-					{
-						// Remove from tracking, potentially deactivating child and setting it's
-						// background value (distance) to value of target layer id.
-						m_grid_isogrid.untrack(
-							Distance(layer_id_to), pos_idx_child, pos_idx_leaf, layer_idx_from
-						);
-					}
+					m_grid_status_change.track(
+						layer_idx_to, pos_idx_child, pos_idx_leaf, layer_idx_from
+					);
 				}
 			}
-
 		}
-	}
-
-	/**
-	 * Potentially track a point to the status change list to eventually be moved from one layer to
-	 * another.
-	 *
-	 * @param pos_ position in grid to check.
-	 * @param layer_id_from_ layer moving from.
-	 * @param layer_id_to_ layer moving to.
-	 * @param plookup_buffer_ grid to store points that need status change, for potential additional
-	 * processing.
-	 * @return true if status change is needed for this position, false otherwise.
-	 */
-	bool status_change (
-		const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_, const LayerId layer_id_from_,
-		const LayerId layer_id_to_
-	) {
-		using StatusChangeChild = typename StatusChangeGrid::Child;
-
-		if (layer_id_from_ == layer_id_to_)
-			return false;
-
-		#ifdef FELT_DEBUG_ENABLED
-		m_grid_isogrid.children().assert_pos_idx_bounds(pos_idx_child_, "status_change child: ");
-		m_grid_isogrid.children().get(pos_idx_child_).assert_pos_idx_bounds(
-			pos_idx_leaf_, "status_change leaf: "
-		);
-		#endif
-
-		StatusChangeChild& child = m_grid_status_change.children().get(pos_idx_child_);
-		LayerId layer_id_to = child.get(pos_idx_leaf_);
-
-		// If the position is already marked for status change, this leaf position is "jumping"
-		// more than one layer.
-		if (layer_id_to != s_outside)
+		for (TupleIdx layer_idx_from = 0; layer_idx_from < s_num_layers; layer_idx_from++)
 		{
-			child.set(pos_idx_leaf_, layer_id_to_);
-		}
-		else
-		{
-			m_grid_status_change.track(
-				layer_id_to_, pos_idx_child_, pos_idx_leaf_, layer_idx(layer_id_from_)
-			);
-		}
-
-		return true;
-	}
-
-	/**
-	 * Loop through the status change lists moving the points from one layer to another.
-	 */
-	void flush_status_change ()
-	{
-		using StatusChangeChild = typename StatusChangeGrid::Child;
-
-		for (LayerId layer_id_from = s_layer_min; layer_id_from <= s_layer_max; layer_id_from++)
-		{
-			const TupleIdx layer_idx_from = layer_idx(layer_id_from);
-
-			const PosIdxList& pos_idxs_children =
+			const PosIdxList& list_pos_idx_child =
 				m_grid_status_change.children().lookup().list(layer_idx_from);
-			const ListIdx num_childs = pos_idxs_children.size();
+			const ListIdx num_childs = list_pos_idx_child.size();
 
-			FELT_PARALLEL_FOR(num_childs, firstprivate(layer_id_from))
-			for (
-				ListIdx list_idx_child = 0; list_idx_child < num_childs;
-				list_idx_child++
-			) {
-				const ListIdx pos_idx_child = pos_idxs_children[list_idx_child];
-				const StatusChangeChild& child =
-					m_grid_status_change.children().get(pos_idx_child);
+			FELT_PARALLEL_FOR(num_childs,)
+			for (ListIdx list_idx = 0; list_idx < num_childs; list_idx++)
+			{
+				const ListIdx pos_idx_child = list_pos_idx_child[list_idx];
+				StatusChild& child = m_grid_status_change.children().get(pos_idx_child);
 
-				for (const PosIdx pos_idx_leaf : child.lookup().list(layer_idx_from))
+				for (const PosIdx pos_idx_leaf : child.list(layer_idx_from))
 				{
-					const LayerId layer_id_to = child.get(pos_idx_leaf);
-					const TupleIdx layer_idx_to = layer_idx(layer_id_to);
+					const TupleIdx layer_idx_to = child.get(pos_idx_leaf);
+
+					if (layer_idx_to == layer_idx_from)
+						continue;
+
+					const LayerId layer_id_to = layer_idx_to - LayerId(s_num_layers) / 2;
 
 					if (inside_band(layer_id_to))
 					{
-						#ifdef FELT_DEBUG_ENABLED
-
-						if (child.lookup().list(layer_idx_from).size() == 0)
-						{
-							std::stringstream strs;
-							strs << "Layer empty when attempting to move " <<
-								Felt::format(child.index(pos_idx_leaf)) <<
-								" from layer " << layer_id_from << " to layer " << layer_id_to <<
-								" in partition " <<
-								Felt::format(m_grid_isogrid.children().index(pos_idx_child)) <<
-								" = " << Felt::format(child.offset()) << "-" <<
-								Felt::format(child.offset() + child.size());
-							std::string str = strs.str();
-							throw std::domain_error(str);
-						}
-
-						#endif
-
 						m_grid_isogrid.retrack(
 							pos_idx_child, pos_idx_leaf, layer_idx_from, layer_idx_to
 						);
@@ -1164,34 +1078,29 @@ private:
 	 */
 	void expand_narrow_band()
 	{
-		using StatusChangeChild = typename StatusChangeGrid::Child;
+		using IsoChild = typename IsoGrid::Child;
 
 		// Cycle innermost layer and outermost layer.
-		for (
-			LayerId layer_id = s_layer_min; layer_id <= s_layer_max; layer_id += s_num_layers-1
-		) {
+		for (LayerId layer_id : std::array<LayerId, 2>{s_layer_min+1, s_layer_max-1})
+		{
 			const TupleIdx layer_idx = this->layer_idx(layer_id);
 
-			const PosIdxList& apos_children =
-				m_grid_status_change.children().lookup().list(layer_idx);
+			const PosIdxList& list_pos_idx_child =
+				m_grid_isogrid.children().lookup().list(layer_idx);
 
 			const LayerId side = sgn(layer_id);
 
 			// TODO: it appears this is (no longer) thread-safe...
 //			#pragma omp parallel for
 			for (
-				ListIdx list_idx_child = 0; list_idx_child < apos_children.size();
+				ListIdx list_idx_child = 0; list_idx_child < list_pos_idx_child.size();
 				list_idx_child++
 			) {
-				const PosIdx pos_idx_child = apos_children[list_idx_child];
-				const StatusChangeChild& child = m_grid_status_change.children().get(pos_idx_child);
+				const PosIdx pos_idx_child = list_pos_idx_child[list_idx_child];
+				const IsoChild& child = m_grid_isogrid.children().get(pos_idx_child);
 
 				for (const PosIdx pos_idx : child.lookup().list(layer_idx))
 				{
-					// If not expanding/contracting, then nothing to do here.
-					if (child.get(pos_idx) != s_layer_max * side - side)
-						continue;
-
 					const VecDi& pos = child.index(pos_idx);
 
 					// Cycle over neighbours of this outer layer point.
@@ -1235,27 +1144,14 @@ private:
 
 							const LayerId layer_id_to = this->layer_id(distance_neigh);
 
-							if (layer_id_to != layer_id)
-							{
-								std::stringstream strs;
-								strs << "Neighbour is further away than expected." << std::endl <<
-									"pos:" << std::endl <<
-									"  " << str_pos(pos) << std::endl
-									<< "Neigh:" << std::endl <<
-									"  " << str_pos(pos_neigh_) << std::endl <<
-									"Calculated distance " << distance_neigh <<
-									" would give a layer of " << layer_id_to <<
-									" when we expect a layer of " << layer_id;
-								std::string str = strs.str();
-								throw std::domain_error(str);
-							}
-
 							if (layer_id_to != s_layer_min && layer_id_to != s_layer_max)
 							{
 								std::stringstream strs;
-								strs << "Attempting to track " << Felt::format(pos_neigh_) <<
-									" to the narrow band but the distance is " << distance_neigh <<
-									" which would give a layer of " << layer_id_to;
+								strs << "Attempting to add neighbour of " << pos <<
+									" to the band but the distance is " <<
+									distance_neigh << " which would give a layer of " <<
+									layer_id_to << std::endl << str_neighs(pos_neigh_) <<
+									std::endl;
 								std::string str = strs.str();
 								throw std::domain_error(str);
 							}
