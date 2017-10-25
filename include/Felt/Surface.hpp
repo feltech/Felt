@@ -9,11 +9,13 @@
 #include <functional>
 #include <limits>
 #include <iostream>
+#include <omp.h>
+#include <iostream>
+
 #include <boost/math/special_functions/round.hpp>
 #include <boost/math/constants/constants.hpp>
-#include <eigen3/Eigen/Dense>
-#include <omp.h>
-
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 
 #ifndef FELT_SURFACE_OMP_MIN_CHUNK_SIZE
 /**
@@ -58,6 +60,8 @@ private:
 	static constexpr LayerId s_layer_max	= L;
 	/// Value to indicate a "layer" outside of the volume.
 	static constexpr LayerId s_outside		= s_layer_max + 1;
+	/// Value to indicate a "layer" inside the volume.
+	static constexpr LayerId s_inside		= s_layer_min - 1;
 	/// Total number of layers.
 	static constexpr LayerId s_num_layers = 2*L+1;
 	/// A tiny number used for error margin when raycasting.
@@ -66,10 +70,12 @@ private:
 	 * A delta isogrid update grid with active (non-zero) grid points tracked.
 	 */
 	using DeltaIsoGrid = Impl::Partitioned::Tracked::Simple<Distance, D, s_num_layers>;
+public:
 	/**
 	 * A level set embedding isogrid grid, with active grid points (the narrow band) tracked.
 	 */
 	using IsoGrid = Impl::Partitioned::Tracked::Numeric<Distance, D, s_num_layers>;
+private:
 	/**
 	 * D-dimensional unsigned int vector.
 	 */
@@ -141,11 +147,6 @@ public:
 	static const VecDf ray_miss;
 
 	/**
-	 * Explicitly defined default constructor.
-	 */
-	Surface () = delete;
-
-	/**
 	 * Construct a level set embedding of size size.
 	 *
 	 * All points will be marked as outside the surface (i.e. no surface).
@@ -164,6 +165,29 @@ public:
 		m_grid_affected(size_, offset(size_), size_partition_),
 		m_grid_affected_buffer(size_, offset(size_), size_partition_)
 	{}
+
+	/**
+	 * Save isogrid to disk.
+	 *
+	 * @param file_path path to save to.
+	 */
+	void save(std::ostream& output_stream_) const
+	{
+		m_grid_isogrid.write(output_stream_);
+	}
+
+	/**
+	 * Load isogrid from disk and construct surface.
+	 *
+	 * @param file_path path to load from.
+	 *
+	 * @return new Surface instance.
+	 */
+	static This load(std::istream& input_stream_)
+	{
+		IsoGrid isogrid{IsoGrid::read(input_stream_)};
+		return This{std::move(isogrid)};
+	}
 
 
 	/**
@@ -244,6 +268,18 @@ public:
 				const Distance dist_delta = fn_(
 					pos_leaf, const_cast<const IsoGrid&>(m_grid_isogrid)
 				);
+
+				#ifdef FELT_DEBUG_ENABLED
+				if (std::abs(dist_delta) > 1.0f)
+				{
+					std::stringstream strs;
+					strs << "Zero layer update value out of bounds: " << Felt::format(pos_leaf)
+						<< " with value " << dist_delta;
+					std::string str = strs.str();
+					throw std::domain_error(str);
+				}
+				#endif
+
 				// Disallow expansion to edge of grid.
 				m_grid_delta.children().get(pos_idx_child).track(
 					dist_delta, pos_idx_leaf, layer_idx(0)
@@ -632,6 +668,37 @@ public:
 private:
 
 	/**
+	 * Explicitly deleted default constructor.
+	 */
+	Surface () = delete;
+
+	/**
+	 * Construct surface from isogrid.
+	 *
+	 * @param isogrid_
+	 */
+	Surface (IsoGrid&& isogrid_) :
+		// Configure isogrid embedding, initialising to all outside values.
+		m_grid_isogrid{std::move(isogrid_)},
+		// Configure delta isogrid embedding, initialising to zero delta.
+		m_grid_delta{
+			m_grid_isogrid.size(), m_grid_isogrid.offset(), m_grid_isogrid.child_size(), 0
+		},
+		// Configure status change partitioned lists, use "outside" value as convenient "null".
+		m_grid_status_change{
+			m_grid_isogrid.size(), m_grid_isogrid.offset(), m_grid_isogrid.child_size(), s_outside
+		},
+		// Configure de-dupe grid for neighbourhood queries.
+		m_grid_affected{
+			m_grid_isogrid.size(), m_grid_isogrid.offset(), m_grid_isogrid.child_size()
+		},
+		m_grid_affected_buffer{
+			m_grid_isogrid.size(), m_grid_isogrid.offset(), m_grid_isogrid.child_size()
+		}
+	{}
+
+
+	/**
 	 * Update zero layer then update distance transform for all points in all layers.
 	 */
 	void update_end_global ()
@@ -682,8 +749,8 @@ private:
 
 		// Arrays to store first and last element in tracking list within each spatial partition of
 		// tracking grid.
-		std::array<std::vector<ListIdx>, s_num_layers> aidx_first_neigh;
-		std::array<std::vector<ListIdx>, s_num_layers> aidx_last_neigh;
+		std::array<std::vector<ListIdx>, std::size_t(s_num_layers)> aidx_first_neigh;
+		std::array<std::vector<ListIdx>, std::size_t(s_num_layers)> aidx_last_neigh;
 
 		// Loop round L times, searching outward for affected outer layer grid nodes.
 		for (LayerId udist = 1; udist <= s_layer_max; udist++)
@@ -1190,7 +1257,7 @@ private:
 							// band.
 							if (inside_band(layer_id_from))
 							{
-								#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+								#ifdef FELT_DEBUG_ENABLED
 
 								const ListIdx lookup_idx = m_grid_isogrid.children().get(
 										m_grid_isogrid.pos_child(pos_neigh_)
@@ -1628,4 +1695,5 @@ const typename Surface<D, L>::VecDf Surface<D, L>::ray_miss =
 	VecDf::Constant(std::numeric_limits<Distance>::max());
 
 }
+
 #endif

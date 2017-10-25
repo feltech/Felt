@@ -19,7 +19,7 @@ class Base
 {
 protected:
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<TDerived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 };
@@ -242,6 +242,18 @@ protected:
 	/// N-tuple of lists of grid positions - the tracking lists.
 	Tuple<PosIdxList, t_num_lists>	m_a_list_pos_idxs;
 protected:
+
+	/**
+	 * Serialisation hook for cereal library.
+	 *
+	 * @param ar
+	 */
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_a_list_pos_idxs);
+	}
+
 	/**
 	 * Get tracking list by id.
 	 *
@@ -403,6 +415,17 @@ private:
 	/// N-tuple of lists of grid positions - the tracking lists.
 	Tuple<PosIdxList, t_num_lists>	m_a_list_pos_idxs;
 protected:
+
+	/**
+	 * Serialisation hook for cereal library.
+	 *
+	 * @param ar
+	 */
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_a_list_pos_idxs);
+	}
 
 	/**
 	 * Get tracking list by id.

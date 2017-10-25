@@ -162,6 +162,20 @@ public:
 		ActivateImpl{null_idx}
 	{}
 
+	/**
+	 * Serialisation hook for cereal library.
+	 *
+	 * @param ar
+	 */
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ActivateImpl::serialize(ar);
+		DataImpl::serialize(ar);
+		LookupImpl::serialize(ar);
+		SizeImpl::serialize(ar);
+	}
+
 	using AccessImpl::get;
 	using AccessImpl::index;
 	using ActivateImpl::activate;
@@ -204,11 +218,23 @@ private:
 public:
 	static constexpr TupleIdx num_lists = Traits::t_num_lists;
 
+	MultiListMultiIdx() = default;
+
 	MultiListMultiIdx(const VecDi& size, const VecDi& offset) :
 		SizeImpl{size, offset}, ActivateImpl{LookupImpl::s_null_idxs}
 	{
 		this->activate();
 	}
+
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ActivateImpl::serialize(ar);
+		DataImpl::serialize(ar);
+		LookupImpl::serialize(ar);
+		SizeImpl::serialize(ar);
+	}
+
 
 	using AccessImpl::get;
 	using AccessImpl::index;
@@ -241,7 +267,7 @@ template <Dim D>
 struct Traits< Lookup::SingleListSingleIdx<D> >
 {
 	using Leaf = ListIdx;
-	static constexpr UINT t_dims = D;
+	static constexpr Dim t_dims = D;
 };
 
 /**
@@ -253,7 +279,7 @@ template <Dim D>
 struct Traits< Lookup::LazySingleListSingleIdx<D> >
 {
 	using Leaf = ListIdx;
-	static constexpr UINT t_dims = D;
+	static constexpr Dim t_dims = D;
 };
 
 /**

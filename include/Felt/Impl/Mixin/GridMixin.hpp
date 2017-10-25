@@ -20,7 +20,7 @@ class Activate
 {
 private:
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<TDerived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/// Type of data to store in grid nodes.
 	using Leaf = typename Traits<TDerived>::Leaf;
 
@@ -32,9 +32,22 @@ protected:
 	Leaf	m_background;
 
 protected:
+	Activate() {};
+
 	Activate(const Leaf background_) :
 		m_background{background_}
 	{}
+
+	/**
+	 * Serialisation hook for cereal library.
+	 *
+	 * @param ar
+	 */
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_background);
+	}
 
 	/**
 	 * Get whether this grid has been activated (data allocated) or not.
@@ -115,6 +128,16 @@ protected:
 		return m_data;
 	}
 
+	/**
+	 * Serialisation hook for cereal library.
+	 *
+	 * @param ar
+	 */
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_data);
+	}
 
 	/**
 	 * Check if given position's index is within the data array and raise a domain_error if not.
@@ -164,7 +187,7 @@ private:
 	/// CRTP derived class.
 	using Derived = TDerived;
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<TDerived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/**
 	 * D-dimensional signed integer vector.
 	 */
@@ -211,7 +234,7 @@ class Size
 {
 private:
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<TDerived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -224,10 +247,17 @@ protected:
 	VecDi	m_offset_plus_size;
 
 protected:
+	Size() = default;
 
 	Size(const VecDi& size_, const VecDi& offset_) :
 		m_size{size_}, m_offset{offset_}, m_offset_plus_size{offset_ + size_}
 	{}
+
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_size, m_offset, m_offset_plus_size);
+	}
 
 	const VecDi& size () const
 	{
@@ -251,7 +281,6 @@ protected:
 	{
 		return Felt::inside(pos_, m_offset, m_offset_plus_size);
 	}
-
 
 	/**
 	 * Check if given position is within the grid and raise a domain_error if not.
@@ -294,7 +323,7 @@ class Resize : protected Size<TDerived>
 private:
 	using Base = Size<TDerived>;
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<TDerived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/// D-dimensional signed integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -319,7 +348,7 @@ class Ref
 {
 private:
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<TDerived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/// Type of data to store in grid nodes.
 	using Leaf = typename Traits<TDerived>::Leaf;
 	/// D-dimensional signed integer vector.
@@ -464,7 +493,7 @@ private:
 	/// CRTP derived class.
 	using Derived = TDerived;
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<TDerived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/// Type of data to store in grid nodes.
 	using Leaf = typename Traits<TDerived>::Leaf;
 	/// D-dimensional signed integer vector.
@@ -540,7 +569,7 @@ private:
 	/// CRTP derived class.
 	using Derived = TDerived;
 	/// Dimension of the grid.
-	static const UINT t_dims = Traits<TDerived>::t_dims;
+	static const Dim t_dims = Traits<TDerived>::t_dims;
 	/// Type of data to store in grid nodes.
 	using Leaf = typename Traits<TDerived>::Leaf;
 	/// D-dimensional signed integer vector.

@@ -29,7 +29,7 @@ using UINT = unsigned;
 /**
  * Grid dimension type.
  */
-using Dim = Eigen::Index;
+using Dim = int;
 /**
  * Index of an item in a tracking list.
  */
@@ -41,7 +41,7 @@ using PosIdx = std::size_t;
 /**
  * Index of an item in a tuple.
  */
-using TupleIdx = Eigen::Index;
+using TupleIdx = int;
 /**
  *  Isogrid or other distance value.
  */
@@ -172,7 +172,7 @@ template <class TDerived> struct Traits {};
 	_FELT_ENABLE_UPCAST(derived)
 
 
-#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+#ifdef FELT_EXCEPTIONS
 #define FELT_DEBUG_ENABLED
 #define FELT_DEBUG(...) __VA_ARGS__;
 #else

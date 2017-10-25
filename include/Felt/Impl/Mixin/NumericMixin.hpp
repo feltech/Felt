@@ -44,15 +44,21 @@ private:
 	using VecDi = Felt::VecDi<t_dims>;
 	using VecDT = Felt::VecDT<Leaf, t_dims>;
 
-	FLOAT m_dx;
-	const VecDi m_pos_min;
-	const VecDi m_pos_max;
+	Distance m_dx;
+	VecDi m_pos_min;
+	VecDi m_pos_max;
 
 protected:
 	Spatial() : m_dx{1.0f}, m_pos_min{pself->offset()}, m_pos_max{pself->offset() + pself->size()}
-	{
+	{}
 
+
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_dx, m_pos_min, m_pos_max);
 	}
+
 
 	/**
 	 * Mean curvature,
@@ -458,7 +464,7 @@ protected:
 		// The axis along which to interpolate.
 		// This is computed from the dimensions of the original input and
 		// the dimensions of the intended output.
-		const Dim axis_idx = pos_.size() - Dim(__builtin_ctzl(num_corners));
+		const Eigen::Index axis_idx = pos_.size() - Eigen::Index(__builtin_ctzl(num_corners));
 
 		// The weighting to be used in interpolating each pair of points.
 		// This is the position along the axis of interpolation.
@@ -473,7 +479,7 @@ protected:
 		}
 		val_corners_.resize(num_out);
 	}
-	
+
 	/**
 	 * Call a lambda passing neighbours of a position in the cardinal directions.
 	 *

@@ -91,10 +91,9 @@ x = (idx/Dz)/Dy % Dx
  * @param pos_max_ one more than the maximum allowed position.
  * @return true if position lies inside the grid, false otherwise.
  */
-template <typename TPoint, typename TBounds>
+template <typename TPos, typename TBounds>
 bool inside (
-	const TPoint& pos_,
-	const TBounds& pos_min_, const TBounds& pos_max_
+	const TPos& pos_, const TBounds& pos_min_, const TBounds& pos_max_
 ) {
 	for (Dim i = 0; i < pos_.size(); i++)
 	{

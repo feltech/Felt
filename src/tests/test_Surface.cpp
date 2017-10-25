@@ -1,3 +1,4 @@
+#include <fstream>
 #include <unordered_set>
 
 #include "catch.hpp"
@@ -28,7 +29,6 @@ using PosSet = std::unordered_set< Vec2i, matrix_hash<Vec2i> >;
 
 SCENARIO("Surface - global updates")
 {
-
 
 GIVEN("a 2-layer 2D surface in a 7x7 isogrid with 3x3 spatial partitions")
 {
@@ -435,6 +435,58 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid with 3x3 partitions")
 
 						isogrid_check.array() =
 							isogrid_check.array() - surface.isogrid().snapshot()->array();
+						const Distance diff = isogrid_check.array().sum();
+						CHECK(diff == Approx(0));
+					}
+				}
+			} // AND_WHEN("we contract by 0.6")
+
+
+			AND_WHEN("surface is serialised to disk then loaded")
+			{
+				std::ofstream ofs{"/tmp/surface.felt", std::ios::binary};
+				surface.save(ofs);
+
+				std::ifstream ifs{"/tmp/surface.felt", std::ios::binary};
+				Surface surface_loaded{Surface::load(ifs)};
+
+				THEN("isogrid matches")
+				{
+					CHECK(
+						surface.isogrid().snapshot()->data() ==
+							surface_loaded.isogrid().snapshot()->data()
+					);
+				}
+
+				AND_WHEN("loaded surface is updated")
+				{
+					surface_loaded.update([](const auto& pos_, const auto& isogrid_) {
+						(void)pos_; (void)isogrid_;
+						return 0.6f;
+					});
+
+					THEN("loaded surface is updated correcly")
+					{
+						isogrid_check.data() = {
+							  3,    3,    3,    3,    3,    3,    3,    3,    3,
+							  3,    3,    3,    3,    3,    3,    3,    3,    3,
+							  3,    3,    3,    3,    2,    3,    3,    3,    3,
+							  3,    3,    3,    2,    1,    2,    3,    3,    3,
+							  3,    3,    2,    1,    0,    1,    2,    3,    3,
+							  3,    3,    3,    2,    1,    2,    3,    3,    3,
+							  3,    3,    3,    3,    2,    3,    3,    3,    3,
+							  3,    3,    3,    3,    3,    3,    3,    3,    3,
+							  3,    3,    3,    3,    3,    3,    3,    3,    3
+						};
+
+						CHECK(layer_size(surface_loaded, -2) == 0);
+						CHECK(layer_size(surface_loaded, -1) == 0);
+						CHECK(layer_size(surface_loaded, 0) == 1);
+						CHECK(layer_size(surface_loaded, 1) == 4);
+						CHECK(layer_size(surface_loaded, 2) == 8);
+
+						isogrid_check.array() =
+							isogrid_check.array() - surface_loaded.isogrid().snapshot()->array();
 						const Distance diff = isogrid_check.array().sum();
 						CHECK(diff == Approx(0));
 					}

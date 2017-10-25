@@ -2,10 +2,19 @@
 #define INCLUDE_FELT_IMPL_MIXIN_PARTITIONEDMIXIN_HPP_
 #include <memory>
 #include <mutex>
+#include <iostream>
+
+#pragma GCC system_header // Disable warnings.
+#include <cereal/access.hpp>
+#pragma GCC system_header // Disable warnings.
+#include <cereal/archives/binary.hpp>
+#pragma GCC system_header // Disable warnings.
+#include <cereal/types/vector.hpp>
 
 #include <Felt/Impl/Util.hpp>
 #include <Felt/Impl/Grid.hpp>
 #include <Felt/Impl/Tracked.hpp>
+
 
 namespace Felt
 {
@@ -41,8 +50,8 @@ private:
 	std::mutex	m_mutex;
 
 protected:
-	/// Deleted default constructor.
-	Children() = delete;
+	/// Default constructor.
+	Children() {};
 
 	/**
 	 * Construct and initialise children grid to hold child sub-grids.
@@ -74,6 +83,17 @@ protected:
 
 			m_children.get(pos_idx).resize(m_child_size, offset_child);
 		}
+	}
+
+	Children(Children&& other_) :
+		m_child_size{other_.m_child_size}, m_children{other_.m_children}
+	{}
+
+
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_child_size, m_children);
 	}
 
 	/**
@@ -138,6 +158,14 @@ private:
 	std::mutex	m_mutex;
 
 protected:
+	Leafs() = default;
+
+	/**
+	 * No-op move constructor - this mixin only has a mutex.
+	 *
+	 * @param other_
+	 */
+	Leafs(Leafs&&) {}
 
 	/**
 	 * Call lambda for each grid node in given tracking list.
@@ -344,7 +372,7 @@ private:
 	/// Child grid type.
 	using Child = typename Traits::Child;
 	/// Dimension of grid.
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -397,7 +425,7 @@ private:
 	/// Leaf type.
 	using Leaf = typename Traits::Leaf;
 	/// Dimension of grid.
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -453,7 +481,7 @@ private:
 	/// Leaf type.
 	using Leaf = typename Traits::Leaf;
 	/// Dimension of grid.
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 
@@ -543,12 +571,19 @@ private:
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<Traits::t_dims>;
 	/// Value to return for queries out of bounds.
-	const Leaf m_background;
+	Leaf m_background;
 
-	Access() = delete;
 protected:
+	Access() = default;
+
 	Access(const Leaf background_) : m_background{background_}
 	{}
+
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_background);
+	}
 
 	/**
 	 * Get the leaf grid node at pos by navigating to the correct partition.
@@ -591,7 +626,7 @@ private:
 	/// Leaf type.
 	using Leaf = typename Traits::Leaf;
 	/// Dimension of grid.
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// D-dimensional integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 	/// Simple non-partitioned grid type for snapshotting the partitioned data, e.g. for tests.
@@ -604,7 +639,6 @@ protected:
 	 */
 	using SnapshotGridPtr = std::unique_ptr<SnapshotGrid>;
 
-public:
 	SnapshotGridPtr snapshot() const
 	{
 		SnapshotGridPtr psnapshot = std::make_unique<SnapshotGrid>(
@@ -654,6 +688,24 @@ public:
 		psnapshot->data() = vals_;
 		snapshot(psnapshot);
 	}
+
+	void write(std::ostream& output_stream_) const
+	{
+		cereal::BinaryOutputArchive oa{output_stream_};
+
+		oa << *pself;
+
+		output_stream_.flush();
+	}
+
+	static TDerived read(std::istream& input_stream_)
+	{
+		cereal::BinaryInputArchive ia{input_stream_};
+		TDerived grid{};
+		ia >> grid;
+
+		return grid;
+	}
 };
 
 } // Partitioned.
@@ -662,4 +714,49 @@ public:
 } // Felt.
 
 
+namespace cereal
+{
+
+template <
+	class Archive, class _Scalar, int _Rows, int _Cols, int _Options,
+	int _MaxRows, int _MaxCols
+>
+inline typename std::enable_if <
+	traits::is_output_serializable < BinaryData<_Scalar>, Archive >::value, void
+>::type
+save(Archive & ar, const Eigen::Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>& m)
+{
+	int32_t rows = m.rows();
+	int32_t cols = m.cols();
+	std::vector<_Scalar> vec(m.data(), m.data() + m.rows() * m.cols());
+
+	ar(rows);
+	ar(cols);
+	ar(vec);
+}
+
+template <
+	class Archive, class _Scalar, int _Rows, int _Cols, int _Options,
+	int _MaxRows, int _MaxCols
+>
+inline typename std::enable_if <
+	traits::is_input_serializable < BinaryData<_Scalar>, Archive >::value, void
+>::type
+load(
+	Archive & ar, Eigen::Matrix <_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>& m
+) {
+	using Matrix = Eigen::Matrix <_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>;
+	int32_t rows;
+	int32_t cols;
+	std::vector<_Scalar> vec;
+
+	ar(rows);
+	ar(cols);
+	ar(vec);
+
+	m.resize(rows, cols);
+	m = Eigen::Map<Matrix>(vec.data(), vec.size());
+}
+
+}
 #endif /* INCLUDE_FELT_IMPL_MIXIN_PARTITIONEDMIXIN_HPP_ */

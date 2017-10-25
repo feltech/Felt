@@ -83,7 +83,3 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid with 3x3 partitions")
 				
 				CHECK(diff == Approx(0));
 ```
-
-## Legal
-_Copyright David Feltell all rights reserved._
-_Released under [GPL 3](http://www.gnu.org/licenses/gpl-3.0.en.html) (for now):_

@@ -93,7 +93,7 @@ private:
 	using Traits = Impl::Traits<TDerived>;
 
 	/// Dimensions of the grid.
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// Number of tracking lists.
 	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 
@@ -108,9 +108,23 @@ protected:
 
 
 protected:
+	LookupInterface() {};
+
 	LookupInterface(Lookup&& grid_lookup_)
 		: m_grid_lookup(grid_lookup_)
 	{}
+
+
+	/**
+	 * Serialisation hook for cereal library.
+	 *
+	 * @param ar
+	 */
+	template<class Archive>
+	void serialize(Archive & ar)
+	{
+		ar(m_grid_lookup);
+	}
 
 	/**
 	 * Get lookup grid.
@@ -143,7 +157,7 @@ class ByRef
 private:
 	/// Traits of derived class.
 	using Traits = Impl::Traits<TDerived>;
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 	using Leaf = typename Traits::Leaf;
@@ -194,7 +208,7 @@ class ByValue
 private:
 	/// Traits of derived class.
 	using Traits = Impl::Traits<TDerived>;
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 	using Leaf = typename Traits::Leaf;
@@ -260,7 +274,7 @@ class ByRef
 private:
 	/// Traits of derived class.
 	using Traits = Impl::Traits<TDerived>;
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 	using Leaf = typename Traits::Leaf;
@@ -311,7 +325,7 @@ class ByValue
 private:
 	/// Traits of derived class.
 	using Traits = Impl::Traits<TDerived>;
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
 	using Leaf = typename Traits::Leaf;
@@ -347,7 +361,7 @@ private:
 	using Base = Tracked::LookupInterface<TDerived>;
 
 	/// Dimensions of the grid.
-	static constexpr UINT t_dims = Traits::t_dims;
+	static constexpr Dim t_dims = Traits::t_dims;
 	/// Number of tracking lists.
 	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 
@@ -359,6 +373,9 @@ private:
 
 
 protected:
+	LookupInterface() {};
+
+
 	LookupInterface(Lookup&& grid_lookup_) : Base(std::forward<Lookup>(grid_lookup_))
 	{}
 

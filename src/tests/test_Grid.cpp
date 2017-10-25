@@ -1,5 +1,6 @@
 #include <type_traits>
 #include <experimental/type_traits>
+#include <fstream>
 
 #include <Felt/Impl/Grid.hpp>
 #include <Felt/Impl/Lookup.hpp>
@@ -1692,7 +1693,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 						}
 					}
 				}
-			} // End WHEN "a position is untrackd"
+			} // End WHEN "a position is untracked"
 
 			AND_WHEN("a position is moved from one tracking list to another")
 			{
@@ -1794,6 +1795,76 @@ SCENARIO("Paritioned::Tracked::Numeric")
 						CHECK(grid.children().get(pos_inactive_child).is_active() == false);
 					}
 
+				}
+			}
+		} // WHEN("values are changed in a child sub-grid")
+
+		WHEN("grid is modified and serialised to disk")
+		{
+			grid.track(345, pos1, 0);
+			grid.track(789, pos2, 1);
+			grid.track(123, pos3, 2);
+			grid.track(234, pos4, 1);
+
+			std::ofstream writer{"/tmp/grid.bin", std::ios::binary};
+			grid.write(writer);
+			writer.flush();
+
+			AND_WHEN("grid is loaded")
+			{
+				std::ifstream reader{"/tmp/grid.bin", std::ios::binary};
+				Grid grid_loaded{Grid::read(reader)};
+
+				THEN("loaded grid size matches")
+				{
+					CHECK(grid_loaded.size() == grid.size());
+					CHECK(grid_loaded.offset() == grid.offset());
+				}
+
+				THEN("loaded child subgrid background value matches")
+				{
+					for (
+						PosIdx pos_idx_child = 0;
+						pos_idx_child < grid.children().data().size(); pos_idx_child++
+					) {
+						CHECK(
+							grid.children().get(pos_idx_child).background() ==
+								grid_loaded.children().get(pos_idx_child).background()
+						);
+					}
+				}
+
+				THEN("loaded child data matches")
+				{
+					for (
+						PosIdx pos_idx_child = 0;
+						pos_idx_child < grid.children().data().size(); pos_idx_child++
+					) {
+						CHECK(
+							grid.children().get(pos_idx_child).data() ==
+								grid_loaded.children().get(pos_idx_child).data()
+						);
+					}
+				}
+
+				THEN("loaded child lists match")
+				{
+					for (TupleIdx list_idx = 0; list_idx < Grid::num_lists; list_idx++)
+					{
+						CHECK(
+							grid.children().lookup().list(list_idx) ==
+								grid_loaded.children().lookup().list(list_idx)
+						);
+						for (
+							PosIdx pos_idx_child = 0;
+							pos_idx_child < grid.children().data().size(); pos_idx_child++
+						) {
+							CHECK(
+								grid.children().get(pos_idx_child).list(list_idx) ==
+									grid_loaded.children().get(pos_idx_child).list(list_idx)
+							);
+						}
+					}
 				}
 			}
 		}
