@@ -299,7 +299,7 @@ protected:
 	 */
 	bool track(const PosIdx pos_idx_, const TupleIdx list_idx_)
 	{
-		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		#ifdef FELT_DEBUG_ENABLED
 		pself->assert_pos_bounds(pos_idx_, "track: ");
 		#endif
 
@@ -340,9 +340,9 @@ protected:
 	 */
 	void untrack(const PosIdx pos_idx_, const TupleIdx list_idx_)
 	{
-#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
+		#ifdef FELT_DEBUG_ENABLED
 		pself->assert_pos_bounds(pos_idx_, "untrack: ");
-#endif
+		#endif
 
 		// Get reference to list index stored at given position in grid.
 		ListIdx& list_idx_at_pos = pself->ref(pos_idx_);

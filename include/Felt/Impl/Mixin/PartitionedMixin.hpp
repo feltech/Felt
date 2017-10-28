@@ -411,6 +411,48 @@ protected:
 		);
 		pself->children().get(pos_idx_child_).track(pos_idx_leaf_, list_idx_);
 	}
+
+
+	void retrack(
+		const PosIdx pos_idx_child_, const PosIdx pos_idx_leaf_, const TupleIdx list_idx_from_,
+		const TupleIdx list_idx_to_
+	) {
+		Child& child = pself->children().get(pos_idx_child_);
+
+		#ifdef FELT_DEBUG_ENABLED
+		if (not pself->children().lookup().is_tracked(pos_idx_child_))
+		{
+			std::stringstream strs;
+			strs << "Attempting to move lists within an inactive child: " <<
+				format(child.index(pos_idx_leaf_)) << " from list " << list_idx_from_ <<
+				" to list " << list_idx_to_ << " in partition " <<
+				format(pself->children().index(pos_idx_child_));
+			std::string str = strs.str();
+			throw std::domain_error(str);
+		}
+		#endif
+
+		// Move position between tracking lists in child grid.
+		child.untrack(pos_idx_leaf_, list_idx_from_);
+		child.track(pos_idx_leaf_, list_idx_to_);
+
+		// If child is not tracked by target list or child should be untracked by source list,
+		// then apply mutex and track/untrack as necessary. No race condition, provided we stick to
+		// one child per thread rule.
+		if (
+			not pself->children().lookup().is_tracked(pos_idx_child_, list_idx_to_) ||
+			child.list(list_idx_from_).size() == 0
+		) {
+			// Mutex lock for children grid modifications.
+			std::lock_guard<std::mutex> lock(pself->mutex_children());
+			FELT_DEBUG(child.assert_pos_idx_bounds(pos_idx_leaf_, "retrack"));
+			// Ensure parent grid tracks this child in target list.
+			pself->children().lookup().track(pos_idx_child_, list_idx_to_);
+			// If child's source list is now empty, stop tracking in parent grid.
+			if (child.list(list_idx_from_).size() == 0)
+				pself->children().lookup().untrack(pos_idx_child_, list_idx_from_);
+		}
+	}
 };
 
 

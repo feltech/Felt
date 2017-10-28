@@ -22,6 +22,7 @@ namespace Felt
 		const VecDi& size = grid.size();
 		const VecDi& offset = grid.offset();
 		std::stringstream strGrid;
+		strGrid.precision(2);
 		UINT axis_1 = (axis_plane+1) % t_dims;
 		UINT axis_2 = (axis_plane+2) % t_dims;
 		INT z = axis_plane_offset;

@@ -30,7 +30,7 @@ using PosSet = std::unordered_set< Vec2i, matrix_hash<Vec2i> >;
 SCENARIO("Surface - global updates")
 {
 
-GIVEN("a 2-layer 2D surface in a 7x7 isogrid with 3x3 spatial partitions")
+GIVEN("a 2-layer 2D surface in a 7x7 isogrid with 3x3 spatial partitions - BASIC")
 {
 	Surface<2, 2> surface(Vec2i(7, 7), Vec2i(3, 3));
 
@@ -46,7 +46,7 @@ GIVEN("a 2-layer 2D surface in a 7x7 isogrid with 3x3 spatial partitions")
 	}
 }
 
-GIVEN("a 2-layer 2D surface in a 9x9 isogrid with 3x3 partitions")
+GIVEN("a 2-layer 2D surface in a 9x9 isogrid with 3x3 partitions - BASIC")
 {
 	// 2D surface with 2x narrow band layers, respectively.
 	using Surface = Surface<2, 2>;
@@ -406,6 +406,8 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid with 3x3 partitions")
 
 				AND_WHEN("we contract by 0.6 again")
 				{
+					INFO(stringify_grid_slice(surface.isogrid()));
+
 					surface.update([](const auto& pos_, const auto& isogrid_) {
 						(void)pos_; (void)isogrid_;
 						return 0.6f;
@@ -566,7 +568,7 @@ GIVEN("a 2-layer 2D surface in a 21x21 isogrid with 2x2 partitions")
 
 SCENARIO("Surface - local updates")
 {
-	GIVEN("a 9x9 2-layer surface with 2x2 partitions initialised with a seed point in the centre")
+	GIVEN("a 9x9 2-layer surface with 2x2 partitions initialised with a seed point in the centre  - BASIC")
 	{
 		using Surface = Surface<2, 2>;
 		Surface surface(Vec2i{9, 9}, Vec2i{2, 2});

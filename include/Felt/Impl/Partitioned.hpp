@@ -42,6 +42,7 @@ public:
 		ChildrenImpl{size_, offset_, child_size_, Child()}
 	{}
 
+	using LookupImpl::retrack;
 	using LookupImpl::track;
 	using ChildrenImpl::children;
 	using LeafsImpl::leafs;

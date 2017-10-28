@@ -27,6 +27,7 @@
 #define FELT_SURFACE_OMP_MIN_CHUNK_SIZE 32
 #endif
 
+#ifndef FELT_DISABLE_OPENMP
 /// Transform args to a char* string.
 #define FELT_STR(args) #args
 /// The OpenMP parallel loop command.
@@ -34,6 +35,9 @@
 	FELT_STR(omp parallel for if(num >= FELT_SURFACE_OMP_MIN_CHUNK_SIZE) __VA_ARGS__)
 /// The #pragma containing the OpenMP parallel loop command
 #define FELT_PARALLEL_FOR(num, ...) _Pragma(FELT_PARALLEL_FOR_CMD(num, __VA_ARGS__))
+#else
+#define FELT_PARALLEL_FOR(...)
+#endif
 
 
 namespace Felt
@@ -404,10 +408,22 @@ public:
 		// Update the zero layer, applying delta to isogrid.
 		update_zero_layer();
 
-		while (update_distance(m_grid_affected))
-		{};
+		AffectedLookupGrid* plookup = &m_grid_affected;
+		AffectedLookupGrid* plookup_buffer = &m_grid_affected_buffer;
 
-		status_change(m_grid_affected);
+		bool is_status_changed = false;
+		is_status_changed |= update_distance(m_grid_affected, plookup_buffer);
+		is_status_changed |= status_change(m_grid_affected);
+		if (is_status_changed)
+		{
+			do
+			{
+				std::swap(plookup, plookup_buffer);
+				plookup_buffer->reset(m_grid_isogrid);
+				while (update_distance(*plookup, plookup_buffer))
+				{};
+			} while(status_change(*plookup));
+		}
 
 		expand_narrow_band();
 	}
@@ -704,11 +720,11 @@ private:
 	void update_end_global ()
 	{
 		update_zero_layer();
-
-		while (update_distance(m_grid_isogrid))
-		{};
-
-		status_change(m_grid_isogrid);
+		do
+		{
+			while (update_distance(m_grid_isogrid))
+			{};
+		} while(status_change(m_grid_isogrid));
 
 		expand_narrow_band();
 	}
@@ -871,7 +887,7 @@ private:
 		using DeltaChild = typename DeltaIsoGrid::Child;
 		using IsoChild = typename IsoGrid::Child;
 
-		const TupleIdx layer_idx_zero = layer_idx(0);
+		static constexpr TupleIdx layer_idx_zero = layer_idx(0);
 		const PosIdxList& pos_idxs_children = m_grid_delta.children().lookup().list(layer_idx_zero);
 
 		const ListIdx num_childs = pos_idxs_children.size();
@@ -888,10 +904,10 @@ private:
 				const Distance iso_prev = isogrid_child.get(pos_idx_leaf);
 				const Distance iso_delta = delta_child.get(pos_idx_leaf);
 				const Distance iso_new = iso_prev + iso_delta;
-				const LayerId layer_id_new = layer_id(iso_new);
 
 				#ifdef FELT_DEBUG_ENABLED
 
+				const LayerId layer_id_new = layer_id(iso_new);
 				const LayerId layer_id_old = layer_id(iso_prev);
 
 				if (layer_id_old != 0)
@@ -934,19 +950,19 @@ private:
 	 * additional iterations to converge.
 	 */
 	template <typename Grid>
-	bool update_distance(const Grid& lookup_)
+	bool update_distance(const Grid& lookup_, AffectedLookupGrid* pgrid_changes_ = nullptr)
 	{
-		bool is_status_changed = false;
+		bool is_distance_changed = false;
 
 		// Update distance transform for inner layers of the narrow band.
 		for (LayerId layer_id = -1; layer_id >= s_layer_min; layer_id--)
-			is_status_changed |= update_distance(layer_id, -1, lookup_);
+			is_distance_changed |= update_distance(layer_id, -1, lookup_, pgrid_changes_);
 
 		// Update distance transform for outer layers of the narrow band.
 		for (LayerId layer_id = 1; layer_id <= s_layer_max; layer_id++)
-			is_status_changed |= update_distance(layer_id, 1, lookup_);
+			is_distance_changed |= update_distance(layer_id, 1, lookup_, pgrid_changes_);
 
-		return is_status_changed;
+		return is_distance_changed;
 	}
 
 	/**
@@ -958,24 +974,25 @@ private:
 	 * @param plookup_buffer_ grid to store points that need to change layers.
 	 * @return true if any point status changed, false otherwise.
 	 */
-	template <typename Grid>
+	template <typename TLookup>
 	bool update_distance(
-		const LayerId layer_id_from_, const LayerId side_, const Grid& lookup_
+		const LayerId layer_id_from_, const LayerId side_, const TLookup& lookup_,
+		AffectedLookupGrid* pgrid_changes = nullptr
 	) {
 		using IsoChild = typename IsoGrid::Child;
 
-		bool is_status_changed = false;
+		bool is_distance_changed = false;
 
 		const TupleIdx layer_idx = this->layer_idx(layer_id_from_);
-		const PosIdxList& pos_idxs_children = lookup_.children().lookup().list(layer_idx);
-		const ListIdx num_childs = pos_idxs_children.size();
+		const PosIdxList& list_pos_idx_child = lookup_.children().lookup().list(layer_idx);
+		const ListIdx num_childs = list_pos_idx_child.size();
 
 		// First pass: calculate distance and add to delta isogrid.
 		FELT_PARALLEL_FOR(num_childs,)
 		for (ListIdx list_idx = 0; list_idx < num_childs; list_idx++)
 		{
 			// Child spatial partition position
-			const ListIdx pos_idx_child = pos_idxs_children[list_idx];
+			const PosIdx pos_idx_child = list_pos_idx_child[list_idx];
 			IsoChild& child = m_grid_isogrid.children().get(pos_idx_child);
 
 			for (
@@ -983,24 +1000,49 @@ private:
 			) {
 				// Distance from this position to zero layer.
 				const Distance dist_from = child.get(pos_idx_leaf);
+				// Iterative distance calculation has put this point outside of the band, no need
+				// to update further.
+				if (not inside_band(dist_from))
+					continue;
 				const Distance dist_to = distance(pos_idx_child, pos_idx_leaf, side_);
 
 				child.set(pos_idx_leaf, dist_to);
 
-				is_status_changed |= dist_from != dist_to;
+				is_distance_changed |= dist_from != dist_to;
+
+				if (pgrid_changes != nullptr && is_distance_changed)
+				{
+					if (pgrid_changes->children().get(pos_idx_child).is_active())
+					{
+						pgrid_changes->retrack(
+							pos_idx_child, pos_idx_leaf,
+							this->layer_id(dist_from), this->layer_id(dist_to)
+						);
+					}
+					else
+					{
+						pgrid_changes->track(
+							pos_idx_child, pos_idx_leaf,
+							this->layer_id(dist_to)
+						);
+					}
+				}
 			}
 		}
 
-		return is_status_changed;
+		return is_distance_changed;
 
 	} // End update_distance.
 
 
-	template <typename Grid>
-	void status_change(const Grid& lookup_)
+	template <typename TLookup>
+	bool status_change(const TLookup& lookup_)
 	{
 		using IsoChild = typename IsoGrid::Child;
 		using StatusChild = typename StatusChangeGrid::Child;
+
+		m_grid_status_change.reset(m_grid_isogrid);
+		bool is_status_changed = false;
 
 		for (TupleIdx layer_idx_from = 0; layer_idx_from < s_num_layers; layer_idx_from++)
 		{
@@ -1027,6 +1069,8 @@ private:
 					if (layer_idx_to == layer_idx_from)
 						continue;
 
+					is_status_changed = true;
+
 					m_grid_status_change.track(
 						layer_idx_to, pos_idx_child, pos_idx_leaf, layer_idx_from
 					);
@@ -1048,10 +1092,6 @@ private:
 				for (const PosIdx pos_idx_leaf : child.list(layer_idx_from))
 				{
 					const TupleIdx layer_idx_to = child.get(pos_idx_leaf);
-
-					if (layer_idx_to == layer_idx_from)
-						continue;
-
 					const LayerId layer_id_to = layer_idx_to - LayerId(s_num_layers) / 2;
 
 					if (inside_band(layer_id_to))
@@ -1071,6 +1111,8 @@ private:
 				}
 			}
 		}
+
+		return is_status_changed;
 	}
 
 	/**
@@ -1106,7 +1148,7 @@ private:
 					// Cycle over neighbours of this outer layer point.
 					m_grid_isogrid.neighs(
 						pos,
-						[this, layer_idx, side, layer_id, &pos](const VecDi& pos_neigh_) {
+						[this, side, &pos](const VecDi& pos_neigh_) {
 							if (not m_grid_isogrid.inside(pos_neigh_))
 								return;
 
@@ -1160,7 +1202,9 @@ private:
 
 							// Use thread-safe update and track function, since neighbouring point
 							// could be in another spatial partition.
-							this->m_grid_isogrid.track(distance_neigh, pos_neigh_, layer_idx);
+							this->m_grid_isogrid.track(
+								distance_neigh, pos_neigh_, this->layer_idx(layer_id_to)
+							);
 						}
 					);
 				} // End for pos_idx.
@@ -1489,8 +1533,9 @@ private:
 	 * @param pos_ position vector of location
 	 * @return integer layer ID that given location should belong to.
 	 */
-	template <class Pos>
-	LayerId layer_id(const Pos& pos_) const
+	template <class TPos>
+	typename std::enable_if<std::is_scalar<typename TPos::Scalar>::value, LayerId>::type
+	layer_id(const TPos& pos_) const
 	{
 		const LayerId layer_id_pos = layer_id(m_grid_isogrid.get(pos_));
 
@@ -1506,24 +1551,27 @@ private:
 	 * @param val value to round to give narrow band layer ID.
 	 * @return layer ID that given value should belong to
 	 */
-	LayerId layer_id(const FLOAT val_) const
+	template <class TVal>
+	typename std::enable_if<std::is_scalar<TVal>::value, LayerId>::type
+	layer_id(const TVal val_) const
 	{
 		// Round to value+epsilon, to catch cases of precisely +/-0.5.
 		return boost::math::iround(
-			val_ + std::numeric_limits<FLOAT>::epsilon()
+			Distance(val_) + std::numeric_limits<Distance>::epsilon()
 		);
 	}
 
 	/**
 	 * Test whether a given value lies (or should lie) within the narrow band or not.
 	 *
-	 * @param val float or int value to test
+	 * @param val_ float, int to test.
 	 * @return true if inside the narrow band, false otherwise.
 	 */
-	template <typename Val>
-	bool inside_band (const Val& val) const
+	template <typename TVal>
+	typename std::enable_if<std::is_scalar<TVal>::value, bool>::type
+	inside_band (const TVal& val_) const
 	{
-		return (UINT)std::abs(val) <= s_layer_max;
+		return std::abs(layer_id(val_)) <= s_layer_max;
 	}
 
 	/**

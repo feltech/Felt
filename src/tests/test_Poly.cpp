@@ -331,7 +331,9 @@ GIVEN("an empty 3D polygonisaton and a 15x15x15 3-layer surface with 5x5x5 parti
 	{
 		surface.seed(Vec3i(0,0,0));
 		surface.update([](const auto&, const auto&){ return -0.5f; });
+		INFO(stringify_grid_slice(surface.isogrid()));
 		surface.update([](const auto&, const auto&){ return -0.5f; });
+		INFO(stringify_grid_slice(surface.isogrid()));
 
 		AND_WHEN("surface is polygonised")
 		{
