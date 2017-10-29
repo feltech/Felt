@@ -404,12 +404,22 @@ public:
 
 		// Update the zero layer, applying delta to isogrid.
 		update_zero_layer(&m_grid_affected_buffer);
-
-		converge_distance(&m_grid_affected, &m_grid_affected_buffer);
-
+		AffectedLookupGrid* plookup = &m_grid_affected;
+		AffectedLookupGrid* plookup_buffer = &m_grid_affected_buffer;
+		bool is_status_changed = update_distance(plookup, plookup_buffer);
 		flush_status_change();
-
 		expand_narrow_band();
+
+		while (is_status_changed)
+		{
+			plookup->reset(m_grid_isogrid);
+			std::swap(plookup, plookup_buffer);
+			m_grid_status_change.reset(m_grid_affected);
+			is_status_changed = update_distance(plookup, plookup_buffer);
+			flush_status_change();
+			expand_narrow_band();
+		}
+
 	}
 
 
@@ -705,12 +715,25 @@ private:
 	{
 		update_zero_layer(&m_grid_affected_buffer);
 
-		if (update_distance(&m_grid_isogrid, &m_grid_affected_buffer))
-			converge_distance(&m_grid_affected_buffer, &m_grid_affected);
-
+		bool is_status_changed = update_distance(&m_grid_isogrid, &m_grid_affected_buffer);
 		flush_status_change();
-
 		expand_narrow_band();
+
+		if (is_status_changed)
+		{
+			AffectedLookupGrid* plookup = &m_grid_affected_buffer;
+			AffectedLookupGrid* plookup_buffer = &m_grid_affected;
+
+			while (is_status_changed)
+			{
+				m_grid_status_change.reset(m_grid_isogrid);
+				is_status_changed = update_distance(plookup, plookup_buffer);
+				flush_status_change();
+				expand_narrow_band();
+				plookup->reset(m_grid_isogrid);
+				std::swap(plookup, plookup_buffer);
+			}
+		}
 	}
 
 	/**
@@ -925,21 +948,6 @@ private:
 				// Potentially track to status change, if narrow band layer has changed.
 				status_change(pos_idx_child, pos_idx_leaf, 0, layer_id_new, plookup_buffer_);
 			}
-		}
-	}
-
-	/**
-	 * Repeatedly update the distance in the affected grid, until no more status changes are made.
-	 *
-	 * @param plookup initial lookup grid supplying points to check.
-	 * @param plookup_buffer double-buffer grid for async iterative convergence.
-	 */
-	void converge_distance(AffectedLookupGrid* plookup, AffectedLookupGrid* plookup_buffer)
-	{
-		while (update_distance(plookup, plookup_buffer))
-		{
-			plookup->reset(m_grid_isogrid);
-			std::swap(plookup, plookup_buffer);
 		}
 	}
 
