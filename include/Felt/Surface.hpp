@@ -12,10 +12,10 @@
 #include <omp.h>
 #include <iostream>
 
-#include <boost/math/special_functions/round.hpp>
-#include <boost/math/constants/constants.hpp>
-#include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/math/constants/constants.hpp>
+#include <boost/math/special_functions/round.hpp>
 
 #ifndef FELT_SURFACE_OMP_MIN_CHUNK_SIZE
 /**
@@ -141,6 +141,11 @@ public:
 	/// D-dimensional parameterised line, for raycasting.
 	using Line = Eigen::ParametrizedLine<Distance, D>;
 
+	struct Stats
+	{
+		ListIdx isogrid_partitions;
+	};
+
 	/**
 	 * Get vector representing a raycast miss.
 	 */
@@ -265,8 +270,8 @@ public:
 			for (const PosIdx pos_idx_leaf : isochild.lookup().list(layer_idx(0)))
 			{
 				const VecDi& pos_leaf = isochild.index(pos_idx_leaf);
-				const Distance dist_delta = fn_(
-					pos_leaf, const_cast<const IsoGrid&>(m_grid_isogrid)
+				const Distance dist_delta = callback(
+					fn_, pos_leaf, const_cast<const IsoGrid&>(m_grid_isogrid)
 				);
 
 				#ifdef FELT_DEBUG_ENABLED
@@ -346,7 +351,9 @@ public:
 				// Skip zero-layer points not within finer-grained bounding box.
 				if (Felt::inside(pos_leaf, pos_leaf_lower_, pos_leaf_upper_bound))
 				{
-					const Distance dist_delta = fn_(pos_leaf, m_grid_isogrid);
+					const Distance dist_delta = callback(
+						fn_, pos_leaf, const_cast<const IsoGrid&>(m_grid_isogrid)
+					);
 
 					#ifdef FELT_DEBUG_ENABLED
 
@@ -609,6 +616,18 @@ public:
 	}
 
 	/**
+	 * Gather statistics about the current state of the surface.
+	 *
+	 * @return statistics object with various values.
+	 */
+	Stats stats() const
+	{
+		return Stats{
+			num_active_partitions(m_grid_isogrid)
+		};
+	}
+
+	/**
 	 * Get list of spatial partitions where iso values were updated in last update.
 	 *
 	 * @param layer_idx_ index of layer list to get.
@@ -675,6 +694,8 @@ public:
 		return m_grid_affected;
 	}
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Begin private
 private:
 
 	/**
@@ -1667,7 +1688,7 @@ private:
 	 * @param val value to round to give narrow band layer ID.
 	 * @return layer ID that given value should belong to
 	 */
-	LayerId layer_id(const FLOAT val_) const
+	LayerId layer_id(const Distance val_) const
 	{
 		// Round to value+epsilon, to catch cases of precisely +/-0.5.
 		return boost::math::iround(
@@ -1695,6 +1716,48 @@ private:
 	static constexpr VecDi offset(const VecDi& size_)
 	{
 		return -1 * size_ / 2;
+	}
+
+	template <class TGrid>
+	ListIdx num_active_partitions(const TGrid& grid_) const
+	{
+		ListIdx num = 0;
+		for (TupleIdx layer_idx = 0; layer_idx < s_num_layers; layer_idx++)
+		{
+			num = std::max(num, grid_.children().lookup().list(layer_idx).size());
+		}
+
+		return num;
+	}
+
+	template <typename Fn>
+	std::enable_if_t<
+		std::is_same<std::result_of_t<Fn(const VecDi&, const IsoGrid&)>, Distance>::value,
+		Distance
+	>
+	callback(Fn&& fn_, const VecDi& pos_, const IsoGrid& grid_)
+	{
+		return fn_(pos_, grid_);
+	}
+
+	template <typename Fn>
+	std::enable_if_t<
+		std::is_same<std::result_of_t<Fn(const VecDi&)>, Distance>::value,
+		Distance
+	>
+	callback(Fn&& fn_, const VecDi& pos_, const IsoGrid&)
+	{
+		return fn_(pos_);
+	}
+
+	template <typename Fn>
+	std::enable_if_t<
+		std::is_same<std::result_of_t<Fn()>, Distance>::value,
+		Distance
+	>
+	callback(Fn&& fn_, const VecDi&, const IsoGrid&)
+	{
+		return fn_();
 	}
 };
 

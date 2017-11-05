@@ -102,15 +102,7 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid with 3x3 partitions")
 			CHECK(layer_size(surface, 2) == 8);
 		}
 
-		AND_WHEN("we expand the surface one unit outwards")
-		{
-			surface.update([](const auto& pos_, const auto& isogrid_) {
-				(void)pos_; (void)isogrid_;
-				return -1.0f;
-			});
-
-			INFO(stringify_grid_slice(surface.isogrid()));
-
+		auto assert_matches_radius_1 = [&]() {
 			THEN("the grid data matches a surface of radius 1")
 			{
 				isogrid_check.data() = {
@@ -137,6 +129,33 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid with 3x3 partitions")
 				CHECK(layer_size(surface, 1) == 8);
 				CHECK(layer_size(surface, 2) == 12);
 			}
+		};
+
+		AND_WHEN("surface is expanded via a lambda that requires position and isogrid")
+		{
+			surface.update([](const Vec2i& pos_, const Surface::IsoGrid& isogrid_) {
+				(void)pos_; (void)isogrid_;
+				return -1.0f;
+			});
+
+			assert_matches_radius_1();
+		}
+
+		AND_WHEN("surface is expanded via a lambda that requires only position")
+		{
+			surface.update([](const Vec2i& pos_) {
+				(void)pos_;
+				return -1.0f;
+			});
+
+			assert_matches_radius_1();
+		}
+
+		AND_WHEN("surface is expanded via a simple lambda that returns constant -1")
+		{
+			surface.update([]() { return -1.0f; });
+
+			assert_matches_radius_1();
 
 			AND_WHEN("iterating over layer 0 and recording each point hit")
 			{
@@ -509,9 +528,8 @@ GIVEN("a 2-layer 2D surface in a 21x21 isogrid with 2x2 partitions")
 		// Create seed point and expand the narrow band.
 		surface.seed(Vec2i(0, 0));
 
-		for (UINT i = 0; i < 5; i++)
-			surface.update([](const auto& pos_, const auto& isogrid_) {
-				(void)pos_; (void)isogrid_;
+		for (unsigned i = 0; i < 5; i++)
+			surface.update([]() {
 				return -1.0f;
 			});
 
@@ -790,16 +808,7 @@ SCENARIO("Surface - local updates")
 			}
 		} // WHEN we expand by 1 unit.
 
-		AND_WHEN("we update square region containing the surface")
-		{
-			surface.update(
-				Vec2i(-1, -1), Vec2i(1, 1),
-				[](const Vec2i& pos, const auto& isogrid) -> Distance {
-					(void)pos; (void)isogrid;
-					return -0.6f;
-				}
-			);
-
+		auto assert_update = [&]() {
 			INFO(stringify_grid_slice(surface.isogrid()));
 
 			THEN("the grid data and layers are as expected")
@@ -830,6 +839,44 @@ SCENARIO("Surface - local updates")
 				CHECK(layer_size(surface, 1) == 8);
 				CHECK(layer_size(surface, 2) == 12);
 			}
+		};
+
+		AND_WHEN("a square region is updated with a lambda that needs position and isogrid")
+		{
+			surface.update(
+				Vec2i(-1, -1), Vec2i(1, 1),
+				[](const Vec2i& pos, const auto& isogrid) {
+					(void)pos; (void)isogrid;
+					return -0.6f;
+				}
+			);
+
+			assert_update();
+		}
+
+		AND_WHEN("a square region is updated with a lambda that needs only position")
+		{
+			surface.update(
+				Vec2i(-1, -1), Vec2i(1, 1),
+				[](const Vec2i& pos) {
+					(void)pos;
+					return -0.6f;
+				}
+			);
+
+			assert_update();
+		}
+
+		AND_WHEN("a square region is updated with a lambda that doesn't take any params")
+		{
+			surface.update(
+				Vec2i(-1, -1), Vec2i(1, 1),
+				[]() {
+					return -0.6f;
+				}
+			);
+
+			assert_update();
 		}
 	} // End GIVEN 9x9 2-layer with 2x2 partitions with seed.
 }// End SCENARIO Surface - local updates.
@@ -1237,16 +1284,13 @@ GIVEN(
 	Surface<3, 3> surface(Vec3i(32, 32, 32), Vec3i(5, 5, 5));
 	// Create seed point and expand the narrow band.
 	surface.seed(Vec3i(0, 0, 0));
-	surface.update([](const auto& pos_, const auto& isogrid_) {
-		(void)pos_; (void)isogrid_;
+	surface.update([]() {
 		return -1.0f;
 	});
-	surface.update([](const auto& pos_, const auto& isogrid_) {
-		(void)pos_; (void)isogrid_;
+	surface.update([]() {
 		return -1.0f;
 	});
-	surface.update([](const auto& pos_, const auto& isogrid_) {
-		(void)pos_; (void)isogrid_;
+	surface.update([]() {
 		return -1.0f;
 	});
 
@@ -1294,8 +1338,7 @@ GIVEN(
 
 	AND_WHEN("the surface is expanded slightly")
 	{
-		surface.update([](const auto& pos_, const auto& isogrid_) {
-			(void)pos_; (void)isogrid_;
+		surface.update([]() {
 			return -0.3f;
 		});
 
@@ -1378,16 +1421,13 @@ GIVEN("a 2-layer surface of radius 3 in a 16x16 grid with 3x3 partitions")
 
 	// Create seed point and expand the narrow band.
 	surface.seed(Vec2i(0, 0));
-	surface.update([](const auto& pos_, const auto& isogrid_) {
-		(void)pos_; (void)isogrid_;
+	surface.update([]() {
 		return -1.0f;
 	});
-	surface.update([](const auto& pos_, const auto& isogrid_) {
-		(void)pos_; (void)isogrid_;
+	surface.update([]() {
 		return -1.0f;
 	});
-	surface.update([](const auto& pos_, const auto& isogrid_) {
-		(void)pos_; (void)isogrid_;
+	surface.update([]() {
 		return -1.0f;
 	});
 	FLOAT leftover;
@@ -1411,16 +1451,13 @@ GIVEN("a 2-layer surface of radius 3 in a 16x16 grid with 3x3 partitions")
 
 	// Create seed point and expand the narrow band.
 	surface.seed(Vec2i(0, 0));
-	surface.update([](const auto& pos_, const auto& isogrid_) {
-		(void)pos_; (void)isogrid_;
+	surface.update([]() {
 		return -1.0f;
 	});
-	surface.update([](const auto& pos_, const auto& isogrid_) {
-		(void)pos_; (void)isogrid_;
+	surface.update([]() {
 		return -1.0f;
 	});
-	surface.update([](const auto& pos_, const auto& isogrid_) {
-		(void)pos_; (void)isogrid_;
+	surface.update([]() {
 		return -1.0f;
 	});
 	FLOAT leftover;
@@ -1444,16 +1481,13 @@ GIVEN(
 	Surface<3, 3> surface(Vec3i(32, 32, 32), Vec3i(5, 5, 5));
 	// Create seed point and expand the narrow band.
 	surface.seed(Vec3i(0, 0, 0));
-	surface.update([](const auto& pos_, const auto& isogrid_) {
-		(void)pos_; (void)isogrid_;
+	surface.update([]() {
 		return -1.0f;
 	});
-	surface.update([](const auto& pos_, const auto& isogrid_) {
-		(void)pos_; (void)isogrid_;
+	surface.update([]() {
 		return -1.0f;
 	});
-	surface.update([](const auto& pos_, const auto& isogrid_) {
-		(void)pos_; (void)isogrid_;
+	surface.update([]() {
 		return -1.0f;
 	});
 
@@ -1502,6 +1536,58 @@ GIVEN(
 }
 } // End SCENARIO Surface - raycasting
 
+
+SCENARIO("Surface - stats")
+{
+GIVEN("a 2-layer 2D surface in a 7x7 isogrid with 3x3 spatial partitions")
+{
+	using Surface = Felt::Surface<2, 2>;
+	Surface surface(Vec2i(7, 7), Vec2i(3, 3));
+
+	WHEN("stats are retrieved")
+	{
+		Surface::Stats stats = surface.stats();
+
+		THEN("stats are at their initial values")
+		{
+			CHECK(stats.isogrid_partitions == 0);
+		}
+	}
+
+	WHEN("surface is seeded")
+	{
+		surface.seed(Vec2i(0,0));
+
+		AND_WHEN("stats are retrieved")
+		{
+			Surface::Stats stats = surface.stats();
+
+			THEN("stats report number of isogrid partitions is 1")
+			{
+				CHECK(stats.isogrid_partitions == 4);
+			}
+		}
+
+		AND_WHEN("surface is expanded")
+		{
+			surface.update([]() {
+				return -1.0f;
+			});
+
+			AND_WHEN("stats are retrieved")
+			{
+				Surface::Stats stats = surface.stats();
+
+				THEN("stats report number of isogrid partitions is 3")
+				{
+					CHECK(stats.isogrid_partitions == 6);
+				}
+			}
+
+		}
+	}
+}
+}
 
 SCENARIO("Surface - raycasting (slow)", "[!hide][slow]")
 {
