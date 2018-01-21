@@ -79,7 +79,7 @@ private:
 	using Leaf = typename Traits::Leaf;
 
 public:
-	using SnapshotImpl::VArrayData;
+	using typename SnapshotImpl::VArrayData;
 
 	Snapshot(const VecDi& size_, const VecDi& offset_, const Leaf background_) :
 		 ActivateImpl{background_}, SizeImpl{size_, offset_}
