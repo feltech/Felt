@@ -14,7 +14,7 @@ namespace Felt
 	/// Utility: take a slice of a 3D grid and return a tabulated string.
 	template <class GridType>
 	std::string stringify_grid_slice(
-		const GridType& grid, UINT axis_plane = 2, INT axis_plane_offset = 0
+		const GridType& grid, TupleIdx axis_plane = 2, TupleIdx axis_plane_offset = 0
 	) {
 		static constexpr Dim t_dims = Impl::Traits<GridType>::t_dims;
 		using VecDi = typename Felt::VecDi<t_dims>;
@@ -22,20 +22,20 @@ namespace Felt
 		const VecDi& size = grid.size();
 		const VecDi& offset = grid.offset();
 		std::stringstream strGrid;
-		UINT axis_1 = (axis_plane+1) % t_dims;
-		UINT axis_2 = (axis_plane+2) % t_dims;
-		INT z = axis_plane_offset;
-		for (INT x = offset(axis_1); x < (INT)size(axis_1) + offset(axis_1); x++)
+		TupleIdx axis_1 = (axis_plane+1) % t_dims;
+		TupleIdx axis_2 = (axis_plane+2) % t_dims;
+		TupleIdx z = axis_plane_offset;
+		for (TupleIdx x = offset(axis_1); x < size(axis_1) + offset(axis_1); x++)
 		{
 			strGrid << std::endl;
-			for (INT y = offset(axis_2); y < (INT)size(axis_2) + offset(axis_2); y++)
+			for (TupleIdx y = offset(axis_2); y < size(axis_2) + offset(axis_2); y++)
 			{
 				VecDi pos;
 				if (axis_plane < pos.size())
 					pos(axis_plane) = axis_plane_offset;
 				pos(axis_1) = x;
 				pos(axis_2) = y;
-				strGrid << std::setw(5) << (FLOAT)grid.get(pos) << ",";
+				strGrid << std::setw(5) << grid.get(pos) << ",";
 			}
 		}
 		strGrid << std::endl;
@@ -91,7 +91,7 @@ namespace Felt
 
 		friend bool operator == ( VecType lhs, ThisType const& rhs ) {
 			bool is_equal = true;
-			for (UINT i = 0; i < lhs.size(); i++)
+			for (TupleIdx i = 0; i < lhs.size(); i++)
 				is_equal &= fabs(lhs(i) - rhs.m_value(i)) < rhs.m_epsilon * (
 					rhs.m_scale + std::max( fabs(lhs(i)), fabs(rhs.m_value(i)) )
 				);

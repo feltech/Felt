@@ -330,8 +330,8 @@ private:
 				mu = val_a / (val_a - val_b);
 			}
 
-			const VecDf vec_a = pos_a.template cast<FLOAT>();
-			const VecDf vec_b = pos_b.template cast<FLOAT>();
+			const VecDf vec_a = pos_a.template cast<Distance>();
+			const VecDf vec_b = pos_b.template cast<Distance>();
 			const VecDf vec_c = vec_a + (vec_b - vec_a) * mu;
 
 			vtx = Vertex(m_pisogrid, vec_c);

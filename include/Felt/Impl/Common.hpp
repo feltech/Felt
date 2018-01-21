@@ -15,18 +15,6 @@
 namespace Felt
 {
 /**
- * Use 32 bit float by default.
- */
-using FLOAT = float;
-/**
- * Use 32 bit int by default.
- */
-using INT = int;
-/**
- * Use 32 bit unsigned int by default.
- */
-using UINT = unsigned;
-/**
  * Grid dimension type.
  */
 using Dim = int;
@@ -39,28 +27,32 @@ using ListIdx = std::size_t;
  */
 using PosIdx = std::size_t;
 /**
+ * Grid node position vector element.
+ */
+using NodeIdx = int;
+/**
  * Index of an item in a tuple.
  */
 using TupleIdx = int;
 /**
  *  Isogrid or other distance value.
  */
-using Distance = FLOAT;
+using Distance = float;
 /**
  * Shorthand for D-dimensional vector with elements of T type.
  */
 template <typename T, Dim D>
 using VecDT = Eigen::Matrix<T, D, 1>;
 /**
- * Shorthand for D-dimensional float vector.
+ * Shorthand for D-dimensional Distance vector.
  */
 template <Dim D>
 using VecDf = VecDT<Distance, D>;
 /**
- * Shorthand for D-dimensional integer vector.
+ * Shorthand for D-dimensional NodeIdx vector.
  */
 template <Dim D>
-using VecDi = VecDT<INT, D>;
+using VecDi = VecDT<NodeIdx, D>;
 /**
  * Shorthand for D-dimensional unsigned integer vector.
  */

@@ -130,7 +130,7 @@ std::string format(const Vec& vec_)
  * @param val_ value to get signum for.
  * @return -1 for negative, +1 for positive.
  */
-template <typename T> INT sgn(T val_)
+template <typename T> auto sgn(T val_)
 {
 	return (T(0) < val_) - (val_ < T(0));
 }

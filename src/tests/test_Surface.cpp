@@ -66,12 +66,12 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid with 3x3 partitions")
 		// on the surface).
 		THEN("the value at the centre of the grid is 0")
 		{
-			const FLOAT val_centre = surface.isogrid().get(Vec2i(0, 0));
+			const Distance val_centre = surface.isogrid().get(Vec2i(0, 0));
 			CHECK(val_centre == 0);
 		}
 
 		// Grid to use for checking data.
-		Impl::Grid::Snapshot<FLOAT, 2> isogrid_check(Vec2i(5, 5), Vec2i::Zero(), 0);
+		Impl::Grid::Snapshot<Distance, 2> isogrid_check(Vec2i(5, 5), Vec2i::Zero(), 0);
 
 		THEN("the surface data matches a singularity seed point")
 		{
@@ -211,7 +211,7 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid with 3x3 partitions")
 
 				AND_WHEN("we expand by one unit 9 more times")
 				{
-					for (UINT i = 0; i < 9; i++)
+					for (int i = 0; i < 9; i++)
 					{
 						surface.update([](const auto& pos_, const auto& isogrid_) {
 							(void)pos_; (void)isogrid_;
@@ -760,7 +760,7 @@ SCENARIO("Surface - local updates")
 
 			AND_WHEN("we cycle a square region partially containing the surface")
 			{
-				UINT num_visited = 0;
+				int num_visited = 0;
 				PosSet pos_visits;
 				surface.update(
 					Vec2i(1, 0), Vec2i(3, 3),
@@ -783,7 +783,7 @@ SCENARIO("Surface - local updates")
 
 			AND_WHEN("we cycle a square region completely containing the surface")
 			{
-				UINT num_visited = 0;
+				int num_visited = 0;
 				PosSet pos_visits;
 				surface.update(
 					Vec2i(-100, -100), Vec2i(100, 100),
@@ -845,7 +845,7 @@ SCENARIO("Surface - local updates")
 		{
 			surface.update(
 				Vec2i(-1, -1), Vec2i(1, 1),
-				[](const Vec2i& pos, const auto& isogrid) {
+				[](const Vec2i& pos, const Surface::IsoGrid& isogrid) {
 					(void)pos; (void)isogrid;
 					return -0.6f;
 				}
@@ -888,7 +888,7 @@ SCENARIO("Surface - layer interactions")
 	GIVEN("a 16x9 2-layer surface with two small regions side-by-side")
 	{
 		Surface<2, 2> surface(Vec2i(16, 9), Vec2i::Constant(3));
-		Impl::Grid::Snapshot<FLOAT, 2> isogrid_check(Vec2i(16, 9), Vec2i::Zero(), 0);
+		Impl::Grid::Snapshot<Distance, 2> isogrid_check(Vec2i(16, 9), Vec2i::Zero(), 0);
 
 		// Create two seed points and expand the narrow band.
 		surface.seed(Vec2i(-4, 0));
@@ -974,7 +974,7 @@ SCENARIO("Surface - layer interactions")
 
 		WHEN("we expand/contract the subsurfaces towards one-another")
 		{
-			for (UINT i = 0; i < 10; i++)
+			for (int i = 0; i < 10; i++)
 			{
 				surface.update_start();
 				surface.delta(Vec2i(-3, 0), -1.0f);
@@ -1016,7 +1016,7 @@ SCENARIO("Surface - layer interactions")
 
 				isogrid_check.array() =
 					isogrid_check.array() - surface.isogrid().snapshot()->array();
-				const FLOAT diff = isogrid_check.array().sum();
+				const Distance diff = isogrid_check.array().sum();
 				CHECK(diff == Approx(0));
 
 				CHECK(layer_size(surface, -2) == 0);
@@ -1202,8 +1202,8 @@ SCENARIO("Surface - layer interactions")
 
 				isogrid_check.array() =
 					isogrid_check.array() - surface.isogrid().snapshot()->array();
-				const FLOAT diff = isogrid_check.array().sum();
-				CHECK(diff == Approx(0).epsilon(0.000001f));
+				const Distance diff = isogrid_check.array().sum();
+				CHECK(diff == Approx(0));
 
 				CHECK(layer_size(surface, -3) == 0);
 				CHECK(layer_size(surface, -2) == 0);
@@ -1260,7 +1260,7 @@ SCENARIO("Surface - layer interactions")
 				isogrid_check.array() =
 					isogrid_check.array() - surface.isogrid().snapshot()->array();
 				const Distance diff = isogrid_check.array().sum();
-				CHECK(diff == Approx(0).epsilon(0.000001f));
+				CHECK(diff == Approx(0));
 
 				CHECK(layer_size(surface, -3) == 0);
 				CHECK(layer_size(surface, -2) == 0);
@@ -1379,9 +1379,9 @@ GIVEN(
 		Matrix mat_rot(Matrix::Identity());
 
 		auto check = [&](const Vec3f& axis_) {
-			for (FLOAT rot_mult = 0; rot_mult < 2.0f; rot_mult += 0.1f)
+			for (Distance rot_mult = 0; rot_mult < 2.0f; rot_mult += 0.1f)
 			{
-				mat_rot = Eigen::AngleAxisf(rot_mult * FLOAT(M_PI), axis_).matrix();
+				mat_rot = Eigen::AngleAxisf(rot_mult * Distance(M_PI), axis_).matrix();
 				const Vec3f origin = mat_rot*Vec3f(0, 0, -10.0f);
 				const Vec3f dir = (mat_rot*Vec3f(0, 0, 1)).normalized();
 
@@ -1430,7 +1430,6 @@ GIVEN("a 2-layer surface of radius 3 in a 16x16 grid with 3x3 partitions")
 	surface.update([]() {
 		return -1.0f;
 	});
-	FLOAT leftover;
 
 	INFO(stringify_grid_slice(surface.isogrid()));
 
@@ -1460,7 +1459,6 @@ GIVEN("a 2-layer surface of radius 3 in a 16x16 grid with 3x3 partitions")
 	surface.update([]() {
 		return -1.0f;
 	});
-	FLOAT leftover;
 
 	INFO(stringify_grid_slice(surface.isogrid()));
 
@@ -1500,9 +1498,9 @@ GIVEN(
 		auto check = [&](const Vec3f& axis_) {
 			Vec3f pos_hit;
 
-			for (FLOAT rot_mult = 0; rot_mult < 2.0f; rot_mult += 0.1f)
+			for (Distance rot_mult = 0; rot_mult < 2.0f; rot_mult += 0.1f)
 			{
-				mat_rot = Eigen::AngleAxisf(rot_mult * FLOAT(M_PI), axis_).matrix();
+				mat_rot = Eigen::AngleAxisf(rot_mult * Distance(M_PI), axis_).matrix();
 				const Vec3f origin = mat_rot*Vec3f(0, 0, -10.0f);
 				const Vec3f dir = (mat_rot*Vec3f(0, 0, 1)).normalized();
 
@@ -1511,8 +1509,8 @@ GIVEN(
 
 				// ==== Confirm ====
 				INFO(
-					"Ray hit from " + Felt::format(origin) + " in direction " + Felt::format(dir) +
-					" should not be NULL_POS"
+					"Ray from " + Felt::format(origin) + " in direction " + Felt::format(dir) +
+					" should not miss"
 				);
 				CHECK(pos_hit != surface.ray_miss);
 			}
@@ -1539,6 +1537,7 @@ GIVEN(
 
 SCENARIO("Surface - stats")
 {
+
 GIVEN("a 2-layer 2D surface in a 7x7 isogrid with 3x3 spatial partitions")
 {
 	using Surface = Felt::Surface<2, 2>;
@@ -1562,7 +1561,7 @@ GIVEN("a 2-layer 2D surface in a 7x7 isogrid with 3x3 spatial partitions")
 		{
 			Surface::Stats stats = surface.stats();
 
-			THEN("stats report number of isogrid partitions is 1")
+			THEN("stats report number of isogrid partitions correctly")
 			{
 				CHECK(stats.isogrid_partitions == 4);
 			}
@@ -1578,7 +1577,7 @@ GIVEN("a 2-layer 2D surface in a 7x7 isogrid with 3x3 spatial partitions")
 			{
 				Surface::Stats stats = surface.stats();
 
-				THEN("stats report number of isogrid partitions is 3")
+				THEN("stats report number of isogrid partitions correctly")
 				{
 					CHECK(stats.isogrid_partitions == 6);
 				}
@@ -1604,7 +1603,7 @@ GIVEN("a 3-layer flat surface in an 20x20x20 grid with 16x16x16 partitions")
 		(void)pos_; (void)isogrid_;
 		return -1.0f;
 	});
-	for (UINT i = 0; i < 10; i++)
+	for (int i = 0; i < 10; i++)
 		surface.update([](const auto& pos_, const auto& isogrid_) {
 			(void)pos_; (void)isogrid_;
 			if (std::abs(pos_(1)) > 1)
@@ -1663,7 +1662,7 @@ GIVEN("a 3-layer flat surface in an 50x50x50 grid with 16x16x16 partitions")
 		(void)pos_; (void)isogrid_;
 		return -1.0f;
 	});
-	for (UINT i = 0; i < 20; i++)
+	for (int i = 0; i < 20; i++)
 		surface.update([](const auto& pos_, const auto& isogrid_) {
 			(void)pos_; (void)isogrid_;
 			if (std::abs(pos_(1)) > 1)

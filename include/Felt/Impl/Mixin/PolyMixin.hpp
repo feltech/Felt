@@ -49,7 +49,7 @@ struct Geom<TDerived, 2>
 		Vertex(const Grid* grid, const Pos& pos)
 		{
 			(void)grid;
-			this->pos = pos.template cast<FLOAT>();
+			this->pos = pos.template cast<Distance>();
 		}
 
 		/**
@@ -73,7 +73,7 @@ struct Geom<TDerived, 2>
 	 */
 	struct Edge {
 		Vec2i offset;
-		INT axis;
+		Dim axis;
 	};
 
 	/**
@@ -142,7 +142,7 @@ struct Geom<TDerived, 3> {
 		template <typename Pos, class Grid>
 		Vertex(const Grid* grid, const Pos& pos)
 		{
-			this->pos = pos.template cast<FLOAT>();
+			this->pos = pos.template cast<Distance>();
 			this->norm = grid->grad(pos);
 			this->norm.normalize();
 		}
@@ -168,7 +168,7 @@ struct Geom<TDerived, 3> {
 	 */
 	struct Edge {
 		Vec3i offset;
-		INT axis;
+		Dim axis;
 	};
 
 	/**

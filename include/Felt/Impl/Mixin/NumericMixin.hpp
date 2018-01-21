@@ -81,7 +81,7 @@ protected:
 		// Forward directed principal normal.
 		VecDT n_forward;
 
-		for (INT axis = 0; axis < size.size(); axis++)
+		for (TupleIdx axis = 0; axis < size.size(); axis++)
 		{
 			dir(axis) += 1;
 
@@ -89,7 +89,7 @@ protected:
 			Leaf val_neighs_sq = 0;
 
 			// Loop other dimensions to get central difference across them.
-			for (INT axis_neigh = 0; axis_neigh < size.size(); axis_neigh++)
+			for (TupleIdx axis_neigh = 0; axis_neigh < size.size(); axis_neigh++)
 			{
 				// Only getting differences across other axes.
 				if (axis_neigh != axis)
@@ -116,7 +116,7 @@ protected:
 		// Backward directed principal normal.
 		VecDT n_backward;
 
-		for (INT axis = 0; axis < size.size(); axis++)
+		for (TupleIdx axis = 0; axis < size.size(); axis++)
 		{
 			dir(axis) -= 1;
 
@@ -125,7 +125,7 @@ protected:
 
 			// Loop other dimensions to get central difference across them.
 			for (
-				INT axis_neigh = 0; axis_neigh < size.size(); axis_neigh++
+				TupleIdx axis_neigh = 0; axis_neigh < size.size(); axis_neigh++
 			) {
 				// Only getting differences across other axes.
 				if (axis_neigh != axis)
@@ -252,7 +252,7 @@ protected:
 		// Position for look-around.
 		VecDp pos_test(pos_);
 
-		for (INT axis = 0; axis < size.size(); axis++)
+		for (Dim axis = 0; axis < size.size(); axis++)
 		{
 			pos_test(axis) -= 1;
 			Leaf back = pself->get(pos_test);
@@ -287,7 +287,7 @@ protected:
 		// Position for look-ahead.
 		Felt::VecDT<Pos, t_dims> pos_neigh(pos_);
 
-		for (INT axis = 0; axis < size.size(); axis++)
+		for (Dim axis = 0; axis < size.size(); axis++)
 		{
 			pos_neigh(axis) += 1;
 			vec_grad(axis) = pself->get(pos_neigh) - centre;
@@ -316,7 +316,7 @@ protected:
 		// Position for look-behind.
 		Felt::VecDT<Pos, t_dims> vec_dir(pos_);
 
-		for (INT axis = 0; axis < size.size(); axis++) {
+		for (Dim axis = 0; axis < size.size(); axis++) {
 			vec_dir(axis) -= 1;
 			vec_grad(axis) = centre - pself->get(vec_dir);
 			vec_dir(axis) += 1;
@@ -341,7 +341,7 @@ protected:
 		// Position for look-around.
 		Felt::VecDT<Pos, t_dims> vec_dir(pos_);
 
-		for (INT axis = 0; axis < size.size(); axis++) {
+		for (Dim axis = 0; axis < size.size(); axis++) {
 			vec_dir(axis) -= 1;
 			const Leaf back = pself->get(vec_dir);
 			vec_dir(axis) += 2;
@@ -361,7 +361,7 @@ protected:
 	 *
 	 * @return representative spatial size of a leaf node.
 	 */
-	FLOAT dx () const
+	Distance dx () const
 	{
 		return m_dx;
 	}
@@ -373,7 +373,7 @@ protected:
 	 *
 	 * @param dx_ the new representative spatial size of a leaf node.
 	 */
-	void dx (const FLOAT dx_)
+	void dx (const Distance dx_)
 	{
 		m_dx = dx_;
 	}
@@ -403,7 +403,7 @@ protected:
 	Leaf interp (const VecDf& pos_) const
 	{
 		const VecDi& size = pself->size();
-		const VecDi& pos_floor = pos_.array().floor().matrix().template cast<INT>();
+		const VecDi& pos_floor = pos_.array().floor().matrix().template cast<NodeIdx>();
 
 		// Store all 2^d corners.
 		DataArray< Leaf > val_corners(PosIdx(1 << size.size()));
@@ -419,7 +419,7 @@ protected:
 			VecDi pos_corner(pos_floor);
 			for (Dim axis = 0; axis < pos_corner.size(); axis++)
 			{
-				const INT dir = (i >> axis) & 1;
+				const NodeIdx dir = (i >> axis) & 1;
 				pos_corner(axis) += dir;
 			}
 
@@ -468,7 +468,7 @@ protected:
 
 		// The weighting to be used in interpolating each pair of points.
 		// This is the position along the axis of interpolation.
-		const FLOAT axis_pos = pos_(axis_idx);
+		const Distance axis_pos = pos_(axis_idx);
 
 		for (ListIdx i = 0; i < num_out; i++)
 		{

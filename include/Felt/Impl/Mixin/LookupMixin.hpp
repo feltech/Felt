@@ -310,7 +310,7 @@ protected:
 			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 			bool found = false;
 
-			for (UINT list_idx = 0; list_idx < m_a_list_pos_idxs.size() && !found; list_idx++)
+			for (TupleIdx list_idx = 0; list_idx < m_a_list_pos_idxs.size() && !found; list_idx++)
 				if (m_a_list_pos_idxs[list_idx].size() >= idx)
 					found = true;
 
@@ -494,7 +494,7 @@ protected:
 			#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 			bool found = false;
 
-			for (UINT list_idx = 0; list_idx < m_a_list_pos_idxs.size() && !found; list_idx++)
+			for (TupleIdx list_idx = 0; list_idx < m_a_list_pos_idxs.size() && !found; list_idx++)
 				if (m_a_list_pos_idxs[list_idx].size() >= idx)
 					found = true;
 

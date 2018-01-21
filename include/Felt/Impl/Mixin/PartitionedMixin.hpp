@@ -46,7 +46,7 @@ private:
 	VecDi m_child_size;
 	/// Grid of child grids.
 	ChildrenGrid m_children;
-	/// Mutex used to synchrnonise the adding/removing of elements from the tracking list(s).
+	/// Mutex used to synchronise the adding/removing of elements from the tracking list(s).
 	std::mutex	m_mutex;
 
 protected:

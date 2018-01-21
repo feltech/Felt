@@ -39,7 +39,7 @@
 namespace Felt
 {
 /// Layer ID (in -L, ..., +L)
-using LayerId = INT;
+using LayerId = int;
 
 /**
  * Arbitrarily-dimensional sparse-field spatially partitioned level set surface.
@@ -206,7 +206,7 @@ public:
 	void seed (const VecDi& pos_centre_)
 	{
 		// Width of seed.
-		const VecDi& vec_width = VecDi::Constant(INT(s_layer_max));
+		const VecDi& vec_width = VecDi::Constant(NodeIdx(s_layer_max));
 
 		// Min and max positions affected by placing seed point.
 		const VecDi& pos_min = pos_centre_ - vec_width;
@@ -476,7 +476,7 @@ public:
 			const VecDf& pos_hit = ray(
 				pos_origin_, dir_,
 				m_grid_isogrid.children().get(
-					m_grid_isogrid.pos_child(pos_origin_.template cast<INT>())
+					m_grid_isogrid.pos_child(pos_origin_.template cast<NodeIdx>())
 				)
 			);
 			if (pos_hit != ray_miss)
@@ -538,7 +538,7 @@ public:
 			// Cast ray to plane and track any child grids hit on the way to tracking list.
 			// If child size is not a factor of grid size then this first cast could be to outside
 			// the grid.  So cannot quit early here and must try next child.
-			!ray_check_track_child(child_hits, line, Plane(normal, pos_plane(dim) * dir_dim));
+			ray_check_track_child(child_hits, line, Plane(normal, pos_plane(dim) * dir_dim));
 
 			// Round up/down to next child, in case we started at inexact modulo of child grid size
 			// (i.e. when isogrid grid size is not integer multiple of child grid size).
@@ -916,8 +916,7 @@ private:
 		using IsoChild = typename IsoGrid::Child;
 
 		const TupleIdx layer_idx_zero = layer_idx(0);
-		const PosIdxList& pos_idxs_children =  m_grid_delta.children().lookup().list(layer_idx_zero);
-
+		const PosIdxList& pos_idxs_children = m_grid_delta.children().lookup().list(layer_idx_zero);
 		const ListIdx num_childs = pos_idxs_children.size();
 
 		FELT_PARALLEL_FOR(num_childs, firstprivate(plookup_buffer_))
@@ -1238,16 +1237,15 @@ private:
 	}
 
 	/**
-	 * track new points to the narrow band when expanding/contracting.
+	 * Add new points to the narrow band when expanding/contracting.
 	 */
 	void expand_narrow_band()
 	{
 		using StatusChangeChild = typename StatusChangeGrid::Child;
 
 		// Cycle innermost layer and outermost layer.
-		for (
-			LayerId layer_id = s_layer_min; layer_id <= s_layer_max; layer_id += s_num_layers-1
-		) {
+		for (LayerId layer_id : std::array<LayerId, 2>{{s_layer_min, s_layer_max}})
+		{
 			const TupleIdx layer_idx = this->layer_idx(layer_id);
 
 			const PosIdxList& apos_children =
@@ -1255,7 +1253,8 @@ private:
 
 			const LayerId side = sgn(layer_id);
 
-			// TODO: it appears this is (no longer) thread-safe...
+			// TODO: not thread-safe - neighbouring nodes at edge of child grid could be in another
+			// child, so `get` and `track` calls below are unsafe. Perhaps worth a lock?
 //			#pragma omp parallel for
 			for (
 				ListIdx list_idx_child = 0; list_idx_child < apos_children.size();
@@ -1340,8 +1339,6 @@ private:
 
 							#endif
 
-							// Use thread-safe update and track function, since neighbouring point
-							// could be in another spatial partition.
 							this->m_grid_isogrid.track(distance_neigh, pos_neigh_, layer_idx);
 						}
 					);
@@ -1446,17 +1443,17 @@ private:
 	VecDf ray(
 		VecDf pos_sample, const VecDf& dir, const typename IsoGrid::Child& child
 	) const {
-		using Line = Eigen::ParametrizedLine<FLOAT, D>;
+		using Line = Eigen::ParametrizedLine<Distance, D>;
 
 		const Line line_leaf(pos_sample, dir);
-		FLOAT t_leaf = 0;
+		Distance t_leaf = 0;
 
 //		std::cerr << "Child: (" << child.offset().transpose() << ") + (" <<
 //			child.size().transpose() << ")" << std::endl;
 
 		while (child.inside(pos_sample))
 		{
-			const INT layer_id = this->layer_id(pos_sample);
+			const LayerId layer_id = this->layer_id(pos_sample);
 
 //			std::cerr << layer_id << std::endl;
 
@@ -1481,9 +1478,9 @@ private:
 
 				if (normal.dot(dir) < 0)
 				{
-					static const UINT MAX_CONVERGE_STEPS = 100;
-					UINT num_converge_steps = 0;
-					FLOAT dist = 0;
+					static constexpr int MAX_CONVERGE_STEPS = 100;
+					int num_converge_steps = 0;
+					Distance dist = 0;
 					for (; num_converge_steps < MAX_CONVERGE_STEPS; num_converge_steps++)
 					{
 						dist = m_grid_isogrid.interp(pos_sample);
@@ -1535,15 +1532,14 @@ private:
 	bool ray_check_track_child(
 		std::vector<ChildHit>& child_hits, const Line& line, const Plane& plane
 	) const {
-		const VecDf& pos_intersect = (
-			line.intersectionPoint(plane) + line.direction() * FLOAT(TINY)
-		);
+		const VecDf& pos_intersect =
+			line.intersectionPoint(plane) + line.direction() * Distance(TINY);
 
 		const VecDi& size = m_grid_isogrid.size();
 		const VecDi& offset = m_grid_isogrid.offset();
 		const VecDf& dir = line.direction();
 
-		for (UINT i = 0; i < dir.size(); i++)
+		for (Dim i = 0; i < dir.size(); i++)
 		{
 			if (
 				(dir(i) > 0 && pos_intersect(i) > Distance(size(i))) ||
@@ -1555,7 +1551,7 @@ private:
 		if (!m_grid_isogrid.inside(pos_intersect))
 			return true;
 
-		const VecDi& pos_floor = pos_intersect.array().floor().matrix().template cast<INT>();
+		const VecDi& pos_floor = pos_intersect.array().floor().matrix().template cast<NodeIdx>();
 		const PosIdx pos_idx_child = m_grid_isogrid.pos_idx_child(pos_floor);
 
 		if (
@@ -1690,10 +1686,7 @@ private:
 	 */
 	LayerId layer_id(const Distance val_) const
 	{
-		// Round to value+epsilon, to catch cases of precisely +/-0.5.
-		return boost::math::iround(
-			val_ + std::numeric_limits<FLOAT>::epsilon()
-		);
+		return boost::math::iround(val_ + std::numeric_limits<Distance>::epsilon());
 	}
 
 	/**
@@ -1705,7 +1698,7 @@ private:
 	template <typename Val>
 	bool inside_band (const Val& val) const
 	{
-		return (UINT)std::abs(val) <= s_layer_max;
+		return LayerId(std::abs(val)) <= s_layer_max;
 	}
 
 	/**

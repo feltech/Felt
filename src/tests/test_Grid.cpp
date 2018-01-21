@@ -18,7 +18,7 @@ using namespace Felt;
  */
 SCENARIO("Grid::Simple")
 {
-	using Grid = Impl::Grid::Simple<FLOAT, 3>;
+	using Grid = Impl::Grid::Simple<Distance, 3>;
 	/// [Grid - basics: GIVEN 3x7x11]
 	GIVEN("a 3x7x11 grid with no offset and background value of 0")
 	{
@@ -113,14 +113,14 @@ SCENARIO("Grid::Simple")
 
 SCENARIO("Grid::Snapshot")
 {
-	using Grid = Impl::Grid::Snapshot<FLOAT, 3>;
+	using Grid = Impl::Grid::Snapshot<Distance, 3>;
 	GIVEN("a 7x11x13 grid with (-3,-3,-3) offset and background value of 2")
 	{
 		Grid grid(Vec3i(7, 11, 13), Vec3i(-3, -3, -3), 2);
 
 		static_assert(
 			std::is_same<
-				Grid::VArrayData, Eigen::Map< Eigen::Array<FLOAT, 1, Eigen::Dynamic> >
+				Grid::VArrayData, Eigen::Map< Eigen::Array<Distance, 1, Eigen::Dynamic> >
 			>::value,
 			"Vector form of underlying data should be an Eigen::Map to an Eigen::Array type"
 		);
@@ -905,7 +905,7 @@ SCENARIO("Tracked::LazySingleByValue")
 {
 	GIVEN("a 3x3x3 grid with (-1,-1,-1) offset and background value of 3.14159")
 	{
-		using Grid = Impl::Tracked::LazyMultiListSingleIdxByValue<FLOAT, 3, 3>;
+		using Grid = Impl::Tracked::LazyMultiListSingleIdxByValue<Distance, 3, 3>;
 
 //		static_assert(
 //			std::experimental::is_detected<has_reset_t, GridType>::value,
@@ -1051,7 +1051,7 @@ SCENARIO("Tracked::MultiByRef")
 {
 	GIVEN("a 9x9x9 grid of floats with (-4,-4,-4) offset and background value of 0")
 	{
-		using Grid = Impl::Tracked::MultiListMultiIdxByRef<FLOAT, 3, 3>;
+		using Grid = Impl::Tracked::MultiListMultiIdxByRef<Distance, 3, 3>;
 		using IndexTuple = Tuple<ListIdx, 3>;
 
 //		static_assert(
@@ -1065,7 +1065,7 @@ SCENARIO("Tracked::MultiByRef")
 		THEN("the grid size is as expected and is initialised to all zero")
 		{
 			CHECK(grid.data().size() == 9*9*9);
-			for (const FLOAT val : grid.data())
+			for (const Distance val : grid.data())
 				CHECK(val == 0);
 		}
 
@@ -1302,7 +1302,7 @@ SCENARIO("Paritioned::Lookup")
 
 SCENARIO("Paritioned::Tracked::Simple")
 {
-	using Grid = Impl::Partitioned::Tracked::Simple<INT, 3, 3>;
+	using Grid = Impl::Partitioned::Tracked::Simple<int, 3, 3>;
 
 	GIVEN("a 9x9x9 grid with (-4,-4,-4) offset in 3x3x3 partitions with background value -42")
 	{
@@ -1517,7 +1517,7 @@ SCENARIO("Paritioned::Tracked::Simple")
 
 SCENARIO("Paritioned::Tracked::Numeric")
 {
-	using Grid = Impl::Partitioned::Tracked::Numeric<FLOAT, 3, 3>;
+	using Grid = Impl::Partitioned::Tracked::Numeric<Distance, 3, 3>;
 
 	GIVEN("a 9x9x9 grid with (-4,-4,-4) offset in 3x3x3 partitions with background value -42")
 	{
@@ -1583,15 +1583,15 @@ SCENARIO("Paritioned::Tracked::Numeric")
 
 			AND_WHEN("all grid points in list 0 are iterated over and their values stored")
 			{
-				std::vector<FLOAT> aval;
+				std::vector<Distance> aval;
 
 				grid.leafs(0, [&aval, &grid](const auto& pos_) {
 					aval.push_back(grid.get(pos_));
 				});
 
-				THEN("array of recorder values is correct and in expected order")
+				THEN("array of recorded values is correct and in expected order")
 				{
-					std::vector<FLOAT>aval_check {345, 789};
+					std::vector<Distance>aval_check {345, 789};
 					CHECK(aval_check == aval);
 				}
 			}
@@ -1758,7 +1758,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 			{
 				static_assert(
 					std::is_same<
-						Grid::SnapshotPtr, std::unique_ptr< Impl::Grid::Snapshot<FLOAT, 3> >
+						Grid::SnapshotPtr, std::unique_ptr< Impl::Grid::Snapshot<Distance, 3> >
 					>::value,
 					"Snapshot grid must be smart pointer to a simple Grid::Snapshot."
 				);
@@ -1870,15 +1870,14 @@ SCENARIO("Paritioned::Tracked::Numeric")
 		}
 	} // End GIVEN a 9x9x9 grid.
 
-
 	GIVEN("A 1D grid type and input vector of values")
 	{
-		using Grid = Impl::Partitioned::Tracked::Numeric<FLOAT, 1, 3>;
-		std::vector<FLOAT> input = { 1.0f, 0 };
+		using Grid = Impl::Partitioned::Tracked::Numeric<Distance, 1, 3>;
+		std::vector<Distance> input = { 1.0f, 0 };
 
 		WHEN("we interpolate a distance of 0.3 between the vector values")
 		{
-			using Vec1f = Eigen::Matrix<FLOAT, 1, 1>;
+			using Vec1f = Eigen::Matrix<Distance, 1, 1>;
 			const Vec1f pos(0.3);
 
 			Grid::interp(input, pos);
@@ -1893,9 +1892,9 @@ SCENARIO("Paritioned::Tracked::Numeric")
 
 	GIVEN("A 2D grid type and input vector of values")
 	{
-		using Grid = Impl::Partitioned::Tracked::Numeric<FLOAT, 2, 3>;
+		using Grid = Impl::Partitioned::Tracked::Numeric<Distance, 2, 3>;
 
-		std::vector<FLOAT> input = std::vector<FLOAT>(4);
+		std::vector<Distance> input = std::vector<Distance>(4);
 		input[0 /*00*/] = 2.0f;
 		input[1 /*01*/] = 0;
 		input[2 /*10*/] = 0.0f;
@@ -1937,9 +1936,9 @@ SCENARIO("Paritioned::Tracked::Numeric")
 				|/		 |/
 				000----001
 		*/
-		using Grid = Impl::Partitioned::Tracked::Numeric<FLOAT, 3, 3>;
+		using Grid = Impl::Partitioned::Tracked::Numeric<Distance, 3, 3>;
 
-		std::vector<FLOAT> input = std::vector<FLOAT>(8);
+		std::vector<Distance> input = std::vector<Distance>(8);
 		input[0 /**000*/] = 0.0f;
 		input[1 /**001*/] = 0.8f;
 		input[2 /**010*/] = 1.0f;
@@ -1993,7 +1992,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 
 	GIVEN("a 3x3 grid with (-1,-1) offset and background value of 0")
 	{
-		using Grid = Impl::Partitioned::Tracked::Numeric<FLOAT, 2, 3>;
+		using Grid = Impl::Partitioned::Tracked::Numeric<Distance, 2, 3>;
 		Grid grid(Vec2i(3, 3), Vec2i(-1,-1), Vec2i(3,3), 0);
 		// Only a single partition in this case.
 		grid.children().get(0).activate();
@@ -2023,9 +2022,9 @@ SCENARIO("Paritioned::Tracked::Numeric")
 
 			AND_WHEN("we interpolate at some real locations using explicit function calls")
 			{
-				const FLOAT val1 = grid.interp(Vec2f(0.0f, 0.0f));
-				const FLOAT val2 = grid.interp(Vec2f(-0.5f, -0.5f));
-				const FLOAT val3 = grid.interp(Vec2f(0.5f, 0.5f));
+				const Distance val1 = grid.interp(Vec2f(0.0f, 0.0f));
+				const Distance val2 = grid.interp(Vec2f(-0.5f, -0.5f));
+				const Distance val3 = grid.interp(Vec2f(0.5f, 0.5f));
 
 				THEN("the interpolated values are correct")
 				{
@@ -2037,7 +2036,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 
 			AND_WHEN("we implicitly interpolate at a real location using value getter")
 			{
-				const FLOAT val = grid.get(Vec2f(0.5f, 0.5f));
+				const Distance val = grid.get(Vec2f(0.5f, 0.5f));
 
 				THEN("the interpolated value is correct")
 				{
@@ -2227,7 +2226,7 @@ SCENARIO("Paritioned::Tracked::Numeric")
 
 	GIVEN("a 3x3x3 grid with (-1,-1,-1) offset and background value of 0")
 	{
-		using Grid = Impl::Partitioned::Tracked::Numeric<FLOAT, 3, 3>;
+		using Grid = Impl::Partitioned::Tracked::Numeric<Distance, 3, 3>;
 
 		Grid grid(Vec3i(3, 3, 3), Vec3i(-1,-1,-1), Vec3i(3,3,3), 0);
 		grid.children().get(0).activate();

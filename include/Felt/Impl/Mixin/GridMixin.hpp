@@ -74,8 +74,8 @@ protected:
 	 */
 	void activate()
 	{
-		INT arr_size = pself->m_size(0);
-		for (INT i = 1; i < pself->m_size.size(); i++)
+		NodeIdx arr_size = pself->m_size(0);
+		for (TupleIdx i = 1; i < pself->m_size.size(); i++)
 			arr_size *= pself->m_size(i);
 		pself->m_data.resize(PosIdx(arr_size), m_background);
 	}
@@ -391,7 +391,7 @@ protected:
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_, "ref: ");
 		#endif
-		const UINT idx = pself->index(pos_);
+		const ListIdx idx = pself->index(pos_);
 		return ref(idx);
 	}
 
@@ -403,7 +403,7 @@ protected:
 		#if defined(FELT_EXCEPTIONS) || !defined(NDEBUG)
 		pself->assert_pos_bounds(pos_, "ref: ");
 		#endif
-		const UINT idx = pself->index(pos_);
+		const ListIdx idx = pself->index(pos_);
 		return ref(idx);
 	}
 };
