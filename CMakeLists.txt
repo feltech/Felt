@@ -14,14 +14,16 @@ set(EIGEN3_INCLUDE_DIR /usr/include/eigen3 CACHE PATH "Eigen include directory")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_ROOT}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_ROOT}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_ROOT}/bin)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories(
 	${PROJECT_ROOT}/include ${EIGEN3_INCLUDE_DIR}
 )
 
 add_definitions(
-	-std=c++14 -fopenmp -Wfatal-errors -fdiagnostics-color=auto -DCATCH_CONFIG_CONSOLE_WIDTH=200
-	-DFELT_EXCEPTIONS -Wall -Wextra -Wconversion -Wsign-conversion
+	-std=c++14 -fopenmp  -DFELT_EXCEPTIONS -DCATCH_CONFIG_CONSOLE_WIDTH=200
+	 -Wfatal-errors -Wall -Wextra -Wconversion -Wsign-conversion
+	-fdiagnostics-parseable-fixits -fdiagnostics-color=always -fdiagnostics-generate-patch -g3
 )
 
 # C++ unit tests
