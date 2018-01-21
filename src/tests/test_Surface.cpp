@@ -1549,7 +1549,8 @@ GIVEN("a 2-layer 2D surface in a 7x7 isogrid with 3x3 spatial partitions")
 
 		THEN("stats are at their initial values")
 		{
-			CHECK(stats.isogrid_partitions == 0);
+			CHECK(stats.active_isogrid_partitions == 0);
+			CHECK(stats.active_delta_partitions == 0);
 		}
 	}
 
@@ -1563,7 +1564,8 @@ GIVEN("a 2-layer 2D surface in a 7x7 isogrid with 3x3 spatial partitions")
 
 			THEN("stats report number of isogrid partitions correctly")
 			{
-				CHECK(stats.isogrid_partitions == 4);
+				CHECK(stats.active_isogrid_partitions == 4);
+				CHECK(stats.active_delta_partitions == 0);
 			}
 		}
 
@@ -1579,7 +1581,9 @@ GIVEN("a 2-layer 2D surface in a 7x7 isogrid with 3x3 spatial partitions")
 
 				THEN("stats report number of isogrid partitions correctly")
 				{
-					CHECK(stats.isogrid_partitions == 6);
+					CHECK(stats.active_isogrid_partitions == 6);
+					// Expansion added more spatial partitions, without adding to delta.
+					CHECK(stats.active_delta_partitions == 4);
 				}
 			}
 
@@ -1595,17 +1599,14 @@ GIVEN("a 3-layer flat surface in an 20x20x20 grid with 16x16x16 partitions")
 {
 	Surface<3, 3> surface(Vec3i(20, 20, 20), Vec3i(16, 16, 16));
 	surface.seed(Vec3i(0,0,0));
-	surface.update([](const auto& pos_, const auto& isogrid_) {
-		(void)pos_; (void)isogrid_;
+	surface.update([]() {
 		return -1.0f;
 	});
-	surface.update([](const auto& pos_, const auto& isogrid_) {
-		(void)pos_; (void)isogrid_;
+	surface.update([]() {
 		return -1.0f;
 	});
 	for (int i = 0; i < 10; i++)
-		surface.update([](const auto& pos_, const auto& isogrid_) {
-			(void)pos_; (void)isogrid_;
+		surface.update([](const auto& pos_) {
 			if (std::abs(pos_(1)) > 1)
 				return 0.0f;
 			else

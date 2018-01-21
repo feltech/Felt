@@ -77,10 +77,6 @@ public:
 	using IsoGrid = Impl::Partitioned::Tracked::Numeric<Distance, D, s_num_layers>;
 private:
 	/**
-	 * D-dimensional unsigned int vector.
-	 */
-	using VecDu = Felt::VecDu<D>;
-	/**
 	 * D-dimensional integer vector.
 	 */
 	using VecDi = Felt::VecDi<D>;
@@ -143,7 +139,8 @@ public:
 
 	struct Stats
 	{
-		ListIdx isogrid_partitions;
+		ListIdx active_isogrid_partitions;
+		ListIdx active_delta_partitions;
 	};
 
 	/**
@@ -623,7 +620,8 @@ public:
 	Stats stats() const
 	{
 		return Stats{
-			num_active_partitions(m_grid_isogrid)
+			num_active_partitions(m_grid_isogrid),
+			num_active_partitions(m_grid_delta)
 		};
 	}
 
@@ -731,6 +729,9 @@ private:
 
 	/**
 	 * Update zero layer then update distance transform for all points in all layers.
+	 *
+	 * Must do two (or more) passes to clean up singularities and deal with corner cases where
+	 * outer layer distances are not quite consistent after layer promotion.
 	 */
 	void update_end_global ()
 	{
@@ -760,6 +761,9 @@ private:
 	/**
 	 * Find all outer layer points who's distance transform is affected by modified zero-layer
 	 * points.
+	 *
+	 * Must do two (or more) passes to clean up singularities and deal with corner cases where
+	 * outer layer distances are not quite consistent after layer promotion.
 	 *
 	 * TODO: several options for optimisation of removing duplicates:
 	 * - Use a boolean flag grid to construct a de-duped vector (used here).
