@@ -23,7 +23,7 @@ include_directories(
 add_definitions(
 	-std=c++14 -fopenmp  -DFELT_EXCEPTIONS -DCATCH_CONFIG_CONSOLE_WIDTH=200
 	 -Wfatal-errors -Wall -Wextra -Wconversion -Wsign-conversion
-	-fdiagnostics-parseable-fixits -fdiagnostics-color=always -fdiagnostics-generate-patch -g3
+	-parseable-fixits -fdiagnostics-color=always -g3
 )
 
 # C++ unit tests
