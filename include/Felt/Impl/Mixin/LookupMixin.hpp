@@ -36,8 +36,6 @@ protected:
 	using Base =  Grid::Activate<TDerived>;
 	/// Traits of derived class.
 	using Traits = Impl::Traits<TDerived>;
-	/// Number of tracking lists.
-	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 
 	// Base class methods.
 	using Base::Activate;

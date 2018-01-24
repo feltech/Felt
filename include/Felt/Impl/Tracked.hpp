@@ -103,8 +103,6 @@ private:
 	using Lookup = typename Traits::Lookup;
 
 public:
-	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
-
 	SingleListSingleIdxByRef(const VecDi& size_, const VecDi& offset_, const Leaf background_) :
 		ActivateImpl{background_}, SizeImpl{size_, offset_},
 		LookupInterfaceImpl{Lookup{size_, offset_}}
@@ -149,8 +147,6 @@ private:
 	using Lookup = typename Traits::Lookup;
 
 public:
-	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
-
 	SingleListSingleIdxByValue(const VecDi& size_, const VecDi& offset_, const Leaf background_) :
 		ActivateImpl{background_}, SizeImpl{size_, offset_},
 		LookupInterfaceImpl{Lookup{size_, offset_}}

@@ -26,8 +26,6 @@ private:
 	using Traits = Impl::Traits<TDerived>;
 	/// Type of data to store in grid nodes.
 	using Leaf = typename Traits::Leaf;
-	/// Number of tracking lists.
-	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 
 protected:
 	using Base::Activate;
@@ -94,8 +92,6 @@ private:
 
 	/// Dimensions of the grid.
 	static constexpr Dim t_dims = Traits::t_dims;
-	/// Number of tracking lists.
-	static constexpr TupleIdx t_num_lists = Traits::t_num_lists;
 
 	/// Integer vector.
 	using VecDi = Felt::VecDi<t_dims>;
