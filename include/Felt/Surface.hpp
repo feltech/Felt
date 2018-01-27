@@ -2,7 +2,6 @@
 #define Impl_Surface_hpp
 #include <Felt/Impl/Common.hpp>
 #include <Felt/Impl/Partitioned.hpp>
-#include <Felt/Impl/Partitioned.hpp>
 #include <Felt/Impl/Util.hpp>
 
 #include <vector>
