@@ -381,9 +381,9 @@ protected:
 	 * @param list_idx index of tracking list.
 	 * @return reference to list.
 	 */
-	const PosIdxList& list(const TupleIdx list_idx) const
+	const PosIdxList& list(const TupleIdx list_idx_) const
 	{
-		return this->m_grid_lookup.list(list_idx);
+		return this->m_grid_lookup.list(list_idx_);
 	}
 
 	/**
@@ -392,9 +392,9 @@ protected:
 	 * @param list_idx index of tracking list.
 	 * @return reference to list.
 	 */
-	PosIdxList& list(const TupleIdx list_idx)
+	PosIdxList& list(const TupleIdx list_idx_)
 	{
-		return this->m_grid_lookup.list(list_idx);
+		return this->m_grid_lookup.list(list_idx_);
 	}
 };
 
