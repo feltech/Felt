@@ -306,7 +306,6 @@ public:
 	void update(const VecDi& pos_leaf_lower_, const VecDi& pos_leaf_upper_, Fn&& fn_)
 	{
 		static const VecDi& one = VecDi::Constant(1);
-		static const VecDi& two = VecDi::Constant(2);
 		// Upper and lower bounds of the grid, inclusive.
 		const VecDi& pos_grid_lower = m_grid_isogrid.offset();
 		const VecDi& pos_grid_upper =
