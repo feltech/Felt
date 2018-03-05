@@ -257,12 +257,12 @@ struct Geom<TDerived, 3> {
  * Relative position of corners in CCW order.
  */
 template <class TDerived>
-const std::array<Vec2i, 4> Geom<TDerived, 2>::corners = {
+const std::array<Vec2i, 4> Geom<TDerived, 2>::corners = {{
 	Vec2i(0, 0),
 	Vec2i(1, 0),
 	Vec2i(1, 1),
 	Vec2i(0, 1)
-};
+}};
 
 /*
  * Array of edge definitions (offset, direction) matching ::corners.
@@ -374,7 +374,7 @@ const unsigned short Geom<TDerived, 3>::vtx_mask [] = {
  * Given node, march cube toward back, up and right (0,0,0)->(1,1,-1).
  */
 template <class TDerived>
-const std::array<Vec3i, 8> Geom<TDerived, 3>::corners = {
+const std::array<Vec3i, 8> Geom<TDerived, 3>::corners = {{
 	Vec3i( 0,  0,  0),	// c0
 	Vec3i( 1,  0,  0),	// c1
 	Vec3i( 1,  0, -1),	// c2
@@ -383,7 +383,7 @@ const std::array<Vec3i, 8> Geom<TDerived, 3>::corners = {
 	Vec3i( 1,  1,  0),	// c5
 	Vec3i( 1,  1, -1),	// c6
 	Vec3i( 0,  1, -1)	// c7
-};
+}};
 
 /**
  * Array of edge definitions (offset, direction) matching ::corners.
