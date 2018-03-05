@@ -4,6 +4,7 @@ Deformable surface simulation and visualisation library
 [![Build Status](https://travis-ci.org/feltech/Felt.svg?branch=master)](https://travis-ci.org/feltech/Felt)
 
 **Documentation: http://feltech.github.io/Felt/**
+**Source: http://feltech.github.io/Felt/**
 
 Felt is an implementation of the
 [sparse field level set](https://en.wikipedia.org/wiki/Level_set_(data_structures)#Sparse_field)
@@ -21,7 +22,19 @@ Felt leverages C++14 and is header-only, with a dependencies on [boost](http://w
 [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) libraries.
 
 
-## To do
+# Features
+* Level set isosurface with arbitrary spatial dimension. Create 2D, 3D or mind bending
+n-dimensional surfaces.
+* 2D and 3D polygonisations (lines and triangles, respectively), with iterative updates as the
+surface evolves.
+* Mutate the surface with lambdas, or any other functor, which are inlined and automatically
+parallelised.
+* Common numerical functions for simple spatial derivatives.
+* Serialisation to/from arbitrary output/input streams.
+* Spatially partitioned for low memory usage and fast updates.
+* OpenMP parallelism for both surface updates and polygonisation.
+
+## Future
 The library is in a stable state, but the documentation needs work.
 
 There are Doxygen annotations for almost all functions and classes, and quite extensive test cases.
@@ -29,7 +42,7 @@ I aim to finish tidying up the test cases, which now use the awesome
 [Catch](https://github.com/philsquared/Catch) BDD style testing library, and use these as integral
 parts of the documentation via snippets.
 
-There is ongoing development to support the physics engine [Bullet](http://bulletphysics.org) via 
+There is ongoing development to support the physics engine [Bullet](http://bulletphysics.org) via
 the amazing game engine [Urho3D](https://urho3d.github.io/) in my test-bed demo app
 [UrFelt](https://github.com/feltech/UrFelt).  I aim to move the Bullet and Urho3D classes developed
 there to form an optional part of the main Felt project.
@@ -80,6 +93,6 @@ GIVEN("a 2-layer 2D surface in a 9x9 isogrid with 3x3 partitions")
 				isogrid_check.array() =
 					isogrid_check.array() - surface.isogrid().snapshot()->array();
 				const Distance diff = isogrid_check.array().sum();
-				
+
 				CHECK(diff == Approx(0));
 ```
