@@ -38,8 +38,8 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "_common_8hpp.html",
-"class_felt_1_1_impl_1_1_mixin_1_1_grid_1_1_size.html#abcae5dcb61b7355ef25f78f9fc8834a5",
-"struct_felt_1_1_impl_1_1_mixin_1_1_poly_1_1_geom_3_01_derived_00_013_01_4.html#a2400443ee95462163480d8d3b6b66011"
+"class_felt_1_1_impl_1_1_mixin_1_1_grid_1_1_activate.html#aee7c56e70be123d3f0bb89fe7e30af26",
+"namespace_felt_1_1_impl_1_1_mixin_1_1_numeric.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

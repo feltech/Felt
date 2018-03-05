@@ -1,8 +1,10 @@
 var class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs =
 [
-    [ "leafs", "class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#adfb8e7b4a20a288543435c65ee27f3f4", null ],
-    [ "mutex_children", "class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#ab3d3034cc56c56323a5a2ae6297dfca2", null ],
-    [ "pos_child", "class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#a495afdb2c6453a248c738b1de66fea24", null ],
-    [ "pos_idx_child", "class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#a8351ff3927a16aa88f4a632d0ae32c21", null ],
-    [ "track_child", "class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#ab74e54350dd1f154792e3c57dd070107", null ]
+    [ "Leafs", "class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#ab69d5d8da765cce2b85253543dac2fec", null ],
+    [ "Leafs", "class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#a65dfd6f1ba92298ca6864621fc22fb64", null ],
+    [ "leafs", "class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#ab388ee1310f2df17fd24b1467017aa17", null ],
+    [ "mutex_children", "class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#aa0ecd1f5f8627b1cea99a2ca6f975f1c", null ],
+    [ "pos_child", "class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#a95f36181ad34627ced19bfa1992dc062", null ],
+    [ "pos_idx_child", "class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#a17cf9462c2f9f1e2eb7169a636ce1777", null ],
+    [ "track_child", "class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#af40cd535e9705ef440e736392a5f952b", null ]
 ];

@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Felt: Felt::Impl::Mixin::Partitioned::Access&lt; Derived &gt; Class Template Reference</title>
+<title>Felt: Felt::Impl::Mixin::Partitioned::Access&lt; TDerived &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -35,7 +35,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Felt
-   &#160;<span id="projectnumber">3.0</span>
+   &#160;<span id="projectnumber">3.1</span>
    </div>
    <div id="projectbrief">Deformable surface library.</div>
   </td>
@@ -91,7 +91,7 @@ $(document).ready(function(){initNavTree('class_felt_1_1_impl_1_1_mixin_1_1_part
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">Felt::Impl::Mixin::Partitioned::Access&lt; Derived &gt; Class Template Reference</div>  </div>
+<div class="title">Felt::Impl::Mixin::Partitioned::Access&lt; TDerived &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -99,27 +99,90 @@ $(document).ready(function(){initNavTree('class_felt_1_1_impl_1_1_mixin_1_1_part
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:a5f2d97fb32b28444f0a1208ccf9e817c"><td class="memItemLeft" align="right" valign="top">LeafType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html#a5f2d97fb32b28444f0a1208ccf9e817c">get</a> (const VecDi &amp;pos_) const</td></tr>
-<tr class="memdesc:a5f2d97fb32b28444f0a1208ccf9e817c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the leaf grid node at pos by navigating to the correct partition.  <a href="#a5f2d97fb32b28444f0a1208ccf9e817c">More...</a><br /></td></tr>
-<tr class="separator:a5f2d97fb32b28444f0a1208ccf9e817c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae0e46c9c19ba47ba12a75d2861dafaa3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html#ae0e46c9c19ba47ba12a75d2861dafaa3">set</a> (const VecDi &amp;pos_, const LeafType value_)</td></tr>
-<tr class="memdesc:ae0e46c9c19ba47ba12a75d2861dafaa3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the leaf grid node at pos by navigating to the correct partition.  <a href="#ae0e46c9c19ba47ba12a75d2861dafaa3">More...</a><br /></td></tr>
-<tr class="separator:ae0e46c9c19ba47ba12a75d2861dafaa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4364d5bb60056ac32b155082565d78a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html#ab4364d5bb60056ac32b155082565d78a">Access</a> ()=default</td></tr>
+<tr class="separator:ab4364d5bb60056ac32b155082565d78a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b6279e80da005d47cc8ab39f0c3fe8e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html#a5b6279e80da005d47cc8ab39f0c3fe8e">Access</a> (const Leaf background_)</td></tr>
+<tr class="separator:a5b6279e80da005d47cc8ab39f0c3fe8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a63e17ee9c13fc589ca25b5ecd117445f"><td class="memItemLeft" align="right" valign="top">Leaf&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html#a63e17ee9c13fc589ca25b5ecd117445f">get</a> (const VecDi &amp;pos_) const</td></tr>
+<tr class="memdesc:a63e17ee9c13fc589ca25b5ecd117445f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the leaf grid node at pos by navigating to the correct partition.  <a href="#a63e17ee9c13fc589ca25b5ecd117445f">More...</a><br /></td></tr>
+<tr class="separator:a63e17ee9c13fc589ca25b5ecd117445f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab55356a17c76efa2deb156fe2e522fcc"><td class="memTemplParams" colspan="2">template&lt;class Archive &gt; </td></tr>
+<tr class="memitem:ab55356a17c76efa2deb156fe2e522fcc"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html#ab55356a17c76efa2deb156fe2e522fcc">serialize</a> (Archive &amp;ar)</td></tr>
+<tr class="separator:ab55356a17c76efa2deb156fe2e522fcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae6311a1aacca06bed4378d88e011965f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html#ae6311a1aacca06bed4378d88e011965f">set</a> (const VecDi &amp;pos_, const Leaf value_)</td></tr>
+<tr class="memdesc:ae6311a1aacca06bed4378d88e011965f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the leaf grid node at pos by navigating to the correct partition.  <a href="#ae6311a1aacca06bed4378d88e011965f">More...</a><br /></td></tr>
+<tr class="separator:ae6311a1aacca06bed4378d88e011965f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Member Function Documentation</h2>
-<a id="a5f2d97fb32b28444f0a1208ccf9e817c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f2d97fb32b28444f0a1208ccf9e817c">&#9670;&nbsp;</a></span>get()</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="ab4364d5bb60056ac32b155082565d78a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4364d5bb60056ac32b155082565d78a">&#9670;&nbsp;</a></span>Access() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">LeafType <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html">Felt::Impl::Mixin::Partitioned::Access</a>&lt; Derived &gt;::get </td>
+          <td class="memname"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html">Felt::Impl::Mixin::Partitioned::Access</a>&lt; TDerived &gt;::<a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html">Access</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5b6279e80da005d47cc8ab39f0c3fe8e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b6279e80da005d47cc8ab39f0c3fe8e">&#9670;&nbsp;</a></span>Access() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class TDerived &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html">Felt::Impl::Mixin::Partitioned::Access</a>&lt; TDerived &gt;::<a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html">Access</a> </td>
+          <td>(</td>
+          <td class="paramtype">const Leaf&#160;</td>
+          <td class="paramname"><em>background_</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a63e17ee9c13fc589ca25b5ecd117445f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a63e17ee9c13fc589ca25b5ecd117445f">&#9670;&nbsp;</a></span>get()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class TDerived &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Leaf <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html">Felt::Impl::Mixin::Partitioned::Access</a>&lt; TDerived &gt;::get </td>
           <td>(</td>
           <td class="paramtype">const VecDi &amp;&#160;</td>
           <td class="paramname"><em>pos_</em></td><td>)</td>
@@ -144,19 +207,49 @@ template&lt;class Derived &gt; </div>
 
 </div>
 </div>
-<a id="ae0e46c9c19ba47ba12a75d2861dafaa3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae0e46c9c19ba47ba12a75d2861dafaa3">&#9670;&nbsp;</a></span>set()</h2>
+<a id="ab55356a17c76efa2deb156fe2e522fcc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab55356a17c76efa2deb156fe2e522fcc">&#9670;&nbsp;</a></span>serialize()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
+<div class="memtemplate">
+template&lt;class Archive &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html">Felt::Impl::Mixin::Partitioned::Access</a>&lt; Derived &gt;::set </td>
+          <td class="memname">void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html">Felt::Impl::Mixin::Partitioned::Access</a>&lt; TDerived &gt;::serialize </td>
+          <td>(</td>
+          <td class="paramtype">Archive &amp;&#160;</td>
+          <td class="paramname"><em>ar</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae6311a1aacca06bed4378d88e011965f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae6311a1aacca06bed4378d88e011965f">&#9670;&nbsp;</a></span>set()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class TDerived &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html">Felt::Impl::Mixin::Partitioned::Access</a>&lt; TDerived &gt;::set </td>
           <td>(</td>
           <td class="paramtype">const VecDi &amp;&#160;</td>
           <td class="paramname"><em>pos_</em>, </td>
@@ -164,7 +257,7 @@ template&lt;class Derived &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const LeafType&#160;</td>
+          <td class="paramtype">const Leaf&#160;</td>
           <td class="paramname"><em>value_</em>&#160;</td>
         </tr>
         <tr>

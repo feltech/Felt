@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Felt: Felt::Impl::Mixin::Partitioned::Leafs&lt; Derived &gt; Class Template Reference</title>
+<title>Felt: Felt::Impl::Mixin::Partitioned::Leafs&lt; TDerived &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -35,7 +35,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Felt
-   &#160;<span id="projectnumber">3.0</span>
+   &#160;<span id="projectnumber">3.1</span>
    </div>
    <div id="projectbrief">Deformable surface library.</div>
   </td>
@@ -91,7 +91,7 @@ $(document).ready(function(){initNavTree('class_felt_1_1_impl_1_1_mixin_1_1_part
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">Felt::Impl::Mixin::Partitioned::Leafs&lt; Derived &gt; Class Template Reference</div>  </div>
+<div class="title">Felt::Impl::Mixin::Partitioned::Leafs&lt; TDerived &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -99,31 +99,100 @@ $(document).ready(function(){initNavTree('class_felt_1_1_impl_1_1_mixin_1_1_part
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:adfb8e7b4a20a288543435c65ee27f3f4"><td class="memTemplParams" colspan="2">template&lt;typename Fn &gt; </td></tr>
-<tr class="memitem:adfb8e7b4a20a288543435c65ee27f3f4"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#adfb8e7b4a20a288543435c65ee27f3f4">leafs</a> (const <a class="el" href="namespace_felt.html#ac0aa3619b6010f552ff7995bbf775f3c">TupleIdx</a> layer_idx_, Fn &amp;&amp;fn_) const</td></tr>
-<tr class="memdesc:adfb8e7b4a20a288543435c65ee27f3f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Call lambda for each grid node in given tracking list.  <a href="#adfb8e7b4a20a288543435c65ee27f3f4">More...</a><br /></td></tr>
-<tr class="separator:adfb8e7b4a20a288543435c65ee27f3f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab3d3034cc56c56323a5a2ae6297dfca2"><td class="memItemLeft" align="right" valign="top">std::mutex &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#ab3d3034cc56c56323a5a2ae6297dfca2">mutex_children</a> ()</td></tr>
-<tr class="memdesc:ab3d3034cc56c56323a5a2ae6297dfca2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the mutex associated with modifications to the children grid (e.g.  <a href="#ab3d3034cc56c56323a5a2ae6297dfca2">More...</a><br /></td></tr>
-<tr class="separator:ab3d3034cc56c56323a5a2ae6297dfca2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a495afdb2c6453a248c738b1de66fea24"><td class="memItemLeft" align="right" valign="top">VecDi&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#a495afdb2c6453a248c738b1de66fea24">pos_child</a> (const VecDi &amp;pos_leaf_) const</td></tr>
-<tr class="memdesc:a495afdb2c6453a248c738b1de66fea24"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate the position of a child grid (i.e.  <a href="#a495afdb2c6453a248c738b1de66fea24">More...</a><br /></td></tr>
-<tr class="separator:a495afdb2c6453a248c738b1de66fea24"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8351ff3927a16aa88f4a632d0ae32c21"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespace_felt.html#a1e66c5b41c77671f2da11c7e7613f5e8">PosIdx</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#a8351ff3927a16aa88f4a632d0ae32c21">pos_idx_child</a> (const VecDi &amp;pos_leaf_) const</td></tr>
-<tr class="memdesc:a8351ff3927a16aa88f4a632d0ae32c21"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate the position of a child grid (i.e.  <a href="#a8351ff3927a16aa88f4a632d0ae32c21">More...</a><br /></td></tr>
-<tr class="separator:a8351ff3927a16aa88f4a632d0ae32c21"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab74e54350dd1f154792e3c57dd070107"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#ab74e54350dd1f154792e3c57dd070107">track_child</a> (const <a class="el" href="namespace_felt.html#a1e66c5b41c77671f2da11c7e7613f5e8">PosIdx</a> pos_idx_child_, const <a class="el" href="namespace_felt.html#ac0aa3619b6010f552ff7995bbf775f3c">TupleIdx</a> list_idx_)</td></tr>
-<tr class="memdesc:ab74e54350dd1f154792e3c57dd070107"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a spatial partition to children grid's tracking sub-grid.  <a href="#ab74e54350dd1f154792e3c57dd070107">More...</a><br /></td></tr>
-<tr class="separator:ab74e54350dd1f154792e3c57dd070107"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab69d5d8da765cce2b85253543dac2fec"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#ab69d5d8da765cce2b85253543dac2fec">Leafs</a> ()=default</td></tr>
+<tr class="separator:ab69d5d8da765cce2b85253543dac2fec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65dfd6f1ba92298ca6864621fc22fb64"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#a65dfd6f1ba92298ca6864621fc22fb64">Leafs</a> (<a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Leafs</a> &amp;&amp;)</td></tr>
+<tr class="memdesc:a65dfd6f1ba92298ca6864621fc22fb64"><td class="mdescLeft">&#160;</td><td class="mdescRight">No-op move constructor - this mixin only has a mutex.  <a href="#a65dfd6f1ba92298ca6864621fc22fb64">More...</a><br /></td></tr>
+<tr class="separator:a65dfd6f1ba92298ca6864621fc22fb64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab388ee1310f2df17fd24b1467017aa17"><td class="memTemplParams" colspan="2">template&lt;typename Fn &gt; </td></tr>
+<tr class="memitem:ab388ee1310f2df17fd24b1467017aa17"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#ab388ee1310f2df17fd24b1467017aa17">leafs</a> (const <a class="el" href="namespace_felt.html#aee7159e70bde70868b808b2637d06421">TupleIdx</a> layer_idx_, Fn &amp;&amp;fn_) const</td></tr>
+<tr class="memdesc:ab388ee1310f2df17fd24b1467017aa17"><td class="mdescLeft">&#160;</td><td class="mdescRight">Call lambda for each grid node in given tracking list.  <a href="#ab388ee1310f2df17fd24b1467017aa17">More...</a><br /></td></tr>
+<tr class="separator:ab388ee1310f2df17fd24b1467017aa17"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa0ecd1f5f8627b1cea99a2ca6f975f1c"><td class="memItemLeft" align="right" valign="top">std::mutex &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#aa0ecd1f5f8627b1cea99a2ca6f975f1c">mutex_children</a> ()</td></tr>
+<tr class="memdesc:aa0ecd1f5f8627b1cea99a2ca6f975f1c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the mutex associated with modifications to the children grid (e.g.  <a href="#aa0ecd1f5f8627b1cea99a2ca6f975f1c">More...</a><br /></td></tr>
+<tr class="separator:aa0ecd1f5f8627b1cea99a2ca6f975f1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a95f36181ad34627ced19bfa1992dc062"><td class="memItemLeft" align="right" valign="top">VecDi&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#a95f36181ad34627ced19bfa1992dc062">pos_child</a> (const VecDi &amp;pos_leaf_) const</td></tr>
+<tr class="memdesc:a95f36181ad34627ced19bfa1992dc062"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate the position of a child grid (i.e.  <a href="#a95f36181ad34627ced19bfa1992dc062">More...</a><br /></td></tr>
+<tr class="separator:a95f36181ad34627ced19bfa1992dc062"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17cf9462c2f9f1e2eb7169a636ce1777"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespace_felt.html#a1e66c5b41c77671f2da11c7e7613f5e8">PosIdx</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#a17cf9462c2f9f1e2eb7169a636ce1777">pos_idx_child</a> (const VecDi &amp;pos_leaf_) const</td></tr>
+<tr class="memdesc:a17cf9462c2f9f1e2eb7169a636ce1777"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate the position of a child grid (i.e.  <a href="#a17cf9462c2f9f1e2eb7169a636ce1777">More...</a><br /></td></tr>
+<tr class="separator:a17cf9462c2f9f1e2eb7169a636ce1777"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af40cd535e9705ef440e736392a5f952b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html#af40cd535e9705ef440e736392a5f952b">track_child</a> (const <a class="el" href="namespace_felt.html#a1e66c5b41c77671f2da11c7e7613f5e8">PosIdx</a> pos_idx_child_, const <a class="el" href="namespace_felt.html#aee7159e70bde70868b808b2637d06421">TupleIdx</a> list_idx_)</td></tr>
+<tr class="memdesc:af40cd535e9705ef440e736392a5f952b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a spatial partition to children grid's tracking sub-grid.  <a href="#af40cd535e9705ef440e736392a5f952b">More...</a><br /></td></tr>
+<tr class="separator:af40cd535e9705ef440e736392a5f952b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Member Function Documentation</h2>
-<a id="adfb8e7b4a20a288543435c65ee27f3f4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adfb8e7b4a20a288543435c65ee27f3f4">&#9670;&nbsp;</a></span>leafs()</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="ab69d5d8da765cce2b85253543dac2fec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab69d5d8da765cce2b85253543dac2fec">&#9670;&nbsp;</a></span>Leafs() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Felt::Impl::Mixin::Partitioned::Leafs</a>&lt; TDerived &gt;::<a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Leafs</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a65dfd6f1ba92298ca6864621fc22fb64"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65dfd6f1ba92298ca6864621fc22fb64">&#9670;&nbsp;</a></span>Leafs() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class TDerived &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Felt::Impl::Mixin::Partitioned::Leafs</a>&lt; TDerived &gt;::<a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Leafs</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Leafs</a>&lt; TDerived &gt; &amp;&amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>No-op move constructor - this mixin only has a mutex. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">other_</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="ab388ee1310f2df17fd24b1467017aa17"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab388ee1310f2df17fd24b1467017aa17">&#9670;&nbsp;</a></span>leafs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class TDerived &gt; </div>
 <div class="memtemplate">
 template&lt;typename Fn &gt; </div>
 <table class="mlabels">
@@ -131,9 +200,9 @@ template&lt;typename Fn &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Felt::Impl::Mixin::Partitioned::Leafs</a>&lt; Derived &gt;::leafs </td>
+          <td class="memname">void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Felt::Impl::Mixin::Partitioned::Leafs</a>&lt; TDerived &gt;::leafs </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespace_felt.html#ac0aa3619b6010f552ff7995bbf775f3c">TupleIdx</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="namespace_felt.html#aee7159e70bde70868b808b2637d06421">TupleIdx</a>&#160;</td>
           <td class="paramname"><em>layer_idx_</em>, </td>
         </tr>
         <tr>
@@ -166,19 +235,19 @@ template&lt;typename Fn &gt; </div>
 
 </div>
 </div>
-<a id="ab3d3034cc56c56323a5a2ae6297dfca2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab3d3034cc56c56323a5a2ae6297dfca2">&#9670;&nbsp;</a></span>mutex_children()</h2>
+<a id="aa0ecd1f5f8627b1cea99a2ca6f975f1c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa0ecd1f5f8627b1cea99a2ca6f975f1c">&#9670;&nbsp;</a></span>mutex_children()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::mutex&amp; <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Felt::Impl::Mixin::Partitioned::Leafs</a>&lt; Derived &gt;::mutex_children </td>
+          <td class="memname">std::mutex&amp; <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Felt::Impl::Mixin::Partitioned::Leafs</a>&lt; TDerived &gt;::mutex_children </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -197,19 +266,19 @@ template&lt;class Derived &gt; </div>
 
 </div>
 </div>
-<a id="a495afdb2c6453a248c738b1de66fea24"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a495afdb2c6453a248c738b1de66fea24">&#9670;&nbsp;</a></span>pos_child()</h2>
+<a id="a95f36181ad34627ced19bfa1992dc062"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a95f36181ad34627ced19bfa1992dc062">&#9670;&nbsp;</a></span>pos_child()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">VecDi <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Felt::Impl::Mixin::Partitioned::Leafs</a>&lt; Derived &gt;::pos_child </td>
+          <td class="memname">VecDi <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Felt::Impl::Mixin::Partitioned::Leafs</a>&lt; TDerived &gt;::pos_child </td>
           <td>(</td>
           <td class="paramtype">const VecDi &amp;&#160;</td>
           <td class="paramname"><em>pos_leaf_</em></td><td>)</td>
@@ -235,19 +304,19 @@ template&lt;class Derived &gt; </div>
 
 </div>
 </div>
-<a id="a8351ff3927a16aa88f4a632d0ae32c21"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8351ff3927a16aa88f4a632d0ae32c21">&#9670;&nbsp;</a></span>pos_idx_child()</h2>
+<a id="a17cf9462c2f9f1e2eb7169a636ce1777"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a17cf9462c2f9f1e2eb7169a636ce1777">&#9670;&nbsp;</a></span>pos_idx_child()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespace_felt.html#a1e66c5b41c77671f2da11c7e7613f5e8">PosIdx</a> <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Felt::Impl::Mixin::Partitioned::Leafs</a>&lt; Derived &gt;::pos_idx_child </td>
+          <td class="memname"><a class="el" href="namespace_felt.html#a1e66c5b41c77671f2da11c7e7613f5e8">PosIdx</a> <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Felt::Impl::Mixin::Partitioned::Leafs</a>&lt; TDerived &gt;::pos_idx_child </td>
           <td>(</td>
           <td class="paramtype">const VecDi &amp;&#160;</td>
           <td class="paramname"><em>pos_leaf_</em></td><td>)</td>
@@ -273,19 +342,19 @@ template&lt;class Derived &gt; </div>
 
 </div>
 </div>
-<a id="ab74e54350dd1f154792e3c57dd070107"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab74e54350dd1f154792e3c57dd070107">&#9670;&nbsp;</a></span>track_child()</h2>
+<a id="af40cd535e9705ef440e736392a5f952b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af40cd535e9705ef440e736392a5f952b">&#9670;&nbsp;</a></span>track_child()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Felt::Impl::Mixin::Partitioned::Leafs</a>&lt; Derived &gt;::track_child </td>
+          <td class="memname">void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Felt::Impl::Mixin::Partitioned::Leafs</a>&lt; TDerived &gt;::track_child </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="namespace_felt.html#a1e66c5b41c77671f2da11c7e7613f5e8">PosIdx</a>&#160;</td>
           <td class="paramname"><em>pos_idx_child_</em>, </td>
@@ -293,7 +362,7 @@ template&lt;class Derived &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="namespace_felt.html#ac0aa3619b6010f552ff7995bbf775f3c">TupleIdx</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="namespace_felt.html#aee7159e70bde70868b808b2637d06421">TupleIdx</a>&#160;</td>
           <td class="paramname"><em>list_idx_</em>&#160;</td>
         </tr>
         <tr>

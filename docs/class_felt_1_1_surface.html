@@ -35,7 +35,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Felt
-   &#160;<span id="projectnumber">3.0</span>
+   &#160;<span id="projectnumber">3.1</span>
    </div>
    <div id="projectbrief">Deformable surface library.</div>
   </td>
@@ -89,6 +89,7 @@ $(document).ready(function(){initNavTree('class_felt_1_1_surface.html','');});
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
@@ -103,33 +104,57 @@ $(document).ready(function(){initNavTree('class_felt_1_1_surface.html','');});
 
 <p><code>#include &lt;<a class="el" href="_surface_8hpp_source.html">Surface.hpp</a>&gt;</code></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:struct_felt_1_1_surface_1_1_stats"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#struct_felt_1_1_surface_1_1_stats">Stats</a></td></tr>
+<tr class="memdesc:struct_felt_1_1_surface_1_1_stats"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store approximate statistics of the number of spatial partitions using up memory.  <a href="class_felt_1_1_surface.html#struct_felt_1_1_surface_1_1_stats">More...</a><br /></td></tr>
+<tr class="separator:struct_felt_1_1_surface_1_1_stats"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a7b1164e022bd0ecadda0acf060a505e7"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#a7b1164e022bd0ecadda0acf060a505e7">IsoGrid</a> = Impl::Partitioned::Tracked::Numeric&lt; <a class="el" href="namespace_felt.html#a9c3664bb2c54595055302a35ec7faf2c">Distance</a>, D, s_num_layers &gt;</td></tr>
+<tr class="memdesc:a7b1164e022bd0ecadda0acf060a505e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">A level set embedding isogrid grid, with active grid points (the narrow band) tracked.  <a href="#a7b1164e022bd0ecadda0acf060a505e7">More...</a><br /></td></tr>
+<tr class="separator:a7b1164e022bd0ecadda0acf060a505e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae16cfed05151ebb4a370f55173f22f7c"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#ae16cfed05151ebb4a370f55173f22f7c">Line</a> = Eigen::ParametrizedLine&lt; <a class="el" href="namespace_felt.html#a9c3664bb2c54595055302a35ec7faf2c">Distance</a>, D &gt;</td></tr>
+<tr class="memdesc:ae16cfed05151ebb4a370f55173f22f7c"><td class="mdescLeft">&#160;</td><td class="mdescRight">D-dimensional parameterised line, for raycasting.  <a href="#ae16cfed05151ebb4a370f55173f22f7c">More...</a><br /></td></tr>
+<tr class="separator:ae16cfed05151ebb4a370f55173f22f7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0ce0f3361e98bc05c42100ea257fcd22"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#a0ce0f3361e98bc05c42100ea257fcd22">Plane</a> = Eigen::Hyperplane&lt; <a class="el" href="namespace_felt.html#a9c3664bb2c54595055302a35ec7faf2c">Distance</a>, D &gt;</td></tr>
+<tr class="memdesc:a0ce0f3361e98bc05c42100ea257fcd22"><td class="mdescLeft">&#160;</td><td class="mdescRight">D-dimensional hyperplane type (using Eigen library), for raycasting.  <a href="#a0ce0f3361e98bc05c42100ea257fcd22">More...</a><br /></td></tr>
+<tr class="separator:a0ce0f3361e98bc05c42100ea257fcd22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a8c33a4cb0bed39a2a5ac1fc86e318dd7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#a8c33a4cb0bed39a2a5ac1fc86e318dd7">Surface</a> ()=delete</td></tr>
-<tr class="memdesc:a8c33a4cb0bed39a2a5ac1fc86e318dd7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Explicitly defined default constructor.  <a href="#a8c33a4cb0bed39a2a5ac1fc86e318dd7">More...</a><br /></td></tr>
-<tr class="separator:a8c33a4cb0bed39a2a5ac1fc86e318dd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0ae1f86e0b732c9b5d8dc969a12571e8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#a0ae1f86e0b732c9b5d8dc969a12571e8">Surface</a> (const VecDi &amp;size_, const VecDi &amp;size_partition_=VecDi::Constant(8))</td></tr>
 <tr class="memdesc:a0ae1f86e0b732c9b5d8dc969a12571e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a level set embedding of size size.  <a href="#a0ae1f86e0b732c9b5d8dc969a12571e8">More...</a><br /></td></tr>
 <tr class="separator:a0ae1f86e0b732c9b5d8dc969a12571e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abe509802827b820775d7404c1c300494"><td class="memItemLeft" align="right" valign="top">const AffectedLookupGrid &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#abe509802827b820775d7404c1c300494">affected</a> () const</td></tr>
 <tr class="memdesc:abe509802827b820775d7404c1c300494"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get points affected by most recent update, in the form of a lookup grid.  <a href="#abe509802827b820775d7404c1c300494">More...</a><br /></td></tr>
 <tr class="separator:abe509802827b820775d7404c1c300494"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaa3106fb17bbea64eb90ec70a9bcec57"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#aaa3106fb17bbea64eb90ec70a9bcec57">delta</a> (const VecDi &amp;pos_, <a class="el" href="namespace_felt.html#a3409e74330aa3568bff0d3c8ef903ad7">Distance</a> val_)</td></tr>
+<tr class="memitem:aaa3106fb17bbea64eb90ec70a9bcec57"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#aaa3106fb17bbea64eb90ec70a9bcec57">delta</a> (const VecDi &amp;pos_, <a class="el" href="namespace_felt.html#a9c3664bb2c54595055302a35ec7faf2c">Distance</a> val_)</td></tr>
 <tr class="memdesc:aaa3106fb17bbea64eb90ec70a9bcec57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update delta isogrid grid, tracking to tracking list if not already tracked.  <a href="#aaa3106fb17bbea64eb90ec70a9bcec57">More...</a><br /></td></tr>
 <tr class="separator:aaa3106fb17bbea64eb90ec70a9bcec57"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ac1d934e5c6900d1d38836e9a263c41"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespace_felt.html#ab12e740a4468781075bd8beea75d9d4e">PosIdxList</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#a3ac1d934e5c6900d1d38836e9a263c41">delta</a> (const <a class="el" href="namespace_felt.html#ac0aa3619b6010f552ff7995bbf775f3c">TupleIdx</a> layer_idx_) const</td></tr>
+<tr class="memitem:a3ac1d934e5c6900d1d38836e9a263c41"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespace_felt.html#ab12e740a4468781075bd8beea75d9d4e">PosIdxList</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#a3ac1d934e5c6900d1d38836e9a263c41">delta</a> (const <a class="el" href="namespace_felt.html#aee7159e70bde70868b808b2637d06421">TupleIdx</a> layer_idx_) const</td></tr>
 <tr class="memdesc:a3ac1d934e5c6900d1d38836e9a263c41"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get list of spatial partitions where iso values were updated in last update.  <a href="#a3ac1d934e5c6900d1d38836e9a263c41">More...</a><br /></td></tr>
 <tr class="separator:a3ac1d934e5c6900d1d38836e9a263c41"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abb7c39ddef54cb17edb375af32622ff4"><td class="memItemLeft" align="right" valign="top">const IsoGrid &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#abb7c39ddef54cb17edb375af32622ff4">isogrid</a> () const</td></tr>
+<tr class="memitem:a2db0932c8ffafb124598fa28542f600e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#a2db0932c8ffafb124598fa28542f600e">is_intersected</a> (const <a class="el" href="namespace_felt.html#a1e66c5b41c77671f2da11c7e7613f5e8">PosIdx</a> pos_idx_child)</td></tr>
+<tr class="memdesc:a2db0932c8ffafb124598fa28542f600e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if child spatial partition contains zero-layer points.  <a href="#a2db0932c8ffafb124598fa28542f600e">More...</a><br /></td></tr>
+<tr class="separator:a2db0932c8ffafb124598fa28542f600e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb7c39ddef54cb17edb375af32622ff4"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="class_felt_1_1_surface.html#a7b1164e022bd0ecadda0acf060a505e7">IsoGrid</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#abb7c39ddef54cb17edb375af32622ff4">isogrid</a> () const</td></tr>
 <tr class="memdesc:abb7c39ddef54cb17edb375af32622ff4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get reference to isogrid grid.  <a href="#abb7c39ddef54cb17edb375af32622ff4">More...</a><br /></td></tr>
 <tr class="separator:abb7c39ddef54cb17edb375af32622ff4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb3bc3cc7a6d89f1e7f23bcb34ca656e"><td class="memItemLeft" align="right" valign="top">VecDf&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#aeb3bc3cc7a6d89f1e7f23bcb34ca656e">ray</a> (const VecDf &amp;pos_origin_, const VecDf &amp;dir_) const</td></tr>
 <tr class="memdesc:aeb3bc3cc7a6d89f1e7f23bcb34ca656e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cast a ray to the zero layer.  <a href="#aeb3bc3cc7a6d89f1e7f23bcb34ca656e">More...</a><br /></td></tr>
 <tr class="separator:aeb3bc3cc7a6d89f1e7f23bcb34ca656e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a232f1fcf4230631ed5d6156408de7258"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#a232f1fcf4230631ed5d6156408de7258">seed</a> (const VecDi &amp;pos_centre)</td></tr>
-<tr class="memdesc:a232f1fcf4230631ed5d6156408de7258"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a single singularity seed point in the isogrid grid.  <a href="#a232f1fcf4230631ed5d6156408de7258">More...</a><br /></td></tr>
-<tr class="separator:a232f1fcf4230631ed5d6156408de7258"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af018d61c91a7de045a9b781af70cb3bf"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespace_felt.html#ab12e740a4468781075bd8beea75d9d4e">PosIdxList</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#af018d61c91a7de045a9b781af70cb3bf">status_change</a> (const <a class="el" href="namespace_felt.html#ac0aa3619b6010f552ff7995bbf775f3c">TupleIdx</a> layer_idx_) const</td></tr>
+<tr class="memitem:af3e9237762676eb72adc63a13a7d1023"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#af3e9237762676eb72adc63a13a7d1023">save</a> (std::ostream &amp;output_stream_) const</td></tr>
+<tr class="memdesc:af3e9237762676eb72adc63a13a7d1023"><td class="mdescLeft">&#160;</td><td class="mdescRight">Save isogrid to given output stream.  <a href="#af3e9237762676eb72adc63a13a7d1023">More...</a><br /></td></tr>
+<tr class="separator:af3e9237762676eb72adc63a13a7d1023"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae92ae46da8d3a276b78ca14e44c11d1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#aae92ae46da8d3a276b78ca14e44c11d1">seed</a> (const VecDi &amp;pos_centre_)</td></tr>
+<tr class="memdesc:aae92ae46da8d3a276b78ca14e44c11d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a single singularity seed point in the isogrid grid.  <a href="#aae92ae46da8d3a276b78ca14e44c11d1">More...</a><br /></td></tr>
+<tr class="separator:aae92ae46da8d3a276b78ca14e44c11d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9049b2123450b6f8ce16012a5fa7a23"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_felt_1_1_surface.html#struct_felt_1_1_surface_1_1_stats">Stats</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#ad9049b2123450b6f8ce16012a5fa7a23">stats</a> () const</td></tr>
+<tr class="memdesc:ad9049b2123450b6f8ce16012a5fa7a23"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gather statistics about the current state of the surface.  <a href="#ad9049b2123450b6f8ce16012a5fa7a23">More...</a><br /></td></tr>
+<tr class="separator:ad9049b2123450b6f8ce16012a5fa7a23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af018d61c91a7de045a9b781af70cb3bf"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespace_felt.html#ab12e740a4468781075bd8beea75d9d4e">PosIdxList</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#af018d61c91a7de045a9b781af70cb3bf">status_change</a> (const <a class="el" href="namespace_felt.html#aee7159e70bde70868b808b2637d06421">TupleIdx</a> layer_idx_) const</td></tr>
 <tr class="memdesc:af018d61c91a7de045a9b781af70cb3bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get list of spatial partitions where layer status change occurred in last update.  <a href="#af018d61c91a7de045a9b781af70cb3bf">More...</a><br /></td></tr>
 <tr class="separator:af018d61c91a7de045a9b781af70cb3bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2397990931545fa32fd7de7d3a387de4"><td class="memTemplParams" colspan="2">template&lt;typename Fn &gt; </td></tr>
@@ -149,15 +174,18 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a972fd4ee29b26230ed4351ce59f6b11d"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="namespace_felt.html#ac0aa3619b6010f552ff7995bbf775f3c">TupleIdx</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#a972fd4ee29b26230ed4351ce59f6b11d">layer_idx</a> (const <a class="el" href="namespace_felt.html#a6e013fb276335f7da741c63570c02627">LayerId</a> id_)</td></tr>
+<tr class="memitem:a972fd4ee29b26230ed4351ce59f6b11d"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="namespace_felt.html#aee7159e70bde70868b808b2637d06421">TupleIdx</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#a972fd4ee29b26230ed4351ce59f6b11d">layer_idx</a> (const <a class="el" href="namespace_felt.html#ae2c1b98be8aaa4d2689622d382b47a1e">LayerId</a> id_)</td></tr>
 <tr class="memdesc:a972fd4ee29b26230ed4351ce59f6b11d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get narrow band layer index of ID for indexing into arrays.  <a href="#a972fd4ee29b26230ed4351ce59f6b11d">More...</a><br /></td></tr>
 <tr class="separator:a972fd4ee29b26230ed4351ce59f6b11d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ab5c2545d48c96dd61423014ab7f2b3"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="class_felt_1_1_surface.html">This</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#a4ab5c2545d48c96dd61423014ab7f2b3">load</a> (std::istream &amp;input_stream_)</td></tr>
+<tr class="memdesc:a4ab5c2545d48c96dd61423014ab7f2b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load isogrid from given input stream and construct surface.  <a href="#a4ab5c2545d48c96dd61423014ab7f2b3">More...</a><br /></td></tr>
+<tr class="separator:a4ab5c2545d48c96dd61423014ab7f2b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:ad04f1d13f37f20a49b1b03efbeacbcdc"><td class="memItemLeft" align="right" valign="top">static const VecDf&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#ad04f1d13f37f20a49b1b03efbeacbcdc">s_ray_miss</a></td></tr>
-<tr class="memdesc:ad04f1d13f37f20a49b1b03efbeacbcdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get vector representing a raycast miss.  <a href="#ad04f1d13f37f20a49b1b03efbeacbcdc">More...</a><br /></td></tr>
-<tr class="separator:ad04f1d13f37f20a49b1b03efbeacbcdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a835578d30c49b2f03c7ae8eff2b73844"><td class="memItemLeft" align="right" valign="top">static const VecDf&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#a835578d30c49b2f03c7ae8eff2b73844">ray_miss</a></td></tr>
+<tr class="memdesc:a835578d30c49b2f03c7ae8eff2b73844"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get vector representing a raycast miss.  <a href="#a835578d30c49b2f03c7ae8eff2b73844">More...</a><br /></td></tr>
+<tr class="separator:a835578d30c49b2f03c7ae8eff2b73844"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;Dim D, LayerId L&gt;<br />
@@ -171,38 +199,98 @@ class Felt::Surface&lt; D, L &gt;</h3>
   </table>
   </dd>
 </dl>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a8c33a4cb0bed39a2a5ac1fc86e318dd7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8c33a4cb0bed39a2a5ac1fc86e318dd7">&#9670;&nbsp;</a></span>Surface() <span class="overload">[1/2]</span></h2>
+</div><hr/><h2 class="groupheader">Class Documentation</h2>
+<a name="struct_felt_1_1_surface_1_1_stats" id="struct_felt_1_1_surface_1_1_stats"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#struct_felt_1_1_surface_1_1_stats">&#9670;&nbsp;</a></span>Felt::Surface::Stats</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct Felt::Surface::Stats</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="textblock"><h3>template&lt;Dim D, LayerId L&gt;<br />
+struct Felt::Surface&lt; D, L &gt;::Stats</h3>
+
+<p>Store approximate statistics of the number of spatial partitions using up memory. </p>
+</div><table class="fieldtable">
+<tr><th colspan="3">Class Members</th></tr>
+<tr><td class="fieldtype">
+<a id="a6f5225bd2847c76afdcd4e3e70a2630e"></a><a class="el" href="namespace_felt.html#af4b82ad84e4a44f7e32dfcec6363b254">ListIdx</a></td>
+<td class="fieldname">
+active_delta_partitions</td>
+<td class="fielddoc">
+Number of delta isogrid partitions currently active. </td></tr>
+<tr><td class="fieldtype">
+<a id="a7db0e37e62b08a405449347342a6e7d7"></a><a class="el" href="namespace_felt.html#af4b82ad84e4a44f7e32dfcec6363b254">ListIdx</a></td>
+<td class="fieldname">
+active_isogrid_partitions</td>
+<td class="fielddoc">
+Number of isogrid partitions currently active. </td></tr>
+</table>
+
+</div>
+</div>
+<h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a7b1164e022bd0ecadda0acf060a505e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7b1164e022bd0ecadda0acf060a505e7">&#9670;&nbsp;</a></span>IsoGrid</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;Dim D, LayerId L&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::<a class="el" href="class_felt_1_1_surface.html">Surface</a> </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
+          <td class="memname">using <a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::<a class="el" href="class_felt_1_1_surface.html#a7b1164e022bd0ecadda0acf060a505e7">IsoGrid</a> =  Impl::Partitioned::Tracked::Numeric&lt;<a class="el" href="namespace_felt.html#a9c3664bb2c54595055302a35ec7faf2c">Distance</a>, D, s_num_layers&gt;</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">delete</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>Explicitly defined default constructor. </p>
+<p>A level set embedding isogrid grid, with active grid points (the narrow band) tracked. </p>
 
 </div>
 </div>
+<a id="ae16cfed05151ebb4a370f55173f22f7c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae16cfed05151ebb4a370f55173f22f7c">&#9670;&nbsp;</a></span>Line</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;Dim D, LayerId L&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::<a class="el" href="class_felt_1_1_surface.html#ae16cfed05151ebb4a370f55173f22f7c">Line</a> =  Eigen::ParametrizedLine&lt;<a class="el" href="namespace_felt.html#a9c3664bb2c54595055302a35ec7faf2c">Distance</a>, D&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>D-dimensional parameterised line, for raycasting. </p>
+
+</div>
+</div>
+<a id="a0ce0f3361e98bc05c42100ea257fcd22"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0ce0f3361e98bc05c42100ea257fcd22">&#9670;&nbsp;</a></span>Plane</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;Dim D, LayerId L&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::<a class="el" href="class_felt_1_1_surface.html#a0ce0f3361e98bc05c42100ea257fcd22">Plane</a> =  Eigen::Hyperplane&lt;<a class="el" href="namespace_felt.html#a9c3664bb2c54595055302a35ec7faf2c">Distance</a>, D&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>D-dimensional hyperplane type (using Eigen library), for raycasting. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a0ae1f86e0b732c9b5d8dc969a12571e8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0ae1f86e0b732c9b5d8dc969a12571e8">&#9670;&nbsp;</a></span>Surface() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0ae1f86e0b732c9b5d8dc969a12571e8">&#9670;&nbsp;</a></span>Surface()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -300,7 +388,7 @@ template&lt;Dim D, LayerId L&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespace_felt.html#a3409e74330aa3568bff0d3c8ef903ad7">Distance</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespace_felt.html#a9c3664bb2c54595055302a35ec7faf2c">Distance</a>&#160;</td>
           <td class="paramname"><em>val_</em>&#160;</td>
         </tr>
         <tr>
@@ -341,7 +429,7 @@ template&lt;Dim D, LayerId L&gt; </div>
         <tr>
           <td class="memname">const <a class="el" href="namespace_felt.html#ab12e740a4468781075bd8beea75d9d4e">PosIdxList</a>&amp; <a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::delta </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespace_felt.html#ac0aa3619b6010f552ff7995bbf775f3c">TupleIdx</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="namespace_felt.html#aee7159e70bde70868b808b2637d06421">TupleIdx</a>&#160;</td>
           <td class="paramname"><em>layer_idx_</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -364,6 +452,43 @@ template&lt;Dim D, LayerId L&gt; </div>
 
 </div>
 </div>
+<a id="a2db0932c8ffafb124598fa28542f600e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2db0932c8ffafb124598fa28542f600e">&#9670;&nbsp;</a></span>is_intersected()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;Dim D, LayerId L&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::is_intersected </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespace_felt.html#a1e66c5b41c77671f2da11c7e7613f5e8">PosIdx</a>&#160;</td>
+          <td class="paramname"><em>pos_idx_child</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Check if child spatial partition contains zero-layer points. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pos_idx_child</td><td>position index of child partition. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if zero-curve cuts through partition, false otherwise. </dd></dl>
+
+</div>
+</div>
 <a id="abb7c39ddef54cb17edb375af32622ff4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abb7c39ddef54cb17edb375af32622ff4">&#9670;&nbsp;</a></span>isogrid()</h2>
 
@@ -376,7 +501,7 @@ template&lt;Dim D, LayerId L&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const IsoGrid&amp; <a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::isogrid </td>
+          <td class="memname">const <a class="el" href="class_felt_1_1_surface.html#a7b1164e022bd0ecadda0acf060a505e7">IsoGrid</a>&amp; <a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::isogrid </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -406,9 +531,9 @@ template&lt;Dim D, LayerId L&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static constexpr <a class="el" href="namespace_felt.html#ac0aa3619b6010f552ff7995bbf775f3c">TupleIdx</a> <a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::layer_idx </td>
+          <td class="memname">static constexpr <a class="el" href="namespace_felt.html#aee7159e70bde70868b808b2637d06421">TupleIdx</a> <a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::layer_idx </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespace_felt.html#a6e013fb276335f7da741c63570c02627">LayerId</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="namespace_felt.html#ae2c1b98be8aaa4d2689622d382b47a1e">LayerId</a>&#160;</td>
           <td class="paramname"><em>id_</em></td><td>)</td>
           <td></td>
         </tr>
@@ -429,6 +554,43 @@ template&lt;Dim D, LayerId L&gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>index to use to get given layer in narrow band array. </dd></dl>
+
+</div>
+</div>
+<a id="a4ab5c2545d48c96dd61423014ab7f2b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ab5c2545d48c96dd61423014ab7f2b3">&#9670;&nbsp;</a></span>load()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;Dim D, LayerId L&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="class_felt_1_1_surface.html">This</a> <a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::load </td>
+          <td>(</td>
+          <td class="paramtype">std::istream &amp;&#160;</td>
+          <td class="paramname"><em>input_stream_</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Load isogrid from given input stream and construct surface. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">input_stream_</td><td>stream to load from.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>new <a class="el" href="class_felt_1_1_surface.html" title="Arbitrarily-dimensional sparse-field spatially partitioned level set surface. ">Surface</a> instance. </dd></dl>
 
 </div>
 </div>
@@ -480,8 +642,44 @@ template&lt;Dim D, LayerId L&gt; </div>
 
 </div>
 </div>
-<a id="a232f1fcf4230631ed5d6156408de7258"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a232f1fcf4230631ed5d6156408de7258">&#9670;&nbsp;</a></span>seed()</h2>
+<a id="af3e9237762676eb72adc63a13a7d1023"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af3e9237762676eb72adc63a13a7d1023">&#9670;&nbsp;</a></span>save()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;Dim D, LayerId L&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::save </td>
+          <td>(</td>
+          <td class="paramtype">std::ostream &amp;&#160;</td>
+          <td class="paramname"><em>output_stream_</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Save isogrid to given output stream. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">output_stream_</td><td>stream to save to. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="aae92ae46da8d3a276b78ca14e44c11d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae92ae46da8d3a276b78ca14e44c11d1">&#9670;&nbsp;</a></span>seed()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -495,7 +693,7 @@ template&lt;Dim D, LayerId L&gt; </div>
           <td class="memname">void <a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::seed </td>
           <td>(</td>
           <td class="paramtype">const VecDi &amp;&#160;</td>
-          <td class="paramname"><em>pos_centre</em></td><td>)</td>
+          <td class="paramname"><em>pos_centre_</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -517,6 +715,36 @@ template&lt;Dim D, LayerId L&gt; </div>
 
 </div>
 </div>
+<a id="ad9049b2123450b6f8ce16012a5fa7a23"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9049b2123450b6f8ce16012a5fa7a23">&#9670;&nbsp;</a></span>stats()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;Dim D, LayerId L&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_felt_1_1_surface.html#struct_felt_1_1_surface_1_1_stats">Stats</a> <a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::stats </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Gather statistics about the current state of the surface. </p>
+<dl class="section return"><dt>Returns</dt><dd>statistics object with values for the number of active spatial partitions. </dd></dl>
+
+</div>
+</div>
 <a id="af018d61c91a7de045a9b781af70cb3bf"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af018d61c91a7de045a9b781af70cb3bf">&#9670;&nbsp;</a></span>status_change()</h2>
 
@@ -531,7 +759,7 @@ template&lt;Dim D, LayerId L&gt; </div>
         <tr>
           <td class="memname">const <a class="el" href="namespace_felt.html#ab12e740a4468781075bd8beea75d9d4e">PosIdxList</a>&amp; <a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::status_change </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespace_felt.html#ac0aa3619b6010f552ff7995bbf775f3c">TupleIdx</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="namespace_felt.html#aee7159e70bde70868b808b2637d06421">TupleIdx</a>&#160;</td>
           <td class="paramname"><em>layer_idx_</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -711,8 +939,8 @@ template&lt;Dim D, LayerId L&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="ad04f1d13f37f20a49b1b03efbeacbcdc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad04f1d13f37f20a49b1b03efbeacbcdc">&#9670;&nbsp;</a></span>s_ray_miss</h2>
+<a id="a835578d30c49b2f03c7ae8eff2b73844"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a835578d30c49b2f03c7ae8eff2b73844">&#9670;&nbsp;</a></span>ray_miss</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -723,7 +951,7 @@ template&lt;Dim D, LayerId L&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="class_felt_1_1_surface.html">Surface</a>&lt; D, L &gt;::VecDf <a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::s_ray_miss</td>
+          <td class="memname">const <a class="el" href="class_felt_1_1_surface.html">Surface</a>&lt; D, L &gt;::VecDf <a class="el" href="class_felt_1_1_surface.html">Felt::Surface</a>&lt; D, L &gt;::ray_miss</td>
         </tr>
       </table>
   </td>

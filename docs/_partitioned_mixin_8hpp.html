@@ -35,7 +35,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Felt
-   &#160;<span id="projectnumber">3.0</span>
+   &#160;<span id="projectnumber">3.1</span>
    </div>
    <div id="projectbrief">Deformable surface library.</div>
   </td>
@@ -89,13 +89,18 @@ $(document).ready(function(){initNavTree('_partitioned_mixin_8hpp.html','');});
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#namespaces">Namespaces</a>  </div>
+<a href="#namespaces">Namespaces</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">PartitionedMixin.hpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &lt;memory&gt;</code><br />
 <code>#include &lt;mutex&gt;</code><br />
+<code>#include &lt;iostream&gt;</code><br />
+<code>#include &lt;cereal/access.hpp&gt;</code><br />
+<code>#include &lt;cereal/archives/binary.hpp&gt;</code><br />
+<code>#include &lt;cereal/types/vector.hpp&gt;</code><br />
 <code>#include &lt;<a class="el" href="_util_8hpp_source.html">Felt/Impl/Util.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_grid_8hpp_source.html">Felt/Impl/Grid.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_tracked_8hpp_source.html">Felt/Impl/Tracked.hpp</a>&gt;</code><br />
@@ -104,27 +109,29 @@ $(document).ready(function(){initNavTree('_partitioned_mixin_8hpp.html','');});
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html">Felt::Impl::Mixin::Partitioned::Access&lt; Derived &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_access.html">Felt::Impl::Mixin::Partitioned::Access&lt; TDerived &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_children.html">Felt::Impl::Mixin::Partitioned::Children&lt; Derived &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_children.html">Felt::Impl::Mixin::Partitioned::Children&lt; TDerived &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Felt::Impl::Mixin::Partitioned::Leafs&lt; Derived &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_leafs.html">Felt::Impl::Mixin::Partitioned::Leafs&lt; TDerived &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_lookup.html">Felt::Impl::Mixin::Partitioned::Lookup&lt; Derived &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_lookup.html">Felt::Impl::Mixin::Partitioned::Lookup&lt; TDerived &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_reset_1_1_multi_list.html">Felt::Impl::Mixin::Partitioned::Reset::MultiList&lt; Derived &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_reset_1_1_multi_list.html">Felt::Impl::Mixin::Partitioned::Reset::MultiList&lt; TDerived &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_reset_1_1_single_list.html">Felt::Impl::Mixin::Partitioned::Reset::SingleList&lt; Derived &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_reset_1_1_single_list.html">Felt::Impl::Mixin::Partitioned::Reset::SingleList&lt; TDerived &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html">Felt::Impl::Mixin::Partitioned::Snapshot&lt; Derived &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html">Felt::Impl::Mixin::Partitioned::Snapshot&lt; TDerived &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_tracked.html">Felt::Impl::Mixin::Partitioned::Tracked&lt; Derived &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_tracked.html">Felt::Impl::Mixin::Partitioned::Tracked&lt; TDerived &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_untrack.html">Felt::Impl::Mixin::Partitioned::Untrack&lt; Derived &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_untrack.html">Felt::Impl::Mixin::Partitioned::Untrack&lt; TDerived &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
+<tr class="memitem:namespacecereal"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecereal.html">cereal</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespace_felt"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespace_felt.html">Felt</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespace_felt_1_1_impl"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespace_felt_1_1_impl.html">Felt::Impl</a></td></tr>
@@ -135,6 +142,15 @@ Namespaces</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespace_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_reset"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespace_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_reset.html">Felt::Impl::Mixin::Partitioned::Reset</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:afc6fc0205f14e6b4a05f351d0dffec84"><td class="memTemplParams" colspan="2">template&lt;class Archive , class _Scalar , int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols&gt; </td></tr>
+<tr class="memitem:afc6fc0205f14e6b4a05f351d0dffec84"><td class="memTemplItemLeft" align="right" valign="top">std::enable_if&lt; traits::is_input_serializable&lt; BinaryData&lt; _Scalar &gt;, Archive &gt;::value, void &gt;::type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacecereal.html#afc6fc0205f14e6b4a05f351d0dffec84">cereal::load</a> (Archive &amp;ar, Eigen::Matrix&lt; _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols &gt; &amp;m)</td></tr>
+<tr class="separator:afc6fc0205f14e6b4a05f351d0dffec84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f0df64a32e99dab4abe43f045ac53a0"><td class="memTemplParams" colspan="2">template&lt;class Archive , class _Scalar , int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols&gt; </td></tr>
+<tr class="memitem:a9f0df64a32e99dab4abe43f045ac53a0"><td class="memTemplItemLeft" align="right" valign="top">std::enable_if&lt; traits::is_output_serializable&lt; BinaryData&lt; _Scalar &gt;, Archive &gt;::value, void &gt;::type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacecereal.html#a9f0df64a32e99dab4abe43f045ac53a0">cereal::save</a> (Archive &amp;ar, const Eigen::Matrix&lt; _Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols &gt; &amp;m)</td></tr>
+<tr class="separator:a9f0df64a32e99dab4abe43f045ac53a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

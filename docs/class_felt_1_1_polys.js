@@ -1,5 +1,6 @@
 var class_felt_1_1_polys =
 [
+    [ "Child", "class_felt_1_1_polys.html#aae5b47164af0353dd407229aee799b05", null ],
     [ "Polys", "class_felt_1_1_polys.html#a575464b5c1645e281424c1fb6a5ce0c6", null ],
     [ "changes", "class_felt_1_1_polys.html#ac590c866ef37df07e491a154074d2c60", null ],
     [ "invalidate", "class_felt_1_1_polys.html#a74cd16f66ef67c3ebd93d1d8fa4892f8", null ],

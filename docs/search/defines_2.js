@@ -1,7 +1,6 @@
 var searchData=
 [
   ['felt_5fdebug',['FELT_DEBUG',['../_common_8hpp.html#a0b82d743b19fd39a2f28276b59788ec8',1,'Common.hpp']]],
-  ['felt_5fdebug_5fenabled',['FELT_DEBUG_ENABLED',['../_common_8hpp.html#ae5678b06eb68eeb389fabc9423a1b7ec',1,'Common.hpp']]],
   ['felt_5fmixins',['FELT_MIXINS',['../_common_8hpp.html#a2120f6e376218eaacb8e92f343da3a6b',1,'Common.hpp']]],
   ['felt_5fparallel_5ffor',['FELT_PARALLEL_FOR',['../_surface_8hpp.html#a9257e184f794f4a0c0bf891ea63d7239',1,'Surface.hpp']]],
   ['felt_5fparallel_5ffor_5fcmd',['FELT_PARALLEL_FOR_CMD',['../_surface_8hpp.html#a29e42be60ab1cf1427c08bdf412f7a04',1,'Surface.hpp']]],

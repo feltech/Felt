@@ -35,7 +35,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Felt
-   &#160;<span id="projectnumber">3.0</span>
+   &#160;<span id="projectnumber">3.1</span>
    </div>
    <div id="projectbrief">Deformable surface library.</div>
   </td>
@@ -96,21 +96,26 @@ $(document).ready(function(){initNavTree('_surface_8hpp.html','');});
 <div class="title">Surface.hpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;vector&gt;</code><br />
+<div class="textblock"><code>#include &lt;<a class="el" href="_common_8hpp_source.html">Felt/Impl/Common.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_partitioned_8hpp_source.html">Felt/Impl/Partitioned.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_util_8hpp_source.html">Felt/Impl/Util.hpp</a>&gt;</code><br />
+<code>#include &lt;vector&gt;</code><br />
 <code>#include &lt;functional&gt;</code><br />
 <code>#include &lt;limits&gt;</code><br />
 <code>#include &lt;iostream&gt;</code><br />
-<code>#include &lt;boost/math/special_functions/round.hpp&gt;</code><br />
-<code>#include &lt;boost/math/constants/constants.hpp&gt;</code><br />
-<code>#include &lt;eigen3/Eigen/Dense&gt;</code><br />
 <code>#include &lt;omp.h&gt;</code><br />
-<code>#include &lt;<a class="el" href="_partitioned_8hpp_source.html">Felt/Impl/Partitioned.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_util_8hpp_source.html">Felt/Impl/Util.hpp</a>&gt;</code><br />
+<code>#include &lt;boost/archive/binary_iarchive.hpp&gt;</code><br />
+<code>#include &lt;boost/archive/binary_oarchive.hpp&gt;</code><br />
+<code>#include &lt;boost/math/constants/constants.hpp&gt;</code><br />
+<code>#include &lt;boost/math/special_functions/round.hpp&gt;</code><br />
 </div>
 <p><a href="_surface_8hpp_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:struct_felt_1_1_surface_1_1_stats"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html#struct_felt_1_1_surface_1_1_stats">Felt::Surface&lt; D, L &gt;::Stats</a></td></tr>
+<tr class="memdesc:struct_felt_1_1_surface_1_1_stats"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store approximate statistics of the number of spatial partitions using up memory.  <a href="class_felt_1_1_surface.html#struct_felt_1_1_surface_1_1_stats">More...</a><br /></td></tr>
+<tr class="separator:struct_felt_1_1_surface_1_1_stats"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_surface.html">Felt::Surface&lt; D, L &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Arbitrarily-dimensional sparse-field spatially partitioned level set surface.  <a href="class_felt_1_1_surface.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -137,10 +142,44 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:a6e013fb276335f7da741c63570c02627"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespace_felt.html#a6e013fb276335f7da741c63570c02627">Felt::LayerId</a> = INT</td></tr>
-<tr class="memdesc:a6e013fb276335f7da741c63570c02627"><td class="mdescLeft">&#160;</td><td class="mdescRight">Layer ID (in -L, ..., +L)  <a href="namespace_felt.html#a6e013fb276335f7da741c63570c02627">More...</a><br /></td></tr>
-<tr class="separator:a6e013fb276335f7da741c63570c02627"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae2c1b98be8aaa4d2689622d382b47a1e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespace_felt.html#ae2c1b98be8aaa4d2689622d382b47a1e">Felt::LayerId</a> = int</td></tr>
+<tr class="memdesc:ae2c1b98be8aaa4d2689622d382b47a1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Layer ID (in -L, ..., +L)  <a href="namespace_felt.html#ae2c1b98be8aaa4d2689622d382b47a1e">More...</a><br /></td></tr>
+<tr class="separator:ae2c1b98be8aaa4d2689622d382b47a1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<hr/><h2 class="groupheader">Class Documentation</h2>
+<a name="struct_felt_1_1_surface_1_1_stats" id="struct_felt_1_1_surface_1_1_stats"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#struct_felt_1_1_surface_1_1_stats">&#9670;&nbsp;</a></span>Felt::Surface::Stats</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct Felt::Surface::Stats</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="textblock"><h3>template&lt;Dim D, LayerId L&gt;<br />
+struct Felt::Surface&lt; D, L &gt;::Stats</h3>
+
+<p>Store approximate statistics of the number of spatial partitions using up memory. </p>
+</div><table class="fieldtable">
+<tr><th colspan="3">Class Members</th></tr>
+<tr><td class="fieldtype">
+<a id="a6f5225bd2847c76afdcd4e3e70a2630e"></a><a class="el" href="namespace_felt.html#af4b82ad84e4a44f7e32dfcec6363b254">ListIdx</a></td>
+<td class="fieldname">
+active_delta_partitions</td>
+<td class="fielddoc">
+Number of delta isogrid partitions currently active. </td></tr>
+<tr><td class="fieldtype">
+<a id="a7db0e37e62b08a405449347342a6e7d7"></a><a class="el" href="namespace_felt.html#af4b82ad84e4a44f7e32dfcec6363b254">ListIdx</a></td>
+<td class="fieldname">
+active_isogrid_partitions</td>
+<td class="fielddoc">
+Number of isogrid partitions currently active. </td></tr>
+</table>
+
+</div>
+</div>
 <h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="a9257e184f794f4a0c0bf891ea63d7239"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9257e184f794f4a0c0bf891ea63d7239">&#9670;&nbsp;</a></span>FELT_PARALLEL_FOR</h2>

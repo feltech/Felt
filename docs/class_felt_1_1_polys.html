@@ -35,7 +35,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Felt
-   &#160;<span id="projectnumber">3.0</span>
+   &#160;<span id="projectnumber">3.1</span>
    </div>
    <div id="projectbrief">Deformable surface library.</div>
   </td>
@@ -88,6 +88,7 @@ $(document).ready(function(){initNavTree('class_felt_1_1_polys.html','');});
 
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="class_felt_1_1_polys-members.html">List of all members</a>  </div>
   <div class="headertitle">
@@ -102,6 +103,12 @@ $(document).ready(function(){initNavTree('class_felt_1_1_polys.html','');});
 
 <p>Inherits <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_children.html">Felt::Impl::Mixin::Partitioned::Children&lt; Polys&lt; TSurface &gt; &gt;</a>.</p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:aae5b47164af0353dd407229aee799b05"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_polys.html#aae5b47164af0353dd407229aee799b05">Child</a> = typename Traits::Child</td></tr>
+<tr class="memdesc:aae5b47164af0353dd407229aee799b05"><td class="mdescLeft">&#160;</td><td class="mdescRight">Child grid type.  <a href="#aae5b47164af0353dd407229aee799b05">More...</a><br /></td></tr>
+<tr class="separator:aae5b47164af0353dd407229aee799b05"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a575464b5c1645e281424c1fb6a5ce0c6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_polys.html#a575464b5c1645e281424c1fb6a5ce0c6">Polys</a> (const TSurface &amp;surface_)</td></tr>
@@ -129,7 +136,26 @@ class Felt::Polys&lt; TSurface &gt;</h3>
 <p>Alternatively call <code>invalidate</code> to mark the whole isogrid for (re)polygonisation.</p>
 <p>Call <code>march</code> to go through tracked changes, updating the polygonisation of flagged spatial partitions.</p>
 <p>After each <code>march</code>, call <code>changes</code> to get the position indices of partitions that were updated. </p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="aae5b47164af0353dd407229aee799b05"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae5b47164af0353dd407229aee799b05">&#9670;&nbsp;</a></span>Child</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class TSurface &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="class_felt_1_1_polys.html">Felt::Polys</a>&lt; TSurface &gt;::<a class="el" href="class_felt_1_1_polys.html#aae5b47164af0353dd407229aee799b05">Child</a> =  typename Traits::Child</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Child grid type. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a575464b5c1645e281424c1fb6a5ce0c6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a575464b5c1645e281424c1fb6a5ce0c6">&#9670;&nbsp;</a></span>Polys()</h2>
 

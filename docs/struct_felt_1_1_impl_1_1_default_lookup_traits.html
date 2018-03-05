@@ -35,7 +35,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Felt
-   &#160;<span id="projectnumber">3.0</span>
+   &#160;<span id="projectnumber">3.1</span>
    </div>
    <div id="projectbrief">Deformable surface library.</div>
   </td>
@@ -105,16 +105,16 @@ $(document).ready(function(){initNavTree('struct_felt_1_1_impl_1_1_default_looku
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a627339f81af46d49bcc2c4a727355c0c"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_felt_1_1_impl_1_1_default_lookup_traits.html#a627339f81af46d49bcc2c4a727355c0c">LeafType</a> = <a class="el" href="namespace_felt.html#af4b82ad84e4a44f7e32dfcec6363b254">ListIdx</a></td></tr>
-<tr class="memdesc:a627339f81af46d49bcc2c4a727355c0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Single index stored in each grid node.  <a href="#a627339f81af46d49bcc2c4a727355c0c">More...</a><br /></td></tr>
-<tr class="separator:a627339f81af46d49bcc2c4a727355c0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a66d991fad5a432db5a8154ef0ae289fe"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_felt_1_1_impl_1_1_default_lookup_traits.html#a66d991fad5a432db5a8154ef0ae289fe">Leaf</a> = <a class="el" href="namespace_felt.html#af4b82ad84e4a44f7e32dfcec6363b254">ListIdx</a></td></tr>
+<tr class="memdesc:a66d991fad5a432db5a8154ef0ae289fe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Single index stored in each grid node.  <a href="#a66d991fad5a432db5a8154ef0ae289fe">More...</a><br /></td></tr>
+<tr class="separator:a66d991fad5a432db5a8154ef0ae289fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:a96de0ae07c00a57ad207a7eac7685127"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="namespace_felt.html#afe2d7bc5f0e03d0ab2ee5a7a1ee87871">Dim</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_felt_1_1_impl_1_1_default_lookup_traits.html#a96de0ae07c00a57ad207a7eac7685127">t_dims</a> = D</td></tr>
+<tr class="memitem:a96de0ae07c00a57ad207a7eac7685127"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="namespace_felt.html#a8c19b5c1c43d3d08cbbe8933e6136dd3">Dim</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_felt_1_1_impl_1_1_default_lookup_traits.html#a96de0ae07c00a57ad207a7eac7685127">t_dims</a> = D</td></tr>
 <tr class="memdesc:a96de0ae07c00a57ad207a7eac7685127"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dimension of grid.  <a href="#a96de0ae07c00a57ad207a7eac7685127">More...</a><br /></td></tr>
 <tr class="separator:a96de0ae07c00a57ad207a7eac7685127"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a13f8b873d4ee759653f2fa19124da6e8"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="namespace_felt.html#ac0aa3619b6010f552ff7995bbf775f3c">TupleIdx</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_felt_1_1_impl_1_1_default_lookup_traits.html#a13f8b873d4ee759653f2fa19124da6e8">t_num_lists</a> = N</td></tr>
+<tr class="memitem:a13f8b873d4ee759653f2fa19124da6e8"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="namespace_felt.html#aee7159e70bde70868b808b2637d06421">TupleIdx</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_felt_1_1_impl_1_1_default_lookup_traits.html#a13f8b873d4ee759653f2fa19124da6e8">t_num_lists</a> = N</td></tr>
 <tr class="memdesc:a13f8b873d4ee759653f2fa19124da6e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of lists tracking grid nodes.  <a href="#a13f8b873d4ee759653f2fa19124da6e8">More...</a><br /></td></tr>
 <tr class="separator:a13f8b873d4ee759653f2fa19124da6e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -124,8 +124,8 @@ struct Felt::Impl::DefaultLookupTraits&lt; D, N &gt;</h3>
 
 <p>Common base traits for lookup grids with multiple tracking lists but single index per grid node. </p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a627339f81af46d49bcc2c4a727355c0c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a627339f81af46d49bcc2c4a727355c0c">&#9670;&nbsp;</a></span>LeafType</h2>
+<a id="a66d991fad5a432db5a8154ef0ae289fe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a66d991fad5a432db5a8154ef0ae289fe">&#9670;&nbsp;</a></span>Leaf</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -133,7 +133,7 @@ struct Felt::Impl::DefaultLookupTraits&lt; D, N &gt;</h3>
 template&lt;Dim D, TupleIdx N&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="struct_felt_1_1_impl_1_1_default_lookup_traits.html">Felt::Impl::DefaultLookupTraits</a>&lt; D, N &gt;::<a class="el" href="struct_felt_1_1_impl_1_1_default_lookup_traits.html#a627339f81af46d49bcc2c4a727355c0c">LeafType</a> =  <a class="el" href="namespace_felt.html#af4b82ad84e4a44f7e32dfcec6363b254">ListIdx</a></td>
+          <td class="memname">using <a class="el" href="struct_felt_1_1_impl_1_1_default_lookup_traits.html">Felt::Impl::DefaultLookupTraits</a>&lt; D, N &gt;::<a class="el" href="struct_felt_1_1_impl_1_1_default_lookup_traits.html#a66d991fad5a432db5a8154ef0ae289fe">Leaf</a> =  <a class="el" href="namespace_felt.html#af4b82ad84e4a44f7e32dfcec6363b254">ListIdx</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -155,7 +155,7 @@ template&lt;Dim D, TupleIdx N&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="el" href="namespace_felt.html#afe2d7bc5f0e03d0ab2ee5a7a1ee87871">Dim</a> <a class="el" href="struct_felt_1_1_impl_1_1_default_lookup_traits.html">Felt::Impl::DefaultLookupTraits</a>&lt; D, N &gt;::t_dims = D</td>
+          <td class="memname">constexpr <a class="el" href="namespace_felt.html#a8c19b5c1c43d3d08cbbe8933e6136dd3">Dim</a> <a class="el" href="struct_felt_1_1_impl_1_1_default_lookup_traits.html">Felt::Impl::DefaultLookupTraits</a>&lt; D, N &gt;::t_dims = D</td>
         </tr>
       </table>
   </td>
@@ -181,7 +181,7 @@ template&lt;Dim D, TupleIdx N&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="el" href="namespace_felt.html#ac0aa3619b6010f552ff7995bbf775f3c">TupleIdx</a> <a class="el" href="struct_felt_1_1_impl_1_1_default_lookup_traits.html">Felt::Impl::DefaultLookupTraits</a>&lt; D, N &gt;::t_num_lists = N</td>
+          <td class="memname">constexpr <a class="el" href="namespace_felt.html#aee7159e70bde70868b808b2637d06421">TupleIdx</a> <a class="el" href="struct_felt_1_1_impl_1_1_default_lookup_traits.html">Felt::Impl::DefaultLookupTraits</a>&lt; D, N &gt;::t_num_lists = N</td>
         </tr>
       </table>
   </td>

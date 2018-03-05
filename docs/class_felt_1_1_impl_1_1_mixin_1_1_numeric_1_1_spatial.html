@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Felt: Felt::Impl::Mixin::Numeric::Spatial&lt; Derived &gt; Class Template Reference</title>
+<title>Felt: Felt::Impl::Mixin::Numeric::Spatial&lt; TDerived &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -35,7 +35,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Felt
-   &#160;<span id="projectnumber">3.0</span>
+   &#160;<span id="projectnumber">3.1</span>
    </div>
    <div id="projectbrief">Deformable surface library.</div>
   </td>
@@ -92,7 +92,7 @@ $(document).ready(function(){initNavTree('class_felt_1_1_impl_1_1_mixin_1_1_nume
 <a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
 <a href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">Felt::Impl::Mixin::Numeric::Spatial&lt; Derived &gt; Class Template Reference</div>  </div>
+<div class="title">Felt::Impl::Mixin::Numeric::Spatial&lt; TDerived &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -100,73 +100,76 @@ $(document).ready(function(){initNavTree('class_felt_1_1_impl_1_1_mixin_1_1_nume
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:a86e01d037bf53a591078ca10808e2972"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a86e01d037bf53a591078ca10808e2972">Spatial</a> ()</td></tr>
-<tr class="separator:a86e01d037bf53a591078ca10808e2972"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac6170ff030e20ea698f85a11e7710d35"><td class="memTemplParams" colspan="2">template&lt;typename PosType &gt; </td></tr>
-<tr class="memitem:ac6170ff030e20ea698f85a11e7710d35"><td class="memTemplItemLeft" align="right" valign="top">LeafType&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#ac6170ff030e20ea698f85a11e7710d35">curv</a> (const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; PosType, t_dims &gt; &amp;pos_) const</td></tr>
-<tr class="memdesc:ac6170ff030e20ea698f85a11e7710d35"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mean curvature, \( \frac{1}{2} \nabla \bullet \frac{\nabla\phi}{\left|\nabla\phi\right|} \) .  <a href="#ac6170ff030e20ea698f85a11e7710d35">More...</a><br /></td></tr>
-<tr class="separator:ac6170ff030e20ea698f85a11e7710d35"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2da873942e48236d63db2803ecd3395e"><td class="memTemplParams" colspan="2">template&lt;typename PosType &gt; </td></tr>
-<tr class="memitem:a2da873942e48236d63db2803ecd3395e"><td class="memTemplItemLeft" align="right" valign="top">LeafType&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a2da873942e48236d63db2803ecd3395e">divergence</a> (const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; PosType, t_dims &gt; &amp;pos_) const</td></tr>
-<tr class="memdesc:a2da873942e48236d63db2803ecd3395e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate 2nd order divergence \( \nabla \bullet \nabla \phi \).  <a href="#a2da873942e48236d63db2803ecd3395e">More...</a><br /></td></tr>
-<tr class="separator:a2da873942e48236d63db2803ecd3395e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1dc6f690b3d8d925f1619e8809b31084"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespace_felt.html#aa99991e5803cdfd01275e60297a634bd">FLOAT</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a1dc6f690b3d8d925f1619e8809b31084">dx</a> () const</td></tr>
-<tr class="memdesc:a1dc6f690b3d8d925f1619e8809b31084"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get grid's delta x, \( \Delta x \) .  <a href="#a1dc6f690b3d8d925f1619e8809b31084">More...</a><br /></td></tr>
-<tr class="separator:a1dc6f690b3d8d925f1619e8809b31084"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a94d89112319be98fd3ec283685ed00ef"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a94d89112319be98fd3ec283685ed00ef">dx</a> (const <a class="el" href="namespace_felt.html#aa99991e5803cdfd01275e60297a634bd">FLOAT</a> dx_)</td></tr>
-<tr class="memdesc:a94d89112319be98fd3ec283685ed00ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set grid's delta x, \( \Delta x \).  <a href="#a94d89112319be98fd3ec283685ed00ef">More...</a><br /></td></tr>
-<tr class="separator:a94d89112319be98fd3ec283685ed00ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a210b35621d71073f22bf74936e8d260f"><td class="memItemLeft" align="right" valign="top">LeafType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a210b35621d71073f22bf74936e8d260f">get</a> (const VecDf &amp;pos_) const</td></tr>
-<tr class="memdesc:a210b35621d71073f22bf74936e8d260f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get interpolated grid value.  <a href="#a210b35621d71073f22bf74936e8d260f">More...</a><br /></td></tr>
-<tr class="separator:a210b35621d71073f22bf74936e8d260f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6c4db7ca1646ad416c3fca9c259d1a6c"><td class="memTemplParams" colspan="2">template&lt;typename PosType &gt; </td></tr>
-<tr class="memitem:a6c4db7ca1646ad416c3fca9c259d1a6c"><td class="memTemplItemLeft" align="right" valign="top">VecDT&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a6c4db7ca1646ad416c3fca9c259d1a6c">grad</a> (const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; PosType, t_dims &gt; &amp;pos_) const</td></tr>
-<tr class="memdesc:a6c4db7ca1646ad416c3fca9c259d1a6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Safe gradient, \( \nabla \phi \) .  <a href="#a6c4db7ca1646ad416c3fca9c259d1a6c">More...</a><br /></td></tr>
-<tr class="separator:a6c4db7ca1646ad416c3fca9c259d1a6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6b0459105b5439ace18097aeafeffa14"><td class="memTemplParams" colspan="2">template&lt;typename PosType &gt; </td></tr>
-<tr class="memitem:a6b0459105b5439ace18097aeafeffa14"><td class="memTemplItemLeft" align="right" valign="top">VecDT&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a6b0459105b5439ace18097aeafeffa14">gradB</a> (const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; PosType, t_dims &gt; &amp;pos_) const</td></tr>
-<tr class="memdesc:a6b0459105b5439ace18097aeafeffa14"><td class="mdescLeft">&#160;</td><td class="mdescRight">Backward difference gradient, \( \nabla \phi \) .  <a href="#a6b0459105b5439ace18097aeafeffa14">More...</a><br /></td></tr>
-<tr class="separator:a6b0459105b5439ace18097aeafeffa14"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af88f85cbcb8b367337637586bfcf849b"><td class="memTemplParams" colspan="2">template&lt;typename PosType &gt; </td></tr>
-<tr class="memitem:af88f85cbcb8b367337637586bfcf849b"><td class="memTemplItemLeft" align="right" valign="top">VecDT&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#af88f85cbcb8b367337637586bfcf849b">gradC</a> (const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; PosType, t_dims &gt; &amp;pos_) const</td></tr>
-<tr class="memdesc:af88f85cbcb8b367337637586bfcf849b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Central difference gradient, \( \nabla \phi \) .  <a href="#af88f85cbcb8b367337637586bfcf849b">More...</a><br /></td></tr>
-<tr class="separator:af88f85cbcb8b367337637586bfcf849b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a968be9b076869685543e22ec0224e1e1"><td class="memTemplParams" colspan="2">template&lt;typename PosType &gt; </td></tr>
-<tr class="memitem:a968be9b076869685543e22ec0224e1e1"><td class="memTemplItemLeft" align="right" valign="top">VecDT&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a968be9b076869685543e22ec0224e1e1">gradE</a> (const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; PosType, t_dims &gt; &amp;pos_) const</td></tr>
-<tr class="memdesc:a968be9b076869685543e22ec0224e1e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entropy satisfying gradient, \( \nabla \phi \) .  <a href="#a968be9b076869685543e22ec0224e1e1">More...</a><br /></td></tr>
-<tr class="separator:a968be9b076869685543e22ec0224e1e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf836e9f66933c2e7bca61a6077c4346"><td class="memTemplParams" colspan="2">template&lt;typename PosType &gt; </td></tr>
-<tr class="memitem:acf836e9f66933c2e7bca61a6077c4346"><td class="memTemplItemLeft" align="right" valign="top">VecDT&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#acf836e9f66933c2e7bca61a6077c4346">gradF</a> (const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; PosType, t_dims &gt; &amp;pos_) const</td></tr>
-<tr class="memdesc:acf836e9f66933c2e7bca61a6077c4346"><td class="mdescLeft">&#160;</td><td class="mdescRight">Forward difference gradient.  <a href="#acf836e9f66933c2e7bca61a6077c4346">More...</a><br /></td></tr>
-<tr class="separator:acf836e9f66933c2e7bca61a6077c4346"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a44ddf1261cec23f13223a36f2586729b"><td class="memItemLeft" align="right" valign="top">LeafType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a44ddf1261cec23f13223a36f2586729b">interp</a> (const VecDf &amp;pos_) const</td></tr>
-<tr class="memdesc:a44ddf1261cec23f13223a36f2586729b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linear interpolation.  <a href="#a44ddf1261cec23f13223a36f2586729b">More...</a><br /></td></tr>
-<tr class="separator:a44ddf1261cec23f13223a36f2586729b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c86a9db3272046056189345ed680b93"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a4c86a9db3272046056189345ed680b93">Spatial</a> ()</td></tr>
+<tr class="separator:a4c86a9db3272046056189345ed680b93"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c7ca812b453929c7d08e970f1ce20b2"><td class="memTemplParams" colspan="2">template&lt;typename Pos &gt; </td></tr>
+<tr class="memitem:a3c7ca812b453929c7d08e970f1ce20b2"><td class="memTemplItemLeft" align="right" valign="top">Leaf&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a3c7ca812b453929c7d08e970f1ce20b2">curv</a> (const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; Pos, t_dims &gt; &amp;pos_) const</td></tr>
+<tr class="memdesc:a3c7ca812b453929c7d08e970f1ce20b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mean curvature, \( \frac{1}{2} \nabla \bullet \frac{\nabla\phi}{\left|\nabla\phi\right|} \) .  <a href="#a3c7ca812b453929c7d08e970f1ce20b2">More...</a><br /></td></tr>
+<tr class="separator:a3c7ca812b453929c7d08e970f1ce20b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad185a6787dc5dbcc676cc51514a8c710"><td class="memTemplParams" colspan="2">template&lt;typename Pos &gt; </td></tr>
+<tr class="memitem:ad185a6787dc5dbcc676cc51514a8c710"><td class="memTemplItemLeft" align="right" valign="top">Leaf&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#ad185a6787dc5dbcc676cc51514a8c710">divergence</a> (const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; Pos, t_dims &gt; &amp;pos_) const</td></tr>
+<tr class="memdesc:ad185a6787dc5dbcc676cc51514a8c710"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate 2nd order divergence \( \nabla \bullet \nabla \phi \).  <a href="#ad185a6787dc5dbcc676cc51514a8c710">More...</a><br /></td></tr>
+<tr class="separator:ad185a6787dc5dbcc676cc51514a8c710"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5aefec975ac4302acd96e07596e6513"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespace_felt.html#a9c3664bb2c54595055302a35ec7faf2c">Distance</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#ad5aefec975ac4302acd96e07596e6513">dx</a> () const</td></tr>
+<tr class="memdesc:ad5aefec975ac4302acd96e07596e6513"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get grid's delta x, \( \Delta x \) .  <a href="#ad5aefec975ac4302acd96e07596e6513">More...</a><br /></td></tr>
+<tr class="separator:ad5aefec975ac4302acd96e07596e6513"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac3363e24fa9ef398b45ac2661ccc63e8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#ac3363e24fa9ef398b45ac2661ccc63e8">dx</a> (const <a class="el" href="namespace_felt.html#a9c3664bb2c54595055302a35ec7faf2c">Distance</a> dx_)</td></tr>
+<tr class="memdesc:ac3363e24fa9ef398b45ac2661ccc63e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set grid's delta x, \( \Delta x \).  <a href="#ac3363e24fa9ef398b45ac2661ccc63e8">More...</a><br /></td></tr>
+<tr class="separator:ac3363e24fa9ef398b45ac2661ccc63e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a75fd3176243e0f70509d6fb963d5dbff"><td class="memItemLeft" align="right" valign="top">Leaf&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a75fd3176243e0f70509d6fb963d5dbff">get</a> (const VecDf &amp;pos_) const</td></tr>
+<tr class="memdesc:a75fd3176243e0f70509d6fb963d5dbff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get interpolated grid value.  <a href="#a75fd3176243e0f70509d6fb963d5dbff">More...</a><br /></td></tr>
+<tr class="separator:a75fd3176243e0f70509d6fb963d5dbff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ffc038dad14d276145eefe7f019d829"><td class="memTemplParams" colspan="2">template&lt;typename Pos &gt; </td></tr>
+<tr class="memitem:a3ffc038dad14d276145eefe7f019d829"><td class="memTemplItemLeft" align="right" valign="top">VecDT&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a3ffc038dad14d276145eefe7f019d829">grad</a> (const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; Pos, t_dims &gt; &amp;pos_) const</td></tr>
+<tr class="memdesc:a3ffc038dad14d276145eefe7f019d829"><td class="mdescLeft">&#160;</td><td class="mdescRight">Safe gradient, \( \nabla \phi \) .  <a href="#a3ffc038dad14d276145eefe7f019d829">More...</a><br /></td></tr>
+<tr class="separator:a3ffc038dad14d276145eefe7f019d829"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeeb53d48b4ac3c4e272bf983415ddd57"><td class="memTemplParams" colspan="2">template&lt;typename Pos &gt; </td></tr>
+<tr class="memitem:aeeb53d48b4ac3c4e272bf983415ddd57"><td class="memTemplItemLeft" align="right" valign="top">VecDT&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#aeeb53d48b4ac3c4e272bf983415ddd57">gradB</a> (const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; Pos, t_dims &gt; &amp;pos_) const</td></tr>
+<tr class="memdesc:aeeb53d48b4ac3c4e272bf983415ddd57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Backward difference gradient, \( \nabla \phi \) .  <a href="#aeeb53d48b4ac3c4e272bf983415ddd57">More...</a><br /></td></tr>
+<tr class="separator:aeeb53d48b4ac3c4e272bf983415ddd57"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ec0a7d4243e100a1508d7ddf48b9a39"><td class="memTemplParams" colspan="2">template&lt;typename Pos &gt; </td></tr>
+<tr class="memitem:a2ec0a7d4243e100a1508d7ddf48b9a39"><td class="memTemplItemLeft" align="right" valign="top">VecDT&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a2ec0a7d4243e100a1508d7ddf48b9a39">gradC</a> (const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; Pos, t_dims &gt; &amp;pos_) const</td></tr>
+<tr class="memdesc:a2ec0a7d4243e100a1508d7ddf48b9a39"><td class="mdescLeft">&#160;</td><td class="mdescRight">Central difference gradient, \( \nabla \phi \) .  <a href="#a2ec0a7d4243e100a1508d7ddf48b9a39">More...</a><br /></td></tr>
+<tr class="separator:a2ec0a7d4243e100a1508d7ddf48b9a39"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c7a1831fb1bb1cd2be63728015e9861"><td class="memTemplParams" colspan="2">template&lt;typename Pos &gt; </td></tr>
+<tr class="memitem:a9c7a1831fb1bb1cd2be63728015e9861"><td class="memTemplItemLeft" align="right" valign="top">VecDT&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a9c7a1831fb1bb1cd2be63728015e9861">gradE</a> (const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; Pos, t_dims &gt; &amp;pos_) const</td></tr>
+<tr class="memdesc:a9c7a1831fb1bb1cd2be63728015e9861"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entropy satisfying gradient, \( \nabla \phi \) .  <a href="#a9c7a1831fb1bb1cd2be63728015e9861">More...</a><br /></td></tr>
+<tr class="separator:a9c7a1831fb1bb1cd2be63728015e9861"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aed14c23105b25e8b3bb8b5102e15c661"><td class="memTemplParams" colspan="2">template&lt;typename Pos &gt; </td></tr>
+<tr class="memitem:aed14c23105b25e8b3bb8b5102e15c661"><td class="memTemplItemLeft" align="right" valign="top">VecDT&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#aed14c23105b25e8b3bb8b5102e15c661">gradF</a> (const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; Pos, t_dims &gt; &amp;pos_) const</td></tr>
+<tr class="memdesc:aed14c23105b25e8b3bb8b5102e15c661"><td class="mdescLeft">&#160;</td><td class="mdescRight">Forward difference gradient.  <a href="#aed14c23105b25e8b3bb8b5102e15c661">More...</a><br /></td></tr>
+<tr class="separator:aed14c23105b25e8b3bb8b5102e15c661"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4410ee30d94cc1747c14ff747721bbe1"><td class="memItemLeft" align="right" valign="top">Leaf&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a4410ee30d94cc1747c14ff747721bbe1">interp</a> (const VecDf &amp;pos_) const</td></tr>
+<tr class="memdesc:a4410ee30d94cc1747c14ff747721bbe1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linear interpolation.  <a href="#a4410ee30d94cc1747c14ff747721bbe1">More...</a><br /></td></tr>
+<tr class="separator:a4410ee30d94cc1747c14ff747721bbe1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a912c47b6acfa010101f45f05a28b081e"><td class="memTemplParams" colspan="2">template&lt;class Archive &gt; </td></tr>
+<tr class="memitem:a912c47b6acfa010101f45f05a28b081e"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a912c47b6acfa010101f45f05a28b081e">serialize</a> (Archive &amp;ar)</td></tr>
+<tr class="separator:a912c47b6acfa010101f45f05a28b081e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-static-methods"></a>
 Static Protected Member Functions</h2></td></tr>
-<tr class="memitem:a4e6fe24afb1eaff1fc1c864efd2d37d6"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a4e6fe24afb1eaff1fc1c864efd2d37d6">interp</a> (<a class="el" href="namespace_felt.html#a4c7539771d798d299815fb74f7c8f10c">DataArray</a>&lt; LeafType &gt; &amp;val_corners_, const VecDf &amp;pos_)</td></tr>
-<tr class="memdesc:a4e6fe24afb1eaff1fc1c864efd2d37d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Interpolate down one dimension.  <a href="#a4e6fe24afb1eaff1fc1c864efd2d37d6">More...</a><br /></td></tr>
-<tr class="separator:a4e6fe24afb1eaff1fc1c864efd2d37d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a07da4f1598029d09d34cf20dadbc2c23"><td class="memTemplParams" colspan="2">template&lt;typename Fn &gt; </td></tr>
-<tr class="memitem:a07da4f1598029d09d34cf20dadbc2c23"><td class="memTemplItemLeft" align="right" valign="top">static void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a07da4f1598029d09d34cf20dadbc2c23">neighs</a> (VecDi pos_, Fn fn_)</td></tr>
-<tr class="memdesc:a07da4f1598029d09d34cf20dadbc2c23"><td class="mdescLeft">&#160;</td><td class="mdescRight">Call a lambda passing neighbours of a position in the cardinal directions.  <a href="#a07da4f1598029d09d34cf20dadbc2c23">More...</a><br /></td></tr>
-<tr class="separator:a07da4f1598029d09d34cf20dadbc2c23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae57d4fd6d0cbb3bbc4396e3558248ae0"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#ae57d4fd6d0cbb3bbc4396e3558248ae0">interp</a> (<a class="el" href="namespace_felt.html#a4c7539771d798d299815fb74f7c8f10c">DataArray</a>&lt; Leaf &gt; &amp;val_corners_, const VecDf &amp;pos_)</td></tr>
+<tr class="memdesc:ae57d4fd6d0cbb3bbc4396e3558248ae0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Interpolate down one dimension.  <a href="#ae57d4fd6d0cbb3bbc4396e3558248ae0">More...</a><br /></td></tr>
+<tr class="separator:ae57d4fd6d0cbb3bbc4396e3558248ae0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a006442ccb7425a511236e2370304bd5d"><td class="memTemplParams" colspan="2">template&lt;typename Fn &gt; </td></tr>
+<tr class="memitem:a006442ccb7425a511236e2370304bd5d"><td class="memTemplItemLeft" align="right" valign="top">static void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html#a006442ccb7425a511236e2370304bd5d">neighs</a> (VecDi pos_, Fn fn_)</td></tr>
+<tr class="memdesc:a006442ccb7425a511236e2370304bd5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Call a lambda passing neighbours of a position in the cardinal directions.  <a href="#a006442ccb7425a511236e2370304bd5d">More...</a><br /></td></tr>
+<tr class="separator:a006442ccb7425a511236e2370304bd5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a86e01d037bf53a591078ca10808e2972"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a86e01d037bf53a591078ca10808e2972">&#9670;&nbsp;</a></span>Spatial()</h2>
+<a id="a4c86a9db3272046056189345ed680b93"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4c86a9db3272046056189345ed680b93">&#9670;&nbsp;</a></span>Spatial()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; Derived &gt;::<a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Spatial</a> </td>
+          <td class="memname"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; TDerived &gt;::<a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Spatial</a> </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -182,23 +185,23 @@ template&lt;class Derived &gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ac6170ff030e20ea698f85a11e7710d35"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac6170ff030e20ea698f85a11e7710d35">&#9670;&nbsp;</a></span>curv()</h2>
+<a id="a3c7ca812b453929c7d08e970f1ce20b2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c7ca812b453929c7d08e970f1ce20b2">&#9670;&nbsp;</a></span>curv()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <div class="memtemplate">
-template&lt;typename PosType &gt; </div>
+template&lt;typename Pos &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">LeafType <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; Derived &gt;::curv </td>
+          <td class="memname">Leaf <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; TDerived &gt;::curv </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; PosType, t_dims &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; Pos, t_dims &gt; &amp;&#160;</td>
           <td class="paramname"><em>pos_</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -222,23 +225,23 @@ template&lt;typename PosType &gt; </div>
 
 </div>
 </div>
-<a id="a2da873942e48236d63db2803ecd3395e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2da873942e48236d63db2803ecd3395e">&#9670;&nbsp;</a></span>divergence()</h2>
+<a id="ad185a6787dc5dbcc676cc51514a8c710"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad185a6787dc5dbcc676cc51514a8c710">&#9670;&nbsp;</a></span>divergence()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <div class="memtemplate">
-template&lt;typename PosType &gt; </div>
+template&lt;typename Pos &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">LeafType <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; Derived &gt;::divergence </td>
+          <td class="memname">Leaf <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; TDerived &gt;::divergence </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; PosType, t_dims &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; Pos, t_dims &gt; &amp;&#160;</td>
           <td class="paramname"><em>pos_</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -261,19 +264,19 @@ template&lt;typename PosType &gt; </div>
 
 </div>
 </div>
-<a id="a1dc6f690b3d8d925f1619e8809b31084"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1dc6f690b3d8d925f1619e8809b31084">&#9670;&nbsp;</a></span>dx() <span class="overload">[1/2]</span></h2>
+<a id="ad5aefec975ac4302acd96e07596e6513"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5aefec975ac4302acd96e07596e6513">&#9670;&nbsp;</a></span>dx() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespace_felt.html#aa99991e5803cdfd01275e60297a634bd">FLOAT</a> <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; Derived &gt;::dx </td>
+          <td class="memname"><a class="el" href="namespace_felt.html#a9c3664bb2c54595055302a35ec7faf2c">Distance</a> <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; TDerived &gt;::dx </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -291,21 +294,21 @@ template&lt;class Derived &gt; </div>
 
 </div>
 </div>
-<a id="a94d89112319be98fd3ec283685ed00ef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a94d89112319be98fd3ec283685ed00ef">&#9670;&nbsp;</a></span>dx() <span class="overload">[2/2]</span></h2>
+<a id="ac3363e24fa9ef398b45ac2661ccc63e8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3363e24fa9ef398b45ac2661ccc63e8">&#9670;&nbsp;</a></span>dx() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; Derived &gt;::dx </td>
+          <td class="memname">void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; TDerived &gt;::dx </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespace_felt.html#aa99991e5803cdfd01275e60297a634bd">FLOAT</a>&#160;</td>
+          <td class="paramtype">const <a class="el" href="namespace_felt.html#a9c3664bb2c54595055302a35ec7faf2c">Distance</a>&#160;</td>
           <td class="paramname"><em>dx_</em></td><td>)</td>
           <td></td>
         </tr>
@@ -327,19 +330,19 @@ template&lt;class Derived &gt; </div>
 
 </div>
 </div>
-<a id="a210b35621d71073f22bf74936e8d260f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a210b35621d71073f22bf74936e8d260f">&#9670;&nbsp;</a></span>get()</h2>
+<a id="a75fd3176243e0f70509d6fb963d5dbff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a75fd3176243e0f70509d6fb963d5dbff">&#9670;&nbsp;</a></span>get()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">LeafType <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; Derived &gt;::get </td>
+          <td class="memname">Leaf <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; TDerived &gt;::get </td>
           <td>(</td>
           <td class="paramtype">const VecDf &amp;&#160;</td>
           <td class="paramname"><em>pos_</em></td><td>)</td>
@@ -365,23 +368,23 @@ template&lt;class Derived &gt; </div>
 
 </div>
 </div>
-<a id="a6c4db7ca1646ad416c3fca9c259d1a6c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6c4db7ca1646ad416c3fca9c259d1a6c">&#9670;&nbsp;</a></span>grad()</h2>
+<a id="a3ffc038dad14d276145eefe7f019d829"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ffc038dad14d276145eefe7f019d829">&#9670;&nbsp;</a></span>grad()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <div class="memtemplate">
-template&lt;typename PosType &gt; </div>
+template&lt;typename Pos &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">VecDT <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; Derived &gt;::grad </td>
+          <td class="memname">VecDT <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; TDerived &gt;::grad </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; PosType, t_dims &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; Pos, t_dims &gt; &amp;&#160;</td>
           <td class="paramname"><em>pos_</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -405,23 +408,23 @@ template&lt;typename PosType &gt; </div>
 
 </div>
 </div>
-<a id="a6b0459105b5439ace18097aeafeffa14"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6b0459105b5439ace18097aeafeffa14">&#9670;&nbsp;</a></span>gradB()</h2>
+<a id="aeeb53d48b4ac3c4e272bf983415ddd57"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeeb53d48b4ac3c4e272bf983415ddd57">&#9670;&nbsp;</a></span>gradB()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <div class="memtemplate">
-template&lt;typename PosType &gt; </div>
+template&lt;typename Pos &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">VecDT <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; Derived &gt;::gradB </td>
+          <td class="memname">VecDT <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; TDerived &gt;::gradB </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; PosType, t_dims &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; Pos, t_dims &gt; &amp;&#160;</td>
           <td class="paramname"><em>pos_</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -446,23 +449,23 @@ template&lt;typename PosType &gt; </div>
 
 </div>
 </div>
-<a id="af88f85cbcb8b367337637586bfcf849b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af88f85cbcb8b367337637586bfcf849b">&#9670;&nbsp;</a></span>gradC()</h2>
+<a id="a2ec0a7d4243e100a1508d7ddf48b9a39"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ec0a7d4243e100a1508d7ddf48b9a39">&#9670;&nbsp;</a></span>gradC()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <div class="memtemplate">
-template&lt;typename PosType &gt; </div>
+template&lt;typename Pos &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">VecDT <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; Derived &gt;::gradC </td>
+          <td class="memname">VecDT <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; TDerived &gt;::gradC </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; PosType, t_dims &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; Pos, t_dims &gt; &amp;&#160;</td>
           <td class="paramname"><em>pos_</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -485,23 +488,23 @@ template&lt;typename PosType &gt; </div>
 
 </div>
 </div>
-<a id="a968be9b076869685543e22ec0224e1e1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a968be9b076869685543e22ec0224e1e1">&#9670;&nbsp;</a></span>gradE()</h2>
+<a id="a9c7a1831fb1bb1cd2be63728015e9861"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c7a1831fb1bb1cd2be63728015e9861">&#9670;&nbsp;</a></span>gradE()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <div class="memtemplate">
-template&lt;typename PosType &gt; </div>
+template&lt;typename Pos &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">VecDT <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; Derived &gt;::gradE </td>
+          <td class="memname">VecDT <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; TDerived &gt;::gradE </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; PosType, t_dims &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; Pos, t_dims &gt; &amp;&#160;</td>
           <td class="paramname"><em>pos_</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -525,23 +528,23 @@ template&lt;typename PosType &gt; </div>
 
 </div>
 </div>
-<a id="acf836e9f66933c2e7bca61a6077c4346"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acf836e9f66933c2e7bca61a6077c4346">&#9670;&nbsp;</a></span>gradF()</h2>
+<a id="aed14c23105b25e8b3bb8b5102e15c661"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aed14c23105b25e8b3bb8b5102e15c661">&#9670;&nbsp;</a></span>gradF()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <div class="memtemplate">
-template&lt;typename PosType &gt; </div>
+template&lt;typename Pos &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">VecDT <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; Derived &gt;::gradF </td>
+          <td class="memname">VecDT <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; TDerived &gt;::gradF </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; PosType, t_dims &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="namespace_felt.html#ad04bfd20821e35c662fc9eebc3f652a6">Felt::VecDT</a>&lt; Pos, t_dims &gt; &amp;&#160;</td>
           <td class="paramname"><em>pos_</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -564,19 +567,19 @@ template&lt;typename PosType &gt; </div>
 
 </div>
 </div>
-<a id="a44ddf1261cec23f13223a36f2586729b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a44ddf1261cec23f13223a36f2586729b">&#9670;&nbsp;</a></span>interp() <span class="overload">[1/2]</span></h2>
+<a id="a4410ee30d94cc1747c14ff747721bbe1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4410ee30d94cc1747c14ff747721bbe1">&#9670;&nbsp;</a></span>interp() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">LeafType <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; Derived &gt;::interp </td>
+          <td class="memname">Leaf <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; TDerived &gt;::interp </td>
           <td>(</td>
           <td class="paramtype">const VecDf &amp;&#160;</td>
           <td class="paramname"><em>pos_</em></td><td>)</td>
@@ -601,21 +604,21 @@ template&lt;class Derived &gt; </div>
 
 </div>
 </div>
-<a id="a4e6fe24afb1eaff1fc1c864efd2d37d6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e6fe24afb1eaff1fc1c864efd2d37d6">&#9670;&nbsp;</a></span>interp() <span class="overload">[2/2]</span></h2>
+<a id="ae57d4fd6d0cbb3bbc4396e3558248ae0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae57d4fd6d0cbb3bbc4396e3558248ae0">&#9670;&nbsp;</a></span>interp() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; Derived &gt;::interp </td>
+          <td class="memname">static void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; TDerived &gt;::interp </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="namespace_felt.html#a4c7539771d798d299815fb74f7c8f10c">DataArray</a>&lt; LeafType &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespace_felt.html#a4c7539771d798d299815fb74f7c8f10c">DataArray</a>&lt; Leaf &gt; &amp;&#160;</td>
           <td class="paramname"><em>val_corners_</em>, </td>
         </tr>
         <tr>
@@ -650,13 +653,13 @@ template&lt;class Derived &gt; </div>
 
 </div>
 </div>
-<a id="a07da4f1598029d09d34cf20dadbc2c23"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a07da4f1598029d09d34cf20dadbc2c23">&#9670;&nbsp;</a></span>neighs()</h2>
+<a id="a006442ccb7425a511236e2370304bd5d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a006442ccb7425a511236e2370304bd5d">&#9670;&nbsp;</a></span>neighs()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <div class="memtemplate">
 template&lt;typename Fn &gt; </div>
 <table class="mlabels">
@@ -664,7 +667,7 @@ template&lt;typename Fn &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; Derived &gt;::neighs </td>
+          <td class="memname">static void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; TDerived &gt;::neighs </td>
           <td>(</td>
           <td class="paramtype">VecDi&#160;</td>
           <td class="paramname"><em>pos_</em>, </td>
@@ -696,6 +699,36 @@ template&lt;typename Fn &gt; </div>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a912c47b6acfa010101f45f05a28b081e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a912c47b6acfa010101f45f05a28b081e">&#9670;&nbsp;</a></span>serialize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class TDerived &gt; </div>
+<div class="memtemplate">
+template&lt;class Archive &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_numeric_1_1_spatial.html">Felt::Impl::Mixin::Numeric::Spatial</a>&lt; TDerived &gt;::serialize </td>
+          <td>(</td>
+          <td class="paramtype">Archive &amp;&#160;</td>
+          <td class="paramname"><em>ar</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>

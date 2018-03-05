@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Felt: Felt::Impl::Mixin::Partitioned::Snapshot&lt; Derived &gt; Class Template Reference</title>
+<title>Felt: Felt::Impl::Mixin::Partitioned::Snapshot&lt; TDerived &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -35,7 +35,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Felt
-   &#160;<span id="projectnumber">3.0</span>
+   &#160;<span id="projectnumber">3.1</span>
    </div>
    <div id="projectbrief">Deformable surface library.</div>
   </td>
@@ -88,45 +88,53 @@ $(document).ready(function(){initNavTree('class_felt_1_1_impl_1_1_mixin_1_1_part
 
 <div class="header">
   <div class="summary">
-<a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-types">Protected Types</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
 <a href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">Felt::Impl::Mixin::Partitioned::Snapshot&lt; Derived &gt; Class Template Reference</div>  </div>
+<div class="title">Felt::Impl::Mixin::Partitioned::Snapshot&lt; TDerived &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
 <p><code>#include &lt;<a class="el" href="_partitioned_mixin_8hpp_source.html">PartitionedMixin.hpp</a>&gt;</code></p>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
-Public Member Functions</h2></td></tr>
-<tr class="memitem:a41b469d80dcc92eef12d69847998c8cb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a41b469d80dcc92eef12d69847998c8cb">operator=</a> (std::initializer_list&lt; LeafType &gt; &amp;&amp;vals_)</td></tr>
-<tr class="separator:a41b469d80dcc92eef12d69847998c8cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae3efefae408b3cb5571a5e336e742b4e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a9b58c815236a10ca4171e779a242fb5a">SnapshotGridPtr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#ae3efefae408b3cb5571a5e336e742b4e">snapshot</a> () const</td></tr>
-<tr class="separator:ae3efefae408b3cb5571a5e336e742b4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab50f905f2b4fca0cb00ece8b70ce7731"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#ab50f905f2b4fca0cb00ece8b70ce7731">snapshot</a> (const <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a9b58c815236a10ca4171e779a242fb5a">SnapshotGridPtr</a> &amp;psnapshot)</td></tr>
-<tr class="separator:ab50f905f2b4fca0cb00ece8b70ce7731"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-types"></a>
 Protected Types</h2></td></tr>
-<tr class="memitem:a9b58c815236a10ca4171e779a242fb5a"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a9b58c815236a10ca4171e779a242fb5a">SnapshotGridPtr</a> = std::unique_ptr&lt; SnapshotGrid &gt;</td></tr>
-<tr class="memdesc:a9b58c815236a10ca4171e779a242fb5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Non-partitioned <a class="el" href="namespace_felt_1_1_impl_1_1_mixin_1_1_grid.html">Grid</a> class to store snapshots of partitioned grids.  <a href="#a9b58c815236a10ca4171e779a242fb5a">More...</a><br /></td></tr>
-<tr class="separator:a9b58c815236a10ca4171e779a242fb5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a70522b0c086b51010786df6a9faa1013"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a70522b0c086b51010786df6a9faa1013">SnapshotGridPtr</a> = std::unique_ptr&lt; SnapshotGrid &gt;</td></tr>
+<tr class="memdesc:a70522b0c086b51010786df6a9faa1013"><td class="mdescLeft">&#160;</td><td class="mdescRight">Non-partitioned <a class="el" href="namespace_felt_1_1_impl_1_1_mixin_1_1_grid.html">Grid</a> class to store snapshots of partitioned grids.  <a href="#a70522b0c086b51010786df6a9faa1013">More...</a><br /></td></tr>
+<tr class="separator:a70522b0c086b51010786df6a9faa1013"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:a57c0edd907daf2ac8863b8655e4dd512"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a57c0edd907daf2ac8863b8655e4dd512">operator=</a> (std::initializer_list&lt; Leaf &gt; &amp;&amp;vals_)</td></tr>
+<tr class="separator:a57c0edd907daf2ac8863b8655e4dd512"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7eca22b3994069006355772cd4de7b7f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a70522b0c086b51010786df6a9faa1013">SnapshotGridPtr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a7eca22b3994069006355772cd4de7b7f">snapshot</a> () const</td></tr>
+<tr class="separator:a7eca22b3994069006355772cd4de7b7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c9ab23f3e39df46bee7add54c90bc90"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a3c9ab23f3e39df46bee7add54c90bc90">snapshot</a> (const <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a70522b0c086b51010786df6a9faa1013">SnapshotGridPtr</a> &amp;psnapshot)</td></tr>
+<tr class="separator:a3c9ab23f3e39df46bee7add54c90bc90"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a459ad011f6166a6302b30cb2fcefe697"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a459ad011f6166a6302b30cb2fcefe697">write</a> (std::ostream &amp;output_stream_) const</td></tr>
+<tr class="separator:a459ad011f6166a6302b30cb2fcefe697"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-static-methods"></a>
+Static Protected Member Functions</h2></td></tr>
+<tr class="memitem:ac3468b332a3b33349551191e0e68bf1a"><td class="memItemLeft" align="right" valign="top">static TDerived&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#ac3468b332a3b33349551191e0e68bf1a">read</a> (std::istream &amp;input_stream_)</td></tr>
+<tr class="separator:ac3468b332a3b33349551191e0e68bf1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a9b58c815236a10ca4171e779a242fb5a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9b58c815236a10ca4171e779a242fb5a">&#9670;&nbsp;</a></span>SnapshotGridPtr</h2>
+<a id="a70522b0c086b51010786df6a9faa1013"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a70522b0c086b51010786df6a9faa1013">&#9670;&nbsp;</a></span>SnapshotGridPtr</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html">Felt::Impl::Mixin::Partitioned::Snapshot</a>&lt; Derived &gt;::<a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a9b58c815236a10ca4171e779a242fb5a">SnapshotGridPtr</a> =  std::unique_ptr&lt;SnapshotGrid&gt;</td>
+          <td class="memname">using <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html">Felt::Impl::Mixin::Partitioned::Snapshot</a>&lt; TDerived &gt;::<a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a70522b0c086b51010786df6a9faa1013">SnapshotGridPtr</a> =  std::unique_ptr&lt;SnapshotGrid&gt;</td>
         </tr>
       </table>
   </td>
@@ -142,47 +150,75 @@ template&lt;class Derived &gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a41b469d80dcc92eef12d69847998c8cb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a41b469d80dcc92eef12d69847998c8cb">&#9670;&nbsp;</a></span>operator=()</h2>
+<a id="a57c0edd907daf2ac8863b8655e4dd512"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57c0edd907daf2ac8863b8655e4dd512">&#9670;&nbsp;</a></span>operator=()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html">Felt::Impl::Mixin::Partitioned::Snapshot</a>&lt; Derived &gt;::operator= </td>
+          <td class="memname">void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html">Felt::Impl::Mixin::Partitioned::Snapshot</a>&lt; TDerived &gt;::operator= </td>
           <td>(</td>
-          <td class="paramtype">std::initializer_list&lt; LeafType &gt; &amp;&amp;&#160;</td>
+          <td class="paramtype">std::initializer_list&lt; Leaf &gt; &amp;&amp;&#160;</td>
           <td class="paramname"><em>vals_</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="ae3efefae408b3cb5571a5e336e742b4e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae3efefae408b3cb5571a5e336e742b4e">&#9670;&nbsp;</a></span>snapshot() <span class="overload">[1/2]</span></h2>
+<a id="ac3468b332a3b33349551191e0e68bf1a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3468b332a3b33349551191e0e68bf1a">&#9670;&nbsp;</a></span>read()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a9b58c815236a10ca4171e779a242fb5a">SnapshotGridPtr</a> <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html">Felt::Impl::Mixin::Partitioned::Snapshot</a>&lt; Derived &gt;::snapshot </td>
+          <td class="memname">static TDerived <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html">Felt::Impl::Mixin::Partitioned::Snapshot</a>&lt; TDerived &gt;::read </td>
+          <td>(</td>
+          <td class="paramtype">std::istream &amp;&#160;</td>
+          <td class="paramname"><em>input_stream_</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7eca22b3994069006355772cd4de7b7f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7eca22b3994069006355772cd4de7b7f">&#9670;&nbsp;</a></span>snapshot() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class TDerived &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a70522b0c086b51010786df6a9faa1013">SnapshotGridPtr</a> <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html">Felt::Impl::Mixin::Partitioned::Snapshot</a>&lt; TDerived &gt;::snapshot </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -190,35 +226,63 @@ template&lt;class Derived &gt; </div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="ab50f905f2b4fca0cb00ece8b70ce7731"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab50f905f2b4fca0cb00ece8b70ce7731">&#9670;&nbsp;</a></span>snapshot() <span class="overload">[2/2]</span></h2>
+<a id="a3c9ab23f3e39df46bee7add54c90bc90"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c9ab23f3e39df46bee7add54c90bc90">&#9670;&nbsp;</a></span>snapshot() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Derived &gt; </div>
+template&lt;class TDerived &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html">Felt::Impl::Mixin::Partitioned::Snapshot</a>&lt; Derived &gt;::snapshot </td>
+          <td class="memname">void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html">Felt::Impl::Mixin::Partitioned::Snapshot</a>&lt; TDerived &gt;::snapshot </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a9b58c815236a10ca4171e779a242fb5a">SnapshotGridPtr</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html#a70522b0c086b51010786df6a9faa1013">SnapshotGridPtr</a> &amp;&#160;</td>
           <td class="paramname"><em>psnapshot</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a459ad011f6166a6302b30cb2fcefe697"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a459ad011f6166a6302b30cb2fcefe697">&#9670;&nbsp;</a></span>write()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class TDerived &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="class_felt_1_1_impl_1_1_mixin_1_1_partitioned_1_1_snapshot.html">Felt::Impl::Mixin::Partitioned::Snapshot</a>&lt; TDerived &gt;::write </td>
+          <td>(</td>
+          <td class="paramtype">std::ostream &amp;&#160;</td>
+          <td class="paramname"><em>output_stream_</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
