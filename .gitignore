@@ -30,3 +30,9 @@
 /.ninja_log
 /Doxyfile
 /rules.ninja
+/GPATH
+/GRTAGS
+/GTAGS
+/.compile-flags
+/**/*.swp
+/.session.vim

@@ -1,5 +1,5 @@
-#ifndef Impl_Surface_hpp
-#define Impl_Surface_hpp
+#ifndef Surface_hpp
+#define Surface_hpp
 #include <Felt/Impl/Common.hpp>
 #include <Felt/Impl/Partitioned.hpp>
 #include <Felt/Impl/Util.hpp>
@@ -136,9 +136,14 @@ public:
 	/// D-dimensional parameterised line, for raycasting.
 	using Line = Eigen::ParametrizedLine<Distance, D>;
 
+	/**
+	 * Store approximate statistics of the number of spatial partitions using up memory.
+	 */
 	struct Stats
 	{
+		/// Number of isogrid partitions currently active.
 		ListIdx active_isogrid_partitions;
+		/// Number of delta isogrid partitions currently active.
 		ListIdx active_delta_partitions;
 	};
 
@@ -170,7 +175,7 @@ public:
 	/**
 	 * Save isogrid to disk.
 	 *
-	 * @param file_path path to save to.
+	 * @param output_stream_ stream to save to.
 	 */
 	void save(std::ostream& output_stream_) const
 	{
@@ -180,7 +185,7 @@ public:
 	/**
 	 * Load isogrid from disk and construct surface.
 	 *
-	 * @param file_path path to load from.
+	 * @param input_stream_ stream to load from.
 	 *
 	 * @return new Surface instance.
 	 */
@@ -613,7 +618,7 @@ public:
 	/**
 	 * Gather statistics about the current state of the surface.
 	 *
-	 * @return statistics object with various values.
+	 * @return statistics object with values for the number of active spatial partitions.
 	 */
 	Stats stats() const
 	{
@@ -1713,6 +1718,17 @@ private:
 		return -1 * size_ / 2;
 	}
 
+	/**
+	 * Caclculate an approximation of the number of active spatial partitions for a given grid.
+	 *
+	 * Is an approximation, since it takes the maximum number of partitions across all
+	 * layers, rather than doing a more expensive union.
+	 *
+	 * @tparam TGrid type of grid to query
+	 * @param grid _the grid to query
+	 *
+	 * @return the max of the number of spatial partitions in each layer.
+	 */
 	template <class TGrid>
 	ListIdx num_active_partitions(const TGrid& grid_) const
 	{
@@ -1725,6 +1741,16 @@ private:
 		return num;
 	}
 
+	/**
+	 * Callback wrapper to call an arbitrary functor with a given pos and grid.
+	 *
+	 * @tparam Fn deduced functor type.
+	 * @param fn_  functor.
+	 * @param pos_ position in grid.
+	 * @param grid_ grid itself.
+	 *
+	 * @return a Distance value returned by the functor.
+	 */
 	template <typename Fn>
 	std::enable_if_t<
 		std::is_same<std::result_of_t<Fn(const VecDi&, const IsoGrid&)>, Distance>::value,
@@ -1735,6 +1761,16 @@ private:
 		return fn_(pos_, grid_);
 	}
 
+	/**
+	 * Callback wrapper to call an arbitrary functor with a given pos.
+	 *
+	 * @tparam Fn deduced functor type.
+	 * @param fn_  functor.
+	 * @param pos_ position in grid.
+	 * @param grid_ grid itself (unused).
+	 *
+	 * @return a Distance value returned by the functor.
+	 */
 	template <typename Fn>
 	std::enable_if_t<
 		std::is_same<std::result_of_t<Fn(const VecDi&)>, Distance>::value,
@@ -1745,6 +1781,16 @@ private:
 		return fn_(pos_);
 	}
 
+	/**
+	 * Callback wrapper to call an arbitrary functor.
+	 *
+	 * @tparam Fn deduced functor type.
+	 * @param fn_  functor (unused).
+	 * @param pos_ position in grid (unused).
+	 * @param grid_ grid itself (unused).
+	 *
+	 * @return a Distance value returned by the functor.
+	 */
 	template <typename Fn>
 	std::enable_if_t<
 		std::is_same<std::result_of_t<Fn()>, Distance>::value,
