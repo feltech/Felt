@@ -173,7 +173,7 @@ public:
 	{}
 
 	/**
-	 * Save isogrid to disk.
+	 * Save isogrid to given output stream.
 	 *
 	 * @param output_stream_ stream to save to.
 	 */
@@ -183,7 +183,7 @@ public:
 	}
 
 	/**
-	 * Load isogrid from disk and construct surface.
+	 * Load isogrid from given input stream and construct surface.
 	 *
 	 * @param input_stream_ stream to load from.
 	 *
