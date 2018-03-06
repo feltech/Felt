@@ -4,7 +4,11 @@ Deformable surface simulation and visualisation library
 [![Build Status](https://travis-ci.org/feltech/Felt.svg?branch=master)](https://travis-ci.org/feltech/Felt)
 
 **Documentation: http://feltech.github.io/Felt/**
+
 **Source: http://feltech.github.io/Felt/**
+
+**Video (via [UrFelt](https://github.com/feltech/UrFelt)):
+https://www.youtube.com/watch?v=KwpXzBb6Nzs
 
 Felt is an implementation of the
 [sparse field level set](https://en.wikipedia.org/wiki/Level_set_(data_structures)#Sparse_field)
