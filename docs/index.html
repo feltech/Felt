@@ -93,11 +93,23 @@ $(document).ready(function(){initNavTree('index.html','');});
 <div class="contents">
 <div class="textblock"><p><a href="https://travis-ci.org/feltech/Felt"></a></p>
 <p><b>Documentation: <a href="http://feltech.github.io/Felt/">http://feltech.github.io/Felt/</a></b></p>
+<p><b>Source: <a href="http://feltech.github.io/Felt/">http://feltech.github.io/Felt/</a></b></p>
+<p><b>Video (via <a href="https://github.com/feltech/UrFelt">UrFelt</a>): <a href="https://www.youtube.com/watch?v=KwpXzBb6Nzs">https://www.youtube.com/watch?v=KwpXzBb6Nzs</a></b></p>
 <p><a class="el" href="namespace_felt.html">Felt</a> is an implementation of the <a href="https://en.wikipedia.org/wiki/Level_set_(data_structures)#Sparse_field">sparse field level set</a> method for deformable surfaces, and the <a href="https://en.wikipedia.org/wiki/Marching_cubes">marching cubes</a> method of polygonising them.</p>
 <p>The surface is embedded in a grid, where each grid node stores its distance to the surface. Thus the surface can be extracted from the points where the distance is zero - it is an <em>implicit</em> surface representation.</p>
 <p><a class="el" href="namespace_felt.html">Felt</a> makes heavy use of spatial partitioning to reduce memory footprint, provide localised deformations and repolygonisation, and aid in parallelism.</p>
 <p><a class="el" href="namespace_felt.html">Felt</a> leverages C++14 and is header-only, with a dependencies on <a href="http://www.boost.org/">boost</a> and <a href="http://eigen.tuxfamily.org/index.php?title=Main_Page">Eigen</a> libraries.</p>
-<h2>To do</h2>
+<h1>Features</h1>
+<ul>
+<li>Level set isosurface with arbitrary spatial dimension. Create 2D, 3D or mind bending n-dimensional surfaces.</li>
+<li>2D and 3D polygonisations (lines and triangles, respectively), with iterative updates as the surface evolves.</li>
+<li>Mutate the surface with lambdas, or any other functor, which are inlined and automatically parallelised.</li>
+<li>Common numerical functions for simple spatial derivatives.</li>
+<li>Serialisation to/from arbitrary output/input streams.</li>
+<li>Spatially partitioned for low memory usage and fast updates.</li>
+<li>OpenMP parallelism for both surface updates and polygonisation.</li>
+</ul>
+<h2>Future</h2>
 <p>The library is in a stable state, but the documentation needs work.</p>
 <p>There are Doxygen annotations for almost all functions and classes, and quite extensive test cases. I aim to finish tidying up the test cases, which now use the awesome <a href="https://github.com/philsquared/Catch">Catch</a> BDD style testing library, and use these as integral parts of the documentation via snippets.</p>
 <p>There is ongoing development to support the physics engine <a href="http://bulletphysics.org">Bullet</a> via the amazing game engine <a href="https://urho3d.github.io/">Urho3D</a> in my test-bed demo app <a href="https://github.com/feltech/UrFelt">UrFelt</a>. I aim to move the Bullet and Urho3D classes developed there to form an optional part of the main <a class="el" href="namespace_felt.html">Felt</a> project.</p>
