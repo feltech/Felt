@@ -1,38 +1,29 @@
+cmake_minimum_required(VERSION 3.16)
+
 project(Felt)
 
-cmake_minimum_required(VERSION 2.8)
-include(CMakeToolsHelpers OPTIONAL)
-find_program(CTEST_MEMORYCHECK_COMMAND NAMES valgrind)
+find_package(Eigen3 REQUIRED)
+find_package(OpenMP REQUIRED)
 
-cmake_policy(SET CMP0015 NEW)
-
-set(PROJECT_ROOT ${PROJECT_SOURCE_DIR})
-set(SRC_ROOT ${PROJECT_SOURCE_DIR}/src)
-set(TESTS_ROOT ${SRC_ROOT}/tests)
-set(EIGEN3_INCLUDE_DIR /usr/include/eigen3 CACHE PATH "Eigen include directory")
-
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_ROOT}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_ROOT}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_ROOT}/bin)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-include_directories(
-	${PROJECT_ROOT}/include ${EIGEN3_INCLUDE_DIR}
+add_library(felt INTERFACE)
+target_include_directories(
+	felt
+	INTERFACE
+	${PROJECT_SOURCE_DIR}/include
 )
-
-add_definitions(
-	-std=c++14 -fopenmp  -DFELT_EXCEPTIONS -DCATCH_CONFIG_CONSOLE_WIDTH=200
-	 -Wfatal-errors -Wall -Wextra -Wconversion -Wsign-conversion -g3
-)
+target_compile_features(felt INTERFACE cxx_std_14)
+target_link_libraries(felt INTERFACE Eigen3::Eigen OpenMP::OpenMP_CXX)
 
 # C++ unit tests
-enable_testing()
-file(GLOB_RECURSE CTEST_CPPS "${TESTS_ROOT}/test*.cpp")
-add_executable(ctests "${TESTS_ROOT}/main.cpp" ${CTEST_CPPS})
-include_directories(${PROJECT_ROOT}/include ${EIGEN3_INCLUDE_DIR})
-target_link_libraries(ctests gomp pthread)
-add_test(
-	NAME felt
-	WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-	COMMAND ctests
-)
+if (FELT_ENABLE_TESTS)
+	enable_testing()
+	set(TESTS_ROOT ${PROJECT_SOURCE_DIR}/src/tests)
+	file(GLOB_RECURSE CTEST_CPPS "${TESTS_ROOT}/test*.cpp")
+	add_executable(ctests "${TESTS_ROOT}/main.cpp" ${CTEST_CPPS})
+	target_link_libraries(ctests PRIVATE felt)
+	add_test(
+		NAME felt
+		WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+		COMMAND ctests
+	)
+endif ()
