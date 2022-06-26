@@ -5,11 +5,11 @@
 #include <iostream>
 
 #pragma GCC system_header // Disable warnings.
-#include <cereal/access.hpp>
+#include <Felt/ThirdParty/cereal/access.hpp>
 #pragma GCC system_header // Disable warnings.
-#include <cereal/archives/binary.hpp>
+#include <Felt/ThirdParty/cereal/archives/binary.hpp>
 #pragma GCC system_header // Disable warnings.
-#include <cereal/types/vector.hpp>
+#include <Felt/ThirdParty/cereal/types/vector.hpp>
 
 #include <Felt/Impl/Util.hpp>
 #include <Felt/Impl/Grid.hpp>
