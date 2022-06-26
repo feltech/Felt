@@ -148,7 +148,7 @@ SCENARIO("Grid::Snapshot")
 }
 
 
-SCENARIO("Lookup::Simple")
+SCENARIO("Lookup::SingleListSingleIdx")
 {
 	using Grid = Impl::Lookup::SingleListSingleIdx<3>;
 	GIVEN("a 10x10x10 grid with (0,-5,-5) offset")
@@ -327,7 +327,7 @@ SCENARIO("Lookup::Simple")
 
 
 
-SCENARIO("Lookup::Single")
+SCENARIO("Lookup::MultiListSingleIdx")
 {
 	using Grid = Impl::Lookup::MultiListSingleIdx<3, 3>;
 
@@ -351,7 +351,7 @@ SCENARIO("Lookup::Single")
 		const PosIdx pos7_idx = grid.index(pos7);
 
 
-		WHEN("we track 4 locations to be tracked")
+		WHEN("we add 4 locations to be tracked")
 		{
 			// Add the positions to the array and set index lookup values.
 			grid.track(pos1_idx, 0);
